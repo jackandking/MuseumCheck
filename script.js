@@ -402,6 +402,13 @@ class MuseumCheckApp {
         this.init();
     }
 
+    // Google Analytics tracking helper
+    trackEvent(eventName, parameters = {}) {
+        if (typeof gtag !== 'undefined' && window.GA_MEASUREMENT_ID !== 'GA_MEASUREMENT_ID') {
+            gtag('event', eventName, parameters);
+        }
+    }
+
     init() {
         this.setupEventListeners();
         this.renderMuseums();
@@ -411,8 +418,15 @@ class MuseumCheckApp {
     setupEventListeners() {
         // Age group selector
         document.getElementById('ageGroup').addEventListener('change', (e) => {
+            const oldAge = this.currentAge;
             this.currentAge = e.target.value;
             this.renderMuseums();
+            
+            // Track age group change
+            this.trackEvent('age_group_changed', {
+                'previous_age': oldAge,
+                'new_age': this.currentAge
+            });
         });
 
         // Modal close
@@ -491,6 +505,9 @@ class MuseumCheckApp {
 
     toggleMuseumVisit(museumId) {
         const index = this.visitedMuseums.indexOf(museumId);
+        const museum = MUSEUMS.find(m => m.id === museumId);
+        const isNowVisited = index === -1;
+        
         if (index > -1) {
             this.visitedMuseums.splice(index, 1);
         } else {
@@ -498,6 +515,15 @@ class MuseumCheckApp {
         }
         this.saveVisitedMuseums();
         this.renderMuseums();
+        
+        // Track museum visit toggle
+        this.trackEvent('museum_visit_toggled', {
+            'museum_id': museumId,
+            'museum_name': museum ? museum.name : '',
+            'museum_location': museum ? museum.location : '',
+            'visited': isNowVisited,
+            'age_group': this.currentAge
+        });
     }
 
     updateStats() {
@@ -549,6 +575,14 @@ class MuseumCheckApp {
         });
 
         modal.classList.remove('hidden');
+        
+        // Track modal open
+        this.trackEvent('museum_modal_opened', {
+            'museum_id': museum.id,
+            'museum_name': museum.name,
+            'museum_location': museum.location,
+            'age_group': this.currentAge
+        });
     }
 
     renderChecklist(museumId, type, items) {
@@ -592,6 +626,25 @@ class MuseumCheckApp {
                     }
                     
                     this.saveMuseumChecklists();
+                    
+                    // Track checklist item completion
+                    const keyParts = checklistKey.split('-');
+                    const museumId = keyParts[0];
+                    const checklistType = keyParts[1];
+                    const ageGroup = keyParts[2];
+                    const museum = MUSEUMS.find(m => m.id === museumId);
+                    const itemText = museum && museum.checklists[checklistType] && museum.checklists[checklistType][ageGroup] ? 
+                                   museum.checklists[checklistType][ageGroup][index] : '';
+                    
+                    this.trackEvent('checklist_item_toggled', {
+                        'museum_id': museumId,
+                        'museum_name': museum ? museum.name : '',
+                        'checklist_type': checklistType,
+                        'age_group': ageGroup,
+                        'item_index': index,
+                        'item_text': itemText,
+                        'completed': e.target.checked
+                    });
                     
                     // Update visual state
                     const item = e.target.closest('.checklist-item');
