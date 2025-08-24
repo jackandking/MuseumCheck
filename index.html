@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>博物馆打卡 - MuseumCheck</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏛️ 博物馆打卡</h1>
+            <p class="subtitle">让孩子爱上博物馆之旅</p>
+        </header>
+
+        <nav class="age-selector">
+            <label>孩子年龄：</label>
+            <select id="ageGroup">
+                <option value="3-6">3-6岁 (学龄前)</option>
+                <option value="7-12">7-12岁 (小学)</option>
+                <option value="13-18">13-18岁 (中学)</option>
+            </select>
+        </nav>
+
+        <main>
+            <section class="museum-list">
+                <h2>全国主要博物馆清单</h2>
+                <div class="stats">
+                    <span id="visitedCount">0</span>/<span id="totalCount">0</span> 已参观
+                    (<span id="visitedPercentage">0</span>%)
+                </div>
+                <div id="museumGrid" class="museum-grid">
+                    <!-- Museums will be populated by JavaScript -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="museumModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle"></h2>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
