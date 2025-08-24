@@ -1,0 +1,282 @@
+:root {
+    --primary-color: #2c5aa0;
+    --secondary-color: #f8f9fa;
+    --accent-color: #28a745;
+    --text-color: #333;
+    --border-color: #ddd;
+    --hover-color: #e9ecef;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--secondary-color);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    color: var(--primary-color);
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    color: #666;
+    font-size: 1.2em;
+}
+
+.age-selector {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.age-selector label {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.age-selector select {
+    padding: 8px 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 16px;
+    background-color: white;
+}
+
+.museum-list h2 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.stats {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 1.1em;
+    color: #666;
+}
+
+.museum-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.museum-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.museum-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.museum-card.visited {
+    border-color: var(--accent-color);
+    background-color: #f8fff9;
+}
+
+.museum-header {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.visit-checkbox {
+    width: 20px;
+    height: 20px;
+    margin-right: 15px;
+    margin-top: 2px;
+    cursor: pointer;
+}
+
+.museum-info h3 {
+    color: var(--primary-color);
+    margin-bottom: 5px;
+    font-size: 1.2em;
+}
+
+.museum-location {
+    color: #666;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.museum-description {
+    font-size: 0.95em;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+.museum-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.tag {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 10px;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    margin: 20px;
+    padding: 30px;
+}
+
+.close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #999;
+}
+
+.close:hover {
+    color: #333;
+}
+
+.checklist-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.tab-button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.tab-button.active {
+    border-bottom-color: var(--primary-color);
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.checklist-content {
+    margin-top: 20px;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.checklist-item:hover {
+    background-color: var(--hover-color);
+}
+
+.checklist-item input[type="checkbox"] {
+    margin-right: 12px;
+    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+}
+
+.checklist-item label {
+    flex: 1;
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+.checklist-item.completed {
+    background-color: #f8fff9;
+    text-decoration: line-through;
+    color: #666;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    header h1 {
+        font-size: 2em;
+    }
+    
+    .museum-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        margin: 10px;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    header h1 {
+        font-size: 1.8em;
+    }
+    
+    .subtitle {
+        font-size: 1em;
+    }
+    
+    .museum-card {
+        padding: 15px;
+    }
+}
