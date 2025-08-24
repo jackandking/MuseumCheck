@@ -2,6 +2,12 @@
 
 一个帮助中国家庭规划博物馆参观的互动应用，让孩子爱上博物馆之旅。
 
+## 🌐 立即使用
+
+**在线访问：** https://jackandking.github.io/MuseumCheck/
+
+无需安装，打开网页即可使用！支持手机和电脑访问。
+
 ## 功能特色
 
 ### 🏛️ 全国主要博物馆清单
@@ -25,48 +31,22 @@
 - 无需注册账号，隐私友好
 - 数据持久保存，支持多次访问
 
-## 技术实现
+## 技术特点
 
-- **前端技术**：HTML5 + CSS3 + Vanilla JavaScript
-- **响应式设计**：支持手机和桌面设备
-- **数据存储**：localStorage API
-- **数据分析**：Google Analytics 4 支持
-- **语言**：中文界面，符合国内用户习惯
+- **完全免费**：无需注册账号，打开即用
+- **隐私安全**：所有数据保存在您的浏览器本地
+- **跨设备支持**：手机、平板、电脑都能完美使用
+- **中文界面**：专为中国家庭设计
 
-## Google Analytics 配置
+## 使用方法
 
-应用支持 Google Analytics 4 (GA4) 跟踪用户行为数据，包括：
-- 页面浏览
-- 博物馆参观标记
-- 清单项目完成
-- 年龄组切换
-
-### 配置步骤
-1. 在 Google Analytics 中创建 GA4 属性
-2. 复制测量 ID（格式：G-XXXXXXXXXX）
-3. 在 `index.html` 中找到以下两处 `GA_MEASUREMENT_ID` 并替换为您的实际测量 ID：
-   ```html
-   <script async src="https://www.googletagmanager.com/gtag/js?id=YOUR_MEASUREMENT_ID"></script>
-   ```
-   ```javascript
-   window.GA_MEASUREMENT_ID = 'YOUR_MEASUREMENT_ID';
-   ```
-
-### 跟踪的事件
-- `museum_visit_toggled` - 博物馆参观状态切换
-- `museum_modal_opened` - 查看博物馆详情
-- `age_group_changed` - 年龄组切换
-- `checklist_item_toggled` - 清单项目完成/取消
-
-如不需要 Google Analytics，保持默认的占位符 ID 即可，不会影响应用正常功能。
-
-## 使用说明
-
-1. 打开 `index.html` 文件
-2. 选择孩子的年龄段
-3. 浏览博物馆列表，点击感兴趣的博物馆
-4. 查看家长准备清单和孩子任务清单
-5. 勾选完成的项目，系统自动保存进度
+1. 点击上方链接打开应用：https://jackandking.github.io/MuseumCheck/
+2. 选择您孩子的年龄段（3-6岁、7-12岁或13-18岁）
+3. 浏览全国主要博物馆列表
+4. 点击感兴趣的博物馆，查看详细的参观指南
+5. 使用家长准备清单做好参观前准备
+6. 带孩子完成探索任务，勾选完成的项目
+7. 所有进度自动保存，下次打开继续使用
 
 ## 博物馆列表
 
