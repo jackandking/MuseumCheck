@@ -4,7 +4,7 @@
 
 ## 🌐 立即使用
 
-**在线访问：** https://jackandking.github.io/MuseumCheck/
+**在线访问：** https://museumcheck.cn/
 
 无需安装，打开网页即可使用！支持手机和电脑访问。
 
@@ -40,7 +40,7 @@
 
 ## 使用方法
 
-1. 点击上方链接打开应用：https://jackandking.github.io/MuseumCheck/
+1. 点击上方链接打开应用：https://museumcheck.cn/
 2. 选择您孩子的年龄段（3-6岁、7-12岁或13-18岁）
 3. 浏览全国主要博物馆列表
 4. 点击感兴趣的博物馆，查看详细的参观指南
