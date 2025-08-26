@@ -2120,6 +2120,20 @@ class MuseumCheckApp {
         const childTasks = museum.checklists.child[this.currentAge];
         const completedTasks = completed.map(index => childTasks[index]).filter(Boolean);
         
+        // Collect photos for completed tasks
+        const taskPhotos = [];
+        completed.forEach(index => {
+            const photoKey = `${checklistKey}-${index}`;
+            const photoData = this.taskPhotos[photoKey];
+            if (photoData) {
+                taskPhotos.push({
+                    index: index,
+                    data: photoData,
+                    task: childTasks[index]
+                });
+            }
+        });
+        
         let yPosition = 300;
         
         if (completedTasks.length > 0) {
@@ -2130,61 +2144,19 @@ class MuseumCheckApp {
             ctx.fillText('✅ 已完成的探索任务:', 80, yPosition);
             yPosition += 60;
             
-            // List completed tasks
-            ctx.font = '26px "PingFang SC", "Microsoft YaHei", sans-serif';
-            ctx.fillStyle = '#333';
-            
-            completedTasks.forEach((task, index) => {
-                if (yPosition > canvas.height - 200) return; // Prevent overflow
-                
-                // Wrap long text
-                const maxWidth = canvas.width - 160;
-                const words = task.split('');
-                let line = '';
-                const lines = [];
-                
-                for (let i = 0; i < words.length; i++) {
-                    const testLine = line + words[i];
-                    const metrics = ctx.measureText(testLine);
-                    
-                    if (metrics.width > maxWidth && line !== '') {
-                        lines.push(line);
-                        line = words[i];
-                    } else {
-                        line = testLine;
-                    }
-                }
-                lines.push(line);
-                
-                lines.forEach((lineText, lineIndex) => {
-                    if (lineIndex === 0) {
-                        ctx.fillText(`${index + 1}. ${lineText}`, 100, yPosition);
-                    } else {
-                        ctx.fillText(`   ${lineText}`, 100, yPosition);
-                    }
-                    yPosition += 35;
-                });
-                
-                yPosition += 10; // Extra space between tasks
-            });
+            // Use async/await pattern to load and draw photos
+            this.drawTasksWithPhotos(ctx, completedTasks, taskPhotos, completed, yPosition, canvas, preview, museum);
+            return; // Exit early, completion handled in drawTasksWithPhotos
         } else {
             // No completed tasks message
             ctx.fillStyle = '#666';
             ctx.font = '28px "PingFang SC", "Microsoft YaHei", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText('还没有完成的任务，继续加油！', canvas.width / 2, yPosition);
+            
+            // Footer for no tasks case
+            this.drawPosterFooter(ctx, canvas);
         }
-        
-        // Footer
-        yPosition = canvas.height - 120;
-        ctx.fillStyle = '#2c5aa0';
-        ctx.font = '24px "PingFang SC", "Microsoft YaHei", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('由 MuseumCheck 博物馆打卡应用生成', canvas.width / 2, yPosition);
-        
-        // Add emoji decoration
-        ctx.font = '32px Arial';
-        ctx.fillText('🎨 📸 🎉', canvas.width / 2, yPosition + 40);
         
         // Show preview
         canvas.style.display = 'block';
@@ -2201,6 +2173,133 @@ class MuseumCheckApp {
             'completed_tasks': completedTasks.length,
             'age_group': this.currentAge
         });
+    }
+
+    async drawTasksWithPhotos(ctx, completedTasks, taskPhotos, completed, startY, canvas, preview, museum) {
+        let yPosition = startY;
+        const maxWidth = canvas.width - 160;
+        const photoSize = 180; // Size for photos
+        const taskSpacing = 200; // Space for each task (text + photo)
+        
+        ctx.font = '26px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.fillStyle = '#333';
+        
+        // Load all images first
+        const imagePromises = taskPhotos.map(photoInfo => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve({ ...photoInfo, img });
+                img.onerror = () => resolve({ ...photoInfo, img: null });
+                img.src = photoInfo.data;
+            });
+        });
+        
+        const loadedPhotos = await Promise.all(imagePromises);
+        const photoMap = new Map();
+        loadedPhotos.forEach(photo => {
+            if (photo.img) {
+                photoMap.set(photo.index, photo.img);
+            }
+        });
+        
+        completedTasks.forEach((task, taskIndex) => {
+            if (yPosition > canvas.height - 250) return; // Prevent overflow
+            
+            const taskNumber = taskIndex + 1;
+            const originalIndex = completed[taskIndex]; // Get the original task index
+            const photo = photoMap.get(originalIndex);
+            
+            // Draw task text
+            const words = task.split('');
+            let line = '';
+            const lines = [];
+            
+            for (let i = 0; i < words.length; i++) {
+                const testLine = line + words[i];
+                const metrics = ctx.measureText(testLine);
+                
+                if (metrics.width > (photo ? maxWidth - photoSize - 20 : maxWidth) && line !== '') {
+                    lines.push(line);
+                    line = words[i];
+                } else {
+                    line = testLine;
+                }
+            }
+            lines.push(line);
+            
+            // Draw text
+            let textY = yPosition;
+            lines.forEach((lineText, lineIndex) => {
+                if (lineIndex === 0) {
+                    ctx.fillText(`${taskNumber}. ${lineText}`, 100, textY);
+                } else {
+                    ctx.fillText(`   ${lineText}`, 100, textY);
+                }
+                textY += 35;
+            });
+            
+            // Draw photo if available
+            if (photo) {
+                const photoX = canvas.width - 260; // Right side
+                const photoY = yPosition - 20;
+                
+                // Draw photo background
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(photoX - 5, photoY - 5, photoSize + 10, photoSize + 10);
+                ctx.strokeStyle = '#ddd';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(photoX - 5, photoY - 5, photoSize + 10, photoSize + 10);
+                
+                // Calculate aspect ratio and draw photo
+                const aspectRatio = photo.width / photo.height;
+                let drawWidth = photoSize;
+                let drawHeight = photoSize;
+                
+                if (aspectRatio > 1) {
+                    drawHeight = photoSize / aspectRatio;
+                } else {
+                    drawWidth = photoSize * aspectRatio;
+                }
+                
+                const drawX = photoX + (photoSize - drawWidth) / 2;
+                const drawY = photoY + (photoSize - drawHeight) / 2;
+                
+                ctx.drawImage(photo, drawX, drawY, drawWidth, drawHeight);
+            }
+            
+            yPosition += Math.max(taskSpacing, lines.length * 35 + 40);
+        });
+        
+        // Draw footer
+        this.drawPosterFooter(ctx, canvas);
+        
+        // Show preview
+        canvas.style.display = 'block';
+        preview.innerHTML = '';
+        preview.appendChild(canvas.cloneNode(true));
+        
+        // Show download button
+        document.getElementById('downloadPoster').style.display = 'inline-block';
+        
+        // Track poster generation
+        this.trackEvent('poster_generated', {
+            'museum_id': museum.id,
+            'museum_name': museum.name,
+            'completed_tasks': completedTasks.length,
+            'age_group': this.currentAge
+        });
+    }
+
+    drawPosterFooter(ctx, canvas) {
+        const yPosition = canvas.height - 120;
+        ctx.fillStyle = '#2c5aa0';
+        ctx.font = '24px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('由 MuseumCheck 博物馆打卡应用生成', canvas.width / 2, yPosition);
+        
+        // Add emoji decoration
+        ctx.font = '32px Arial';
+        ctx.fillText('🎨 📸 🎉', canvas.width / 2, yPosition + 40);
     }
 
     downloadPoster(museum) {
