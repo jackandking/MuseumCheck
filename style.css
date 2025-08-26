@@ -219,9 +219,10 @@ header h1 {
     display: flex;
     align-items: flex-start;
     margin-bottom: 15px;
-    padding: 10px;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
+    padding: 12px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    flex-direction: column;
 }
 
 .checklist-item:hover {
@@ -233,18 +234,103 @@ header h1 {
     margin-top: 2px;
     width: 18px;
     height: 18px;
+    align-self: flex-start;
 }
 
 .checklist-item label {
     flex: 1;
     cursor: pointer;
     line-height: 1.4;
+    margin-bottom: 8px;
+    width: 100%;
 }
 
 .checklist-item.completed {
     background-color: #f8fff9;
+    border-left: 4px solid var(--accent-color);
+}
+
+.checklist-item.completed label {
     text-decoration: line-through;
     color: #666;
+}
+
+/* Photo Upload Styles */
+.photo-upload-section {
+    margin-top: 10px;
+    padding: 10px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    text-align: center;
+    background-color: #fafafa;
+    width: 100%;
+}
+
+.photo-upload-label {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.photo-upload-label:hover {
+    background-color: #1e4085;
+}
+
+.task-photo {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    margin-top: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Share Poster Styles */
+.share-poster-section {
+    text-align: center;
+    padding: 20px;
+}
+
+.share-description {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.poster-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 10px;
+    transition: all 0.3s ease;
+}
+
+.poster-button:hover {
+    background-color: #1e4085;
+    transform: translateY(-2px);
+}
+
+.poster-preview {
+    margin: 20px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.poster-preview canvas {
+    max-width: 100%;
+    height: auto;
+    display: block;
 }
 
 /* Responsive Design */

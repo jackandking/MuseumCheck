@@ -1699,6 +1699,7 @@ class MuseumCheckApp {
         this.currentAge = document.getElementById('ageGroup').value;
         this.visitedMuseums = this.loadVisitedMuseums();
         this.museumChecklists = this.loadMuseumChecklists();
+        this.taskPhotos = this.loadTaskPhotos();
         this.init();
     }
 
@@ -1754,6 +1755,15 @@ class MuseumCheckApp {
     loadMuseumChecklists() {
         const saved = localStorage.getItem('museumChecklists');
         return saved ? JSON.parse(saved) : {};
+    }
+
+    loadTaskPhotos() {
+        const saved = localStorage.getItem('taskPhotos');
+        return saved ? JSON.parse(saved) : {};
+    }
+
+    saveTaskPhotos() {
+        localStorage.setItem('taskPhotos', JSON.stringify(this.taskPhotos));
     }
 
     saveMuseumChecklists() {
@@ -1847,6 +1857,7 @@ class MuseumCheckApp {
             <div class="checklist-tabs">
                 <button class="tab-button active" data-target="parent">家长准备</button>
                 <button class="tab-button" data-target="child">孩子任务</button>
+                <button class="tab-button" data-target="share">生成海报</button>
             </div>
             <div id="parentChecklist" class="checklist-content">
                 <h3>家长准备事项</h3>
@@ -1855,6 +1866,16 @@ class MuseumCheckApp {
             <div id="childChecklist" class="checklist-content" style="display: none;">
                 <h3>孩子探索任务</h3>
                 ${this.renderChecklist(museum.id, 'child', museum.checklists.child[this.currentAge])}
+            </div>
+            <div id="shareChecklist" class="checklist-content" style="display: none;">
+                <h3>生成分享海报</h3>
+                <div class="share-poster-section">
+                    <p class="share-description">📸 将已完成的任务和照片生成精美海报，方便分享朋友圈留念！</p>
+                    <button id="generatePoster" class="poster-button">🎨 生成海报</button>
+                    <canvas id="posterCanvas" style="display: none; max-width: 100%;"></canvas>
+                    <div id="posterPreview" class="poster-preview"></div>
+                    <button id="downloadPoster" class="poster-button" style="display: none;">📱 下载海报</button>
+                </div>
             </div>
         `;
 
@@ -1871,10 +1892,14 @@ class MuseumCheckApp {
                 // Show corresponding content
                 document.getElementById('parentChecklist').style.display = target === 'parent' ? 'block' : 'none';
                 document.getElementById('childChecklist').style.display = target === 'child' ? 'block' : 'none';
+                document.getElementById('shareChecklist').style.display = target === 'share' ? 'block' : 'none';
             });
         });
 
         modal.classList.remove('hidden');
+        
+        // Set up poster generation
+        this.setupPosterGeneration(museum);
         
         // Track modal open
         this.trackEvent('museum_modal_opened', {
@@ -1891,13 +1916,30 @@ class MuseumCheckApp {
 
         return items.map((item, index) => {
             const itemId = `${checklistKey}-${index}`;
+            const photoKey = `${checklistKey}-${index}`;
             const isCompleted = completed.includes(index);
+            const hasPhoto = this.taskPhotos[photoKey];
+            
+            let photoUpload = '';
+            if (type === 'child' && isCompleted) {
+                photoUpload = `
+                    <div class="photo-upload-section">
+                        <label for="photo-${itemId}" class="photo-upload-label">
+                            📷 上传照片留念
+                        </label>
+                        <input type="file" id="photo-${itemId}" accept="image/*" class="photo-input" 
+                               data-task-key="${photoKey}" style="display: none;">
+                        ${hasPhoto ? `<img src="${hasPhoto}" class="task-photo" alt="任务照片">` : ''}
+                    </div>
+                `;
+            }
             
             return `
                 <div class="checklist-item ${isCompleted ? 'completed' : ''}">
                     <input type="checkbox" id="${itemId}" ${isCompleted ? 'checked' : ''} 
                            data-checklist="${checklistKey}" data-index="${index}">
                     <label for="${itemId}">${item}</label>
+                    ${photoUpload}
                 </div>
             `;
         }).join('') + this.addChecklistEventListeners();
@@ -1946,13 +1988,35 @@ class MuseumCheckApp {
                         'completed': e.target.checked
                     });
                     
-                    // Update visual state
+                    // Update visual state and refresh modal content for photo uploads
                     const item = e.target.closest('.checklist-item');
                     if (e.target.checked) {
                         item.classList.add('completed');
+                        // Re-render to show photo upload if this is a child task
+                        if (checklistType === 'child') {
+                            this.openMuseumModal(museum);
+                        }
                     } else {
                         item.classList.remove('completed');
                     }
+                });
+            });
+            
+            // Add photo upload listeners
+            const photoInputs = document.querySelectorAll('.photo-input');
+            photoInputs.forEach(input => {
+                input.addEventListener('change', (e) => {
+                    this.handlePhotoUpload(e);
+                });
+            });
+            
+            // Add photo label click listeners
+            const photoLabels = document.querySelectorAll('.photo-upload-label');
+            photoLabels.forEach(label => {
+                label.addEventListener('click', (e) => {
+                    const inputId = label.getAttribute('for');
+                    const input = document.getElementById(inputId);
+                    if (input) input.click();
                 });
             });
         }, 100);
@@ -1962,6 +2026,196 @@ class MuseumCheckApp {
 
     closeModal() {
         document.getElementById('museumModal').classList.add('hidden');
+    }
+
+    handlePhotoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const taskKey = event.target.dataset.taskKey;
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            this.taskPhotos[taskKey] = e.target.result;
+            this.saveTaskPhotos();
+            
+            // Update the display
+            const container = event.target.closest('.checklist-item');
+            const existingPhoto = container.querySelector('.task-photo');
+            if (existingPhoto) {
+                existingPhoto.src = e.target.result;
+            } else {
+                const photoUpload = container.querySelector('.photo-upload-section');
+                const img = document.createElement('img');
+                img.className = 'task-photo';
+                img.src = e.target.result;
+                img.alt = '任务照片';
+                photoUpload.appendChild(img);
+            }
+        };
+        
+        reader.readAsDataURL(file);
+    }
+
+    setupPosterGeneration(museum) {
+        setTimeout(() => {
+            const generateBtn = document.getElementById('generatePoster');
+            const downloadBtn = document.getElementById('downloadPoster');
+            
+            if (generateBtn) {
+                generateBtn.addEventListener('click', () => {
+                    this.generatePoster(museum);
+                });
+            }
+            
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', () => {
+                    this.downloadPoster(museum);
+                });
+            }
+        }, 100);
+    }
+
+    generatePoster(museum) {
+        const canvas = document.getElementById('posterCanvas');
+        const ctx = canvas.getContext('2d');
+        const preview = document.getElementById('posterPreview');
+        
+        // Set canvas size for good quality (Instagram/WeChat friendly)
+        canvas.width = 1080;
+        canvas.height = 1350;
+        
+        // Background
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Add decorative border
+        ctx.strokeStyle = '#2c5aa0';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+        
+        // Title section
+        ctx.fillStyle = '#2c5aa0';
+        ctx.fillRect(40, 40, canvas.width - 80, 120);
+        
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 42px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🏛️ 博物馆打卡', canvas.width / 2, 110);
+        
+        // Museum name
+        ctx.fillStyle = '#2c5aa0';
+        ctx.font = 'bold 36px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.fillText(museum.name, canvas.width / 2, 200);
+        
+        // Date and location
+        const visitDate = new Date().toLocaleDateString('zh-CN');
+        ctx.font = '24px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.fillStyle = '#666';
+        ctx.fillText(`📅 ${visitDate}  📍 ${museum.location}`, canvas.width / 2, 240);
+        
+        // Get completed child tasks
+        const checklistKey = `${museum.id}-child-${this.currentAge}`;
+        const completed = this.museumChecklists[checklistKey] || [];
+        const childTasks = museum.checklists.child[this.currentAge];
+        const completedTasks = completed.map(index => childTasks[index]).filter(Boolean);
+        
+        let yPosition = 300;
+        
+        if (completedTasks.length > 0) {
+            // Completed tasks header
+            ctx.fillStyle = '#28a745';
+            ctx.font = 'bold 32px "PingFang SC", "Microsoft YaHei", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('✅ 已完成的探索任务:', 80, yPosition);
+            yPosition += 60;
+            
+            // List completed tasks
+            ctx.font = '26px "PingFang SC", "Microsoft YaHei", sans-serif';
+            ctx.fillStyle = '#333';
+            
+            completedTasks.forEach((task, index) => {
+                if (yPosition > canvas.height - 200) return; // Prevent overflow
+                
+                // Wrap long text
+                const maxWidth = canvas.width - 160;
+                const words = task.split('');
+                let line = '';
+                const lines = [];
+                
+                for (let i = 0; i < words.length; i++) {
+                    const testLine = line + words[i];
+                    const metrics = ctx.measureText(testLine);
+                    
+                    if (metrics.width > maxWidth && line !== '') {
+                        lines.push(line);
+                        line = words[i];
+                    } else {
+                        line = testLine;
+                    }
+                }
+                lines.push(line);
+                
+                lines.forEach((lineText, lineIndex) => {
+                    if (lineIndex === 0) {
+                        ctx.fillText(`${index + 1}. ${lineText}`, 100, yPosition);
+                    } else {
+                        ctx.fillText(`   ${lineText}`, 100, yPosition);
+                    }
+                    yPosition += 35;
+                });
+                
+                yPosition += 10; // Extra space between tasks
+            });
+        } else {
+            // No completed tasks message
+            ctx.fillStyle = '#666';
+            ctx.font = '28px "PingFang SC", "Microsoft YaHei", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('还没有完成的任务，继续加油！', canvas.width / 2, yPosition);
+        }
+        
+        // Footer
+        yPosition = canvas.height - 120;
+        ctx.fillStyle = '#2c5aa0';
+        ctx.font = '24px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('由 MuseumCheck 博物馆打卡应用生成', canvas.width / 2, yPosition);
+        
+        // Add emoji decoration
+        ctx.font = '32px Arial';
+        ctx.fillText('🎨 📸 🎉', canvas.width / 2, yPosition + 40);
+        
+        // Show preview
+        canvas.style.display = 'block';
+        preview.innerHTML = '';
+        preview.appendChild(canvas.cloneNode(true));
+        
+        // Show download button
+        document.getElementById('downloadPoster').style.display = 'inline-block';
+        
+        // Track poster generation
+        this.trackEvent('poster_generated', {
+            'museum_id': museum.id,
+            'museum_name': museum.name,
+            'completed_tasks': completedTasks.length,
+            'age_group': this.currentAge
+        });
+    }
+
+    downloadPoster(museum) {
+        const canvas = document.getElementById('posterCanvas');
+        const link = document.createElement('a');
+        link.download = `${museum.name}_博物馆打卡_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        // Track download
+        this.trackEvent('poster_downloaded', {
+            'museum_id': museum.id,
+            'museum_name': museum.name,
+            'age_group': this.currentAge
+        });
     }
 }
 
