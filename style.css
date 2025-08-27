@@ -282,6 +282,11 @@ header h1 {
     background-color: #1e4085;
 }
 
+/* Override strikethrough for photo upload buttons in completed items */
+.checklist-item.completed .photo-upload-label {
+    text-decoration: none;
+}
+
 .task-photo {
     max-width: 100%;
     max-height: 200px;
