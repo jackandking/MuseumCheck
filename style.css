@@ -45,11 +45,21 @@ header h1 {
 .age-selector {
     text-align: center;
     margin-bottom: 30px;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.selector-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .age-selector label {
     font-weight: bold;
-    margin-right: 10px;
+    white-space: nowrap;
 }
 
 .age-selector select {
