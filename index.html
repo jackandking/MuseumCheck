@@ -17,6 +17,20 @@
         gtag('js', new Date());
         gtag('config', window.GA_MEASUREMENT_ID);
     </script>
+    
+    <!-- Baidu Analytics (百度统计) -->
+    <script>
+        // Baidu Analytics Configuration
+        // Replace 'YOUR_BAIDU_TRACKING_ID' with your actual Baidu Analytics tracking ID
+        // 请将 'YOUR_BAIDU_TRACKING_ID' 替换为您的实际百度统计跟踪ID
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "https://hm.baidu.com/hm.js?YOUR_BAIDU_TRACKING_ID";
+            var s = document.getElementsByTagName("script")[0]; 
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
 </head>
 <body>
     <div class="container">
