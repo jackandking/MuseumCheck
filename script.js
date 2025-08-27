@@ -1988,16 +1988,20 @@ class MuseumCheckApp {
                         'completed': e.target.checked
                     });
                     
-                    // Update visual state and refresh modal content for photo uploads
+                    // Update visual state and add/remove photo upload section
                     const item = e.target.closest('.checklist-item');
                     if (e.target.checked) {
                         item.classList.add('completed');
-                        // Re-render to show photo upload if this is a child task
+                        // Add photo upload section if this is a child task
                         if (checklistType === 'child') {
-                            this.openMuseumModal(museum);
+                            this.addPhotoUploadToItem(item, checklistKey, index);
                         }
                     } else {
                         item.classList.remove('completed');
+                        // Remove photo upload section if this is a child task
+                        if (checklistType === 'child') {
+                            this.removePhotoUploadFromItem(item);
+                        }
                     }
                 });
             });
@@ -2055,6 +2059,55 @@ class MuseumCheckApp {
         };
         
         reader.readAsDataURL(file);
+    }
+
+    addPhotoUploadToItem(item, checklistKey, index) {
+        // Check if photo upload section already exists
+        if (item.querySelector('.photo-upload-section')) {
+            return;
+        }
+        
+        const itemId = `${checklistKey}-${index}`;
+        const photoKey = `${checklistKey}-${index}`;
+        const hasPhoto = this.taskPhotos[photoKey];
+        
+        const photoUploadHtml = `
+            <div class="photo-upload-section">
+                <label for="photo-${itemId}" class="photo-upload-label">
+                    📷 上传照片留念
+                </label>
+                <input type="file" id="photo-${itemId}" accept="image/*" class="photo-input" 
+                       data-task-key="${photoKey}" style="display: none;">
+                ${hasPhoto ? `<img src="${hasPhoto}" class="task-photo" alt="任务照片">` : ''}
+            </div>
+        `;
+        
+        item.insertAdjacentHTML('beforeend', photoUploadHtml);
+        
+        // Add event listeners for the new elements
+        const photoInput = item.querySelector('.photo-input');
+        const photoLabel = item.querySelector('.photo-upload-label');
+        
+        if (photoInput) {
+            photoInput.addEventListener('change', (e) => {
+                this.handlePhotoUpload(e);
+            });
+        }
+        
+        if (photoLabel) {
+            photoLabel.addEventListener('click', (e) => {
+                const inputId = photoLabel.getAttribute('for');
+                const input = document.getElementById(inputId);
+                if (input) input.click();
+            });
+        }
+    }
+
+    removePhotoUploadFromItem(item) {
+        const photoSection = item.querySelector('.photo-upload-section');
+        if (photoSection) {
+            photoSection.remove();
+        }
     }
 
     setupPosterGeneration(museum) {
