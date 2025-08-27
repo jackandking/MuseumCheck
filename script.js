@@ -2291,15 +2291,20 @@ class MuseumCheckApp {
     }
 
     drawPosterFooter(ctx, canvas) {
-        const yPosition = canvas.height - 120;
+        const yPosition = canvas.height - 140;
         ctx.fillStyle = '#2c5aa0';
         ctx.font = '24px "PingFang SC", "Microsoft YaHei", sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('由 MuseumCheck 博物馆打卡应用生成', canvas.width / 2, yPosition);
         
+        // Add website URL prominently for traffic generation
+        ctx.fillStyle = '#2c5aa0';
+        ctx.font = 'bold 28px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.fillText('MuseumCheck.cn', canvas.width / 2, yPosition + 35);
+        
         // Add emoji decoration
         ctx.font = '32px Arial';
-        ctx.fillText('🎨 📸 🎉', canvas.width / 2, yPosition + 40);
+        ctx.fillText('🎨 📸 🎉', canvas.width / 2, yPosition + 70);
     }
 
     downloadPoster(museum) {
