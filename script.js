@@ -1971,18 +1971,23 @@ class MuseumCheckApp {
                     
                     // Track checklist item completion
                     const keyParts = checklistKey.split('-');
-                    const museumId = keyParts[0];
-                    const checklistType = keyParts[1];
-                    const ageGroup = keyParts[2];
+                    // Handle museum IDs that contain hyphens (e.g., 'forbidden-city')
+                    // The format is: museumId-type-ageGroup, where ageGroup may also contain hyphens
+                    // We need to find the last occurrence of type ('parent' or 'child') and ageGroup
+                    const ageGroup = keyParts[keyParts.length - 1]; // e.g., '6' 
+                    const ageGroupStart = keyParts[keyParts.length - 2]; // e.g., '3'
+                    const fullAgeGroup = `${ageGroupStart}-${ageGroup}`; // e.g., '3-6'
+                    const checklistType = keyParts[keyParts.length - 3]; // e.g., 'child'
+                    const museumId = keyParts.slice(0, keyParts.length - 3).join('-'); // e.g., 'forbidden-city'
                     const museum = MUSEUMS.find(m => m.id === museumId);
-                    const itemText = museum && museum.checklists[checklistType] && museum.checklists[checklistType][ageGroup] ? 
-                                   museum.checklists[checklistType][ageGroup][index] : '';
+                    const itemText = museum && museum.checklists[checklistType] && museum.checklists[checklistType][fullAgeGroup] ? 
+                                   museum.checklists[checklistType][fullAgeGroup][index] : '';
                     
                     this.trackEvent('checklist_item_toggled', {
                         'museum_id': museumId,
                         'museum_name': museum ? museum.name : '',
                         'checklist_type': checklistType,
-                        'age_group': ageGroup,
+                        'age_group': fullAgeGroup,
                         'item_index': index,
                         'item_text': itemText,
                         'completed': e.target.checked
