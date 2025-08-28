@@ -2306,10 +2306,10 @@ class MuseumCheckApp {
         const file = event.target.files[0];
         if (!file) return;
         
-        // Check file size (limit to 2MB to prevent localStorage issues)
-        const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+        // Check file size (limit to 4MB to prevent localStorage issues)
+        const maxSize = 4 * 1024 * 1024; // 4MB in bytes
         if (file.size > maxSize) {
-            alert('图片文件太大，请选择小于2MB的图片。');
+            alert('图片文件太大，请选择小于4MB的图片。');
             return;
         }
         
