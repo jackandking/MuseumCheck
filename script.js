@@ -2647,7 +2647,10 @@ class MuseumCheckApp {
         // Get completed child tasks to calculate required height
         const checklistKey = `${museum.id}-child-${this.currentAge}`;
         const completed = this.museumChecklists[checklistKey] || [];
-        const childTasks = museum.checklists.child[this.currentAge];
+        
+        // Get custom checklist items if they exist, otherwise use default items (same logic as renderChecklist)
+        const customItems = this.customChecklists[checklistKey];
+        const childTasks = customItems ? customItems.map(item => item.text) : museum.checklists.child[this.currentAge];
         const completedTasks = completed.map(index => childTasks[index]).filter(Boolean);
         
         // Calculate dynamic height based on number of completed tasks
