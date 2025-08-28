@@ -285,6 +285,7 @@ header h1 {
 /* Override strikethrough for photo upload buttons in completed items */
 .checklist-item.completed .photo-upload-label {
     text-decoration: none;
+    color: white !important;
 }
 
 .task-photo {
