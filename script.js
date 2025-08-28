@@ -2432,24 +2432,25 @@ class MuseumCheckApp {
         // Resize canvas to fit actual content + margins to eliminate blank space
         const newHeight = Math.max(finalY + 20, 400); // Minimum reasonable height
         if (newHeight < canvas.height) {
-            // Create new canvas with correct height
-            const newCanvas = document.createElement('canvas');
-            newCanvas.width = canvas.width;
-            newCanvas.height = newHeight;
-            const newCtx = newCanvas.getContext('2d');
+            // Create new canvas with correct height and copy content properly
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
             
-            // Copy the content to the new canvas
-            newCtx.drawImage(canvas, 0, 0);
+            // Copy current canvas content to temporary canvas
+            tempCtx.drawImage(canvas, 0, 0);
             
-            // Update the border to fit new height
-            newCtx.strokeStyle = '#2c5aa0';
-            newCtx.lineWidth = 8;
-            newCtx.strokeRect(20, 20, newCanvas.width - 40, newCanvas.height - 40);
-            
-            // Replace the original canvas content
+            // Resize original canvas to new height
             canvas.height = newHeight;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(newCanvas, 0, 0);
+            
+            // Copy back only the portion we need (from top to newHeight)
+            ctx.drawImage(tempCanvas, 0, 0, canvas.width, newHeight, 0, 0, canvas.width, newHeight);
+            
+            // Redraw the border to fit new height
+            ctx.strokeStyle = '#2c5aa0';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
         }
         
         // Show preview
