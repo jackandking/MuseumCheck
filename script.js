@@ -2472,14 +2472,50 @@ class MuseumCheckApp {
     }
 
     refreshCurrentChecklist() {
-        // Re-render the current modal content
+        // Re-render the current modal content while preserving tab state
         const modal = document.getElementById('museumModal');
         if (!modal.classList.contains('hidden')) {
             const modalTitle = document.getElementById('modalTitle');
-            const museumName = modalTitle.textContent;
+            const museumName = modalTitle.textContent.replace(' - 参观指南', '');
             const museum = MUSEUMS.find(m => m.name === museumName);
+            
             if (museum) {
-                this.openMuseumModal(museum);
+                // Store current active tab
+                const activeTab = document.querySelector('.tab-button.active');
+                const activeTarget = activeTab ? activeTab.dataset.target : 'parent';
+                
+                // Re-render the checklist content for the specific tabs
+                const parentContent = document.getElementById('parentChecklist');
+                const childContent = document.getElementById('childChecklist');
+                
+                if (parentContent) {
+                    parentContent.innerHTML = `
+                        <h3>家长准备事项</h3>
+                        ${this.renderChecklist(museum.id, 'parent', museum.checklists.parent[this.currentAge])}
+                    `;
+                }
+                
+                if (childContent) {
+                    childContent.innerHTML = `
+                        <h3>孩子探索任务</h3>
+                        ${this.renderChecklist(museum.id, 'child', museum.checklists.child[this.currentAge])}
+                    `;
+                }
+                
+                // Re-attach event listeners with a small delay to ensure DOM is updated
+                setTimeout(() => {
+                    this.addChecklistEventListeners();
+                }, 10);
+                
+                // Restore active tab state if it's not the default
+                if (activeTarget !== 'parent') {
+                    setTimeout(() => {
+                        const tabButton = document.querySelector(`.tab-button[data-target="${activeTarget}"]`);
+                        if (tabButton) {
+                            tabButton.click();
+                        }
+                    }, 20);
+                }
             }
         }
     }
