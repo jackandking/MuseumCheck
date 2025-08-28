@@ -1699,8 +1699,10 @@ class MuseumCheckApp {
         this.currentAge = document.getElementById('ageGroup').value;
         this.visitedMuseums = this.loadVisitedMuseums();
         this.museumChecklists = this.loadMuseumChecklists();
-        this.taskPhotos = this.loadTaskPhotos();
+        this.taskPhotos = this.loadTaskPhotos(); // Will fallback to localStorage initially
         this.customChecklists = this.loadCustomChecklists();
+        this.indexedDBSupported = false;
+        this.db = null;
         this.init();
     }
 
@@ -1711,10 +1713,154 @@ class MuseumCheckApp {
         }
     }
 
-    init() {
+    async init() {
+        await this.initIndexedDB();
+        
+        // Migrate existing localStorage photos to IndexedDB if supported
+        if (this.indexedDBSupported) {
+            await this.migratePhotosToIndexedDB();
+        }
+        
         this.setupEventListeners();
         this.renderMuseums();
         this.updateStats();
+    }
+
+    // Migrate existing localStorage photos to IndexedDB
+    async migratePhotosToIndexedDB() {
+        try {
+            const existingPhotos = this.taskPhotos;
+            let migratedCount = 0;
+            
+            for (const [taskKey, photoData] of Object.entries(existingPhotos)) {
+                await this.storePhotoInIndexedDB(taskKey, photoData);
+                migratedCount++;
+            }
+            
+            if (migratedCount > 0) {
+                console.log(`Migrated ${migratedCount} photos to IndexedDB`);
+                // Clear localStorage photos after successful migration
+                localStorage.removeItem('taskPhotos');
+            }
+            
+            // Load photos from IndexedDB to update in-memory cache
+            this.taskPhotos = await this.loadTaskPhotosAsync();
+        } catch (error) {
+            console.error('Failed to migrate photos to IndexedDB:', error);
+        }
+    }
+
+    // IndexedDB initialization and helper methods
+    async initIndexedDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('MuseumCheckDB', 1);
+            
+            request.onerror = () => {
+                console.error('IndexedDB failed to open:', request.error);
+                this.indexedDBSupported = false;
+                resolve();
+            };
+            
+            request.onsuccess = () => {
+                this.db = request.result;
+                this.indexedDBSupported = true;
+                console.log('IndexedDB initialized successfully');
+                resolve();
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                
+                // Create object store for photos
+                if (!db.objectStoreNames.contains('photos')) {
+                    const photoStore = db.createObjectStore('photos', { keyPath: 'taskKey' });
+                    photoStore.createIndex('taskKey', 'taskKey', { unique: true });
+                }
+            };
+        });
+    }
+
+    // Store photo in IndexedDB
+    async storePhotoInIndexedDB(taskKey, photoData) {
+        if (!this.indexedDBSupported || !this.db) {
+            throw new Error('IndexedDB not available');
+        }
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['photos'], 'readwrite');
+            const store = transaction.objectStore('photos');
+            
+            const photoRecord = {
+                taskKey: taskKey,
+                data: photoData,
+                timestamp: Date.now()
+            };
+            
+            const request = store.put(photoRecord);
+            
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // Retrieve photo from IndexedDB
+    async getPhotoFromIndexedDB(taskKey) {
+        if (!this.indexedDBSupported || !this.db) {
+            return null;
+        }
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['photos'], 'readonly');
+            const store = transaction.objectStore('photos');
+            const request = store.get(taskKey);
+            
+            request.onsuccess = () => {
+                const result = request.result;
+                resolve(result ? result.data : null);
+            };
+            
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // Get all photos from IndexedDB
+    async getAllPhotosFromIndexedDB() {
+        if (!this.indexedDBSupported || !this.db) {
+            return {};
+        }
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['photos'], 'readonly');
+            const store = transaction.objectStore('photos');
+            const request = store.getAll();
+            
+            request.onsuccess = () => {
+                const results = request.result;
+                const photos = {};
+                results.forEach(photo => {
+                    photos[photo.taskKey] = photo.data;
+                });
+                resolve(photos);
+            };
+            
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // Delete photo from IndexedDB
+    async deletePhotoFromIndexedDB(taskKey) {
+        if (!this.indexedDBSupported || !this.db) {
+            return;
+        }
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['photos'], 'readwrite');
+            const store = transaction.objectStore('photos');
+            const request = store.delete(taskKey);
+            
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
     }
 
     setupEventListeners() {
@@ -1782,7 +1928,23 @@ class MuseumCheckApp {
         }
     }
 
+    // Load photos from IndexedDB if available, fallback to localStorage
+    async loadTaskPhotosAsync() {
+        if (this.indexedDBSupported) {
+            try {
+                return await this.getAllPhotosFromIndexedDB();
+            } catch (error) {
+                console.error('Failed to load photos from IndexedDB:', error);
+                return this.loadTaskPhotos(); // Fallback to localStorage
+            }
+        } else {
+            return this.loadTaskPhotos();
+        }
+    }
+
     saveTaskPhotos() {
+        // This method is kept for backward compatibility
+        // New photos should be saved using saveTaskPhotoAsync
         try {
             localStorage.setItem('taskPhotos', JSON.stringify(this.taskPhotos));
         } catch (error) {
@@ -1793,6 +1955,26 @@ class MuseumCheckApp {
             } else {
                 alert('保存照片时发生错误，请重试。');
             }
+        }
+    }
+
+    // Save individual photo using IndexedDB if available
+    async saveTaskPhotoAsync(taskKey, photoData) {
+        if (this.indexedDBSupported) {
+            try {
+                await this.storePhotoInIndexedDB(taskKey, photoData);
+                // Also update in-memory cache
+                this.taskPhotos[taskKey] = photoData;
+                return true;
+            } catch (error) {
+                console.error('Failed to save photo to IndexedDB:', error);
+                return false;
+            }
+        } else {
+            // Fallback to localStorage
+            this.taskPhotos[taskKey] = photoData;
+            this.saveTaskPhotos();
+            return true;
         }
     }
 
@@ -2306,32 +2488,42 @@ class MuseumCheckApp {
         const file = event.target.files[0];
         if (!file) return;
         
-        // Check file size (limit to 4MB to prevent localStorage issues)
-        const maxSize = 4 * 1024 * 1024; // 4MB in bytes
-        if (file.size > maxSize) {
-            alert('图片文件太大，请选择小于4MB的图片。');
-            return;
+        // Show loading indicator while processing large files
+        const container = event.target.closest('.checklist-item');
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'photo-loading';
+        loadingIndicator.textContent = '处理中...';
+        loadingIndicator.style.cssText = 'padding: 10px; text-align: center; color: #666; font-style: italic;';
+        
+        const photoUpload = container.querySelector('.photo-upload-section');
+        if (photoUpload) {
+            photoUpload.appendChild(loadingIndicator);
         }
         
         const taskKey = event.target.dataset.taskKey;
         const reader = new FileReader();
         
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
-                this.taskPhotos[taskKey] = e.target.result;
-                this.saveTaskPhotos();
+                const photoData = e.target.result;
+                
+                // Save photo using IndexedDB if available, fallback to localStorage
+                const success = await this.saveTaskPhotoAsync(taskKey, photoData);
+                
+                if (!success) {
+                    alert('照片保存失败，请重试。');
+                    return;
+                }
                 
                 // Update the display
-                const container = event.target.closest('.checklist-item');
                 const existingPhoto = container.querySelector('.task-photo');
                 if (existingPhoto) {
-                    existingPhoto.src = e.target.result;
+                    existingPhoto.src = photoData;
                 } else {
-                    const photoUpload = container.querySelector('.photo-upload-section');
                     if (photoUpload) {
                         const img = document.createElement('img');
                         img.className = 'task-photo';
-                        img.src = e.target.result;
+                        img.src = photoData;
                         img.alt = '任务照片';
                         photoUpload.appendChild(img);
                     }
@@ -2339,11 +2531,20 @@ class MuseumCheckApp {
             } catch (error) {
                 console.error('Failed to process photo upload:', error);
                 alert('照片上传失败，请重试。');
+            } finally {
+                // Remove loading indicator
+                if (loadingIndicator && loadingIndicator.parentNode) {
+                    loadingIndicator.parentNode.removeChild(loadingIndicator);
+                }
             }
         };
         
         reader.onerror = () => {
             alert('读取图片文件失败，请重试。');
+            // Remove loading indicator
+            if (loadingIndicator && loadingIndicator.parentNode) {
+                loadingIndicator.parentNode.removeChild(loadingIndicator);
+            }
         };
         
         reader.readAsDataURL(file);
