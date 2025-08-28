@@ -2147,7 +2147,7 @@ class MuseumCheckApp {
         
         // Calculate dynamic height based on number of completed tasks
         const baseHeight = 600; // Header and footer space
-        const taskHeight = 220; // Approximate height per task (including spacing)
+        const taskHeight = 250; // More conservative estimate per task (including spacing and potential multi-line text)
         const minHeight = 1350; // Minimum height for good proportions
         const calculatedHeight = baseHeight + (completedTasks.length * taskHeight);
         const dynamicHeight = Math.max(minHeight, calculatedHeight);
@@ -2270,14 +2270,11 @@ class MuseumCheckApp {
         });
         
         completedTasks.forEach((task, taskIndex) => {
-            // Removed the height overflow check since we now have dynamic height
-            // if (yPosition > canvas.height - 250) return; // This was preventing tasks from showing
-            
             const taskNumber = taskIndex + 1;
             const originalIndex = completed[taskIndex]; // Get the original task index
             const photo = photoMap.get(originalIndex);
             
-            // Draw task text
+            // Calculate required height for this task before drawing
             const words = task.split('');
             let line = '';
             const lines = [];
@@ -2295,7 +2292,23 @@ class MuseumCheckApp {
             }
             lines.push(line);
             
-            // Draw text
+            // Check if we need more canvas height for this task
+            const requiredHeight = yPosition + Math.max(taskSpacing, lines.length * 35 + 60) + 200; // 200px for footer
+            if (requiredHeight > canvas.height) {
+                // Expand canvas height dynamically
+                const newHeight = requiredHeight;
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                canvas.height = newHeight;
+                
+                // Restore existing content
+                ctx.putImageData(imageData, 0, 0);
+                
+                // Reset drawing style after canvas resize
+                ctx.font = '26px "PingFang SC", "Microsoft YaHei", sans-serif';
+                ctx.fillStyle = '#333';
+            }
+            
+            // Draw task text
             let textY = yPosition;
             lines.forEach((lineText, lineIndex) => {
                 if (lineIndex === 0) {
@@ -2333,13 +2346,16 @@ class MuseumCheckApp {
                 const drawY = photoY + (photoSize - drawHeight) / 2;
                 
                 ctx.drawImage(photo, drawX, drawY, drawWidth, drawHeight);
+                
+                // Reset text style after drawing image
+                ctx.fillStyle = '#333';
             }
             
             yPosition += Math.max(taskSpacing, lines.length * 35 + 60); // Added more spacing between tasks
         });
         
-        // Draw footer
-        this.drawPosterFooter(ctx, canvas);
+        // Draw footer at the end of content, not at fixed position
+        this.drawPosterFooter(ctx, canvas, yPosition + 40);
         
         // Show preview
         canvas.style.display = 'block';
@@ -2358,8 +2374,8 @@ class MuseumCheckApp {
         });
     }
 
-    drawPosterFooter(ctx, canvas) {
-        const yPosition = canvas.height - 140;
+    drawPosterFooter(ctx, canvas, customYPosition = null) {
+        const yPosition = customYPosition || (canvas.height - 140);
         ctx.fillStyle = '#2c5aa0';
         ctx.font = '24px "PingFang SC", "Microsoft YaHei", sans-serif';
         ctx.textAlign = 'center';
@@ -2373,6 +2389,12 @@ class MuseumCheckApp {
         // Add emoji decoration
         ctx.font = '32px Arial';
         ctx.fillText('🎨 📸 🎉', canvas.width / 2, yPosition + 70);
+        
+        // Update canvas height if footer extends beyond current height
+        const footerBottom = yPosition + 100;
+        if (footerBottom > canvas.height) {
+            canvas.height = footerBottom + 20;
+        }
     }
 
     downloadPoster(museum) {
