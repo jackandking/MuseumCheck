@@ -2263,38 +2263,31 @@ class MuseumCheckApp {
                 });
             });
 
-            // Add event listeners for edit buttons
-            const editButtons = document.querySelectorAll('.edit-item-btn');
-            editButtons.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.editChecklistItem(e.target);
-                });
-            });
-
-            // Add event listeners for delete buttons
-            const deleteButtons = document.querySelectorAll('.delete-item-btn');
-            deleteButtons.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (!btn.disabled) {
-                        this.deleteChecklistItem(e.target);
-                    }
-                });
-            });
-
-            // Add event listeners for add item buttons
-            const addButtons = document.querySelectorAll('.add-item-btn');
-            addButtons.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.addChecklistItem(e.target);
-                });
-            });
-            
-            // Use event delegation for photo uploads to avoid duplicate listeners
+            // Use event delegation for edit, delete, and add buttons to avoid duplicate listeners
             const modalContent = document.getElementById('modalContent');
             if (modalContent) {
+                // Remove any existing button event listeners to prevent duplicates
+                modalContent.removeEventListener('click', this.handleButtonClickDelegate);
+                
+                // Add delegated event listener for all button clicks
+                this.handleButtonClickDelegate = (e) => {
+                    if (e.target.classList.contains('edit-item-btn')) {
+                        e.stopPropagation();
+                        this.editChecklistItem(e.target);
+                    } else if (e.target.classList.contains('delete-item-btn')) {
+                        e.stopPropagation();
+                        if (!e.target.disabled) {
+                            this.deleteChecklistItem(e.target);
+                        }
+                    } else if (e.target.classList.contains('add-item-btn')) {
+                        e.stopPropagation();
+                        this.addChecklistItem(e.target);
+                    }
+                };
+                
+                modalContent.addEventListener('click', this.handleButtonClickDelegate);
+                
+                // Use event delegation for photo uploads to avoid duplicate listeners
                 // Remove any existing photo event listeners to prevent duplicates
                 modalContent.removeEventListener('change', this.handlePhotoUploadDelegate);
                 modalContent.removeEventListener('click', this.handlePhotoLabelClickDelegate);
