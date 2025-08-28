@@ -1744,30 +1744,63 @@ class MuseumCheckApp {
     }
 
     loadVisitedMuseums() {
-        const saved = localStorage.getItem('visitedMuseums');
-        return saved ? JSON.parse(saved) : [];
+        try {
+            const saved = localStorage.getItem('visitedMuseums');
+            return saved ? JSON.parse(saved) : [];
+        } catch (error) {
+            console.error('Failed to load visited museums:', error);
+            return [];
+        }
     }
 
     saveVisitedMuseums() {
-        localStorage.setItem('visitedMuseums', JSON.stringify(this.visitedMuseums));
+        try {
+            localStorage.setItem('visitedMuseums', JSON.stringify(this.visitedMuseums));
+        } catch (error) {
+            console.error('Failed to save visited museums:', error);
+        }
     }
 
     loadMuseumChecklists() {
-        const saved = localStorage.getItem('museumChecklists');
-        return saved ? JSON.parse(saved) : {};
+        try {
+            const saved = localStorage.getItem('museumChecklists');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            console.error('Failed to load museum checklists:', error);
+            return {};
+        }
     }
 
     loadTaskPhotos() {
-        const saved = localStorage.getItem('taskPhotos');
-        return saved ? JSON.parse(saved) : {};
+        try {
+            const saved = localStorage.getItem('taskPhotos');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            console.error('Failed to load task photos:', error);
+            return {};
+        }
     }
 
     saveTaskPhotos() {
-        localStorage.setItem('taskPhotos', JSON.stringify(this.taskPhotos));
+        try {
+            localStorage.setItem('taskPhotos', JSON.stringify(this.taskPhotos));
+        } catch (error) {
+            console.error('Failed to save task photos:', error);
+            // Handle localStorage quota exceeded or other errors
+            if (error.name === 'QuotaExceededError') {
+                alert('存储空间不足，无法保存更多照片。请尝试删除一些旧照片。');
+            } else {
+                alert('保存照片时发生错误，请重试。');
+            }
+        }
     }
 
     saveMuseumChecklists() {
-        localStorage.setItem('museumChecklists', JSON.stringify(this.museumChecklists));
+        try {
+            localStorage.setItem('museumChecklists', JSON.stringify(this.museumChecklists));
+        } catch (error) {
+            console.error('Failed to save museum checklists:', error);
+        }
     }
 
     renderMuseums() {
@@ -2050,26 +2083,44 @@ class MuseumCheckApp {
         const file = event.target.files[0];
         if (!file) return;
         
+        // Check file size (limit to 2MB to prevent localStorage issues)
+        const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+        if (file.size > maxSize) {
+            alert('图片文件太大，请选择小于2MB的图片。');
+            return;
+        }
+        
         const taskKey = event.target.dataset.taskKey;
         const reader = new FileReader();
         
         reader.onload = (e) => {
-            this.taskPhotos[taskKey] = e.target.result;
-            this.saveTaskPhotos();
-            
-            // Update the display
-            const container = event.target.closest('.checklist-item');
-            const existingPhoto = container.querySelector('.task-photo');
-            if (existingPhoto) {
-                existingPhoto.src = e.target.result;
-            } else {
-                const photoUpload = container.querySelector('.photo-upload-section');
-                const img = document.createElement('img');
-                img.className = 'task-photo';
-                img.src = e.target.result;
-                img.alt = '任务照片';
-                photoUpload.appendChild(img);
+            try {
+                this.taskPhotos[taskKey] = e.target.result;
+                this.saveTaskPhotos();
+                
+                // Update the display
+                const container = event.target.closest('.checklist-item');
+                const existingPhoto = container.querySelector('.task-photo');
+                if (existingPhoto) {
+                    existingPhoto.src = e.target.result;
+                } else {
+                    const photoUpload = container.querySelector('.photo-upload-section');
+                    if (photoUpload) {
+                        const img = document.createElement('img');
+                        img.className = 'task-photo';
+                        img.src = e.target.result;
+                        img.alt = '任务照片';
+                        photoUpload.appendChild(img);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to process photo upload:', error);
+                alert('照片上传失败，请重试。');
             }
+        };
+        
+        reader.onerror = () => {
+            alert('读取图片文件失败，请重试。');
         };
         
         reader.readAsDataURL(file);
