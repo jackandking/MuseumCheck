@@ -1700,6 +1700,7 @@ class MuseumCheckApp {
         this.visitedMuseums = this.loadVisitedMuseums();
         this.museumChecklists = this.loadMuseumChecklists();
         this.taskPhotos = this.loadTaskPhotos();
+        this.customChecklists = this.loadCustomChecklists();
         this.init();
     }
 
@@ -1792,6 +1793,24 @@ class MuseumCheckApp {
             } else {
                 alert('保存照片时发生错误，请重试。');
             }
+        }
+    }
+
+    loadCustomChecklists() {
+        try {
+            const saved = localStorage.getItem('customChecklists');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            console.error('Failed to load custom checklists:', error);
+            return {};
+        }
+    }
+
+    saveCustomChecklists() {
+        try {
+            localStorage.setItem('customChecklists', JSON.stringify(this.customChecklists));
+        } catch (error) {
+            console.error('Failed to save custom checklists:', error);
         }
     }
 
@@ -1946,12 +1965,17 @@ class MuseumCheckApp {
     renderChecklist(museumId, type, items) {
         const checklistKey = `${museumId}-${type}-${this.currentAge}`;
         const completed = this.museumChecklists[checklistKey] || [];
+        
+        // Get custom checklist items if they exist, otherwise use default items
+        const customItems = this.customChecklists[checklistKey];
+        const displayItems = customItems ? customItems.map(item => item.text) : items;
 
-        return items.map((item, index) => {
+        const checklistItems = displayItems.map((item, index) => {
             const itemId = `${checklistKey}-${index}`;
             const photoKey = `${checklistKey}-${index}`;
             const isCompleted = completed.includes(index);
             const hasPhoto = this.taskPhotos[photoKey];
+            const isCustom = customItems && customItems[index] && customItems[index].isCustom;
             
             let photoUpload = '';
             if (type === 'child' && isCompleted) {
@@ -1968,14 +1992,27 @@ class MuseumCheckApp {
             }
             
             return `
-                <div class="checklist-item ${isCompleted ? 'completed' : ''}">
+                <div class="checklist-item ${isCompleted ? 'completed' : ''}" data-checklist-key="${checklistKey}" data-item-index="${index}">
                     <input type="checkbox" id="${itemId}" ${isCompleted ? 'checked' : ''} 
                            data-checklist="${checklistKey}" data-index="${index}">
-                    <label for="${itemId}">${item}</label>
+                    <label for="${itemId}" class="checklist-label" data-original-text="${item}">${item}</label>
+                    <div class="checklist-controls">
+                        <button class="edit-item-btn" title="编辑" onclick="event.stopPropagation()">✏️</button>
+                        <button class="delete-item-btn" title="删除" onclick="event.stopPropagation()" ${!isCustom && !customItems ? 'disabled' : ''}>🗑️</button>
+                    </div>
                     ${photoUpload}
                 </div>
             `;
-        }).join('') + this.addChecklistEventListeners();
+        }).join('');
+
+        // Add "Add new item" button
+        const addButton = `
+            <div class="add-item-section">
+                <button class="add-item-btn" data-checklist-key="${checklistKey}">➕ 添加新项目</button>
+            </div>
+        `;
+
+        return checklistItems + addButton + this.addChecklistEventListeners();
     }
 
     addChecklistEventListeners() {
@@ -2043,6 +2080,35 @@ class MuseumCheckApp {
                     }
                 });
             });
+
+            // Add event listeners for edit buttons
+            const editButtons = document.querySelectorAll('.edit-item-btn');
+            editButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.editChecklistItem(e.target);
+                });
+            });
+
+            // Add event listeners for delete buttons
+            const deleteButtons = document.querySelectorAll('.delete-item-btn');
+            deleteButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (!btn.disabled) {
+                        this.deleteChecklistItem(e.target);
+                    }
+                });
+            });
+
+            // Add event listeners for add item buttons
+            const addButtons = document.querySelectorAll('.add-item-btn');
+            addButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.addChecklistItem(e.target);
+                });
+            });
             
             // Use event delegation for photo uploads to avoid duplicate listeners
             const modalContent = document.getElementById('modalContent');
@@ -2077,6 +2143,163 @@ class MuseumCheckApp {
 
     closeModal() {
         document.getElementById('museumModal').classList.add('hidden');
+    }
+
+    editChecklistItem(button) {
+        const checklistItem = button.closest('.checklist-item');
+        const label = checklistItem.querySelector('.checklist-label');
+        const currentText = label.textContent;
+        const checklistKey = checklistItem.dataset.checklistKey;
+        const itemIndex = parseInt(checklistItem.dataset.itemIndex);
+
+        // Create input field for editing
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'editing-input';
+        input.value = currentText;
+        
+        // Replace label with input
+        label.style.display = 'none';
+        label.parentNode.insertBefore(input, label.nextSibling);
+        
+        input.focus();
+        input.select();
+
+        // Save on Enter or blur
+        const saveEdit = () => {
+            const newText = input.value.trim();
+            if (newText && newText !== currentText) {
+                this.updateChecklistItem(checklistKey, itemIndex, newText);
+                label.textContent = newText;
+            }
+            
+            input.remove();
+            label.style.display = '';
+        };
+
+        // Cancel on Escape
+        const cancelEdit = () => {
+            input.remove();
+            label.style.display = '';
+        };
+
+        input.addEventListener('blur', saveEdit);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                saveEdit();
+            } else if (e.key === 'Escape') {
+                cancelEdit();
+            }
+        });
+    }
+
+    deleteChecklistItem(button) {
+        const checklistItem = button.closest('.checklist-item');
+        const checklistKey = checklistItem.dataset.checklistKey;
+        const itemIndex = parseInt(checklistItem.dataset.itemIndex);
+        
+        if (confirm('确定要删除这个项目吗？')) {
+            this.removeChecklistItem(checklistKey, itemIndex);
+            this.refreshCurrentChecklist();
+        }
+    }
+
+    addChecklistItem(button) {
+        const checklistKey = button.dataset.checklistKey;
+        const newText = prompt('请输入新的清单项目：');
+        
+        if (newText && newText.trim()) {
+            this.insertChecklistItem(checklistKey, newText.trim());
+            this.refreshCurrentChecklist();
+        }
+    }
+
+    updateChecklistItem(checklistKey, itemIndex, newText) {
+        // Initialize custom checklist if it doesn't exist
+        if (!this.customChecklists[checklistKey]) {
+            this.initializeCustomChecklist(checklistKey);
+        }
+
+        // Update the item text
+        this.customChecklists[checklistKey][itemIndex] = {
+            text: newText,
+            isCustom: this.customChecklists[checklistKey][itemIndex] ? 
+                     this.customChecklists[checklistKey][itemIndex].isCustom : false,
+            originalIndex: this.customChecklists[checklistKey][itemIndex] ? 
+                          this.customChecklists[checklistKey][itemIndex].originalIndex : itemIndex
+        };
+
+        this.saveCustomChecklists();
+    }
+
+    removeChecklistItem(checklistKey, itemIndex) {
+        if (!this.customChecklists[checklistKey]) {
+            this.initializeCustomChecklist(checklistKey);
+        }
+
+        // Remove item from custom checklist
+        this.customChecklists[checklistKey].splice(itemIndex, 1);
+        
+        // Update completion tracking indices
+        const completed = this.museumChecklists[checklistKey] || [];
+        const newCompleted = completed.map(index => {
+            if (index === itemIndex) return -1; // Mark for removal
+            return index > itemIndex ? index - 1 : index; // Shift down indices
+        }).filter(index => index !== -1);
+        
+        this.museumChecklists[checklistKey] = newCompleted;
+        
+        this.saveCustomChecklists();
+        this.saveMuseumChecklists();
+    }
+
+    insertChecklistItem(checklistKey, newText) {
+        if (!this.customChecklists[checklistKey]) {
+            this.initializeCustomChecklist(checklistKey);
+        }
+
+        // Add new custom item
+        this.customChecklists[checklistKey].push({
+            text: newText,
+            isCustom: true
+        });
+
+        this.saveCustomChecklists();
+    }
+
+    initializeCustomChecklist(checklistKey) {
+        // Parse checklist key to get original items
+        const keyParts = checklistKey.split('-');
+        const ageGroup = keyParts[keyParts.length - 1];
+        const ageGroupStart = keyParts[keyParts.length - 2];
+        const fullAgeGroup = `${ageGroupStart}-${ageGroup}`;
+        const checklistType = keyParts[keyParts.length - 3];
+        const museumId = keyParts.slice(0, keyParts.length - 3).join('-');
+        
+        const museum = MUSEUMS.find(m => m.id === museumId);
+        const originalItems = museum && museum.checklists[checklistType] && 
+                            museum.checklists[checklistType][fullAgeGroup] ? 
+                            museum.checklists[checklistType][fullAgeGroup] : [];
+
+        // Initialize with original items
+        this.customChecklists[checklistKey] = originalItems.map((item, index) => ({
+            text: item,
+            isCustom: false,
+            originalIndex: index
+        }));
+    }
+
+    refreshCurrentChecklist() {
+        // Re-render the current modal content
+        const modal = document.getElementById('museumModal');
+        if (!modal.classList.contains('hidden')) {
+            const modalTitle = document.getElementById('modalTitle');
+            const museumName = modalTitle.textContent;
+            const museum = MUSEUMS.find(m => m.name === museumName);
+            if (museum) {
+                this.openMuseumModal(museum);
+            }
+        }
     }
 
     handlePhotoUpload(event) {
