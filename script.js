@@ -2982,5 +2982,5 @@ class MuseumCheckApp {
 
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new MuseumCheckApp();
+    window.app = new MuseumCheckApp();
 });
