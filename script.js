@@ -2220,9 +2220,52 @@ class MuseumCheckApp {
             ctx.font = '28px "PingFang SC", "Microsoft YaHei", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText('还没有完成的任务，继续加油！', canvas.width / 2, yPosition);
+            yPosition += 60; // Add some space after the message
             
-            // Footer for no tasks case
-            this.drawPosterFooter(ctx, canvas);
+            // Footer for no tasks case - position after content
+            const finalY = this.drawPosterFooter(ctx, canvas, yPosition);
+            
+            // Resize canvas to fit actual content + margins
+            const newHeight = Math.max(finalY + 20, 400);
+            if (newHeight < canvas.height) {
+                canvas.height = newHeight;
+                // Redraw everything on the resized canvas
+                ctx.fillStyle = '#f8f9fa';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Redraw border
+                ctx.strokeStyle = '#2c5aa0';
+                ctx.lineWidth = 8;
+                ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+                
+                // Redraw title section
+                ctx.fillStyle = '#2c5aa0';
+                ctx.fillRect(40, 40, canvas.width - 80, 120);
+                
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 42px "PingFang SC", "Microsoft YaHei", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('🏛️ 博物馆打卡', canvas.width / 2, 110);
+                
+                // Redraw museum name
+                ctx.fillStyle = '#2c5aa0';
+                ctx.font = 'bold 36px "PingFang SC", "Microsoft YaHei", sans-serif';
+                ctx.fillText(museum.name, canvas.width / 2, 200);
+                
+                // Redraw date and location
+                ctx.font = '24px "PingFang SC", "Microsoft YaHei", sans-serif';
+                ctx.fillStyle = '#666';
+                ctx.fillText(`📅 ${visitDate}  📍 ${museum.location}`, canvas.width / 2, 240);
+                
+                // Redraw no tasks message
+                ctx.fillStyle = '#666';
+                ctx.font = '28px "PingFang SC", "Microsoft YaHei", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('还没有完成的任务，继续加油！', canvas.width / 2, 300);
+                
+                // Redraw footer
+                this.drawPosterFooter(ctx, canvas, 360);
+            }
         }
         
         // Show preview
@@ -2338,8 +2381,31 @@ class MuseumCheckApp {
             yPosition += Math.max(taskSpacing, lines.length * 35 + 60); // Added more spacing between tasks
         });
         
-        // Draw footer
-        this.drawPosterFooter(ctx, canvas);
+        // Draw footer at actual content end position and get final height
+        const finalY = this.drawPosterFooter(ctx, canvas, yPosition);
+        
+        // Resize canvas to fit actual content + margins to eliminate blank space
+        const newHeight = Math.max(finalY + 20, 400); // Minimum reasonable height
+        if (newHeight < canvas.height) {
+            // Create new canvas with correct height
+            const newCanvas = document.createElement('canvas');
+            newCanvas.width = canvas.width;
+            newCanvas.height = newHeight;
+            const newCtx = newCanvas.getContext('2d');
+            
+            // Copy the content to the new canvas
+            newCtx.drawImage(canvas, 0, 0);
+            
+            // Update the border to fit new height
+            newCtx.strokeStyle = '#2c5aa0';
+            newCtx.lineWidth = 8;
+            newCtx.strokeRect(20, 20, newCanvas.width - 40, newCanvas.height - 40);
+            
+            // Replace the original canvas content
+            canvas.height = newHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(newCanvas, 0, 0);
+        }
         
         // Show preview
         canvas.style.display = 'block';
@@ -2358,8 +2424,9 @@ class MuseumCheckApp {
         });
     }
 
-    drawPosterFooter(ctx, canvas) {
-        const yPosition = canvas.height - 140;
+    drawPosterFooter(ctx, canvas, contentEndY) {
+        // Position footer right after content with some padding, instead of fixed position from canvas bottom
+        const yPosition = contentEndY ? contentEndY + 40 : canvas.height - 140;
         ctx.fillStyle = '#2c5aa0';
         ctx.font = '24px "PingFang SC", "Microsoft YaHei", sans-serif';
         ctx.textAlign = 'center';
@@ -2373,6 +2440,9 @@ class MuseumCheckApp {
         // Add emoji decoration
         ctx.font = '32px Arial';
         ctx.fillText('🎨 📸 🎉', canvas.width / 2, yPosition + 70);
+        
+        // Return the final Y position after footer for canvas resizing
+        return yPosition + 70 + 40; // footer height + bottom padding
     }
 
     downloadPoster(museum) {
