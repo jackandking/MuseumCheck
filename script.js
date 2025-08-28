@@ -2139,9 +2139,22 @@ class MuseumCheckApp {
         const ctx = canvas.getContext('2d');
         const preview = document.getElementById('posterPreview');
         
+        // Get completed child tasks to calculate required height
+        const checklistKey = `${museum.id}-child-${this.currentAge}`;
+        const completed = this.museumChecklists[checklistKey] || [];
+        const childTasks = museum.checklists.child[this.currentAge];
+        const completedTasks = completed.map(index => childTasks[index]).filter(Boolean);
+        
+        // Calculate dynamic height based on number of completed tasks
+        const baseHeight = 600; // Header and footer space
+        const taskHeight = 220; // Approximate height per task (including spacing)
+        const minHeight = 1350; // Minimum height for good proportions
+        const calculatedHeight = baseHeight + (completedTasks.length * taskHeight);
+        const dynamicHeight = Math.max(minHeight, calculatedHeight);
+        
         // Set canvas size for good quality (Instagram/WeChat friendly)
         canvas.width = 1080;
-        canvas.height = 1350;
+        canvas.height = dynamicHeight;
         
         // Background
         ctx.fillStyle = '#f8f9fa';
@@ -2172,11 +2185,7 @@ class MuseumCheckApp {
         ctx.fillStyle = '#666';
         ctx.fillText(`📅 ${visitDate}  📍 ${museum.location}`, canvas.width / 2, 240);
         
-        // Get completed child tasks
-        const checklistKey = `${museum.id}-child-${this.currentAge}`;
-        const completed = this.museumChecklists[checklistKey] || [];
-        const childTasks = museum.checklists.child[this.currentAge];
-        const completedTasks = completed.map(index => childTasks[index]).filter(Boolean);
+        // Completed tasks already calculated above for dynamic height
         
         // Collect photos for completed tasks
         const taskPhotos = [];
@@ -2261,7 +2270,8 @@ class MuseumCheckApp {
         });
         
         completedTasks.forEach((task, taskIndex) => {
-            if (yPosition > canvas.height - 250) return; // Prevent overflow
+            // Removed the height overflow check since we now have dynamic height
+            // if (yPosition > canvas.height - 250) return; // This was preventing tasks from showing
             
             const taskNumber = taskIndex + 1;
             const originalIndex = completed[taskIndex]; // Get the original task index
@@ -2325,7 +2335,7 @@ class MuseumCheckApp {
                 ctx.drawImage(photo, drawX, drawY, drawWidth, drawHeight);
             }
             
-            yPosition += Math.max(taskSpacing, lines.length * 35 + 40);
+            yPosition += Math.max(taskSpacing, lines.length * 35 + 60); // Added more spacing between tasks
         });
         
         // Draw footer
