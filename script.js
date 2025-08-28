@@ -2332,9 +2332,6 @@ class MuseumCheckApp {
 
     async drawTasksWithPhotos(ctx, completedTasks, taskPhotos, completed, startY, canvas, preview, museum) {
         let yPosition = startY;
-        const maxWidth = canvas.width - 160;
-        const photoSize = 180; // Size for photos
-        const taskSpacing = 200; // Space for each task (text + photo)
         
         ctx.font = '26px "PingFang SC", "Microsoft YaHei", sans-serif';
         ctx.fillStyle = '#333';
@@ -2350,22 +2347,44 @@ class MuseumCheckApp {
         });
         
         const loadedPhotos = await Promise.all(imagePromises);
-        const photoMap = new Map();
-        loadedPhotos.forEach(photo => {
-            if (photo.img) {
-                photoMap.set(photo.index, photo.img);
-            }
-        });
+        const validPhotos = loadedPhotos.filter(photo => photo.img);
+        const photoCount = validPhotos.length;
+        
+        // Calculate layout parameters based on photo count
+        const hasPhotos = photoCount > 0;
+        const taskListWidth = hasPhotos ? canvas.width * 0.5 : canvas.width - 160; // Left half for tasks if photos exist
+        const photoAreaStartX = hasPhotos ? canvas.width * 0.52 : 0; // Right half for photos
+        const photoAreaWidth = hasPhotos ? canvas.width * 0.45 : 0;
+        
+        // Calculate compact photo grid layout
+        let photosPerRow = 2;
+        let photoSize = 120;
+        
+        if (photoCount === 1) {
+            photosPerRow = 1;
+            photoSize = 140;
+        } else if (photoCount <= 4) {
+            photosPerRow = 2;
+            photoSize = Math.min(110, (photoAreaWidth - 30) / 2);
+        } else if (photoCount <= 9) {
+            photosPerRow = 3;
+            photoSize = Math.min(90, (photoAreaWidth - 40) / 3);
+        } else {
+            photosPerRow = 4;
+            photoSize = Math.min(75, (photoAreaWidth - 50) / 4);
+        }
+        
+        const photoRows = Math.ceil(photoCount / photosPerRow);
+        const photoGridHeight = photoRows * (photoSize + 15) + 30; // Extra padding
+        
+        // Draw task list on the left with compact spacing
+        const taskSpacing = 45; // Much more compact than 200px
+        let taskEndY = yPosition;
         
         completedTasks.forEach((task, taskIndex) => {
-            // Removed the height overflow check since we now have dynamic height
-            // if (yPosition > canvas.height - 250) return; // This was preventing tasks from showing
-            
             const taskNumber = taskIndex + 1;
-            const originalIndex = completed[taskIndex]; // Get the original task index
-            const photo = photoMap.get(originalIndex);
             
-            // Draw task text
+            // Draw task text with word wrapping
             const words = task.split('');
             let line = '';
             const lines = [];
@@ -2374,7 +2393,7 @@ class MuseumCheckApp {
                 const testLine = line + words[i];
                 const metrics = ctx.measureText(testLine);
                 
-                if (metrics.width > (photo ? maxWidth - photoSize - 20 : maxWidth) && line !== '') {
+                if (metrics.width > (taskListWidth - 120) && line !== '') {
                     lines.push(line);
                     line = words[i];
                 } else {
@@ -2383,7 +2402,7 @@ class MuseumCheckApp {
             }
             lines.push(line);
             
-            // Draw text
+            // Draw task text
             let textY = yPosition;
             lines.forEach((lineText, lineIndex) => {
                 if (lineIndex === 0) {
@@ -2394,37 +2413,67 @@ class MuseumCheckApp {
                 textY += 35;
             });
             
-            // Draw photo if available
-            if (photo) {
-                const photoX = canvas.width - 260; // Right side
-                const photoY = yPosition - 20;
-                
-                // Draw photo background
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(photoX - 5, photoY - 5, photoSize + 10, photoSize + 10);
-                ctx.strokeStyle = '#ddd';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(photoX - 5, photoY - 5, photoSize + 10, photoSize + 10);
-                
-                // Calculate aspect ratio and draw photo
-                const aspectRatio = photo.width / photo.height;
-                let drawWidth = photoSize;
-                let drawHeight = photoSize;
-                
-                if (aspectRatio > 1) {
-                    drawHeight = photoSize / aspectRatio;
-                } else {
-                    drawWidth = photoSize * aspectRatio;
-                }
-                
-                const drawX = photoX + (photoSize - drawWidth) / 2;
-                const drawY = photoY + (photoSize - drawHeight) / 2;
-                
-                ctx.drawImage(photo, drawX, drawY, drawWidth, drawHeight);
-            }
-            
-            yPosition += Math.max(taskSpacing, lines.length * 35 + 60); // Added more spacing between tasks
+            yPosition += Math.max(taskSpacing, lines.length * 35 + 20);
         });
+        
+        taskEndY = yPosition;
+        
+        // Draw photo grid on the right side if photos exist
+        if (hasPhotos) {
+            // Add a small title above the photo grid
+            ctx.font = 'bold 24px "PingFang SC", "Microsoft YaHei", sans-serif';
+            ctx.fillStyle = '#666';
+            ctx.textAlign = 'center';
+            ctx.fillText('📸 探索留念', photoAreaStartX + photoAreaWidth / 2, startY + 40);
+            
+            // Reset font for photo labels
+            ctx.font = '18px "PingFang SC", "Microsoft YaHei", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#333';
+            
+            let photoGridStartY = startY + 70;
+            let photoIndex = 0;
+            
+            for (let row = 0; row < photoRows && photoIndex < validPhotos.length; row++) {
+                for (let col = 0; col < photosPerRow && photoIndex < validPhotos.length; col++) {
+                    const photo = validPhotos[photoIndex];
+                    
+                    // Calculate photo position
+                    const spacing = 15;
+                    const photoX = photoAreaStartX + col * (photoSize + spacing);
+                    const photoY = photoGridStartY + row * (photoSize + spacing);
+                    
+                    // Draw photo background
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(photoX - 3, photoY - 3, photoSize + 6, photoSize + 6);
+                    ctx.strokeStyle = '#ddd';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(photoX - 3, photoY - 3, photoSize + 6, photoSize + 6);
+                    
+                    // Calculate aspect ratio and draw photo
+                    const aspectRatio = photo.img.width / photo.img.height;
+                    let drawWidth = photoSize;
+                    let drawHeight = photoSize;
+                    
+                    if (aspectRatio > 1) {
+                        drawHeight = photoSize / aspectRatio;
+                    } else {
+                        drawWidth = photoSize * aspectRatio;
+                    }
+                    
+                    const drawX = photoX + (photoSize - drawWidth) / 2;
+                    const drawY = photoY + (photoSize - drawHeight) / 2;
+                    
+                    ctx.drawImage(photo.img, drawX, drawY, drawWidth, drawHeight);
+                    
+                    photoIndex++;
+                }
+            }
+        }
+        
+        // Use the maximum of task end position and photo grid end position
+        const photoGridEndY = hasPhotos ? startY + 70 + photoGridHeight : startY;
+        yPosition = Math.max(taskEndY, photoGridEndY) + 40;
         
         // Draw footer at actual content end position and get final height
         const finalY = this.drawPosterFooter(ctx, canvas, yPosition);
