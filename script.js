@@ -2011,23 +2011,32 @@ class MuseumCheckApp {
                 });
             });
             
-            // Add photo upload listeners
-            const photoInputs = document.querySelectorAll('.photo-input');
-            photoInputs.forEach(input => {
-                input.addEventListener('change', (e) => {
-                    this.handlePhotoUpload(e);
-                });
-            });
-            
-            // Add photo label click listeners
-            const photoLabels = document.querySelectorAll('.photo-upload-label');
-            photoLabels.forEach(label => {
-                label.addEventListener('click', (e) => {
-                    const inputId = label.getAttribute('for');
-                    const input = document.getElementById(inputId);
-                    if (input) input.click();
-                });
-            });
+            // Use event delegation for photo uploads to avoid duplicate listeners
+            const modalContent = document.getElementById('modalContent');
+            if (modalContent) {
+                // Remove any existing photo event listeners to prevent duplicates
+                modalContent.removeEventListener('change', this.handlePhotoUploadDelegate);
+                modalContent.removeEventListener('click', this.handlePhotoLabelClickDelegate);
+                
+                // Add delegated event listeners
+                this.handlePhotoUploadDelegate = (e) => {
+                    if (e.target.classList.contains('photo-input')) {
+                        this.handlePhotoUpload(e);
+                    }
+                };
+                
+                this.handlePhotoLabelClickDelegate = (e) => {
+                    if (e.target.classList.contains('photo-upload-label')) {
+                        e.preventDefault();
+                        const inputId = e.target.getAttribute('for');
+                        const input = document.getElementById(inputId);
+                        if (input) input.click();
+                    }
+                };
+                
+                modalContent.addEventListener('change', this.handlePhotoUploadDelegate);
+                modalContent.addEventListener('click', this.handlePhotoLabelClickDelegate);
+            }
         }, 100);
         
         return '';
@@ -2089,23 +2098,8 @@ class MuseumCheckApp {
         
         item.insertAdjacentHTML('beforeend', photoUploadHtml);
         
-        // Add event listeners for the new elements
-        const photoInput = item.querySelector('.photo-input');
-        const photoLabel = item.querySelector('.photo-upload-label');
-        
-        if (photoInput) {
-            photoInput.addEventListener('change', (e) => {
-                this.handlePhotoUpload(e);
-            });
-        }
-        
-        if (photoLabel) {
-            photoLabel.addEventListener('click', (e) => {
-                const inputId = photoLabel.getAttribute('for');
-                const input = document.getElementById(inputId);
-                if (input) input.click();
-            });
-        }
+        // Event listeners are handled by delegation in addChecklistEventListeners()
+        // No need to add individual listeners here
     }
 
     removePhotoUploadFromItem(item) {
