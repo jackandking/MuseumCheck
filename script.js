@@ -2132,6 +2132,9 @@ class MuseumCheckApp {
 
         modal.classList.remove('hidden');
         
+        // Set up checklist event listeners after modal content is rendered
+        this.addChecklistEventListeners();
+        
         // Set up poster generation
         this.setupPosterGeneration(museum);
         
@@ -2194,126 +2197,121 @@ class MuseumCheckApp {
             </div>
         `;
 
-        return checklistItems + addButton + this.addChecklistEventListeners();
+        return checklistItems + addButton;
     }
 
     addChecklistEventListeners() {
-        // This is a bit of a hack - we'll add event listeners after rendering
-        setTimeout(() => {
-            const checkboxes = document.querySelectorAll('#modalContent input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', (e) => {
-                    const checklistKey = e.target.dataset.checklist;
-                    const index = parseInt(e.target.dataset.index);
-                    
-                    if (!this.museumChecklists[checklistKey]) {
-                        this.museumChecklists[checklistKey] = [];
-                    }
-                    
-                    const completed = this.museumChecklists[checklistKey];
-                    const itemIndex = completed.indexOf(index);
-                    
-                    if (e.target.checked && itemIndex === -1) {
-                        completed.push(index);
-                    } else if (!e.target.checked && itemIndex > -1) {
-                        completed.splice(itemIndex, 1);
-                    }
-                    
-                    this.saveMuseumChecklists();
-                    
-                    // Track checklist item completion
-                    const keyParts = checklistKey.split('-');
-                    // Handle museum IDs that contain hyphens (e.g., 'forbidden-city')
-                    // The format is: museumId-type-ageGroup, where ageGroup may also contain hyphens
-                    // We need to find the last occurrence of type ('parent' or 'child') and ageGroup
-                    const ageGroup = keyParts[keyParts.length - 1]; // e.g., '6' 
-                    const ageGroupStart = keyParts[keyParts.length - 2]; // e.g., '3'
-                    const fullAgeGroup = `${ageGroupStart}-${ageGroup}`; // e.g., '3-6'
-                    const checklistType = keyParts[keyParts.length - 3]; // e.g., 'child'
-                    const museumId = keyParts.slice(0, keyParts.length - 3).join('-'); // e.g., 'forbidden-city'
-                    const museum = MUSEUMS.find(m => m.id === museumId);
-                    const itemText = museum && museum.checklists[checklistType] && museum.checklists[checklistType][fullAgeGroup] ? 
-                                   museum.checklists[checklistType][fullAgeGroup][index] : '';
-                    
-                    this.trackEvent('checklist_item_toggled', {
-                        'museum_id': museumId,
-                        'museum_name': museum ? museum.name : '',
-                        'checklist_type': checklistType,
-                        'age_group': fullAgeGroup,
-                        'item_index': index,
-                        'item_text': itemText,
-                        'completed': e.target.checked
-                    });
-                    
-                    // Update visual state and add/remove photo upload section
-                    const item = e.target.closest('.checklist-item');
-                    if (e.target.checked) {
-                        item.classList.add('completed');
-                        // Add photo upload section if this is a child task
-                        if (checklistType === 'child') {
-                            this.addPhotoUploadToItem(item, checklistKey, index);
-                        }
-                    } else {
-                        item.classList.remove('completed');
-                        // Remove photo upload section if this is a child task
-                        if (checklistType === 'child') {
-                            this.removePhotoUploadFromItem(item);
-                        }
-                    }
+        const checkboxes = document.querySelectorAll('#modalContent input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const checklistKey = e.target.dataset.checklist;
+                const index = parseInt(e.target.dataset.index);
+                
+                if (!this.museumChecklists[checklistKey]) {
+                    this.museumChecklists[checklistKey] = [];
+                }
+                
+                const completed = this.museumChecklists[checklistKey];
+                const itemIndex = completed.indexOf(index);
+                
+                if (e.target.checked && itemIndex === -1) {
+                    completed.push(index);
+                } else if (!e.target.checked && itemIndex > -1) {
+                    completed.splice(itemIndex, 1);
+                }
+                
+                this.saveMuseumChecklists();
+                
+                // Track checklist item completion
+                const keyParts = checklistKey.split('-');
+                // Handle museum IDs that contain hyphens (e.g., 'forbidden-city')
+                // The format is: museumId-type-ageGroup, where ageGroup may also contain hyphens
+                // We need to find the last occurrence of type ('parent' or 'child') and ageGroup
+                const ageGroup = keyParts[keyParts.length - 1]; // e.g., '6' 
+                const ageGroupStart = keyParts[keyParts.length - 2]; // e.g., '3'
+                const fullAgeGroup = `${ageGroupStart}-${ageGroup}`; // e.g., '3-6'
+                const checklistType = keyParts[keyParts.length - 3]; // e.g., 'child'
+                const museumId = keyParts.slice(0, keyParts.length - 3).join('-'); // e.g., 'forbidden-city'
+                const museum = MUSEUMS.find(m => m.id === museumId);
+                const itemText = museum && museum.checklists[checklistType] && museum.checklists[checklistType][fullAgeGroup] ? 
+                               museum.checklists[checklistType][fullAgeGroup][index] : '';
+                
+                this.trackEvent('checklist_item_toggled', {
+                    'museum_id': museumId,
+                    'museum_name': museum ? museum.name : '',
+                    'checklist_type': checklistType,
+                    'age_group': fullAgeGroup,
+                    'item_index': index,
+                    'item_text': itemText,
+                    'completed': e.target.checked
                 });
+                
+                // Update visual state and add/remove photo upload section
+                const item = e.target.closest('.checklist-item');
+                if (e.target.checked) {
+                    item.classList.add('completed');
+                    // Add photo upload section if this is a child task
+                    if (checklistType === 'child') {
+                        this.addPhotoUploadToItem(item, checklistKey, index);
+                    }
+                } else {
+                    item.classList.remove('completed');
+                    // Remove photo upload section if this is a child task
+                    if (checklistType === 'child') {
+                        this.removePhotoUploadFromItem(item);
+                    }
+                }
             });
+        });
 
-            // Use event delegation for edit, delete, and add buttons to avoid duplicate listeners
-            const modalContent = document.getElementById('modalContent');
-            if (modalContent) {
-                // Remove any existing button event listeners to prevent duplicates
-                modalContent.removeEventListener('click', this.handleButtonClickDelegate);
-                
-                // Add delegated event listener for all button clicks
-                this.handleButtonClickDelegate = (e) => {
-                    if (e.target.classList.contains('edit-item-btn')) {
-                        e.stopPropagation();
-                        this.editChecklistItem(e.target);
-                    } else if (e.target.classList.contains('delete-item-btn')) {
-                        e.stopPropagation();
-                        if (!e.target.disabled) {
-                            this.deleteChecklistItem(e.target);
-                        }
-                    } else if (e.target.classList.contains('add-item-btn')) {
-                        e.stopPropagation();
-                        this.addChecklistItem(e.target);
+        // Use event delegation for edit, delete, and add buttons to avoid duplicate listeners
+        const modalContent = document.getElementById('modalContent');
+        if (modalContent) {
+            // Remove any existing button event listeners to prevent duplicates
+            modalContent.removeEventListener('click', this.handleButtonClickDelegate);
+            
+            // Add delegated event listener for all button clicks
+            this.handleButtonClickDelegate = (e) => {
+                if (e.target.classList.contains('edit-item-btn')) {
+                    e.stopPropagation();
+                    this.editChecklistItem(e.target);
+                } else if (e.target.classList.contains('delete-item-btn')) {
+                    e.stopPropagation();
+                    if (!e.target.disabled) {
+                        this.deleteChecklistItem(e.target);
                     }
-                };
-                
-                modalContent.addEventListener('click', this.handleButtonClickDelegate);
-                
-                // Use event delegation for photo uploads to avoid duplicate listeners
-                // Remove any existing photo event listeners to prevent duplicates
-                modalContent.removeEventListener('change', this.handlePhotoUploadDelegate);
-                modalContent.removeEventListener('click', this.handlePhotoLabelClickDelegate);
-                
-                // Add delegated event listeners
-                this.handlePhotoUploadDelegate = (e) => {
-                    if (e.target.classList.contains('photo-input')) {
-                        this.handlePhotoUpload(e);
-                    }
-                };
-                
-                this.handlePhotoLabelClickDelegate = (e) => {
-                    if (e.target.classList.contains('photo-upload-label')) {
-                        e.preventDefault();
-                        const inputId = e.target.getAttribute('for');
-                        const input = document.getElementById(inputId);
-                        if (input) input.click();
-                    }
-                };
-                
-                modalContent.addEventListener('change', this.handlePhotoUploadDelegate);
-                modalContent.addEventListener('click', this.handlePhotoLabelClickDelegate);
-            }
-        }, 100);
-        
-        return '';
+                } else if (e.target.classList.contains('add-item-btn')) {
+                    e.stopPropagation();
+                    this.addChecklistItem(e.target);
+                }
+            };
+            
+            modalContent.addEventListener('click', this.handleButtonClickDelegate);
+            
+            // Use event delegation for photo uploads to avoid duplicate listeners
+            // Remove any existing photo event listeners to prevent duplicates
+            modalContent.removeEventListener('change', this.handlePhotoUploadDelegate);
+            modalContent.removeEventListener('click', this.handlePhotoLabelClickDelegate);
+            
+            // Add delegated event listeners
+            this.handlePhotoUploadDelegate = (e) => {
+                if (e.target.classList.contains('photo-input')) {
+                    this.handlePhotoUpload(e);
+                }
+            };
+            
+            this.handlePhotoLabelClickDelegate = (e) => {
+                if (e.target.classList.contains('photo-upload-label')) {
+                    e.preventDefault();
+                    const inputId = e.target.getAttribute('for');
+                    const input = document.getElementById(inputId);
+                    if (input) input.click();
+                }
+            };
+            
+            modalContent.addEventListener('change', this.handlePhotoUploadDelegate);
+            modalContent.addEventListener('click', this.handlePhotoLabelClickDelegate);
+        }
     }
 
     closeModal() {
