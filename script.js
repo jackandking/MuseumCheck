@@ -1,8 +1,15 @@
 // Recent changes and version information
 const RECENT_CHANGES = {
-    version: "2.1.5",
+    version: "2.1.6",
     lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.1.6",
+            title: "修复海报生成显示问题",
+            description: "解决海报中间多余蓝线和海报下方多余空白问题，优化海报显示效果",
+            type: "bugfix"
+        },
         {
             date: "2024-12-20",
             version: "2.1.5",
@@ -2917,8 +2924,8 @@ class MuseumCheckApp {
             }
         }
         
-        // Show preview
-        canvas.style.display = 'block';
+        // Show preview (hide original canvas to prevent white space issue)
+        canvas.style.display = 'none';  // Fix: Hide original canvas
         preview.innerHTML = '';
         preview.appendChild(canvas.cloneNode(true));
         
@@ -3104,17 +3111,15 @@ class MuseumCheckApp {
             // Copy back the existing content
             ctx.drawImage(tempCanvas, 0, 0);
             
-            // Redraw the border to fit new height
-            ctx.strokeStyle = '#2c5aa0';
-            ctx.lineWidth = 8;
-            ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+            // Note: Border redraw removed to fix duplicate blue line issue
+            // The original border from tempCanvas is already copied back above
         }
         
         // Now draw footer with proper space allocated
         const finalY = this.drawPosterFooter(ctx, canvas, yPosition);
         
-        // Show preview - this was missing!
-        canvas.style.display = 'block';
+        // Show preview (hide original canvas to prevent white space issue)
+        canvas.style.display = 'none';  // Fix: Hide original canvas
         preview.innerHTML = '';
         preview.appendChild(canvas.cloneNode(true));
         
