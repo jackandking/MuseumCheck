@@ -82,3 +82,28 @@
 ## 开发理念
 
 这个应用的设计理念是通过游戏化和任务化的方式，解决"孩子不喜欢逛博物馆"的问题。通过年龄分层的内容设计和互动清单，让博物馆参观变成一个有趣的探险游戏，增进家庭互动，培养孩子对文化和历史的兴趣。
+
+## 开发者指南
+
+### 版本管理
+该项目使用集中式版本管理系统：
+- 所有版本信息存储在 `script.js` 的 `RECENT_CHANGES` 对象中
+- HTML 文件只包含占位符，由 JavaScript 动态更新
+- 使用 `validate-version.js` 脚本验证版本一致性
+
+更新版本时：
+1. 编辑 `script.js` 中的 `RECENT_CHANGES` 对象
+2. 运行 `node validate-version.js` 验证一致性
+3. 详见 [VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) 完整指南
+
+### 本地开发
+```bash
+# 启动本地服务器
+python3 -m http.server 8000
+
+# 验证版本一致性
+node validate-version.js
+
+# 访问应用
+# http://localhost:8000
+```

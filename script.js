@@ -1,8 +1,15 @@
 // Recent changes and version information
 const RECENT_CHANGES = {
-    version: "2.1.0",
-    lastUpdate: "2024-12-19",
+    version: "2.1.1",
+    lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.1.1", 
+            title: "版本管理系统自动化",
+            description: "实现版本信息集中管理，消除手动更新的错误风险",
+            type: "improvement"
+        },
         {
             date: "2024-12-19",
             version: "2.1.0", 
@@ -1771,8 +1778,10 @@ class MuseumCheckApp {
     }
 
     initializeUpdates() {
-        // Initialize version badge
+        // Initialize all version elements from RECENT_CHANGES object
         document.getElementById('versionBadge').textContent = `v${RECENT_CHANGES.version}`;
+        document.getElementById('currentVersion').textContent = `v${RECENT_CHANGES.version}`;
+        document.getElementById('lastUpdated').textContent = RECENT_CHANGES.lastUpdate;
     }
 
     // Migrate existing localStorage photos to IndexedDB
