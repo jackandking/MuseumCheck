@@ -353,3 +353,140 @@ The application includes these major Chinese museums:
 **CRITICAL**: If any checklist item fails, investigate before making changes. This application is fully functional and extensively tested.
 
 Always validate your changes by running through the complete user scenarios above before committing code.
+
+## Version Management Protocol for Copilot
+
+**CRITICAL**: For ANY code changes that affect functionality, features, or user experience, you MUST update the application version using the centralized version management system.
+
+### When to Update Version
+Update the version for:
+- ✅ **New features** (increment minor version: 2.1.0 → 2.2.0)
+- ✅ **Bug fixes** (increment patch version: 2.1.0 → 2.1.1) 
+- ✅ **UI/UX improvements** (increment patch version: 2.1.0 → 2.1.1)
+- ✅ **Performance optimizations** (increment patch version: 2.1.0 → 2.1.1)
+- ✅ **Content updates** (museum data, checklists, etc.)
+- ❌ **Documentation-only changes** (README.md, VERSION_MANAGEMENT.md)
+- ❌ **Internal tooling changes** (validate-version.js without functional impact)
+
+### Version Update Process (MANDATORY)
+For EVERY qualifying change, follow these exact steps:
+
+#### Step 1: Determine Version Type
+```
+Major (x.0.0): Breaking changes or complete rewrites
+Minor (x.y.0): New features, significant improvements  
+Patch (x.y.z): Bug fixes, small improvements, content updates
+```
+
+#### Step 2: Update script.js RECENT_CHANGES Object
+```javascript
+const RECENT_CHANGES = {
+    version: "2.1.2", // ← INCREMENT THIS
+    lastUpdate: "2024-12-20", // ← UPDATE TO TODAY
+    changes: [
+        {
+            date: "2024-12-20", // ← ADD NEW ENTRY AT TOP
+            version: "2.1.2",
+            title: "Brief description of change",
+            description: "Detailed explanation of what changed and why",
+            type: "feature" // or "improvement" or "bugfix"
+        },
+        // ... existing entries (keep all previous)
+    ]
+};
+```
+
+#### Step 3: Validate Changes
+```bash
+cd /home/runner/work/MuseumCheck/MuseumCheck
+node validate-version.js
+```
+
+#### Step 4: Test Version Display
+```bash
+# Start server and verify version displays correctly
+python3 -m http.server 8000
+# Visit http://localhost:8000
+# Check version badge in header shows new version
+# Click "最新更新" button to verify updates modal
+```
+
+### Version Numbering Guidelines
+- **Semantic Versioning**: MAJOR.MINOR.PATCH (e.g., 2.1.0)
+- **Major (2.x.x)**: Complete rewrites, breaking changes
+- **Minor (x.1.x)**: New museums, major features, significant improvements
+- **Patch (x.x.1)**: Bug fixes, small improvements, UI tweaks, content updates
+
+### Example Version Updates
+
+#### New Museum Added
+```javascript
+{
+    date: "2024-12-20",
+    version: "2.2.0", // Minor increment for new content
+    title: "新增江苏省博物馆",
+    description: "添加江苏省博物馆的完整参观清单，包含三个年龄段的任务",
+    type: "feature"
+}
+```
+
+#### Bug Fix
+```javascript
+{
+    date: "2024-12-20", 
+    version: "2.1.2", // Patch increment for bug fix
+    title: "修复本地存储问题",
+    description: "解决某些浏览器下参观记录无法正确保存的问题",
+    type: "bugfix"  
+}
+```
+
+#### UI Improvement
+```javascript
+{
+    date: "2024-12-20",
+    version: "2.1.2", // Patch increment for improvement 
+    title: "优化移动端体验",
+    description: "改进手机端博物馆卡片的显示效果和点击体验",
+    type: "improvement"
+}
+```
+
+### Quality Checklist for Version Updates
+Before committing ANY change:
+
+- [ ] **Version incremented** in `RECENT_CHANGES.version`
+- [ ] **Date updated** in `RECENT_CHANGES.lastUpdate` to today
+- [ ] **New changelog entry** added to top of `changes` array
+- [ ] **Validation passed**: `node validate-version.js` returns success
+- [ ] **Version displays correctly**: Header badge shows new version
+- [ ] **Updates modal works**: Shows new changelog entry
+- [ ] **User workflows tested**: Complete validation scenarios executed
+
+### Automation Tools
+Use these tools to ensure consistency:
+
+```bash
+# Validate version consistency
+node validate-version.js
+
+# Test complete application
+python3 -m http.server 8000
+# Then test all user scenarios from validation checklist
+```
+
+**REMINDER**: The version management system is AUTOMATED - you only need to update the `RECENT_CHANGES` object in script.js. The JavaScript automatically updates all UI displays from this single source of truth.
+
+### Integration with report_progress
+When using `report_progress`, ensure your commit message reflects the version update:
+
+```bash
+# Good commit messages
+"Add new museum feature - bump to v2.2.0"
+"Fix localStorage bug - bump to v2.1.2" 
+"Improve mobile UI - bump to v2.1.3"
+
+# Include version number for easy tracking
+```
+
+This version management protocol ensures consistent, professional version tracking while maintaining the application's high quality standards.
