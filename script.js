@@ -1,8 +1,15 @@
 // Recent changes and version information
 const RECENT_CHANGES = {
-    version: "2.1.2",
+    version: "2.1.3",
     lastUpdate: "2025-08-30",
     changes: [
+        {
+            date: "2025-08-30",
+            version: "2.1.3",
+            title: "修复海报生成两大bug",
+            description: "解决海报生成时出现重复画布和高度不自动调整的问题，确保海报完整显示",
+            type: "bugfix"
+        },
         {
             date: "2025-08-30",
             version: "2.1.2",
@@ -2855,7 +2862,7 @@ class MuseumCheckApp {
             
             // Resize canvas to fit actual content + margins
             const newHeight = Math.max(finalY + 20, 400);
-            if (newHeight < canvas.height) {
+            if (newHeight !== canvas.height) {
                 canvas.height = newHeight;
                 // Redraw everything on the resized canvas
                 ctx.fillStyle = '#f8f9fa';
@@ -3063,7 +3070,7 @@ class MuseumCheckApp {
         
         // Resize canvas to fit actual content + margins to eliminate blank space
         const newHeight = Math.max(finalY + 20, 400); // Minimum reasonable height
-        if (newHeight < canvas.height) {
+        if (newHeight !== canvas.height) {
             // Create new canvas with correct height and copy content properly
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = canvas.width;
@@ -3077,29 +3084,13 @@ class MuseumCheckApp {
             canvas.height = newHeight;
             
             // Copy back only the portion we need (from top to newHeight)
-            ctx.drawImage(tempCanvas, 0, 0, canvas.width, newHeight, 0, 0, canvas.width, newHeight);
+            ctx.drawImage(tempCanvas, 0, 0, canvas.width, Math.min(tempCanvas.height, newHeight), 0, 0, canvas.width, Math.min(tempCanvas.height, newHeight));
             
             // Redraw the border to fit new height
             ctx.strokeStyle = '#2c5aa0';
             ctx.lineWidth = 8;
             ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
         }
-        
-        // Show preview
-        canvas.style.display = 'block';
-        preview.innerHTML = '';
-        preview.appendChild(canvas.cloneNode(true));
-        
-        // Show download button
-        document.getElementById('downloadPoster').style.display = 'inline-block';
-        
-        // Track poster generation
-        this.trackEvent('poster_generated', {
-            'museum_id': museum.id,
-            'museum_name': museum.name,
-            'completed_tasks': completedTasks.length,
-            'age_group': this.currentAge
-        });
     }
 
     drawPosterFooter(ctx, canvas, contentEndY) {
