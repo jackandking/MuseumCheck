@@ -1944,7 +1944,7 @@ class MuseumCheckApp {
         });
 
         // Modal close
-        document.querySelector('.close').addEventListener('click', () => {
+        document.querySelector('#museumModal .close').addEventListener('click', () => {
             this.closeModal();
         });
 
