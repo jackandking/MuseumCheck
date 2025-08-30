@@ -1,8 +1,15 @@
 // Recent changes and version information
 const RECENT_CHANGES = {
-    version: "2.1.7",
+    version: "2.1.8",
     lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.1.8",
+            title: "修复海报预览内容为空白问题",
+            description: "解决海报生成后预览区域显示空白的问题，修复canvas.cloneNode()不保存绘制内容的bug，现在海报预览能正确显示生成的海报内容",
+            type: "bugfix"
+        },
         {
             date: "2024-12-20",
             version: "2.1.7",
@@ -2935,6 +2942,12 @@ class MuseumCheckApp {
         canvas.style.display = 'none';  // Fix: Hide original canvas
         preview.innerHTML = '';
         const clonedCanvas = canvas.cloneNode(true);
+        
+        // CRITICAL FIX: Copy actual canvas drawing content (not just DOM structure)
+        // cloneNode(true) only clones the DOM element, not the pixel data
+        const clonedCtx = clonedCanvas.getContext('2d');
+        clonedCtx.drawImage(canvas, 0, 0);  // Copy the actual poster content
+        
         clonedCanvas.style.display = 'block';  // Fix: Make preview canvas visible
         preview.appendChild(clonedCanvas);
         
@@ -3131,6 +3144,12 @@ class MuseumCheckApp {
         canvas.style.display = 'none';  // Fix: Hide original canvas
         preview.innerHTML = '';
         const clonedCanvas = canvas.cloneNode(true);
+        
+        // CRITICAL FIX: Copy actual canvas drawing content (not just DOM structure)
+        // cloneNode(true) only clones the DOM element, not the pixel data
+        const clonedCtx = clonedCanvas.getContext('2d');
+        clonedCtx.drawImage(canvas, 0, 0);  // Copy the actual poster content
+        
         clonedCanvas.style.display = 'block';  // Fix: Make preview canvas visible
         preview.appendChild(clonedCanvas);
         

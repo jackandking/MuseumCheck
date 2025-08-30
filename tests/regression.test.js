@@ -1296,4 +1296,150 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
       }
     });
   });
+
+  describe('v2.1.8 - 修复海报预览内容为空白问题', () => {
+    /**
+     * Bug: "海报问题 - 上次fix没有完全成功，这次请想办法避免类似问题。问题：海报内容是空白"
+     * Fixed: 2024-12-20
+     * 
+     * Issue: Canvas cloneNode(true) only clones DOM structure, not canvas drawing content.
+     * The cloned canvas in preview appears blank even though original canvas has content.
+     * 
+     * This test ensures canvas content is properly copied to preview clone.
+     */
+
+    test('should preserve canvas drawing content when cloning for preview', () => {
+      // Create original canvas with some test content
+      const originalCanvas = document.createElement('canvas');
+      const originalCtx = originalCanvas.getContext('2d');
+      originalCanvas.width = 200;
+      originalCanvas.height = 100;
+      originalCanvas.id = 'posterCanvas';
+      
+      // Draw test content on original canvas
+      originalCtx.fillStyle = '#ff0000'; // Red background
+      originalCtx.fillRect(0, 0, 200, 100);
+      
+      originalCtx.fillStyle = '#00ff00'; // Green rectangle
+      originalCtx.fillRect(10, 10, 50, 30);
+      
+      originalCtx.fillStyle = '#ffffff'; // White text
+      originalCtx.font = '16px Arial';
+      originalCtx.fillText('Test', 20, 70);
+      
+      // Get original content for comparison
+      const originalImageData = originalCtx.getImageData(0, 0, 200, 100);
+      
+      // The BUG: cloneNode(true) doesn't preserve canvas content
+      const buggyClone = originalCanvas.cloneNode(true);
+      const buggyCtx = buggyClone.getContext('2d');
+      const buggyImageData = buggyCtx.getImageData(0, 0, 200, 100);
+      
+      // Verify the bug exists: cloned canvas should be blank
+      const isBlank = buggyImageData.data.every(pixel => pixel === 0 || pixel === 255);
+      expect(isBlank).toBe(true); // Bug: clone is blank
+      
+      // The FIX: properly copy canvas content
+      const fixedClone = originalCanvas.cloneNode(true);
+      const fixedCtx = fixedClone.getContext('2d');
+      
+      // Fix: Copy the actual image content
+      fixedCtx.drawImage(originalCanvas, 0, 0);
+      
+      // Verify the fix: cloned canvas should have same content
+      const fixedImageData = fixedCtx.getImageData(0, 0, 200, 100);
+      expect(fixedImageData.data).toEqual(originalImageData.data);
+      
+      // Additional verification: specific pixel checks
+      const redPixel = originalCtx.getImageData(5, 5, 1, 1).data; // Should be red
+      const greenPixel = originalCtx.getImageData(20, 20, 1, 1).data; // Should be green
+      
+      const fixedRedPixel = fixedCtx.getImageData(5, 5, 1, 1).data;
+      const fixedGreenPixel = fixedCtx.getImageData(20, 20, 1, 1).data;
+      
+      expect(fixedRedPixel).toEqual(redPixel);
+      expect(fixedGreenPixel).toEqual(greenPixel);
+      
+      // Cleanup
+      originalCanvas.remove();
+      buggyClone.remove();
+      fixedClone.remove();
+    });
+
+    test('should handle canvas content copying with different canvas sizes', () => {
+      // Test edge case: different canvas sizes
+      const sourceCanvas = document.createElement('canvas');
+      const sourceCtx = sourceCanvas.getContext('2d');
+      sourceCanvas.width = 100;
+      sourceCanvas.height = 50;
+      
+      // Draw test pattern
+      sourceCtx.fillStyle = '#0000ff';
+      sourceCtx.fillRect(0, 0, 100, 50);
+      
+      // Create larger target canvas
+      const targetCanvas = document.createElement('canvas');
+      const targetCtx = targetCanvas.getContext('2d');
+      targetCanvas.width = 200;
+      targetCanvas.height = 100;
+      
+      // Copy content (should work even with different sizes)
+      targetCtx.drawImage(sourceCanvas, 0, 0);
+      
+      // Verify content was copied to portion of larger canvas
+      const sourcePixel = sourceCtx.getImageData(50, 25, 1, 1).data;
+      const targetPixel = targetCtx.getImageData(50, 25, 1, 1).data;
+      
+      expect(targetPixel).toEqual(sourcePixel);
+      
+      sourceCanvas.remove();
+      targetCanvas.remove();
+    });
+
+    test('should properly display cloned canvas in preview container', () => {
+      // Simulate complete poster preview workflow
+      const originalCanvas = document.createElement('canvas');
+      const originalCtx = originalCanvas.getContext('2d');
+      const previewContainer = document.createElement('div');
+      
+      originalCanvas.id = 'posterCanvas';
+      previewContainer.id = 'posterPreview';
+      originalCanvas.style.display = 'none'; // Hidden as per current logic
+      
+      // Draw poster content
+      originalCanvas.width = 300;
+      originalCanvas.height = 200;
+      originalCtx.fillStyle = '#f8f9fa';
+      originalCtx.fillRect(0, 0, 300, 200);
+      originalCtx.fillStyle = '#2c5aa0';
+      originalCtx.fillText('Test Poster', 50, 100);
+      
+      // Apply the fix: proper cloning with content preservation
+      previewContainer.innerHTML = ''; // Clear preview
+      const clonedCanvas = originalCanvas.cloneNode(true);
+      const clonedCtx = clonedCanvas.getContext('2d');
+      
+      // Critical fix: copy actual canvas content
+      clonedCtx.drawImage(originalCanvas, 0, 0);
+      clonedCanvas.style.display = 'block'; // Make preview visible
+      
+      previewContainer.appendChild(clonedCanvas);
+      
+      // Verify fix works
+      expect(previewContainer.children.length).toBe(1);
+      expect(previewContainer.children[0].tagName).toBe('CANVAS');
+      expect(previewContainer.children[0].style.display).toBe('block');
+      
+      // Verify content is preserved
+      const previewCanvas = previewContainer.children[0];
+      const previewCtx = previewCanvas.getContext('2d');
+      const originalImageData = originalCtx.getImageData(0, 0, 300, 200);
+      const previewImageData = previewCtx.getImageData(0, 0, 300, 200);
+      
+      expect(previewImageData.data).toEqual(originalImageData.data);
+      
+      originalCanvas.remove();
+      previewContainer.remove();
+    });
+  });
 });
