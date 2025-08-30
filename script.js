@@ -1,8 +1,15 @@
 // Recent changes and version information
 const RECENT_CHANGES = {
-    version: "2.1.6",
+    version: "2.1.7",
     lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.1.7",
+            title: "修复海报预览显示问题",
+            description: "解决海报生成按钮点击后没有出现海报画面的问题，修复海报预览canvas的display样式，确保生成的海报正确显示在预览区域",
+            type: "bugfix"
+        },
         {
             date: "2024-12-20",
             version: "2.1.6",
@@ -2927,7 +2934,9 @@ class MuseumCheckApp {
         // Show preview (hide original canvas to prevent white space issue)
         canvas.style.display = 'none';  // Fix: Hide original canvas
         preview.innerHTML = '';
-        preview.appendChild(canvas.cloneNode(true));
+        const clonedCanvas = canvas.cloneNode(true);
+        clonedCanvas.style.display = 'block';  // Fix: Make preview canvas visible
+        preview.appendChild(clonedCanvas);
         
         // Show download button
         document.getElementById('downloadPoster').style.display = 'inline-block';
@@ -3121,7 +3130,9 @@ class MuseumCheckApp {
         // Show preview (hide original canvas to prevent white space issue)
         canvas.style.display = 'none';  // Fix: Hide original canvas
         preview.innerHTML = '';
-        preview.appendChild(canvas.cloneNode(true));
+        const clonedCanvas = canvas.cloneNode(true);
+        clonedCanvas.style.display = 'block';  // Fix: Make preview canvas visible
+        preview.appendChild(clonedCanvas);
         
         // Show download button
         document.getElementById('downloadPoster').style.display = 'inline-block';
