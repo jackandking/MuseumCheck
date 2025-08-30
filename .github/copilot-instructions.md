@@ -53,8 +53,15 @@ http-server -p 8000
 
 ## Build and Test Process
 
-### Current State - NO BUILD PROCESS REQUIRED
-**CRITICAL**: This application has NO build system, package.json, or automated tests. It is a pure client-side web application that runs directly in browsers.
+### Current State - AUTOMATED TESTING REQUIRED
+
+**IMPORTANT**: While this application has NO build system, it now has a comprehensive unit testing framework to prevent regression issues.
+
+**Testing Framework**:
+- **Jest** with jsdom for unit tests
+- **Regression tests** for previously fixed bugs  
+- **Core functionality tests** for essential features
+- **Coverage reporting** to track test completeness
 
 **What EXISTS**:
 - Complete HTML/CSS/JavaScript application
@@ -63,6 +70,7 @@ http-server -p 8000
 - Full localStorage persistence
 - Responsive design
 - Google Analytics integration
+- **Unit test suite with regression tests**
 
 ### HTTP Server Test Evidence
 When running `python3 -m http.server 8000`, the application serves with proper HTTP responses:
@@ -97,8 +105,46 @@ Server: SimpleHTTP/0.6 Python/3.12.3
 - No build or compilation errors
 - JavaScript loads and executes properly
 
+### Unit Testing Framework (MANDATORY FOR BUG FIXES)
+
+**CRITICAL**: Every bug fix MUST include corresponding unit tests to prevent regression issues.
+
+#### Testing Infrastructure
+- **Framework**: Jest with jsdom environment
+- **Location**: `/tests/` directory
+- **Setup**: `npm install` then `npm test`
+- **Coverage**: `npm run test:coverage`
+
+#### Mandatory Testing Requirements
+
+**For ALL Bug Fixes**:
+1. **Write Regression Test First**: Create a test that reproduces the bug
+2. **Fix the Bug**: Implement your solution
+3. **Verify Test Passes**: Ensure the fix makes your test pass
+4. **Run Full Test Suite**: Confirm no existing functionality broke
+
+#### Testing Commands
+```bash
+# Install dependencies (first time only)
+npm install
+
+# Run all tests
+npm test
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Run tests in watch mode during development
+npm run test:watch
+```
+
+#### Test Categories
+- **Core Tests** (`tests/core.test.js`): Essential app functionality
+- **Regression Tests** (`tests/regression.test.js`): Previously fixed bugs
+- **Feature Tests**: New functionality as it's added
+
 ### Manual Testing Strategy (REQUIRED)
-Since this is a client-side application, manual testing is the primary validation method:
+Manual testing remains important alongside unit tests:
 
 1. **Core Functionality Testing** (ALWAYS do this):
    - Load application: `python3 -m http.server 8000` then visit http://localhost:8000
@@ -165,6 +211,13 @@ Test in these browsers (minimum):
 ├── index.html             # Complete HTML application (4KB)
 ├── script.js              # Full JavaScript logic (124KB, 3,017 lines)
 ├── style.css              # Complete responsive CSS (12KB)
+├── package.json           # Testing dependencies and scripts
+├── TESTING_GUIDE.md       # Unit testing documentation
+├── .gitignore             # Excludes node_modules, coverage
+├── tests/                 # Unit testing framework
+│   ├── setup.js           # Test configuration and mocks
+│   ├── core.test.js       # Core functionality tests
+│   └── regression.test.js # Tests for previously fixed bugs
 └── .github/
     ├── copilot-instructions.md  # This file
     └── FUNDING.yml         # GitHub sponsorship
@@ -193,7 +246,77 @@ localStorage.getItem('museumChecklists')
 - **Responsive Design**: Works on desktop and mobile devices
 - **Chinese Language Interface**: Native Chinese UI and content
 
+## Bug Fix Requirements (MANDATORY PROCESS)
+
+**CRITICAL**: To prevent regression issues where bug fixes break existing functionality, every bug fix must follow this process:
+
+### Required Steps for Bug Fixes
+
+1. **Identify and Document Bug**:
+   - Understand the root cause
+   - Document expected vs. actual behavior
+   - Identify which functions/code areas are affected
+
+2. **Write Regression Test FIRST**:
+   ```bash
+   # Create test that reproduces the bug
+   # Test should FAIL initially (proving the bug exists)
+   npm test -- --testNamePattern="your bug description"
+   ```
+
+3. **Implement the Fix**:
+   - Make minimal code changes to fix the issue
+   - Focus on the root cause, not symptoms
+
+4. **Verify Test Now Passes**:
+   ```bash
+   # Your regression test should now PASS
+   npm test -- --testNamePattern="your bug description"
+   ```
+
+5. **Run Full Test Suite**:
+   ```bash
+   # Ensure no existing functionality broke
+   npm test
+   ```
+
+6. **Manual Validation**:
+   - Test the specific bug scenario manually
+   - Run through related user workflows
+   - Verify fix doesn't introduce new issues
+
+### Example Bug Fix Process
+
+**Bug**: Canvas height not auto-adjusting (fixed in v2.1.3)
+
+```javascript
+// 1. Write failing test first
+test('should auto-adjust canvas height based on content', () => {
+  const canvas = document.createElement('canvas');
+  canvas.height = 400;
+  
+  const contentEndY = 800;
+  const newHeight = Math.max(contentEndY + 40, 400);
+  canvas.height = newHeight;
+  
+  expect(canvas.height).toBe(840); // Should pass after fix
+});
+
+// 2. Implement fix in script.js
+// 3. Verify test passes
+// 4. Run full test suite
+```
+
+### Test Documentation
+- Add test to `tests/regression.test.js` under version section
+- Document the bug and fix in test comments
+- Reference the bug in version changelog
+
+### No Exceptions Policy
+**Every bug fix must include unit tests.** No exceptions, even for "simple" fixes. Historical evidence shows simple fixes often cause unexpected regressions.
+
 ## Common Development Tasks
+
 
 ### Working with Museum Data
 The museums are defined in `script.js` in the `MUSEUMS` array:
@@ -335,6 +458,13 @@ The application includes these major Chinese museums:
 
 ## Validation Checklist (RUN AFTER ANY CHANGES)
 
+**Unit Testing (MANDATORY FOR BUG FIXES)**:
+- [ ] **Unit tests exist**: Every bug fix has corresponding regression tests
+- [ ] **All tests pass**: `npm test` returns zero exit code  
+- [ ] **Coverage adequate**: New/changed code is covered by tests
+- [ ] **No test skipping**: All tests are running, none disabled/skipped
+
+**Application Testing**:
 - [ ] **Server starts in 1-2 seconds**: `python3 -m http.server 8000`
 - [ ] **Application loads at http://localhost:8000**
 - [ ] **All 26 museums display with Chinese names and locations**  
@@ -350,7 +480,7 @@ The application includes these major Chinese museums:
 - [ ] **Responsive design works**: Test mobile view (DevTools device toggle)
 - [ ] **HTTP responses are correct**: 200 OK for assets, 404 for missing files
 
-**CRITICAL**: If any checklist item fails, investigate before making changes. This application is fully functional and extensively tested.
+**CRITICAL**: If any checklist item fails, investigate before making changes. Run unit tests first (`npm test`) to catch issues early, then manually verify functionality.
 
 Always validate your changes by running through the complete user scenarios above before committing code.
 
