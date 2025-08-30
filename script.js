@@ -1,3 +1,46 @@
+// Recent changes and version information
+const RECENT_CHANGES = {
+    version: "2.1.0",
+    lastUpdate: "2024-12-19",
+    changes: [
+        {
+            date: "2024-12-19",
+            version: "2.1.0", 
+            title: "新增更新日志功能",
+            description: "添加网站更新变化展示，让用户了解网站持续改进",
+            type: "feature"
+        },
+        {
+            date: "2024-12-15",
+            version: "2.0.5",
+            title: "优化海报生成功能",
+            description: "改进博物馆参观海报的生成和下载体验",
+            type: "improvement"
+        },
+        {
+            date: "2024-12-10",
+            version: "2.0.4",
+            title: "增加自定义任务功能",
+            description: "用户可以编辑和添加个性化的博物馆参观任务",
+            type: "feature"
+        },
+        {
+            date: "2024-12-05",
+            version: "2.0.3",
+            title: "响应式设计优化",
+            description: "优化移动设备显示效果，提升用户体验",
+            type: "improvement"
+        },
+        {
+            date: "2024-12-01",
+            version: "2.0.2",
+            title: "照片上传功能",
+            description: "支持为每个任务上传照片，记录美好的博物馆时光",
+            type: "feature"
+        }
+    ]
+};
+
 // Museum data with checklists for different age groups
 const MUSEUMS = [
     {
@@ -1724,6 +1767,12 @@ class MuseumCheckApp {
         this.setupEventListeners();
         this.renderMuseums();
         this.updateStats();
+        this.initializeUpdates();
+    }
+
+    initializeUpdates() {
+        // Initialize version badge
+        document.getElementById('versionBadge').textContent = `v${RECENT_CHANGES.version}`;
     }
 
     // Migrate existing localStorage photos to IndexedDB
@@ -1875,6 +1924,23 @@ class MuseumCheckApp {
                 'previous_age': oldAge,
                 'new_age': this.currentAge
             });
+        });
+
+        // Updates toggle button
+        document.getElementById('updatesToggle').addEventListener('click', () => {
+            this.showUpdatesModal();
+        });
+
+        // Updates modal close
+        document.querySelector('.updates-close').addEventListener('click', () => {
+            this.closeUpdatesModal();
+        });
+
+        // Click outside updates modal to close
+        document.getElementById('updatesModal').addEventListener('click', (e) => {
+            if (e.target.id === 'updatesModal') {
+                this.closeUpdatesModal();
+            }
         });
 
         // Modal close
@@ -2316,6 +2382,53 @@ class MuseumCheckApp {
 
     closeModal() {
         document.getElementById('museumModal').classList.add('hidden');
+    }
+
+    showUpdatesModal() {
+        this.renderUpdates();
+        document.getElementById('updatesModal').classList.remove('hidden');
+        
+        // Track updates view
+        this.trackEvent('updates_viewed', {
+            'current_version': RECENT_CHANGES.version
+        });
+    }
+
+    closeUpdatesModal() {
+        document.getElementById('updatesModal').classList.add('hidden');
+    }
+
+    renderUpdates() {
+        // Update version info
+        document.getElementById('currentVersion').textContent = `v${RECENT_CHANGES.version}`;
+        document.getElementById('lastUpdated').textContent = RECENT_CHANGES.lastUpdate;
+        document.getElementById('versionBadge').textContent = `v${RECENT_CHANGES.version}`;
+
+        // Render changes list
+        const changesList = document.getElementById('changesList');
+        changesList.innerHTML = RECENT_CHANGES.changes.map(change => {
+            const typeText = {
+                'feature': '新功能',
+                'improvement': '优化',
+                'bugfix': '修复'
+            };
+
+            return `
+                <div class="change-item ${change.type}">
+                    <div class="change-header">
+                        <div class="change-title">${change.title}</div>
+                        <div class="change-meta">
+                            <span class="change-version">${change.version}</span>
+                            <span class="change-type ${change.type}">${typeText[change.type] || change.type}</span>
+                        </div>
+                    </div>
+                    <div class="change-description">${change.description}</div>
+                    <div class="change-date" style="font-size: 12px; color: #999; margin-top: 8px;">
+                        📅 ${change.date}
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
     editChecklistItem(button) {
