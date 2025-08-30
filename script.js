@@ -2645,9 +2645,9 @@ class MuseumCheckApp {
         const completedTasks = completed.map(index => childTasks[index]).filter(Boolean);
         
         // Calculate dynamic height based on number of completed tasks
-        const baseHeight = 600; // Header and footer space
-        const taskHeight = 200; // Height per task (matches taskSpacing in drawTasksWithPhotos)
-        const minHeight = 1100; // Reduced minimum height to avoid excessive blank space
+        const baseHeight = 400; // Header and footer space (reduced from 600)
+        const taskHeight = 50; // Height per task (matches actual taskSpacing in drawTasksWithPhotos)
+        const minHeight = 600; // Minimum reasonable height (reduced from 1100)
         const calculatedHeight = baseHeight + (completedTasks.length * taskHeight);
         const dynamicHeight = Math.max(minHeight, calculatedHeight);
         
