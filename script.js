@@ -1,8 +1,15 @@
 // Recent changes and version information
 const RECENT_CHANGES = {
-    version: "2.1.3",
+    version: "2.1.4",
     lastUpdate: "2025-08-30",
     changes: [
+        {
+            date: "2025-08-30",
+            version: "2.1.4",
+            title: "修复海报生成显示bug",
+            description: "解决有完成任务时海报生成后不显示的问题，现在海报能正确显示已完成的任务列表",
+            type: "bugfix"
+        },
         {
             date: "2025-08-30",
             version: "2.1.3",
@@ -3091,6 +3098,14 @@ class MuseumCheckApp {
             ctx.lineWidth = 8;
             ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
         }
+        
+        // Show preview - this was missing!
+        canvas.style.display = 'block';
+        preview.innerHTML = '';
+        preview.appendChild(canvas.cloneNode(true));
+        
+        // Show download button
+        document.getElementById('downloadPoster').style.display = 'inline-block';
     }
 
     drawPosterFooter(ctx, canvas, contentEndY) {
