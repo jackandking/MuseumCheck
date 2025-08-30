@@ -1,8 +1,15 @@
 // Recent changes and version information
 const RECENT_CHANGES = {
-    version: "2.1.4",
-    lastUpdate: "2025-08-30",
+    version: "2.1.5",
+    lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.1.5",
+            title: "修复海报底部信息显示问题",
+            description: "解决海报生成时footer显示不完整的问题，优化canvas高度计算逻辑，确保底部信息完整可见",
+            type: "bugfix"
+        },
         {
             date: "2025-08-30",
             version: "2.1.4",
@@ -3072,13 +3079,13 @@ class MuseumCheckApp {
         const photoGridEndY = hasPhotos ? startY + 70 + photoGridHeight : startY;
         yPosition = Math.max(taskEndY, photoGridEndY) + 40;
         
-        // Draw footer at actual content end position and get final height
-        const finalY = this.drawPosterFooter(ctx, canvas, yPosition);
+        // Calculate required height before drawing footer
+        const footerHeight = 110; // footer content (70) + bottom padding (40)
+        const requiredHeight = Math.max(yPosition + footerHeight + 20, 400); // Content + footer + margin
         
-        // Resize canvas to fit actual content + margins to eliminate blank space
-        const newHeight = Math.max(finalY + 20, 400); // Minimum reasonable height
-        if (newHeight !== canvas.height) {
-            // Create new canvas with correct height and copy content properly
+        // Resize canvas first if needed to ensure footer has space
+        if (requiredHeight !== canvas.height) {
+            // Create temporary canvas to preserve existing content
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = canvas.width;
             tempCanvas.height = canvas.height;
@@ -3087,17 +3094,24 @@ class MuseumCheckApp {
             // Copy current canvas content to temporary canvas
             tempCtx.drawImage(canvas, 0, 0);
             
-            // Resize original canvas to new height
-            canvas.height = newHeight;
+            // Resize original canvas to required height
+            canvas.height = requiredHeight;
             
-            // Copy back only the portion we need (from top to newHeight)
-            ctx.drawImage(tempCanvas, 0, 0, canvas.width, Math.min(tempCanvas.height, newHeight), 0, 0, canvas.width, Math.min(tempCanvas.height, newHeight));
+            // Clear the resized canvas
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Copy back the existing content
+            ctx.drawImage(tempCanvas, 0, 0);
             
             // Redraw the border to fit new height
             ctx.strokeStyle = '#2c5aa0';
             ctx.lineWidth = 8;
             ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
         }
+        
+        // Now draw footer with proper space allocated
+        const finalY = this.drawPosterFooter(ctx, canvas, yPosition);
         
         // Show preview - this was missing!
         canvas.style.display = 'block';
