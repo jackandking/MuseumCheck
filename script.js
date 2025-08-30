@@ -2726,7 +2726,7 @@ class MuseumCheckApp {
             
             // Resize canvas to fit actual content + margins
             const newHeight = Math.max(finalY + 20, 400);
-            if (newHeight < canvas.height) {
+            if (newHeight !== canvas.height) {
                 canvas.height = newHeight;
                 // Redraw everything on the resized canvas
                 ctx.fillStyle = '#f8f9fa';
@@ -2934,7 +2934,7 @@ class MuseumCheckApp {
         
         // Resize canvas to fit actual content + margins to eliminate blank space
         const newHeight = Math.max(finalY + 20, 400); // Minimum reasonable height
-        if (newHeight < canvas.height) {
+        if (newHeight !== canvas.height) {
             // Create new canvas with correct height and copy content properly
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = canvas.width;
@@ -2947,8 +2947,13 @@ class MuseumCheckApp {
             // Resize original canvas to new height
             canvas.height = newHeight;
             
+            // Redraw background
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
             // Copy back only the portion we need (from top to newHeight)
-            ctx.drawImage(tempCanvas, 0, 0, canvas.width, newHeight, 0, 0, canvas.width, newHeight);
+            const copyHeight = Math.min(newHeight, tempCanvas.height);
+            ctx.drawImage(tempCanvas, 0, 0, canvas.width, copyHeight, 0, 0, canvas.width, copyHeight);
             
             // Redraw the border to fit new height
             ctx.strokeStyle = '#2c5aa0';
