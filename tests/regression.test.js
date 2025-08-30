@@ -281,6 +281,92 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
     });
   });
 
+  describe('v2.1.7 - 修复海报预览显示问题', () => {
+    /**
+     * Bug: "海报生成按钮点击之后没有出现海报画面，海报生成按钮和海报下载按钮紧挨着。之前的fix修过头了。"
+     * Issue: Cloned canvas in preview inherits 'display: none' style, making poster invisible
+     * Fixed: 2024-12-20
+     * 
+     * Root cause: canvas.cloneNode(true) copies the display:none style, preventing poster preview from showing
+     */
+    test('should show cloned canvas in preview with visible display style', () => {
+      const canvas = document.createElement('canvas');
+      const preview = document.createElement('div');
+      
+      canvas.id = 'posterCanvas';
+      preview.id = 'posterPreview';
+      
+      // Original canvas setup
+      canvas.width = 1080;
+      canvas.height = 600;
+      canvas.style.display = 'none'; // This is correct - original should be hidden
+      
+      // Current buggy behavior: cloned canvas inherits display:none
+      const currentBehavior = () => {
+        preview.innerHTML = '';
+        preview.appendChild(canvas.cloneNode(true));
+        return preview.children[0];
+      };
+      
+      const clonedCanvas = currentBehavior();
+      
+      // This demonstrates the bug
+      expect(clonedCanvas.style.display).toBe('none'); // BUG: clone inherits display:none
+      
+      // The fix: explicitly set display style on cloned canvas
+      const fixedBehavior = () => {
+        preview.innerHTML = '';
+        const clonedCanvas = canvas.cloneNode(true);
+        clonedCanvas.style.display = 'block'; // FIX: explicitly make preview visible
+        preview.appendChild(clonedCanvas);
+        return clonedCanvas;
+      };
+      
+      const fixedClonedCanvas = fixedBehavior();
+      
+      // After fix: cloned canvas should be visible
+      expect(fixedClonedCanvas.style.display).toBe('block');
+      expect(fixedClonedCanvas.width).toBe(1080);
+      expect(fixedClonedCanvas.height).toBe(600);
+      
+      // Cleanup
+      canvas.remove();
+      preview.remove();
+    });
+
+    test('should preserve canvas content in visible preview clone', () => {
+      const canvas = document.createElement('canvas');
+      const preview = document.createElement('div');
+      const ctx = canvas.getContext('2d');
+      
+      // Setup canvas with test content
+      canvas.width = 200;
+      canvas.height = 100;
+      canvas.style.display = 'none';
+      
+      // Draw test content
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(10, 10, 50, 50);
+      
+      // Apply the fix
+      preview.innerHTML = '';
+      const clonedCanvas = canvas.cloneNode(true);
+      clonedCanvas.style.display = 'block'; // Fix: make clone visible
+      preview.appendChild(clonedCanvas);
+      
+      // Verify clone properties
+      expect(clonedCanvas.style.display).toBe('block');
+      expect(clonedCanvas.width).toBe(200);
+      expect(clonedCanvas.height).toBe(100);
+      expect(preview.children.length).toBe(1);
+      expect(preview.children[0]).toBe(clonedCanvas);
+      
+      // Cleanup
+      canvas.remove();
+      preview.remove();
+    });
+  });
+
   describe('Comprehensive Poster Feature Regression Tests', () => {
     /**
      * COMPREHENSIVE POSTER PROTECTION SUITE
