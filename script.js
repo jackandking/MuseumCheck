@@ -2182,8 +2182,8 @@ class MuseumCheckApp {
                            data-checklist="${checklistKey}" data-index="${index}">
                     <label for="${itemId}" class="checklist-label" data-original-text="${item}">${item}</label>
                     <div class="checklist-controls">
-                        <button class="edit-item-btn" title="编辑" onclick="event.stopPropagation()">✏️</button>
-                        <button class="delete-item-btn" title="删除" onclick="event.stopPropagation()" ${!isCustom && !customItems ? 'disabled' : ''}>🗑️</button>
+                        <button class="edit-item-btn" title="编辑">✏️</button>
+                        <button class="delete-item-btn" title="删除" ${!isCustom && !customItems ? 'disabled' : ''}>🗑️</button>
                     </div>
                     ${photoUpload}
                 </div>
