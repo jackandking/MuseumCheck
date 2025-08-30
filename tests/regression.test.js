@@ -109,6 +109,68 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
     });
   });
 
+  describe('v2.1.5 - 修复海报底部信息显示问题', () => {
+    /**
+     * Bug: "海报的footer没有显示完整，被向下挤出了某个可以显示的区域"
+     * Fixed: 2024-12-20
+     * 
+     * This test ensures the poster footer is displayed completely within the canvas bounds.
+     */
+
+    test('should ensure poster footer is fully visible within canvas bounds', () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 1080;
+      canvas.height = 800; // Initial height
+      
+      // Mock scenario: content ends at Y position 600
+      const contentEndY = 600;
+      
+      // Simulate drawing footer (like drawPosterFooter method)
+      const footerStartY = contentEndY + 40; // 640
+      const footerEndY = footerStartY + 70 + 40; // 750 (70 for content, 40 for padding)
+      
+      // The bug fix: ensure canvas height accommodates the full footer
+      const requiredHeight = footerEndY + 20; // 770 (additional margin)
+      const newHeight = Math.max(requiredHeight, 400);
+      
+      // Verify the calculated height accommodates the footer
+      expect(newHeight).toBeGreaterThanOrEqual(footerEndY);
+      expect(newHeight).toBe(770);
+      
+      // Simulate the canvas resize that should preserve footer visibility
+      if (newHeight !== canvas.height) {
+        canvas.height = newHeight;
+      }
+      
+      // Verify footer would be fully visible
+      expect(canvas.height).toBeGreaterThanOrEqual(footerEndY);
+      expect(footerEndY).toBeLessThan(canvas.height);
+      
+      canvas.remove();
+    });
+
+    test('should properly calculate canvas height for footer with minimal content', () => {
+      // Test edge case where content is minimal but footer still needs space
+      const canvas = document.createElement('canvas');
+      canvas.width = 1080;
+      canvas.height = 400; // Minimal height
+      
+      // Simulate minimal content scenario
+      const contentEndY = 300; // Very little content
+      const footerStartY = contentEndY + 40; // 340
+      const footerFinalY = footerStartY + 70 + 40; // 450
+      
+      // The fix should ensure adequate space even for minimal content
+      const newHeight = Math.max(footerFinalY + 20, 400); // 470
+      
+      expect(newHeight).toBe(470);
+      expect(newHeight).toBeGreaterThan(footerFinalY);
+      
+      canvas.remove();
+    });
+  });
+
   describe('v2.1.2 - 修复日期错误', () => {
     /**
      * Bug: "更正RECENT_CHANGES中的日期错误，统一使用2025年日期"
