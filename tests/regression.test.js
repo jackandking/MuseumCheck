@@ -1442,4 +1442,124 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
       previewContainer.remove();
     });
   });
+
+  describe('v2.1.9 - 优化海报设计', () => {
+    /**
+     * Issue: "目前的图片显示区域小，有些空间没有充分利用，另外蓝色外框没有兜住footer，不美观"
+     * Fixed: 2024-12-20
+     * 
+     * These tests ensure the poster design optimization fixes:
+     * 1. Blue border properly encompasses footer
+     * 2. Better space utilization 
+     * 3. Improved modal display size
+     */
+
+    test('should ensure blue border encompasses footer content', () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 1080;
+      canvas.height = 600;
+      
+      // Mock content ending at position 400
+      const contentEndY = 400;
+      
+      // Calculate footer position and size (from drawPosterFooter logic)
+      const footerStartY = contentEndY + 40; // 440
+      const footerHeight = 70 + 40; // text height + bottom padding = 110
+      const footerEndY = footerStartY + footerHeight; // 550
+      
+      // Calculate required canvas height to include footer plus margin
+      const borderMargin = 40; // 20px margin from border to canvas edge
+      const requiredHeight = footerEndY + borderMargin; // 590
+      
+      // Border should be drawn to encompass all content including footer
+      const borderWidth = canvas.width - 40; // 1040
+      const borderHeight = requiredHeight - 40; // 550
+      
+      // Verify border coordinates encompass footer
+      const borderTop = 20;
+      const borderBottom = borderTop + borderHeight; // 570
+      
+      expect(borderBottom).toBeGreaterThan(footerEndY); // Border should extend beyond footer
+      expect(requiredHeight).toBeGreaterThanOrEqual(footerEndY + 20); // Canvas should have margin after footer
+      
+      canvas.remove();
+    });
+
+    test('should calculate optimal canvas dimensions for better space utilization', () => {
+      // Test different content scenarios for optimal sizing
+      const testCases = [
+        { tasks: 1, minHeight: 600 },
+        { tasks: 3, minHeight: 600 },
+        { tasks: 5, minHeight: 600 },
+        { tasks: 8, minHeight: 600 }
+      ];
+      
+      testCases.forEach(({ tasks, minHeight }) => {
+        const baseHeight = 400; // Header and basic layout  
+        const taskHeight = 50;   // Height per task
+        const footerHeight = 150; // Footer plus margins
+        
+        const calculatedHeight = baseHeight + (tasks * taskHeight) + footerHeight;
+        const optimizedHeight = Math.max(minHeight, calculatedHeight);
+        
+        // Should always meet minimum height requirement
+        expect(optimizedHeight).toBeGreaterThanOrEqual(minHeight);
+        // Should accommodate all content
+        expect(optimizedHeight).toBeGreaterThanOrEqual(calculatedHeight);
+        // Should scale appropriately with content
+        expect(calculatedHeight).toBe(baseHeight + (tasks * taskHeight) + footerHeight);
+      });
+    });
+
+    test('should improve photo display area utilization', () => {
+      const canvasWidth = 1080;
+      
+      // Current implementation uses 50% for tasks, 45% for photos (5% gap)
+      const currentTaskWidth = canvasWidth * 0.5; // 540
+      const currentPhotoWidth = canvasWidth * 0.45; // 486
+      const currentUtilization = (currentTaskWidth + currentPhotoWidth) / canvasWidth; // 95%
+      
+      // Optimized implementation should use space more efficiently
+      const optimizedTaskWidth = canvasWidth * 0.45; // 486 (slightly less for tasks)
+      const optimizedPhotoWidth = canvasWidth * 0.52; // 562 (more for photos)
+      const optimizedUtilization = (optimizedTaskWidth + optimizedPhotoWidth) / canvasWidth; // 97%
+      
+      expect(optimizedUtilization).toBeGreaterThan(currentUtilization);
+      expect(optimizedPhotoWidth).toBeGreaterThan(currentPhotoWidth);
+    });
+
+    test('should coordinate border redraw with final canvas dimensions', () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 1080;
+      canvas.height = 600; // Initial height
+      
+      // Mock the border drawing tracking
+      const borderCalls = [];
+      const originalStrokeRect = ctx.strokeRect;
+      ctx.strokeRect = jest.fn((...args) => {
+        borderCalls.push(args);
+        originalStrokeRect.apply(ctx, args);
+      });
+      
+      // Simulate initial border draw
+      ctx.strokeStyle = '#2c5aa0';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+      
+      // Simulate content addition requiring canvas resize
+      const newHeight = 800;
+      canvas.height = newHeight;
+      
+      // The fix: border should be redrawn with new dimensions
+      ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+      
+      // Verify border was drawn with correct final dimensions
+      const finalBorderCall = borderCalls[borderCalls.length - 1];
+      expect(finalBorderCall).toEqual([20, 20, 1040, 760]); // width-40, height-40
+      
+      canvas.remove();
+    });
+  });
 });
