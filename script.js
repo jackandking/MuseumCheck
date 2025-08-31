@@ -1,8 +1,15 @@
 // Recent changes and version information
 const RECENT_CHANGES = {
-    version: "2.1.8",
+    version: "2.1.9",
     lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.1.9",
+            title: "优化海报设计布局",
+            description: "修复蓝色边框没有完全包围footer的问题，优化图片显示区域大小，提升空间利用率，增大模态框尺寸以更好展示海报",
+            type: "improvement"
+        },
         {
             date: "2024-12-20",
             version: "2.1.8",
@@ -2830,10 +2837,7 @@ class MuseumCheckApp {
         ctx.fillStyle = '#f8f9fa';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Add decorative border
-        ctx.strokeStyle = '#2c5aa0';
-        ctx.lineWidth = 8;
-        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+        // NOTE: Border will be drawn AFTER all content is finalized to ensure it encompasses everything
         
         // Title section
         ctx.fillStyle = '#2c5aa0';
@@ -2896,7 +2900,8 @@ class MuseumCheckApp {
             const finalY = this.drawPosterFooter(ctx, canvas, yPosition);
             
             // Resize canvas to fit actual content + margins
-            const newHeight = Math.max(finalY + 20, 400);
+            const borderMargin = 60; // Extra margin for border
+            const newHeight = Math.max(finalY + borderMargin, 400);
             if (newHeight !== canvas.height) {
                 canvas.height = newHeight;
                 // Redraw everything on the resized canvas
@@ -2935,6 +2940,11 @@ class MuseumCheckApp {
                 
                 // Redraw footer
                 this.drawPosterFooter(ctx, canvas, 360);
+            } else {
+                // If no resize needed, still need to draw the border to encompass footer
+                ctx.strokeStyle = '#2c5aa0';
+                ctx.lineWidth = 8;
+                ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
             }
         }
         
@@ -2983,28 +2993,28 @@ class MuseumCheckApp {
         const validPhotos = loadedPhotos.filter(photo => photo.img);
         const photoCount = validPhotos.length;
         
-        // Calculate layout parameters based on photo count
+        // Calculate layout parameters based on photo count - OPTIMIZED for better space utilization
         const hasPhotos = photoCount > 0;
-        const taskListWidth = hasPhotos ? canvas.width * 0.5 : canvas.width - 160; // Left half for tasks if photos exist
-        const photoAreaStartX = hasPhotos ? canvas.width * 0.52 : 0; // Right half for photos
-        const photoAreaWidth = hasPhotos ? canvas.width * 0.45 : 0;
+        const taskListWidth = hasPhotos ? canvas.width * 0.45 : canvas.width - 160; // Reduced tasks area
+        const photoAreaStartX = hasPhotos ? canvas.width * 0.47 : 0; // Start photos closer
+        const photoAreaWidth = hasPhotos ? canvas.width * 0.52 : 0; // Increased photo area
         
-        // Calculate compact photo grid layout
+        // Calculate compact photo grid layout - OPTIMIZED for larger photos
         let photosPerRow = 2;
-        let photoSize = 120;
+        let photoSize = 140; // Increased base photo size
         
         if (photoCount === 1) {
             photosPerRow = 1;
-            photoSize = 140;
+            photoSize = Math.min(200, photoAreaWidth - 40); // Larger single photo
         } else if (photoCount <= 4) {
             photosPerRow = 2;
-            photoSize = Math.min(110, (photoAreaWidth - 30) / 2);
+            photoSize = Math.min(140, (photoAreaWidth - 30) / 2); // Increased photo size
         } else if (photoCount <= 9) {
             photosPerRow = 3;
-            photoSize = Math.min(90, (photoAreaWidth - 40) / 3);
+            photoSize = Math.min(110, (photoAreaWidth - 40) / 3); // Increased photo size
         } else {
             photosPerRow = 4;
-            photoSize = Math.min(75, (photoAreaWidth - 50) / 4);
+            photoSize = Math.min(95, (photoAreaWidth - 50) / 4); // Increased photo size
         }
         
         const photoRows = Math.ceil(photoCount / photosPerRow);
@@ -3139,6 +3149,11 @@ class MuseumCheckApp {
         
         // Now draw footer with proper space allocated
         const finalY = this.drawPosterFooter(ctx, canvas, yPosition);
+        
+        // OPTIMIZATION: Draw final border to encompass all content including footer
+        ctx.strokeStyle = '#2c5aa0';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
         
         // Show preview (hide original canvas to prevent white space issue)
         canvas.style.display = 'none';  // Fix: Hide original canvas
