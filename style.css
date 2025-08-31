@@ -344,11 +344,11 @@ header h1 {
 .modal-content {
     background: white;
     border-radius: 10px;
-    max-width: 900px; /* Increased from 800px for better poster display */
-    max-height: 85vh; /* Increased from 80vh for more space */
+    max-width: 1000px; /* Further increased for optimal poster display */
+    max-height: 90vh; /* Maximized height for better viewing experience */
     overflow-y: auto;
     position: relative;
-    margin: 20px;
+    margin: 15px;
     padding: 30px;
 }
 
