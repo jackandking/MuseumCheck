@@ -1,8 +1,22 @@
 // Recent
 const RECENT_CHANGES = {
-    version: "2.1.11",
+    version: "2.2.1",
     lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.2.1",
+            title: "优化成就系统用户体验",
+            description: "新增早期成就奖励(1家、3家博物馆)，增加特色博物馆成就、城市成就、主题成就等，降低多样性成就门槛，提供更多即时满足感和参与动机",
+            type: "improvement"
+        },
+        {
+            date: "2024-12-20",
+            version: "2.2.0",
+            title: "新增成就展示系统",
+            description: "基于博物馆参观数据设计成就感系统，包含参观里程碑成就、多样性成就等。用户可生成个人成就海报分享，增加应用粘性和用户参与度",
+            type: "feature"
+        },
         {
             date: "2024-12-20",
             version: "2.1.11",
@@ -8150,6 +8164,23 @@ class MuseumCheckApp {
                 this.closeModal();
             }
         });
+        
+        // Achievement button
+        document.getElementById('achievementButton').addEventListener('click', () => {
+            this.showAchievementModal();
+        });
+
+        // Achievement modal close
+        document.querySelector('#achievementModal .close').addEventListener('click', () => {
+            this.closeAchievementModal();
+        });
+
+        // Click outside achievement modal to close
+        document.getElementById('achievementModal').addEventListener('click', (e) => {
+            if (e.target.id === 'achievementModal') {
+                this.closeAchievementModal();
+            }
+        });
     }
 
     loadVisitedMuseums() {
@@ -8340,6 +8371,162 @@ class MuseumCheckApp {
         document.getElementById('visitedCount').textContent = visitedCount;
         document.getElementById('totalCount').textContent = totalCount;
         document.getElementById('visitedPercentage').textContent = percentage;
+        
+        // Update achievements
+        this.updateAchievements(visitedCount);
+    }
+
+    calculateAchievements(visitedCount) {
+        const achievements = [];
+        
+        // Visit milestone achievements - Enhanced with early game rewards
+        const milestones = [
+            { visits: 1, name: '初次探索', emoji: '🌟', description: '踏出了博物馆之旅的第一步' },
+            { visits: 3, name: '文化初体验', emoji: '🎪', description: '已经体验了3种不同的文化' },
+            { visits: 5, name: '博物馆新手', emoji: '🎯', description: '参观了5家博物馆' },
+            { visits: 10, name: '文化探索者', emoji: '🧭', description: '参观了10家博物馆' },
+            { visits: 25, name: '历史爱好者', emoji: '📚', description: '参观了25家博物馆' },
+            { visits: 50, name: '文化达人', emoji: '🏆', description: '参观了50家博物馆' },
+            { visits: 75, name: '博物馆专家', emoji: '🎓', description: '参观了75家博物馆' },
+            { visits: 100, name: '文化大师', emoji: '👑', description: '参观了100家博物馆' },
+            { visits: 120, name: '博物馆收藏家', emoji: '💎', description: '完成了全部120家博物馆' }
+        ];
+        
+        // Add achieved milestones
+        milestones.forEach(milestone => {
+            if (visitedCount >= milestone.visits) {
+                achievements.push({
+                    ...milestone,
+                    achieved: true,
+                    date: this.getAchievementDate(milestone.visits)
+                });
+            }
+        });
+        
+        // Add next milestone as goal
+        const nextMilestone = milestones.find(m => visitedCount < m.visits);
+        if (nextMilestone) {
+            achievements.push({
+                ...nextMilestone,
+                achieved: false,
+                progress: visitedCount,
+                remaining: nextMilestone.visits - visitedCount
+            });
+        }
+        
+        // Special achievements
+        if (visitedCount > 0) {
+            const visitedMuseums = this.visitedMuseums.map(id => MUSEUMS.find(m => m.id === id)).filter(Boolean);
+            const visitedIds = visitedMuseums.map(m => m.id);
+            
+            // Famous museum achievements - immediate rewards for visiting top destinations
+            const famousMuseums = [
+                { id: 'forbidden-city', name: '紫禁城探秘者', emoji: '🏯', description: '参观了世界文化遗产故宫博物院' },
+                { id: 'terracotta-warriors', name: '兵马俑见证者', emoji: '⚔️', description: '参观了世界第八大奇迹秦始皇帝陵博物院' },
+                { id: 'national-museum', name: '国家馆探索者', emoji: '🏛️', description: '参观了中国国家博物馆' },
+                { id: 'shanghai-museum', name: '艺术宫访客', emoji: '🎨', description: '参观了被誉为"中华艺术宫"的上海博物馆' }
+            ];
+            
+            famousMuseums.forEach(famous => {
+                if (visitedIds.includes(famous.id)) {
+                    achievements.push({
+                        name: famous.name,
+                        emoji: famous.emoji,
+                        description: famous.description,
+                        achieved: true,
+                        date: this.getAchievementDate(1)
+                    });
+                }
+            });
+            
+            // City achievements - early rewards for exploring major cities
+            const cityGroups = {
+                '北京': { name: '首都文化达人', emoji: '🇨🇳', description: '探索了首都北京的博物馆群' },
+                '上海': { name: '魔都文化客', emoji: '🌃', description: '体验了上海的现代文化魅力' },
+                '西安': { name: '古都寻踪者', emoji: '🏺', description: '感受了十三朝古都的历史厚重' }
+            };
+            
+            Object.entries(cityGroups).forEach(([city, achievement]) => {
+                const cityMuseums = visitedMuseums.filter(m => m.location === city);
+                if (cityMuseums.length >= 2) {
+                    achievements.push({
+                        name: achievement.name,
+                        emoji: achievement.emoji,
+                        description: `${achievement.description} (${cityMuseums.length}家)`,
+                        achieved: true,
+                        date: this.getAchievementDate(2)
+                    });
+                }
+            });
+            
+            // Category achievements - reward thematic exploration
+            const categoryGroups = {
+                '历史': { name: '历史探秘家', emoji: '📜', description: '专注于历史类博物馆的探索' },
+                '艺术': { name: '艺术鉴赏家', emoji: '🎨', description: '深度体验艺术类博物馆' },
+                '科技': { name: '科技探索者', emoji: '🔬', description: '热衷于科技类博物馆' },
+                '文物': { name: '文物守护者', emoji: '🏺', description: '珍视文物类博物馆的价值' }
+            };
+            
+            Object.entries(categoryGroups).forEach(([category, achievement]) => {
+                const categoryMuseums = visitedMuseums.filter(m => m.tags && m.tags.includes(category));
+                if (categoryMuseums.length >= 3) {
+                    achievements.push({
+                        name: achievement.name,
+                        emoji: achievement.emoji,
+                        description: `${achievement.description} (${categoryMuseums.length}家)`,
+                        achieved: true,
+                        date: this.getAchievementDate(3)
+                    });
+                }
+            });
+            
+            // Province diversity achievement - lowered threshold for earlier reward
+            const provinces = [...new Set(visitedMuseums.map(m => m.location))];
+            if (provinces.length >= 3) {
+                achievements.push({
+                    name: '跨省旅行家',
+                    emoji: '🗺️',
+                    description: `游览了${provinces.length}个不同省市`,
+                    achieved: true,
+                    date: this.getAchievementDate(3)
+                });
+            }
+            
+            // Museum type diversity achievement - lowered threshold
+            const allTags = visitedMuseums.flatMap(m => m.tags || []);
+            const uniqueTags = [...new Set(allTags)];
+            if (uniqueTags.length >= 5) {
+                achievements.push({
+                    name: '文化多面手',
+                    emoji: '🎭',
+                    description: `体验了${uniqueTags.length}种不同类型的文化`,
+                    achieved: true,
+                    date: this.getAchievementDate(5)
+                });
+            }
+        }
+        
+        return achievements;
+    }
+    
+    getAchievementDate(milestone) {
+        // For simplicity, return current date for achieved milestones
+        // In a more sophisticated implementation, this could track actual achievement dates
+        return new Date().toLocaleDateString('zh-CN');
+    }
+    
+    updateAchievements(visitedCount) {
+        const achievements = this.calculateAchievements(visitedCount);
+        const achievedCount = achievements.filter(a => a.achieved).length;
+        
+        // Update achievement display
+        const achievementElement = document.getElementById('achievementCount');
+        if (achievementElement) {
+            achievementElement.textContent = achievedCount;
+        }
+        
+        // Store achievements for poster generation
+        this.currentAchievements = achievements;
     }
 
     openMuseumModal(museum) {
@@ -8625,6 +8812,80 @@ class MuseumCheckApp {
                 </div>
             `;
         }).join('');
+    }
+
+    showAchievementModal() {
+        this.renderAchievements();
+        document.getElementById('achievementModal').classList.remove('hidden');
+        
+        // Track achievement view
+        this.trackEvent('achievements_viewed', {
+            'visited_count': this.visitedMuseums.length,
+            'achievement_count': this.currentAchievements ? this.currentAchievements.filter(a => a.achieved).length : 0
+        });
+    }
+
+    closeAchievementModal() {
+        document.getElementById('achievementModal').classList.add('hidden');
+        
+        // Hide poster section when closing
+        const posterSection = document.getElementById('achievementPosterSection');
+        if (posterSection) {
+            posterSection.style.display = 'none';
+        }
+    }
+
+    renderAchievements() {
+        const visitedCount = this.visitedMuseums.length;
+        const achievements = this.calculateAchievements(visitedCount);
+        const achievedCount = achievements.filter(a => a.achieved).length;
+        
+        // Update summary stats
+        document.getElementById('totalAchievements').textContent = achievedCount;
+        document.getElementById('visitProgress').textContent = `${visitedCount}/120`;
+        
+        // Render achievement list
+        const achievementList = document.getElementById('achievementList');
+        achievementList.innerHTML = achievements.map(achievement => {
+            const progressBar = achievement.achieved ? '' : `
+                <div class="achievement-progress">
+                    进度: ${achievement.progress}/${achievement.visits} (还需${achievement.remaining}个)
+                </div>
+            `;
+            
+            const dateDisplay = achievement.achieved ? `
+                <div class="achievement-date">获得于 ${achievement.date}</div>
+            ` : '';
+            
+            return `
+                <div class="achievement-item ${achievement.achieved ? 'achieved' : 'pending'}">
+                    <div class="achievement-emoji">${achievement.emoji}</div>
+                    <div class="achievement-name">${achievement.name}</div>
+                    <div class="achievement-description">${achievement.description}</div>
+                    ${dateDisplay}
+                    ${progressBar}
+                </div>
+            `;
+        }).join('');
+        
+        // Set up achievement poster generation
+        this.setupAchievementPosterGeneration();
+    }
+    
+    setupAchievementPosterGeneration() {
+        const generateBtn = document.getElementById('generateAchievementPoster');
+        const downloadBtn = document.getElementById('downloadAchievementPoster');
+        
+        generateBtn.replaceWith(generateBtn.cloneNode(true));
+        downloadBtn.replaceWith(downloadBtn.cloneNode(true));
+        
+        document.getElementById('generateAchievementPoster').addEventListener('click', () => {
+            this.generateAchievementPoster();
+        });
+        
+        document.getElementById('downloadAchievementPoster').addEventListener('click', () => {
+            this.downloadAchievementPoster();
+        });
     }
 
     editChecklistItem(button) {
@@ -9336,6 +9597,161 @@ class MuseumCheckApp {
             'museum_id': museum.id,
             'museum_name': museum.name,
             'age_group': this.currentAge
+        });
+    }
+
+    generateAchievementPoster() {
+        const canvas = document.getElementById('achievementPosterCanvas');
+        const ctx = canvas.getContext('2d');
+        const preview = document.getElementById('achievementPosterPreview');
+        
+        const visitedCount = this.visitedMuseums.length;
+        const achievements = this.calculateAchievements(visitedCount);
+        const achievedAchievements = achievements.filter(a => a.achieved);
+        
+        // Set canvas size for good quality
+        canvas.width = 1080;
+        canvas.height = 1400; // Taller for achievements
+        
+        // Background gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, '#667eea');
+        gradient.addColorStop(1, '#764ba2');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Header section
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillRect(40, 40, canvas.width - 80, 120);
+        
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 48px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🏆 博物馆成就榜', canvas.width / 2, 110);
+        
+        // Stats section  
+        let yPosition = 200;
+        ctx.font = 'bold 36px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.fillText(`🏛️ 已参观 ${visitedCount} / 120 家博物馆`, canvas.width / 2, yPosition);
+        
+        yPosition += 60;
+        const percentage = Math.round((visitedCount / 120) * 100);
+        ctx.font = '28px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.fillText(`完成度: ${percentage}% | 获得成就: ${achievedAchievements.length}个`, canvas.width / 2, yPosition);
+        
+        // Progress bar
+        yPosition += 50;
+        const barWidth = 600;
+        const barHeight = 20;
+        const barX = (canvas.width - barWidth) / 2;
+        
+        // Background bar
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.fillRect(barX, yPosition, barWidth, barHeight);
+        
+        // Progress bar
+        ctx.fillStyle = '#4CAF50';
+        ctx.fillRect(barX, yPosition, (barWidth * visitedCount) / 120, barHeight);
+        
+        // Achievement list
+        yPosition += 80;
+        ctx.font = '24px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.fillText('🎖️ 已获得成就', canvas.width / 2, yPosition);
+        
+        yPosition += 40;
+        if (achievedAchievements.length === 0) {
+            ctx.font = '20px "PingFang SC", "Microsoft YaHei", sans-serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.fillText('继续参观博物馆来解锁成就吧！', canvas.width / 2, yPosition);
+        } else {
+            // Display achievements in grid
+            const achievementsPerRow = 2;
+            const achievementWidth = 250;
+            const achievementHeight = 120;
+            const startX = (canvas.width - (achievementsPerRow * achievementWidth + (achievementsPerRow - 1) * 40)) / 2;
+            
+            achievedAchievements.slice(0, 8).forEach((achievement, index) => {
+                const row = Math.floor(index / achievementsPerRow);
+                const col = index % achievementsPerRow;
+                const x = startX + col * (achievementWidth + 40);
+                const y = yPosition + row * (achievementHeight + 20);
+                
+                // Achievement background
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.fillRect(x, y, achievementWidth, achievementHeight);
+                
+                // Achievement emoji
+                ctx.font = '32px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(achievement.emoji, x + achievementWidth/2, y + 40);
+                
+                // Achievement name
+                ctx.font = 'bold 18px "PingFang SC", "Microsoft YaHei", sans-serif';
+                ctx.fillStyle = 'white';
+                ctx.fillText(achievement.name, x + achievementWidth/2, y + 70);
+                
+                // Achievement description
+                ctx.font = '14px "PingFang SC", "Microsoft YaHei", sans-serif';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.fillText(achievement.description, x + achievementWidth/2, y + 90);
+            });
+            
+            if (achievedAchievements.length > 8) {
+                const remainingCount = achievedAchievements.length - 8;
+                yPosition += Math.ceil(Math.min(achievedAchievements.length, 8) / achievementsPerRow) * (achievementHeight + 20) + 40;
+                ctx.font = '18px "PingFang SC", "Microsoft YaHei", sans-serif';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.textAlign = 'center';
+                ctx.fillText(`...还有 ${remainingCount} 个成就`, canvas.width / 2, yPosition);
+            }
+        }
+        
+        // Footer
+        yPosition = canvas.height - 120;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillRect(40, yPosition, canvas.width - 80, 80);
+        
+        ctx.font = '20px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.fillText('博物馆打卡 - 让孩子爱上博物馆之旅', canvas.width / 2, yPosition + 35);
+        
+        const visitDate = new Date().toLocaleDateString('zh-CN');
+        ctx.font = '16px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.fillText(`生成于 ${visitDate}`, canvas.width / 2, yPosition + 60);
+        
+        // Show preview
+        preview.innerHTML = '';
+        const clonedCanvas = canvas.cloneNode(true);
+        const clonedCtx = clonedCanvas.getContext('2d');
+        clonedCtx.drawImage(canvas, 0, 0);
+        clonedCanvas.style.display = 'block';
+        preview.appendChild(clonedCanvas);
+        
+        // Show poster section and download button
+        document.getElementById('achievementPosterSection').style.display = 'block';
+        document.getElementById('downloadAchievementPoster').style.display = 'inline-block';
+        
+        // Track poster generation
+        this.trackEvent('achievement_poster_generated', {
+            'visited_count': visitedCount,
+            'achievement_count': achievedAchievements.length,
+            'completion_percentage': percentage
+        });
+    }
+    
+    downloadAchievementPoster() {
+        const canvas = document.getElementById('achievementPosterCanvas');
+        const link = document.createElement('a');
+        link.download = `博物馆成就榜_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        // Track download
+        this.trackEvent('achievement_poster_downloaded', {
+            'visited_count': this.visitedMuseums.length,
+            'achievement_count': this.currentAchievements ? this.currentAchievements.filter(a => a.achieved).length : 0
         });
     }
 }
