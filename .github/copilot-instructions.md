@@ -8,7 +8,7 @@ MuseumCheck is a fully functional web application designed to help parents and c
 
 **IMPORTANT**: This is a COMPLETE, FULLY FUNCTIONAL web application. The repository contains:
 - `index.html` - Main application HTML file (4KB)
-- `script.js` - Complete JavaScript application logic (124KB, 3,017 lines, 26 museums with detailed checklists)
+- `script.js` - Complete JavaScript application logic (124KB, 3,017 lines, 120 museums with detailed checklists)
 - `style.css` - Complete CSS styling with responsive design (12KB)
 - `README.md` - Comprehensive documentation
 - `CNAME` - GitHub Pages deployment configuration (museumcheck.cn)
@@ -65,7 +65,7 @@ http-server -p 8000
 
 **What EXISTS**:
 - Complete HTML/CSS/JavaScript application
-- 26 major Chinese museums with detailed data
+- 120 major Chinese museums with detailed data
 - Age-appropriate content for 3 age groups (3-6, 7-12, 13-18 years)
 - Full localStorage persistence
 - Responsive design
@@ -149,7 +149,7 @@ Manual testing remains important alongside unit tests:
 1. **Core Functionality Testing** (ALWAYS do this):
    - Load application: `python3 -m http.server 8000` then visit http://localhost:8000
    - Test age group selector (3-6岁, 7-12岁, 13-18岁)
-   - Click museum cards to open detailed checklists (26 museums available)
+   - Click museum cards to open detailed checklists (120 museums available)
    - Test parent preparation vs. child tasks tabs
    - Check/uncheck checklist items and verify they persist
    - Mark museums as visited and verify visit counter updates
@@ -173,13 +173,13 @@ Execute these FULL scenarios after any changes:
 1. **Parent Planning Workflow**:
    - Open application at http://localhost:8000  
    - Select child's age group (e.g., "7-12岁 (小学)")
-   - Browse museum list (26 museums should display)
+   - Browse museum list (120 museums should display)
    - Click "故宫博物院" (Forbidden City) to open modal
    - Review parent preparation checklist (age-appropriate items)
    - Check off 2-3 preparation items
    - Switch to "孩子任务" tab, review child tasks
    - Close modal, mark museum as visited (checkbox on museum card)
-   - Verify visit counter updates (e.g., "1/26 已参观 (3.8%)")
+   - Verify visit counter updates (e.g., "1/120 已参观 (0.8%)")
    - Refresh browser - confirm all data persists
 
 2. **Progress Tracking Workflow**:
@@ -237,7 +237,7 @@ localStorage.getItem('museumChecklists')
 ```
 
 ### Application Features (FULLY IMPLEMENTED)
-- **26 Major Chinese Museums**: Complete data including locations, descriptions, tags
+- **120 Major Chinese Museums**: Complete data including locations, descriptions, tags
 - **Age-Appropriate Content**: 3 distinct age groups with different complexity levels
 - **Dual Checklist System**: Parent preparation + child exploration tasks
 - **Progress Tracking**: Visual progress with percentages and counters
@@ -391,7 +391,7 @@ localStorage.setItem('museumChecklists', JSON.stringify(checklistData));
 - **Server startup**: 1-2 seconds for Python HTTP server
 - **Application load**: Instantaneous (static files)
 - **File sizes**: index.html (4KB), script.js (124KB, 3,017 lines), style.css (12KB)
-- **Museum data**: 26 museums × 3 age groups × 2 checklist types = 156 unique checklists
+- **Museum data**: 120 museums × 3 age groups × 2 checklist types = 720 unique checklists
 - **localStorage usage**: Minimal (<1KB typical usage, <100KB theoretical maximum)
 
 ### Optimization Notes
@@ -427,8 +427,8 @@ When updating the application:
 - **Analytics**: Google Analytics 4 (GA_MEASUREMENT_ID: G-YHF52B1NMH)
 - **Domain**: museumcheck.cn (custom domain via CNAME)
 
-### Complete Museum List (26 Museums)
-The application includes these major Chinese museums:
+### Complete Museum List (120 Museums)
+The application includes 120 major Chinese museums covering all provinces and regions, including:
 1. 故宫博物院 (Beijing)
 2. 中国国家博物馆 (Beijing)
 3. 上海博物馆 (Shanghai)

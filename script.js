@@ -1,8 +1,15 @@
 // Recent
-const RECENT_CHANGES = [
-    version: "3.0.1",
-    lastUpdate: "2025-08-31",
+const RECENT_CHANGES = {
+    version: "2.1.11",
+    lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.1.11",
+            title: "更新文档中的博物馆数量",
+            description: "更正文档中过时的博物馆数量信息，从26家更新为实际的120家博物馆，确保文档与应用功能保持一致",
+            type: "improvement"
+        },
         {
             date: "2024-08-31",
             version: "3.0.0",
