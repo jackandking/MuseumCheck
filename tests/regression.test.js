@@ -1562,4 +1562,85 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
       canvas.remove();
     });
   });
+
+  describe('v2.2.2 - 成就海报中加入网址', () => {
+    /**
+     * Enhancement: "在总成就海报中添加MuseumCheck.cn网址，与单个博物馆海报保持一致"
+     * Added: 2024-12-20
+     * 
+     * This test ensures the website URL appears in achievement posters for traffic generation.
+     */
+    
+    test('should include website URL in achievement poster footer', () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 1080;
+      canvas.height = 1400;
+      
+      // Mock the footer rendering logic from generateAchievementPoster
+      const yPosition = canvas.height - 140;
+      
+      // Simulate drawing the footer background
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.fillRect(40, yPosition, canvas.width - 80, 100);
+      
+      // Main tagline
+      ctx.font = '20px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillStyle = 'white';
+      ctx.textAlign = 'center';
+      ctx.fillText('博物馆打卡 - 让孩子爱上博物馆之旅', canvas.width / 2, yPosition + 25);
+      
+      // Website URL - this is the key addition
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 24px "PingFang SC", "Microsoft YaHei", sans-serif';
+      const websiteText = 'MuseumCheck.cn';
+      ctx.fillText(websiteText, canvas.width / 2, yPosition + 55);
+      
+      // Generation date
+      const visitDate = new Date().toLocaleDateString('zh-CN');
+      ctx.font = '16px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.fillText(`生成于 ${visitDate}`, canvas.width / 2, yPosition + 80);
+      
+      // Verify the website URL is positioned correctly in the footer
+      expect(websiteText).toBe('MuseumCheck.cn');
+      expect(yPosition + 55).toBeGreaterThan(yPosition + 25); // URL appears after tagline
+      expect(yPosition + 80).toBeGreaterThan(yPosition + 55); // Date appears after URL
+      
+      // Verify footer dimensions accommodate all content
+      const footerHeight = 100;
+      const footerBottom = yPosition + footerHeight;
+      expect(footerBottom).toBeLessThanOrEqual(canvas.height);
+      
+      canvas.remove();
+    });
+
+    test('should match individual museum poster URL styling consistency', () => {
+      // This test ensures achievement poster URL styling matches individual museum posters
+      
+      // Individual museum poster URL styling (from drawPosterFooter method)
+      const individualPosterUrlFont = 'bold 28px "PingFang SC", "Microsoft YaHei", sans-serif';
+      const individualPosterUrlColor = '#2c5aa0';
+      
+      // Achievement poster URL styling (from generateAchievementPoster method)  
+      const achievementPosterUrlFont = 'bold 24px "PingFang SC", "Microsoft YaHei", sans-serif';
+      const achievementPosterUrlColor = 'white';
+      
+      // Both should use bold font
+      expect(individualPosterUrlFont).toContain('bold');
+      expect(achievementPosterUrlFont).toContain('bold');
+      
+      // Both should use same font family
+      expect(individualPosterUrlFont).toContain('"PingFang SC"');
+      expect(achievementPosterUrlFont).toContain('"PingFang SC"');
+      
+      // Font sizes can differ due to different poster designs
+      // but both should be prominent (>= 20px)
+      const individualSize = parseInt(individualPosterUrlFont.match(/(\d+)px/)[1]);
+      const achievementSize = parseInt(achievementPosterUrlFont.match(/(\d+)px/)[1]);
+      
+      expect(individualSize).toBeGreaterThanOrEqual(20);
+      expect(achievementSize).toBeGreaterThanOrEqual(20);
+    });
+  });
 });

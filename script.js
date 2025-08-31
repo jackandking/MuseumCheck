@@ -1,8 +1,15 @@
 // Recent
 const RECENT_CHANGES = {
-    version: "2.2.1",
+    version: "2.2.2",
     lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.2.2",
+            title: "成就海报中加入网址",
+            description: "在总成就海报中添加MuseumCheck.cn网址，与单个博物馆海报保持一致，增强品牌推广和流量吸引效果",
+            type: "improvement"
+        },
         {
             date: "2024-12-20",
             version: "2.2.1",
@@ -9707,19 +9714,24 @@ class MuseumCheckApp {
         }
         
         // Footer
-        yPosition = canvas.height - 120;
+        yPosition = canvas.height - 140; // Increase footer height to accommodate website URL
         ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-        ctx.fillRect(40, yPosition, canvas.width - 80, 80);
+        ctx.fillRect(40, yPosition, canvas.width - 80, 100);
         
         ctx.font = '20px "PingFang SC", "Microsoft YaHei", sans-serif';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.fillText('博物馆打卡 - 让孩子爱上博物馆之旅', canvas.width / 2, yPosition + 35);
+        ctx.fillText('博物馆打卡 - 让孩子爱上博物馆之旅', canvas.width / 2, yPosition + 25);
+        
+        // Add website URL prominently for traffic generation
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 24px "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.fillText('MuseumCheck.cn', canvas.width / 2, yPosition + 55);
         
         const visitDate = new Date().toLocaleDateString('zh-CN');
         ctx.font = '16px "PingFang SC", "Microsoft YaHei", sans-serif';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-        ctx.fillText(`生成于 ${visitDate}`, canvas.width / 2, yPosition + 60);
+        ctx.fillText(`生成于 ${visitDate}`, canvas.width / 2, yPosition + 80);
         
         // Show preview
         preview.innerHTML = '';
