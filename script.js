@@ -1,14 +1,28 @@
-// Recent changes and version information
-const RECENT_CHANGES = [
-    version: "3.0.0",
-    lastUpdate: "2025-08-31",
+// Recent
+const RECENT_CHANGES = {
+    version: "2.1.11",
+    lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.1.11",
+            title: "更新文档中的博物馆数量",
+            description: "更正文档中过时的博物馆数量信息，从26家更新为实际的120家博物馆，确保文档与应用功能保持一致",
+            type: "improvement"
+        },
         {
             date: "2024-08-31",
             version: "3.0.0",
             title: "扩展到120家博物馆",
             description: "大幅扩展博物馆数量从26家增加到120家，覆盖全国各省市区，包括历史博物馆、科技馆、艺术馆、专业博物馆等多种类型，为用户提供更丰富的博物馆选择和文化体验",
             type: "feature"
+        },
+        {
+            date: "2024-12-20",
+            version: "2.1.10",
+            title: "进一步优化海报设计布局",
+            description: "增大模态框尺寸提升海报展示效果，优化内容间距和布局比例，提升空间利用率和视觉密度，增强整体美观度和专业感",
+            type: "improvement"
         },
         {
             date: "2024-12-20",
@@ -8940,9 +8954,9 @@ class MuseumCheckApp {
         const completedTasks = completed.map(index => childTasks[index]).filter(Boolean);
         
         // Calculate dynamic height based on number of completed tasks
-        const baseHeight = 400; // Header and footer space (reduced from 600)
-        const taskHeight = 50; // Height per task (matches actual taskSpacing in drawTasksWithPhotos)
-        const minHeight = 600; // Minimum reasonable height (reduced from 1100)
+        const baseHeight = 350; // Reduced base height for more compact design
+        const taskHeight = 45; // Slightly reduced height per task for better density
+        const minHeight = 550; // Further reduced minimum height
         const calculatedHeight = baseHeight + (completedTasks.length * taskHeight);
         const dynamicHeight = Math.max(minHeight, calculatedHeight);
         
@@ -8992,7 +9006,7 @@ class MuseumCheckApp {
             }
         });
         
-        let yPosition = 300;
+        let yPosition = 280; // Reduced gap between header and content
         
         if (completedTasks.length > 0) {
             // Completed tasks header
@@ -9000,7 +9014,7 @@ class MuseumCheckApp {
             ctx.font = 'bold 32px "PingFang SC", "Microsoft YaHei", sans-serif';
             ctx.textAlign = 'left';
             ctx.fillText('✅ 已完成的探索任务:', 80, yPosition);
-            yPosition += 60;
+            yPosition += 50; // Reduced spacing after header
             
             // Use async/await pattern to load and draw photos
             this.drawTasksWithPhotos(ctx, completedTasks, taskPhotos, completed, yPosition, canvas, preview, museum);
@@ -9011,13 +9025,13 @@ class MuseumCheckApp {
             ctx.font = '28px "PingFang SC", "Microsoft YaHei", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText('还没有完成的任务，继续加油！', canvas.width / 2, yPosition);
-            yPosition += 60; // Add some space after the message
+            yPosition += 50; // Reduced space after the message
             
             // Footer for no tasks case - position after content
             const finalY = this.drawPosterFooter(ctx, canvas, yPosition);
             
             // Resize canvas to fit actual content + margins
-            const borderMargin = 60; // Extra margin for border
+            const borderMargin = 50; // Optimized margin for border
             const newHeight = Math.max(finalY + borderMargin, 400);
             if (newHeight !== canvas.height) {
                 canvas.height = newHeight;
@@ -9053,10 +9067,10 @@ class MuseumCheckApp {
                 ctx.fillStyle = '#666';
                 ctx.font = '28px "PingFang SC", "Microsoft YaHei", sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('还没有完成的任务，继续加油！', canvas.width / 2, 300);
+                ctx.fillText('还没有完成的任务，继续加油！', canvas.width / 2, 280);
                 
                 // Redraw footer
-                this.drawPosterFooter(ctx, canvas, 360);
+                this.drawPosterFooter(ctx, canvas, 330);
             } else {
                 // If no resize needed, still need to draw the border to encompass footer
                 ctx.strokeStyle = '#2c5aa0';
@@ -9112,9 +9126,9 @@ class MuseumCheckApp {
         
         // Calculate layout parameters based on photo count - OPTIMIZED for better space utilization
         const hasPhotos = photoCount > 0;
-        const taskListWidth = hasPhotos ? canvas.width * 0.45 : canvas.width - 160; // Reduced tasks area
-        const photoAreaStartX = hasPhotos ? canvas.width * 0.47 : 0; // Start photos closer
-        const photoAreaWidth = hasPhotos ? canvas.width * 0.52 : 0; // Increased photo area
+        const taskListWidth = hasPhotos ? canvas.width * 0.42 : canvas.width - 160; // Slightly reduced tasks area
+        const photoAreaStartX = hasPhotos ? canvas.width * 0.45 : 0; // Better balance between sections
+        const photoAreaWidth = hasPhotos ? canvas.width * 0.53 : 0; // Optimized photo area size
         
         // Calculate compact photo grid layout - OPTIMIZED for larger photos
         let photosPerRow = 2;
@@ -9137,8 +9151,8 @@ class MuseumCheckApp {
         const photoRows = Math.ceil(photoCount / photosPerRow);
         const photoGridHeight = photoRows * (photoSize + 15) + 30; // Extra padding
         
-        // Draw task list on the left with compact spacing
-        const taskSpacing = 45; // Much more compact than 200px
+        // Draw task list on the left with optimized spacing
+        const taskSpacing = 40; // Further optimized for better density
         let taskEndY = yPosition;
         
         completedTasks.forEach((task, taskIndex) => {
@@ -9184,14 +9198,14 @@ class MuseumCheckApp {
             ctx.font = 'bold 24px "PingFang SC", "Microsoft YaHei", sans-serif';
             ctx.fillStyle = '#666';
             ctx.textAlign = 'center';
-            ctx.fillText('📸 探索留念', photoAreaStartX + photoAreaWidth / 2, startY + 40);
+            ctx.fillText('📸 探索留念', photoAreaStartX + photoAreaWidth / 2, startY + 35);
             
             // Reset font for photo labels
             ctx.font = '18px "PingFang SC", "Microsoft YaHei", sans-serif';
             ctx.textAlign = 'left';
             ctx.fillStyle = '#333';
             
-            let photoGridStartY = startY + 70;
+            let photoGridStartY = startY + 60; // Reduced spacing
             let photoIndex = 0;
             
             for (let row = 0; row < photoRows && photoIndex < validPhotos.length; row++) {
@@ -9232,8 +9246,8 @@ class MuseumCheckApp {
         }
         
         // Use the maximum of task end position and photo grid end position
-        const photoGridEndY = hasPhotos ? startY + 70 + photoGridHeight : startY;
-        yPosition = Math.max(taskEndY, photoGridEndY) + 40;
+        const photoGridEndY = hasPhotos ? startY + 60 + photoGridHeight : startY;
+        yPosition = Math.max(taskEndY, photoGridEndY) + 30; // Reduced bottom spacing
         
         // Calculate required height before drawing footer
         const footerHeight = 110; // footer content (70) + bottom padding (40)
