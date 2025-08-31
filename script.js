@@ -1,8 +1,15 @@
 // Recent
 const RECENT_CHANGES = {
-    version: "2.2.2",
+    version: "2.1.5",
     lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.1.5",
+            title: "修复9个任务时海报显示不全问题",
+            description: "优化了海报高度计算逻辑，增加了更充足的缓冲空间以适应中文文本换行，确保9个及以上完成任务的海报能够完整显示所有内容包括底部信息",
+            type: "bugfix"
+        },
         {
             date: "2024-12-20",
             version: "2.2.2",
@@ -9221,11 +9228,32 @@ class MuseumCheckApp {
         const childTasks = customItems ? customItems.map(item => item.text) : museum.checklists.child[this.currentAge];
         const completedTasks = completed.map(index => childTasks[index]).filter(Boolean);
         
-        // Calculate dynamic height based on number of completed tasks
-        const baseHeight = 350; // Reduced base height for more compact design
-        const taskHeight = 45; // Slightly reduced height per task for better density
-        const minHeight = 550; // Further reduced minimum height
-        const calculatedHeight = baseHeight + (completedTasks.length * taskHeight);
+        // Calculate dynamic height based on number of completed tasks - IMPROVED for better accuracy
+        const baseHeight = 350; // Header and basic layout space
+        const minHeight = 550; // Minimum height for basic layout
+        
+        // Improved height calculation accounting for realistic content requirements
+        let calculatedHeight = baseHeight;
+        
+        if (completedTasks.length > 0) {
+            // Estimate realistic space requirements for tasks and photos
+            const avgLinesPerTask = 2.2; // Average lines per Chinese task (realistic estimate)
+            const lineHeight = 35; // Height per text line
+            const taskSpacing = 40; // Spacing between tasks
+            const photoAreaHeight = Math.min(300, completedTasks.length * 60); // Photo grid height estimate
+            const footerHeight = 110; // Footer space
+            const margins = 80; // Top and bottom margins
+            
+            // More accurate calculation
+            const textHeight = completedTasks.length * avgLinesPerTask * lineHeight;
+            const spacingHeight = Math.max(0, completedTasks.length - 1) * taskSpacing;
+            
+            // FIX: Add generous buffer for text wrapping unpredictability, especially for 9+ tasks
+            const bufferForTextWrapping = completedTasks.length * 50; // Extra 50px per task for wrapping
+            
+            calculatedHeight = baseHeight + textHeight + spacingHeight + photoAreaHeight + footerHeight + margins + bufferForTextWrapping;
+        }
+        
         const dynamicHeight = Math.max(minHeight, calculatedHeight);
         
         // Set canvas size for good quality (Instagram/WeChat friendly)

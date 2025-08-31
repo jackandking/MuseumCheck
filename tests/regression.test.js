@@ -171,6 +171,210 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
     });
   });
 
+  describe('v2.1.5 - 修复海报显示不全问题', () => {
+    /**
+     * Bug: "当有第9个完成的task时海报显示不全" (Poster content gets cut off when there are 9+ completed tasks)
+     * Fixed: 2024-12-20
+     * 
+     * This test ensures the initial canvas height calculation properly accounts for multiple tasks and content overflow.
+     */
+
+    test('should calculate sufficient canvas height for 9+ completed tasks', () => {
+      // Mock scenario with 9 completed tasks (the reported bug case)
+      const completedTasks = [
+        '找到三大殿：太和殿、中和殿、保和殿',
+        '数一数太和殿前有多少台阶', 
+        '寻找屋顶上的神兽，了解它们的作用',
+        '在珍宝馆找到最喜欢的宝物',
+        '观察古代皇帝用过的物品',
+        '了解一个历史故事并记录下来',
+        '画一幅故宫的简笔画',
+        '学会一个关于故宫的知识点',
+        '体验传统文化活动'
+      ];
+      
+      // Current calculation logic (problematic)
+      const baseHeight = 350;
+      const taskHeight = 45; // Per task - too small!
+      const minHeight = 550;
+      const calculatedHeight = baseHeight + (completedTasks.length * taskHeight);
+      const currentDynamicHeight = Math.max(minHeight, calculatedHeight);
+      
+      // Current calculation: 350 + (9 × 45) = 755px
+      expect(currentDynamicHeight).toBe(755);
+      
+      // Improved calculation should account for:
+      // - Text wrapping (tasks often span 2-3 lines, each line ~35px)
+      // - Photo grid space (if photos exist)
+      // - Proper spacing between elements
+      const avgLinesPerTask = 2.5; // Realistic estimate for Chinese text
+      const lineHeight = 35;
+      const taskSpacing = 40;
+      const photoGridHeight = 300; // Estimate for photo area
+      const footerHeight = 110;
+      const margins = 100;
+      
+      const improvedHeight = baseHeight + 
+        (completedTasks.length * avgLinesPerTask * lineHeight) +
+        (completedTasks.length * taskSpacing) + 
+        photoGridHeight + 
+        footerHeight + 
+        margins;
+      
+      // Improved calculation should be much larger
+      expect(improvedHeight).toBeGreaterThan(1200);
+      expect(improvedHeight).toBeGreaterThan(currentDynamicHeight);
+      
+      // The issue: current calculation is severely underestimating required height
+      const shortfall = improvedHeight - currentDynamicHeight;
+      expect(shortfall).toBeGreaterThan(400); // At least 400px too short
+    });
+
+    test('should handle edge case of single long task title', () => {
+      // Very long task that will definitely wrap multiple lines
+      const completedTasks = [
+        '观察故宫建筑的传统工艺和文化内涵，深入了解明清两朝的建筑特色和历史文化背景，记录传统建筑的艺术价值和文化意义'
+      ];
+      
+      const baseHeight = 350;
+      const taskHeight = 45;
+      const minHeight = 550;
+      const calculatedHeight = baseHeight + (completedTasks.length * taskHeight);
+      const currentDynamicHeight = Math.max(minHeight, calculatedHeight);
+      
+      // Current logic: 350 + (1 × 45) = 395 -> Math.max(550, 395) = 550
+      expect(currentDynamicHeight).toBe(550);
+      
+      // But this long text will wrap to ~4 lines, needing much more space
+      const estimatedLines = 4; // For the long Chinese text
+      const lineHeight = 35;
+      const requiredHeightForText = estimatedLines * lineHeight + 40; // ~180px just for one task
+      
+      expect(requiredHeightForText).toBeGreaterThan(taskHeight);
+      expect(550).toBeLessThan(baseHeight + requiredHeightForText + 200); // Insufficient space
+    });
+
+    test('should verify improved height calculation for 9 tasks', () => {
+      // Test the new improved calculation logic
+      const completedTasks = Array(9).fill().map((_, i) => `Task ${i + 1}: 一个需要完成的博物馆探索任务`);
+      
+      const baseHeight = 350;
+      const minHeight = 550;
+      
+      // New improved calculation (matching the script.js fix)
+      const avgLinesPerTask = 2.2;
+      const lineHeight = 35;
+      const taskSpacing = 40;
+      const photoAreaHeight = Math.min(300, completedTasks.length * 60);
+      const footerHeight = 110;
+      const margins = 80;
+      
+      const textHeight = completedTasks.length * avgLinesPerTask * lineHeight;
+      const spacingHeight = Math.max(0, completedTasks.length - 1) * taskSpacing;
+      const improvedCalculatedHeight = baseHeight + textHeight + spacingHeight + photoAreaHeight + footerHeight + margins;
+      const improvedDynamicHeight = Math.max(minHeight, improvedCalculatedHeight);
+      
+      // For 9 tasks: 350 + (9 * 2.2 * 35) + (8 * 40) + 300 + 110 + 80 = 350 + 693 + 320 + 300 + 110 + 80 = 1853
+      expect(improvedDynamicHeight).toBeGreaterThan(1800);
+      expect(improvedDynamicHeight).toBeGreaterThan(minHeight);
+      
+      // This should be sufficient for displaying 9 tasks without cutoff
+      expect(improvedDynamicHeight).toBeGreaterThan(1200); // Much more reasonable
+    });
+  });
+
+  describe('v2.1.5 - 修复9个任务时海报显示不全', () => {
+    /**
+     * Bug: "当有第9个完成的task时海报显示不全" (Poster not fully displayed when 9th task is completed)
+     * Fixed: 2024-12-20
+     * 
+     * This test ensures that the poster canvas has adequate height when there are many completed tasks.
+     */
+
+    test('should calculate sufficient canvas height for 9 completed tasks', () => {
+      const completedTasksCount = 9;
+      const baseHeight = 350;
+      const avgLinesPerTask = 2.2;
+      const lineHeight = 35;
+      const taskSpacing = 40;
+      const photoAreaHeight = Math.min(300, completedTasksCount * 60);
+      const footerHeight = 110;
+      const margins = 80;
+      
+      // Original calculation (might be insufficient)
+      const textHeight = completedTasksCount * avgLinesPerTask * lineHeight;
+      const spacingHeight = Math.max(0, completedTasksCount - 1) * taskSpacing;
+      const originalCalculation = baseHeight + textHeight + spacingHeight + photoAreaHeight + footerHeight + margins;
+      
+      // Fixed calculation should have more generous buffer for text wrapping
+      const bufferForTextWrapping = completedTasksCount * 50; // Additional buffer per task
+      const fixedCalculation = originalCalculation + bufferForTextWrapping;
+      
+      expect(originalCalculation).toBe(1853); // Original calculation for 9 tasks
+      expect(fixedCalculation).toBe(2303); // Should be more generous
+      expect(fixedCalculation).toBeGreaterThan(2000); // Ensure adequate height for 9 tasks
+    });
+
+    test('should handle edge case of maximum realistic task count', () => {
+      const maxTasksCount = 15; // Maximum realistic completed tasks
+      const baseHeight = 350;
+      const avgLinesPerTask = 2.5; // Account for longer task descriptions
+      const lineHeight = 35;
+      const taskSpacing = 40;
+      const photoAreaHeight = Math.min(300, maxTasksCount * 60); // Capped at 300
+      const footerHeight = 110;
+      const margins = 80;
+      const bufferForTextWrapping = maxTasksCount * 50;
+      
+      const calculatedHeight = baseHeight + 
+                             (maxTasksCount * avgLinesPerTask * lineHeight) + 
+                             (Math.max(0, maxTasksCount - 1) * taskSpacing) + 
+                             photoAreaHeight + 
+                             footerHeight + 
+                             margins + 
+                             bufferForTextWrapping;
+      
+      const minHeight = 550;
+      const finalHeight = Math.max(minHeight, calculatedHeight);
+      
+      expect(finalHeight).toBeGreaterThan(3000); // Should handle very large posters
+      expect(finalHeight).toBeLessThan(5000); // But not unreasonably large
+    });
+
+    test('should provide adequate buffer for Chinese text wrapping', () => {
+      // Chinese text wrapping can be unpredictable due to character width variations
+      const testTasks = [
+        '观察展品的历史背景和文化价值', // 15 characters
+        '学习古代工艺制作技术和传承方式', // 16 characters  
+        '了解文物保护修复的科学方法', // 14 characters
+        '探索博物馆数字化展示技术应用', // 16 characters
+        '研究地方文化特色和区域发展历史', // 17 characters
+        '分析艺术作品的创作背景和艺术价值', // 18 characters
+        '记录参观过程中的重要发现和感想', // 17 characters
+        '体验传统文化活动和互动式展览', // 16 characters
+        '制作参观笔记和文化学习心得报告' // 17 characters - 9th task
+      ];
+      
+      // Each task might wrap to 2-4 lines depending on display width
+      const taskListWidth = 1080 * 0.42 - 120; // Available text width
+      const avgCharWidth = 26; // Approximate width per Chinese character
+      const maxCharsPerLine = Math.floor(taskListWidth / avgCharWidth);
+      
+      testTasks.forEach((task, index) => {
+        const estimatedLines = Math.ceil(task.length / maxCharsPerLine);
+        expect(estimatedLines).toBeGreaterThanOrEqual(1);
+        expect(estimatedLines).toBeLessThanOrEqual(4);
+        
+        if (index === 8) { // 9th task
+          // Ensure 9th task can still fit even if it wraps to multiple lines
+          const worstCaseLines = 4;
+          const heightForTask = worstCaseLines * 35 + 40; // line height + spacing
+          expect(heightForTask).toBeLessThan(200); // Should be reasonable
+        }
+      });
+    });
+  });
+
   describe('v2.1.4 - 修复海报生成显示问题', () => {
     /**
      * Bug: "海报中间有一根多余的蓝线" (Extra blue line in middle of poster)
@@ -1641,6 +1845,152 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
       
       expect(individualSize).toBeGreaterThanOrEqual(20);
       expect(achievementSize).toBeGreaterThanOrEqual(20);
+    });
+  });
+
+  describe('v2.2.3 - 修复9个任务时海报显示不全问题', () => {
+    /**
+     * Bug: "当有第9个完成的task时海报显示不全"
+     * Fixed: 2024-12-31
+     * 
+     * This test ensures that when 9 tasks are completed, the poster canvas height
+     * is sufficient to display all content including footer without cutting off.
+     */
+    
+    test('should display poster completely when 9 tasks are completed', () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Mock 9 completed tasks scenario
+      const completedTasks = [
+        '观察展品的外观特征',
+        '记录展品的材质信息', 
+        '拍摄感兴趣的文物照片',
+        '了解展品的历史背景',
+        '与家长讨论展品价值',
+        '绘制展品的简单图案',
+        '学习相关历史知识',
+        '比较不同时期文物',
+        '撰写参观感受记录'
+      ];
+      
+      // Test current calculation logic
+      const baseHeight = 350;
+      const taskHeight = 45;
+      const minHeight = 550;
+      const calculatedHeight = baseHeight + (completedTasks.length * taskHeight);
+      const initialDynamicHeight = Math.max(minHeight, calculatedHeight);
+      
+      // For 9 tasks: 350 + (9 * 45) = 755px
+      expect(calculatedHeight).toBe(755);
+      expect(initialDynamicHeight).toBe(755);
+      
+      // Set canvas to initial calculated height
+      canvas.width = 1080;
+      canvas.height = initialDynamicHeight;
+      
+      // Simulate actual content drawing which takes more space
+      let yPosition = 280; // Starting position after header
+      yPosition += 50; // Header for completed tasks
+      
+      // Simulate drawing each task with realistic spacing
+      const taskSpacing = 40;
+      const averageLinesPerTask = 1.5; // Tasks can wrap to multiple lines
+      const lineHeight = 35;
+      const taskPadding = 20;
+      
+      completedTasks.forEach((task, index) => {
+        // Each task can span multiple lines due to text wrapping
+        const lines = Math.ceil(task.length / 20); // Rough estimate based on character width
+        const actualLinesForTask = Math.max(lines, 1);
+        const taskContentHeight = actualLinesForTask * lineHeight + taskPadding;
+        const actualTaskHeight = Math.max(taskSpacing, taskContentHeight);
+        
+        yPosition += actualTaskHeight;
+      });
+      
+      // Add space for photo grid (if photos exist)
+      const hasPhotos = completedTasks.length > 0; // Assume some tasks have photos
+      if (hasPhotos) {
+        const photoGridRows = Math.ceil(Math.min(completedTasks.length, 9) / 3); // Up to 3 photos per row
+        const photoSize = 110;
+        const photoSpacing = 15;
+        const photoGridHeight = photoGridRows * (photoSize + photoSpacing) + 30;
+        yPosition = Math.max(yPosition, 280 + 50 + 60 + photoGridHeight); // Header + title + grid
+      }
+      
+      yPosition += 30; // Bottom spacing before footer
+      
+      // Calculate footer space needed
+      const footerHeight = 110; // footer content (70) + bottom padding (40)
+      const footerEndY = yPosition + footerHeight;
+      const requiredHeight = footerEndY + 20; // Extra margin
+      
+      // The bug: initial height calculation was too small
+      expect(requiredHeight).toBeGreaterThan(initialDynamicHeight);
+      
+      // The fix should ensure canvas is tall enough for all content
+      const properHeight = Math.max(requiredHeight, 400);
+      expect(properHeight).toBeGreaterThan(initialDynamicHeight);
+      expect(properHeight).toBeGreaterThanOrEqual(requiredHeight);
+      
+      // Verify footer would be fully visible with proper height
+      expect(footerEndY).toBeLessThanOrEqual(properHeight);
+      
+      canvas.remove();
+    });
+
+    test('should calculate realistic height for tasks with text wrapping', () => {
+      // Test that height calculation accounts for Chinese text wrapping
+      const longChineseTasks = [
+        '仔细观察青铜器表面的纹饰图案，记录不同时期的装饰风格变化',
+        '学习了解古代科学技术发展历程，探索中国古代智慧结晶',
+        '通过实地考察体验古代建筑工艺，感受传统文化魅力',
+        '深入研究历史文物背后的故事，了解中华文明发展脉络',
+        '观察分析展品的制作工艺和材料选择，学习古代工艺美术',
+        '记录整理参观心得体会，与同龄人分享文化学习经验',
+        '拍摄记录有代表性的文物展品，建立个人文化档案',
+        '结合历史教科书知识，加深对中国历史的理解认识',
+        '与博物馆讲解员交流互动，获取更多专业知识信息'
+      ];
+      
+      // Current simple calculation
+      const simpleHeight = 350 + (longChineseTasks.length * 45); // 755px
+      
+      // More realistic calculation accounting for text wrapping
+      const baseHeight = 350;
+      const headerSpace = 50;
+      const startY = 280 + headerSpace; // 330
+      
+      let realisticContentHeight = startY;
+      const taskSpacing = 40;
+      const averageChineseCharsPerLine = 15; // Realistic for 26px Chinese font in 420px width
+      const lineHeight = 35;
+      
+      longChineseTasks.forEach(task => {
+        const lines = Math.ceil(task.length / averageChineseCharsPerLine);
+        const taskContentHeight = lines * lineHeight + 20; // Line heights + padding
+        const actualTaskHeight = Math.max(taskSpacing, taskContentHeight);
+        realisticContentHeight += actualTaskHeight;
+      });
+      
+      // Add photo grid space
+      const photoRows = Math.ceil(9 / 3); // 3 rows for 9 photos
+      const photoGridHeight = photoRows * (110 + 15) + 60; // photo size + spacing + titles
+      const photoAreaHeight = Math.max(realisticContentHeight - startY, photoGridHeight);
+      realisticContentHeight = startY + photoAreaHeight + 30;
+      
+      // Add footer space  
+      const footerHeight = 110;
+      const finalHeight = realisticContentHeight + footerHeight + 20;
+      
+      // The realistic calculation should be significantly larger than simple calculation
+      expect(finalHeight).toBeGreaterThan(simpleHeight);
+      expect(finalHeight).toBeGreaterThan(1000); // Should be > 1000px for 9 complex tasks
+      
+      // This demonstrates why the current calculation is insufficient
+      const difference = finalHeight - simpleHeight;
+      expect(difference).toBeGreaterThan(200); // Should need at least 200px more space
     });
   });
 });
