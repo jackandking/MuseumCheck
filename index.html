@@ -93,6 +93,10 @@
                 <div class="stats">
                     <span id="visitedCount">0</span>/<span id="totalCount">0</span> 已参观
                     (<span id="visitedPercentage">0</span>%)
+                    <div class="achievement-stats">
+                        🏅 获得成就: <span id="achievementCount">0</span>个
+                        <button id="achievementButton" class="achievement-button" title="查看成就详情">🎖️ 我的成就</button>
+                    </div>
                 </div>
                 <div id="museumGrid" class="museum-grid">
                     <!-- Museums will be populated by JavaScript -->
@@ -106,6 +110,37 @@
             <span class="close">&times;</span>
             <h2 id="modalTitle"></h2>
             <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- Achievement Modal -->
+    <div id="achievementModal" class="modal achievement-modal hidden">
+        <div class="modal-content achievement-content">
+            <span class="close">&times;</span>
+            <h2>🎖️ 我的成就</h2>
+            <div class="achievement-summary">
+                <div class="achievement-overview">
+                    <div class="achievement-stat">
+                        <span class="stat-number" id="totalAchievements">0</span>
+                        <span class="stat-label">总成就</span>
+                    </div>
+                    <div class="achievement-stat">
+                        <span class="stat-number" id="visitProgress">0</span>
+                        <span class="stat-label">参观进度</span>
+                    </div>
+                </div>
+                <button id="generateAchievementPoster" class="achievement-poster-button">
+                    🎨 生成成就海报
+                </button>
+            </div>
+            <div id="achievementList" class="achievement-list">
+                <!-- Achievements will be populated by JavaScript -->
+            </div>
+            <div id="achievementPosterSection" class="achievement-poster-section" style="display: none;">
+                <canvas id="achievementPosterCanvas" style="display: none; max-width: 100%;"></canvas>
+                <div id="achievementPosterPreview" class="poster-preview"></div>
+                <button id="downloadAchievementPoster" class="poster-button" style="display: none;">📱 下载成就海报</button>
+            </div>
         </div>
     </div>
 
