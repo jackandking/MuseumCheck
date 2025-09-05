@@ -1,8 +1,15 @@
 // Recent
 const RECENT_CHANGES = {
-    version: "2.1.5",
+    version: "2.2.3",
     lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.2.3",
+            title: "全面SEO优化提升搜索引擎收录",
+            description: "添加完整SEO元标签、Open Graph标签、结构化数据(JSON-LD)、站点地图和robots.txt文件，优化语义化HTML结构，大幅提升百度、Bing等搜索引擎的收录效果和搜索排名",
+            type: "improvement"
+        },
         {
             date: "2024-12-20",
             version: "2.1.5",

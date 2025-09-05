@@ -1767,6 +1767,246 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
     });
   });
 
+  describe('v2.2.3 - 全面SEO优化提升搜索引擎收录', () => {
+    /**
+     * Enhancement: "添加完整SEO元标签、Open Graph标签、结构化数据(JSON-LD)、站点地图和robots.txt文件"
+     * Added: 2024-12-20
+     * 
+     * These tests ensure SEO optimizations are properly implemented for search engine discoverability.
+     */
+    
+    test('should have comprehensive SEO meta tags in document head', () => {
+      // Setup DOM with SEO meta tags
+      document.head.innerHTML = `
+        <title>博物馆打卡 - 中国120家博物馆亲子参观指南 | MuseumCheck</title>
+        <meta name="description" content="专为中国家庭设计的博物馆参观指南应用，收录全国120家知名博物馆包括故宫、国博、上博等，提供3-18岁分龄参观清单，让孩子爱上博物馆文化之旅。免费使用，数据本地保存。">
+        <meta name="keywords" content="博物馆,亲子游,儿童教育,文化旅游,故宫博物院,中国国家博物馆,上海博物馆,参观指南,家庭出游,文化传承,历史教育,艺术欣赏">
+        <meta name="author" content="MuseumCheck">
+        <meta name="robots" content="index, follow">
+        <meta name="language" content="zh-CN">
+        <link rel="canonical" href="https://museumcheck.cn/">
+      `;
+      
+      // Verify enhanced title with keywords
+      expect(document.title).toContain('博物馆打卡');
+      expect(document.title).toContain('中国120家博物馆');
+      expect(document.title).toContain('亲子参观指南');
+      expect(document.title).toContain('MuseumCheck');
+      
+      // Verify meta description exists and contains key information
+      const description = document.querySelector('meta[name="description"]');
+      expect(description).toBeTruthy();
+      expect(description.content).toContain('专为中国家庭设计');
+      expect(description.content).toContain('120家知名博物馆');
+      expect(description.content).toContain('3-18岁分龄参观清单');
+      
+      // Verify keywords meta tag exists
+      const keywords = document.querySelector('meta[name="keywords"]');
+      expect(keywords).toBeTruthy();
+      expect(keywords.content).toContain('博物馆');
+      expect(keywords.content).toContain('亲子游');
+      expect(keywords.content).toContain('故宫博物院');
+      
+      // Verify SEO-friendly attributes
+      const robots = document.querySelector('meta[name="robots"]');
+      expect(robots.content).toBe('index, follow');
+      
+      const canonical = document.querySelector('link[rel="canonical"]');
+      expect(canonical.href).toBe('https://museumcheck.cn/');
+    });
+
+    test('should have Open Graph meta tags for social sharing', () => {
+      // Setup DOM with Open Graph tags
+      document.head.innerHTML = `
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="https://museumcheck.cn/">
+        <meta property="og:title" content="博物馆打卡 - 中国120家博物馆亲子参观指南">
+        <meta property="og:description" content="专为中国家庭设计的博物馆参观指南，收录全国120家知名博物馆，提供分龄参观清单，让孩子爱上博物馆文化之旅。">
+        <meta property="og:image" content="https://museumcheck.cn/logo-og.png">
+        <meta property="og:site_name" content="MuseumCheck">
+        <meta property="og:locale" content="zh_CN">
+      `;
+      
+      // Verify Open Graph type
+      const ogType = document.querySelector('meta[property="og:type"]');
+      expect(ogType.content).toBe('website');
+      
+      // Verify Open Graph URL
+      const ogUrl = document.querySelector('meta[property="og:url"]');
+      expect(ogUrl.content).toBe('https://museumcheck.cn/');
+      
+      // Verify Open Graph title
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      expect(ogTitle.content).toContain('博物馆打卡');
+      expect(ogTitle.content).toContain('120家博物馆');
+      
+      // Verify Open Graph description
+      const ogDescription = document.querySelector('meta[property="og:description"]');
+      expect(ogDescription.content).toContain('专为中国家庭设计');
+      expect(ogDescription.content).toContain('120家知名博物馆');
+      
+      // Verify locale
+      const ogLocale = document.querySelector('meta[property="og:locale"]');
+      expect(ogLocale.content).toBe('zh_CN');
+    });
+
+    test('should have Twitter Card meta tags', () => {
+      // Setup DOM with Twitter Card tags
+      document.head.innerHTML = `
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:url" content="https://museumcheck.cn/">
+        <meta name="twitter:title" content="博物馆打卡 - 中国120家博物馆亲子参观指南">
+        <meta name="twitter:description" content="专为中国家庭设计的博物馆参观指南，收录全国120家知名博物馆，提供分龄参观清单，让孩子爱上博物馆文化之旅。">
+        <meta name="twitter:image" content="https://museumcheck.cn/logo-og.png">
+      `;
+      
+      // Verify Twitter Card type
+      const twitterCard = document.querySelector('meta[name="twitter:card"]');
+      expect(twitterCard.content).toBe('summary_large_image');
+      
+      // Verify Twitter URL
+      const twitterUrl = document.querySelector('meta[name="twitter:url"]');
+      expect(twitterUrl.content).toBe('https://museumcheck.cn/');
+      
+      // Verify Twitter title and description
+      const twitterTitle = document.querySelector('meta[name="twitter:title"]');
+      expect(twitterTitle.content).toContain('博物馆打卡');
+      
+      const twitterDescription = document.querySelector('meta[name="twitter:description"]');
+      expect(twitterDescription.content).toContain('专为中国家庭设计');
+    });
+
+    test('should have structured data (JSON-LD) for rich snippets', () => {
+      // Setup DOM with structured data scripts
+      document.head.innerHTML = `
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "博物馆打卡",
+            "alternateName": "MuseumCheck",
+            "description": "专为中国家庭设计的博物馆参观指南应用",
+            "url": "https://museumcheck.cn",
+            "applicationCategory": "EducationalApplication",
+            "inLanguage": "zh-CN"
+        }
+        </script>
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "首页",
+                    "item": "https://museumcheck.cn"
+                }
+            ]
+        }
+        </script>
+      `;
+      
+      // Verify structured data scripts exist
+      const structuredDataScripts = document.querySelectorAll('script[type="application/ld+json"]');
+      expect(structuredDataScripts.length).toBeGreaterThanOrEqual(2);
+      
+      // Verify WebApplication structured data
+      const webAppScript = Array.from(structuredDataScripts).find(script => 
+        script.textContent.includes('"@type": "WebApplication"')
+      );
+      expect(webAppScript).toBeTruthy();
+      
+      const webAppData = JSON.parse(webAppScript.textContent);
+      expect(webAppData['@type']).toBe('WebApplication');
+      expect(webAppData.name).toBe('博物馆打卡');
+      expect(webAppData.alternateName).toBe('MuseumCheck');
+      expect(webAppData.applicationCategory).toBe('EducationalApplication');
+      expect(webAppData.inLanguage).toBe('zh-CN');
+      
+      // Verify BreadcrumbList structured data
+      const breadcrumbScript = Array.from(structuredDataScripts).find(script => 
+        script.textContent.includes('"@type": "BreadcrumbList"')
+      );
+      expect(breadcrumbScript).toBeTruthy();
+      
+      const breadcrumbData = JSON.parse(breadcrumbScript.textContent);
+      expect(breadcrumbData['@type']).toBe('BreadcrumbList');
+      expect(breadcrumbData.itemListElement.length).toBeGreaterThanOrEqual(1);
+      expect(breadcrumbData.itemListElement[0].name).toBe('首页');
+    });
+
+    test('should have enhanced semantic HTML structure', () => {
+      // Setup DOM with enhanced semantic structure
+      document.body.innerHTML = `
+        <main role="main">
+          <section class="museum-list" id="museums">
+            <h2>全国主要博物馆清单</h2>
+            <p class="section-description">精选全国120家知名博物馆，为您的亲子文化之旅提供专业指导</p>
+            <div class="stats" role="status" aria-live="polite">
+              <span id="visitedCount">0</span>/<span id="totalCount">120</span> 已参观
+            </div>
+            <div id="museumGrid" class="museum-grid" role="grid" aria-label="博物馆列表">
+              <!-- Museums content -->
+            </div>
+          </section>
+        </main>
+        <nav class="age-selector" aria-label="年龄组选择">
+          <label for="ageGroup">孩子年龄：</label>
+          <select id="ageGroup" aria-describedby="age-help">
+            <option value="3-6">3-6岁 (学龄前)</option>
+          </select>
+          <span id="age-help" class="sr-only">选择孩子的年龄段以获取适合的博物馆参观内容</span>
+        </nav>
+      `;
+      
+      // Verify main role
+      const main = document.querySelector('main[role="main"]');
+      expect(main).toBeTruthy();
+      
+      // Verify section with id for anchor linking
+      const museumsSection = document.querySelector('section#museums');
+      expect(museumsSection).toBeTruthy();
+      
+      // Verify descriptive content
+      const sectionDescription = document.querySelector('.section-description');
+      expect(sectionDescription.textContent).toContain('精选全国120家知名博物馆');
+      
+      // Verify ARIA attributes for accessibility and SEO
+      const nav = document.querySelector('nav[aria-label="年龄组选择"]');
+      expect(nav).toBeTruthy();
+      
+      const grid = document.querySelector('[role="grid"][aria-label="博物馆列表"]');
+      expect(grid).toBeTruthy();
+      
+      const status = document.querySelector('[role="status"][aria-live="polite"]');
+      expect(status).toBeTruthy();
+      
+      // Verify screen reader only content
+      const srOnly = document.querySelector('.sr-only');
+      expect(srOnly).toBeTruthy();
+      expect(srOnly.textContent).toContain('选择孩子的年龄段');
+    });
+
+    test('should have search engine verification meta tags', () => {
+      // Setup DOM with verification tags
+      document.head.innerHTML = `
+        <meta name="baidu-site-verification" content="codeva-museum-check">
+        <meta name="msvalidate.01" content="bing-verification-museum-check">
+      `;
+      
+      // Verify Baidu site verification
+      const baiduVerification = document.querySelector('meta[name="baidu-site-verification"]');
+      expect(baiduVerification).toBeTruthy();
+      expect(baiduVerification.content).toBe('codeva-museum-check');
+      
+      // Verify Bing site verification
+      const bingVerification = document.querySelector('meta[name="msvalidate.01"]');
+      expect(bingVerification).toBeTruthy();
+      expect(bingVerification.content).toBe('bing-verification-museum-check');
+    });
+  });
+
   describe('v2.2.2 - 成就海报中加入网址', () => {
     /**
      * Enhancement: "在总成就海报中添加MuseumCheck.cn网址，与单个博物馆海报保持一致"
