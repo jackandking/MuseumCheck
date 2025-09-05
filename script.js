@@ -1,13 +1,13 @@
 // Recent
 const RECENT_CHANGES = {
-    version: "2.1.6",
+    version: "2.2.3"
     lastUpdate: "2024-12-20",
     changes: [
         {
             date: "2024-12-20",
-            version: "2.1.6",
-            title: "加强首都博物馆内容",
-            description: "在家长准备环节提供详细的教育知识内容，让家长可以在当前网页上直接学习相关内容。将简单任务列表转换为信息丰富的教育指南，既方便家长又保持页面简洁",
+            version: "2.2.3",
+            title: "全面SEO优化提升搜索引擎收录",
+            description: "添加完整SEO元标签、Open Graph标签、结构化数据(JSON-LD)、站点地图和robots.txt文件，优化语义化HTML结构，大幅提升百度、Bing等搜索引擎的收录效果和搜索排名",
             type: "improvement"
         },
         {

@@ -3,7 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>博物馆打卡 - MuseumCheck</title>
+    <title>博物馆打卡 - 中国120家博物馆亲子参观指南 | MuseumCheck</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="专为中国家庭设计的博物馆参观指南应用，收录全国120家知名博物馆包括故宫、国博、上博等，提供3-18岁分龄参观清单，让孩子爱上博物馆文化之旅。免费使用，数据本地保存。">
+    <meta name="keywords" content="博物馆,亲子游,儿童教育,文化旅游,故宫博物院,中国国家博物馆,上海博物馆,参观指南,家庭出游,文化传承,历史教育,艺术欣赏">
+    <meta name="author" content="MuseumCheck">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="zh-CN">
+    <link rel="canonical" href="https://museumcheck.cn/">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://museumcheck.cn/">
+    <meta property="og:title" content="博物馆打卡 - 中国120家博物馆亲子参观指南">
+    <meta property="og:description" content="专为中国家庭设计的博物馆参观指南，收录全国120家知名博物馆，提供分龄参观清单，让孩子爱上博物馆文化之旅。">
+    <meta property="og:image" content="https://museumcheck.cn/logo-og.png">
+    <meta property="og:site_name" content="MuseumCheck">
+    <meta property="og:locale" content="zh_CN">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://museumcheck.cn/">
+    <meta name="twitter:title" content="博物馆打卡 - 中国120家博物馆亲子参观指南">
+    <meta name="twitter:description" content="专为中国家庭设计的博物馆参观指南，收录全国120家知名博物馆，提供分龄参观清单，让孩子爱上博物馆文化之旅。">
+    <meta name="twitter:image" content="https://museumcheck.cn/logo-og.png">
+    
+    <!-- Baidu Site Verification -->
+    <meta name="baidu-site-verification" content="codeva-museum-check">
+    
+    <!-- Bing Site Verification -->
+    <meta name="msvalidate.01" content="bing-verification-museum-check">
+    
     <link rel="stylesheet" href="style.css">
     
     <!-- Google Analytics -->
@@ -43,6 +74,64 @@
             a.appendChild(r);
         })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
     </script>
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "博物馆打卡",
+        "alternateName": "MuseumCheck",
+        "description": "专为中国家庭设计的博物馆参观指南应用，收录全国120家知名博物馆，提供3-18岁分龄参观清单，让孩子爱上博物馆文化之旅。",
+        "url": "https://museumcheck.cn",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "CNY"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "MuseumCheck",
+            "url": "https://museumcheck.cn"
+        },
+        "inLanguage": "zh-CN",
+        "datePublished": "2024-12-20",
+        "dateModified": "2024-12-20",
+        "keywords": ["博物馆", "亲子游", "儿童教育", "文化旅游", "参观指南", "家庭出游"],
+        "applicationSubCategory": "Cultural Education",
+        "featureList": [
+            "收录全国120家知名博物馆",
+            "3-18岁分龄参观指南",
+            "家长准备清单",
+            "孩子探索任务",
+            "参观进度追踪",
+            "本地数据存储"
+        ]
+    }
+    </script>
+    
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "首页",
+                "item": "https://museumcheck.cn"
+            },
+            {
+                "@type": "ListItem", 
+                "position": 2,
+                "name": "博物馆清单",
+                "item": "https://museumcheck.cn#museums"
+            }
+        ]
+    }
+    </script>
 </head>
 <body>
     <div class="container">
@@ -78,19 +167,21 @@
             </div>
         </div>
 
-        <nav class="age-selector">
-            <label>孩子年龄：</label>
-            <select id="ageGroup">
+        <nav class="age-selector" aria-label="年龄组选择">
+            <label for="ageGroup">孩子年龄：</label>
+            <select id="ageGroup" aria-describedby="age-help">
                 <option value="3-6">3-6岁 (学龄前)</option>
                 <option value="7-12">7-12岁 (小学)</option>
                 <option value="13-18">13-18岁 (中学)</option>
             </select>
+            <span id="age-help" class="sr-only">选择孩子的年龄段以获取适合的博物馆参观内容</span>
         </nav>
 
-        <main>
-            <section class="museum-list">
+        <main role="main">
+            <section class="museum-list" id="museums">
                 <h2>全国主要博物馆清单</h2>
-                <div class="stats">
+                <p class="section-description">精选全国120家知名博物馆，为您的亲子文化之旅提供专业指导</p>
+                <div class="stats" role="status" aria-live="polite">
                     <span id="visitedCount">0</span>/<span id="totalCount">0</span> 已参观
                     (<span id="visitedPercentage">0</span>%)
                     <div class="achievement-stats">
@@ -98,7 +189,7 @@
                         <button id="achievementButton" class="achievement-button" title="查看成就详情">🎖️ 我的成就</button>
                     </div>
                 </div>
-                <div id="museumGrid" class="museum-grid">
+                <div id="museumGrid" class="museum-grid" role="grid" aria-label="博物馆列表">
                     <!-- Museums will be populated by JavaScript -->
                 </div>
             </section>
