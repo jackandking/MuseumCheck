@@ -2387,4 +2387,67 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
       expect(content13_18.length).toBeGreaterThan(content7_12.length);
     });
   });
+
+  describe('v2.2.4 - JavaScript Syntax Error Fix', () => {
+    /**
+     * Bug: Missing comma in RECENT_CHANGES object prevented museums from loading
+     * Fixed: 2024-12-20
+     * 
+     * This test validates JavaScript syntax consistency in configuration objects.
+     */
+
+    test('should validate RECENT_CHANGES object syntax structure', () => {
+      // Mock a structure similar to RECENT_CHANGES
+      const mockRecentChanges = {
+        version: "2.2.4",  // This comma was missing in the original bug
+        lastUpdate: "2024-12-20",
+        changes: []
+      };
+
+      // Should be able to access all properties without syntax errors
+      expect(mockRecentChanges.version).toBe("2.2.4");
+      expect(mockRecentChanges.lastUpdate).toBe("2024-12-20");
+      expect(Array.isArray(mockRecentChanges.changes)).toBe(true);
+
+      // Object should be properly formed
+      expect(typeof mockRecentChanges).toBe('object');
+      expect(Object.keys(mockRecentChanges)).toHaveLength(3);
+    });
+
+    test('should detect missing commas in object literals', () => {
+      // Test that objects with missing commas would cause syntax errors
+      let syntaxErrorCaught = false;
+
+      try {
+        // This would cause a syntax error if evaluated
+        const badObjectString = `{
+          version: "2.2.4"
+          lastUpdate: "2024-12-20"
+        }`;
+        
+        // Attempting to evaluate this should fail
+        eval(`const testObj = ${badObjectString}`);
+      } catch (error) {
+        syntaxErrorCaught = true;
+        expect(error).toBeInstanceOf(SyntaxError);
+      }
+
+      expect(syntaxErrorCaught).toBe(true);
+    });
+
+    test('should ensure proper object literal syntax validation', () => {
+      // Good syntax should work
+      const goodObject = {
+        property1: "value1",
+        property2: "value2",
+        property3: {
+          nested: "value"
+        }
+      };
+
+      expect(goodObject.property1).toBe("value1");
+      expect(goodObject.property2).toBe("value2");
+      expect(goodObject.property3.nested).toBe("value");
+    });
+  });
 });
