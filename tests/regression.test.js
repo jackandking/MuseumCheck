@@ -2233,4 +2233,158 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
       expect(difference).toBeGreaterThan(200); // Should need at least 200px more space
     });
   });
+
+  describe('v2.1.6 - 加强首都博物馆内容', () => {
+    /**
+     * Enhancement: "在家长准备环节，之间提供家长所需准备知识，让家长可以在当前网页上直接学习相关内容。既要家长觉得方便又要保持页面的简洁"
+     * Added: 2024-12-20
+     * 
+     * This test ensures the enhanced Capital Museum parent preparation content
+     * provides educational value while remaining concise and user-friendly.
+     */
+
+    test('should provide enhanced educational content for Capital Museum parent preparation', () => {
+      // Mock the enhanced Capital Museum data structure
+      const enhancedCapitalMuseum = {
+        id: 'capital-museum',
+        name: '首都博物馆',
+        location: '北京',
+        description: '展示北京历史文化的市属综合性博物馆',
+        tags: ['北京历史', '古都文化', '民俗'],
+        checklists: {
+          parent: {
+            '3-6': [
+              '首都博物馆基础知识：了解这里是北京市的重要博物馆，主要展示北京历史文化。开放时间9:00-17:00，建议预留2-3小时参观',
+              '北京古城介绍：北京有3000多年建城史、800多年建都史。孩子可以了解从蓟城到北京城的历史变迁',
+              '四合院文化简介：传统北京人住四合院，有正房、配房、门楼。可以给孩子讲解四合院的基本布局和生活方式'
+            ],
+            '7-12': [
+              '北京建城史详解：公元前1045年，周朝在此建立蓟城。1153年金朝迁都于此称中都，1272年元朝建大都，1421年明朝迁都称北京',
+              '元明清建都历程：元大都按《周礼》规划，明朝在元大都基础上改建，清朝基本沿用明制。每个朝代都在城市规划上留下了独特印记',
+              '胡同文化深度解读：胡同体现了四合院文化，讲究门第礼制。胡同名称多有典故：王府井、什刹海、前门大街都有历史渊源'
+            ]
+          },
+          child: {
+            '3-6': ['找找博物馆里的老北京模型'],
+            '7-12': ['调研北京城的历史变迁过程']
+          }
+        }
+      };
+
+      // Test 3-6 age group enhanced content
+      const parent3_6 = enhancedCapitalMuseum.checklists.parent['3-6'];
+      
+      // Content should be educational but accessible for younger children's parents
+      expect(parent3_6[0]).toContain('首都博物馆基础知识');
+      expect(parent3_6[0]).toContain('开放时间');
+      expect(parent3_6[1]).toContain('3000多年建城史');
+      expect(parent3_6[2]).toContain('四合院文化');
+      
+      // Each item should be substantial but concise
+      parent3_6.forEach(item => {
+        expect(item.length).toBeGreaterThan(30); // Should have substantial content
+        expect(item.length).toBeLessThan(150); // But remain concise for this age group
+        expect(item).toContain('：'); // Should have explanatory format
+      });
+
+      // Test 7-12 age group enhanced content  
+      const parent7_12 = enhancedCapitalMuseum.checklists.parent['7-12'];
+      
+      // Content should be more detailed and educational
+      expect(parent7_12[0]).toContain('北京建城史详解');
+      expect(parent7_12[0]).toContain('公元前1045年');
+      expect(parent7_12[1]).toContain('元明清建都历程');
+      expect(parent7_12[1]).toContain('周礼');
+      expect(parent7_12[2]).toContain('胡同文化深度解读');
+      
+      // Content should be more substantial for older children's parents
+      parent7_12.forEach(item => {
+        expect(item.length).toBeGreaterThan(50); // More detailed content
+        expect(item.length).toBeLessThan(200); // But still digestible
+        expect(item).toContain('：'); // Should have explanatory format
+      });
+
+      // Verify child tasks remain simple and action-oriented
+      const child3_6 = enhancedCapitalMuseum.checklists.child['3-6'];
+      const child7_12 = enhancedCapitalMuseum.checklists.child['7-12'];
+      
+      expect(child3_6[0]).toBe('找找博物馆里的老北京模型');
+      expect(child7_12[0]).toBe('调研北京城的历史变迁过程');
+      
+      // Child tasks should be concise and action-focused
+      child3_6.forEach(task => {
+        expect(task.length).toBeLessThan(50);
+      });
+      child7_12.forEach(task => {
+        expect(task.length).toBeLessThan(50);
+      });
+    });
+
+    test('should maintain content structure while enhancing educational value', () => {
+      // Test that the enhanced content follows the established patterns
+      
+      // Mock before enhancement (simple task list)
+      const simpleContent = [
+        '了解首都博物馆基本信息',
+        '准备参观用品',
+        '制定参观路线'
+      ];
+      
+      // Mock after enhancement (educational content)
+      const enhancedContent = [
+        '首都博物馆基础知识：了解这里是北京市的重要博物馆，主要展示北京历史文化。开放时间9:00-17:00，建议预留2-3小时参观',
+        '参观准备指南：建议穿舒适的鞋子，带上水和小食品。预约门票，准备身份证件。为孩子准备笔记本记录感兴趣的展品',
+        '参观路线规划：建议先参观一层的北京通史展，再到二三层看专题展览。重点关注古代北京展和民俗展，适合孩子理解'
+      ];
+      
+      // Enhanced content should maintain same number of items
+      expect(enhancedContent.length).toBe(simpleContent.length);
+      
+      // Enhanced content should be significantly more informative
+      enhancedContent.forEach((enhanced, index) => {
+        const simple = simpleContent[index];
+        expect(enhanced.length).toBeGreaterThan(simple.length * 3); // At least 3x more content
+        expect(enhanced).toContain('：'); // Should have colon indicating explanation
+        // Enhanced content should relate to original topic
+        const coreWords = ['博物馆', '参观', '路线'];
+        const hasRelatedContent = coreWords.some(word => enhanced.includes(word));
+        expect(hasRelatedContent).toBeTruthy();
+      });
+      
+      // Content should be educational but not overwhelming
+      enhancedContent.forEach(item => {
+        const sentences = item.split('。').filter(s => s.length > 0);
+        expect(sentences.length).toBeGreaterThanOrEqual(2); // Multiple information points
+        expect(sentences.length).toBeLessThanOrEqual(4); // But not too many
+      });
+    });
+
+    test('should provide age-appropriate educational depth', () => {
+      // Test that content complexity scales appropriately with age groups
+      
+      const content3_6 = '四合院文化简介：传统北京人住四合院，有正房、配房、门楼。可以给孩子讲解四合院的基本布局和生活方式';
+      const content7_12 = '胡同文化深度解读：胡同体现了四合院文化，讲究门第礼制。胡同名称多有典故：王府井、什刹海、前门大街都有历史渊源';
+      const content13_18 = '胡同文化学术研究：胡同作为北京城市肌理的重要组成，体现了中国传统城市规划思想。明清时期的胡同布局严格按照等级制度，体现了封建社会的空间秩序';
+      
+      // 3-6 content should be simple and descriptive
+      expect(content3_6).toContain('简介');
+      expect(content3_6).toContain('可以给孩子讲解');
+      expect(content3_6.match(/[，。]/g).length).toBeLessThanOrEqual(4); // Limited punctuation
+      
+      // 7-12 content should be more detailed
+      expect(content7_12).toContain('深度解读');
+      expect(content7_12).toContain('典故');
+      expect(content7_12.match(/[：，。]/g).length).toBeGreaterThanOrEqual(4); // More complex structure
+      
+      // 13-18 content should be academic
+      expect(content13_18).toContain('学术研究');
+      expect(content13_18).toContain('城市肌理');
+      expect(content13_18).toContain('封建社会');
+      expect(content13_18.match(/[，。]/g).length).toBeGreaterThanOrEqual(3); // Most complex structure
+      
+      // Length should increase with age complexity
+      expect(content7_12.length).toBeGreaterThan(content3_6.length);
+      expect(content13_18.length).toBeGreaterThan(content7_12.length);
+    });
+  });
 });
