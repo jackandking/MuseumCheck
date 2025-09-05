@@ -1,8 +1,15 @@
 // Recent
 const RECENT_CHANGES = {
-    version: "2.2.3"
+    version: "2.2.4",
     lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.2.4",
+            title: "修复JavaScript语法错误导致博物馆无法加载",
+            description: "修复RECENT_CHANGES对象中缺少逗号的语法错误，该错误导致整个script.js无法解析，从而使博物馆数据无法加载显示。增加回归测试确保类似语法错误不再发生",
+            type: "bugfix"
+        },
         {
             date: "2024-12-20",
             version: "2.2.3",
