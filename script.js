@@ -1,8 +1,15 @@
 // Recent
 const RECENT_CHANGES = {
-    version: "2.2.4",
+    version: "2.3.0",
     lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.3.0",
+            title: "新增博物馆配图功能",
+            description: "为故宫博物院等博物馆的详情页面添加配图支持，图片显示在模态框标题下方，提升用户视觉体验和参观指导效果。支持自适应图片尺寸和优雅的加载效果",
+            type: "feature"
+        },
         {
             date: "2024-12-20",
             version: "2.2.4",
@@ -175,6 +182,7 @@ const MUSEUMS = [
         location: '北京',
         description: '世界上现存规模最大、保存最为完整的木质结构古建筑群',
         tags: ['历史', '建筑', '文物'],
+        image: 'http://eb118-file.cdn.bcebos.com/upload/c67a7249b6884703bfc8faceb3a8ad9d_2209653549.png?x-bce-process=image/format,f_auto/resize,m_lfit,limit_1,w_500,h_500/quality,q_85&',
         checklists: {
             parent: {
                 '3-6': [
@@ -8564,7 +8572,14 @@ class MuseumCheckApp {
 
         title.textContent = `${museum.name} - 参观指南`;
 
+        const museumImageHtml = museum.image ? `
+            <div class="museum-image-section">
+                <img src="${museum.image}" alt="${museum.name}" class="museum-modal-image" loading="lazy" />
+            </div>
+        ` : '';
+
         content.innerHTML = `
+            ${museumImageHtml}
             <div class="checklist-tabs">
                 <button class="tab-button active" data-target="parent">家长准备</button>
                 <button class="tab-button" data-target="child">孩子任务</button>

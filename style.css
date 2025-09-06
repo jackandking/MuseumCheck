@@ -444,6 +444,22 @@ header h1 {
     width: 100%;
 }
 
+/* Museum Image Styles */
+.museum-image-section {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.museum-modal-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    object-fit: cover;
+    display: block;
+    margin: 0 auto;
+}
+
 .photo-upload-label {
     display: inline-block;
     padding: 8px 16px;

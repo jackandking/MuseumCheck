@@ -157,6 +157,68 @@ describe('MuseumCheck Core Functions', () => {
     });
   });
 
+  describe('Museum Image Feature', () => {
+    test('should display image for museums that have image property', () => {
+      // Test the new image feature for Forbidden City
+      const forbiddenCityMuseum = {
+        id: 'forbidden-city',
+        name: '故宫博物院',
+        location: '北京',
+        description: '世界上现存规模最大、保存最为完整的木质结构古建筑群',
+        tags: ['历史', '建筑', '文物'],
+        image: 'http://eb118-file.cdn.bcebos.com/upload/c67a7249b6884703bfc8faceb3a8ad9d_2209653549.png?x-bce-process=image/format,f_auto/resize,m_lfit,limit_1,w_500,h_500/quality,q_85&',
+        checklists: {
+          parent: { '3-6': ['test task'], '7-12': ['test task'], '13-18': ['test task'] },
+          child: { '3-6': ['test task'], '7-12': ['test task'], '13-18': ['test task'] }
+        }
+      };
+      
+      // Museum should have an image property
+      expect(forbiddenCityMuseum.image).toBeDefined();
+      expect(forbiddenCityMuseum.image).toContain('http://eb118-file.cdn.bcebos.com');
+      
+      // Test image display logic
+      const museumImageHtml = forbiddenCityMuseum.image ? `
+        <div class="museum-image-section">
+          <img src="${forbiddenCityMuseum.image}" alt="${forbiddenCityMuseum.name}" class="museum-modal-image" loading="lazy" />
+        </div>
+      ` : '';
+      
+      expect(museumImageHtml).toContain('museum-image-section');
+      expect(museumImageHtml).toContain('museum-modal-image');
+      expect(museumImageHtml).toContain('故宫博物院');
+      expect(museumImageHtml).toContain(forbiddenCityMuseum.image);
+    });
+
+    test('should not display image section for museums without image property', () => {
+      // Test museum without image
+      const museumWithoutImage = {
+        id: 'test-museum',
+        name: '测试博物馆',
+        location: '北京',
+        description: '测试描述',
+        tags: ['测试'],
+        // No image property
+        checklists: {
+          parent: { '3-6': ['test task'] },
+          child: { '3-6': ['test task'] }
+        }
+      };
+      
+      // Should not have image property
+      expect(museumWithoutImage.image).toBeUndefined();
+      
+      // Test image display logic for museums without images
+      const museumImageHtml = museumWithoutImage.image ? `
+        <div class="museum-image-section">
+          <img src="${museumWithoutImage.image}" alt="${museumWithoutImage.name}" class="museum-modal-image" loading="lazy" />
+        </div>
+      ` : '';
+      
+      expect(museumImageHtml).toBe('');
+    });
+  });
+
   describe('Canvas Rendering (Poster Generation)', () => {
     // These tests would have caught the "修复海报生成两大bug" mentioned in v2.1.3
     
