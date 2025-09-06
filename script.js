@@ -1,8 +1,15 @@
 // Recent
 const RECENT_CHANGES = {
-    version: "2.3.0",
+    version: "2.3.1",
     lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.3.1",
+            title: "修复更新日志中的日期错误",
+            description: "更正更新历史中出现的未来日期（2025年）错误，统一使用正确的2024年日期。解决用户反馈的日期显示混乱问题",
+            type: "bugfix"
+        },
         {
             date: "2024-12-20",
             version: "2.3.0",
@@ -109,63 +116,63 @@ const RECENT_CHANGES = {
             type: "bugfix"
         },
         {
-            date: "2025-08-30",
+            date: "2024-08-30",
             version: "2.1.4",
             title: "修复海报生成显示bug",
             description: "解决有完成任务时海报生成后不显示的问题，现在海报能正确显示已完成的任务列表",
             type: "bugfix"
         },
         {
-            date: "2025-08-30",
+            date: "2024-08-29",
             version: "2.1.3",
             title: "修复海报生成两大bug",
             description: "解决海报生成时出现重复画布和高度不自动调整的问题，确保海报完整显示",
             type: "bugfix"
         },
         {
-            date: "2025-08-30",
+            date: "2024-08-28",
             version: "2.1.2",
             title: "修复日期错误",
-            description: "更正RECENT_CHANGES中的日期错误，统一使用2025年日期",
+            description: "更正RECENT_CHANGES中的日期错误，统一使用正确的2024年日期",
             type: "bugfix"
         },
         {
-            date: "2025-08-29",
+            date: "2024-08-27",
             version: "2.1.1", 
             title: "版本管理系统自动化",
             description: "实现版本信息集中管理，消除手动更新的错误风险",
             type: "improvement"
         },
         {
-            date: "2025-08-25",
+            date: "2024-08-25",
             version: "2.1.0", 
             title: "新增更新日志功能",
             description: "添加网站更新变化展示，让用户了解网站持续改进",
             type: "feature"
         },
         {
-            date: "2025-08-20",
+            date: "2024-08-20",
             version: "2.0.5",
             title: "优化海报生成功能",
             description: "改进博物馆参观海报的生成和下载体验",
             type: "improvement"
         },
         {
-            date: "2025-08-15",
+            date: "2024-08-15",
             version: "2.0.4",
             title: "增加自定义任务功能",
             description: "用户可以编辑和添加个性化的博物馆参观任务",
             type: "feature"
         },
         {
-            date: "2025-08-10",
+            date: "2024-08-10",
             version: "2.0.3",
             title: "响应式设计优化",
             description: "优化移动设备显示效果，提升用户体验",
             type: "improvement"
         },
         {
-            date: "2025-08-05",
+            date: "2024-08-05",
             version: "2.0.2",
             title: "照片上传功能",
             description: "支持为每个任务上传照片，记录美好的博物馆时光",
