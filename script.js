@@ -1,8 +1,15 @@
 // Recent
 const RECENT_CHANGES = {
-    version: "2.2.4",
+    version: "2.3.0",
     lastUpdate: "2024-12-20",
     changes: [
+        {
+            date: "2024-12-20",
+            version: "2.3.0",
+            title: "为博物馆卡片添加图片展示功能",
+            description: "为主要博物馆添加了代表性图片，提升视觉效果和用户体验。包含故宫博物院、中国国家博物馆等7个主要博物馆的精美图片，其他博物馆显示统一的占位符设计，保持界面一致性和美观度",
+            type: "feature"
+        },
         {
             date: "2024-12-20",
             version: "2.2.4",
@@ -174,6 +181,7 @@ const MUSEUMS = [
         name: '故宫博物院',
         location: '北京',
         description: '世界上现存规模最大、保存最为完整的木质结构古建筑群',
+        image: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
         tags: ['历史', '建筑', '文物'],
         checklists: {
             parent: {
@@ -245,6 +253,7 @@ const MUSEUMS = [
         name: '中国国家博物馆',
         location: '北京',
         description: '综合性历史艺术博物馆，展示中华民族悠久文化历史',
+        image: 'https://images.unsplash.com/photo-1570281589917-ba89c5a77999?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
         tags: ['历史', '文化', '艺术'],
         checklists: {
             parent: {
@@ -314,6 +323,7 @@ const MUSEUMS = [
         name: '上海博物馆',
         location: '上海',
         description: '以古代艺术为主的综合性博物馆，被誉为"中华艺术宫"',
+        image: 'https://images.unsplash.com/photo-1555501183-0e8ede01b762?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
         tags: ['艺术', '文物', '收藏'],
         checklists: {
             parent: {
@@ -377,6 +387,7 @@ const MUSEUMS = [
         name: '秦始皇帝陵博物院',
         location: '西安',
         description: '世界文化遗产，展示秦朝兵马俑的恢宏场面',
+        image: 'https://images.unsplash.com/photo-1570281589950-7fea39e7b5de?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
         tags: ['历史', '考古', '世界遗产'],
         checklists: {
             parent: {
@@ -440,6 +451,7 @@ const MUSEUMS = [
         name: '南京博物院',
         location: '南京',
         description: '中国最早创建的博物馆，藏品丰富多样',
+        image: 'https://images.unsplash.com/photo-1571131351467-65e5e86c8c6b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
         tags: ['历史', '艺术', '民俗'],
         checklists: {
             parent: {
@@ -503,6 +515,7 @@ const MUSEUMS = [
         name: '湖北省博物馆',
         location: '武汉',
         description: '以出土文物为主要特色，曾侯乙编钟闻名世界',
+        image: 'https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
         tags: ['历史', '音乐', '青铜器'],
         checklists: {
             parent: {
@@ -631,6 +644,7 @@ const MUSEUMS = [
         name: '中国科学技术馆',
         location: '北京',
         description: '国家级综合性科技馆，展示科学原理及技术应用的互动式博物馆',
+        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
         tags: ['科技', '互动', '教育'],
         checklists: {
             parent: {
@@ -8342,6 +8356,16 @@ class MuseumCheckApp {
                         <div class="museum-location">📍 ${museum.location}</div>
                     </div>
                 </div>
+                ${museum.image ? `
+                <div class="museum-image">
+                    <img src="${museum.image}" alt="${museum.name}" loading="lazy" />
+                </div>
+                ` : `
+                <div class="museum-image museum-image-placeholder">
+                    <div class="placeholder-icon">🏛️</div>
+                    <div class="placeholder-text">博物馆</div>
+                </div>
+                `}
                 <p class="museum-description">${museum.description}</p>
                 <div class="museum-tags">
                     ${museum.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}

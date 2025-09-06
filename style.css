@@ -303,6 +303,46 @@ header h1 {
     margin-bottom: 10px;
 }
 
+.museum-image {
+    margin: 15px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.museum-image img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.museum-card:hover .museum-image img {
+    transform: scale(1.02);
+}
+
+.museum-image-placeholder {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.placeholder-icon {
+    font-size: 3em;
+    margin-bottom: 10px;
+    opacity: 0.7;
+}
+
+.placeholder-text {
+    font-weight: 500;
+    opacity: 0.8;
+}
+
 .museum-description {
     font-size: 0.95em;
     line-height: 1.5;
@@ -811,6 +851,14 @@ header h1 {
     
     .museum-card {
         padding: 15px;
+    }
+    
+    .museum-image {
+        margin: 10px 0;
+    }
+    
+    .museum-image img {
+        height: 150px;
     }
 }
 
