@@ -1,0 +1,25 @@
+name: Deploy Dev to MuseumCheckDev
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          repository: jackandking/MuseumCheck
+          ref: dev
+          fetch-depth: 0
+
+      - name: Deploy to MuseumCheckDev
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.ACTIONS_DEPLOY_TOKEN }}
+          external_repository: jackandking/MuseumCheckDev
+          publish_dir: ./
