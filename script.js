@@ -1,8 +1,29 @@
 // Recent
 const RECENT_CHANGES = {
-    version: "2.2.4",
-    lastUpdate: "2024-12-20",
+    version: "2.3.3",
+    lastUpdate: "2024-12-31",
     changes: [
+        {
+            date: "2024-12-31",
+            version: "2.3.3",
+            title: "海报生成后自动滚动优化",
+            description: "点击生成成就海报按钮后，页面自动滚动到海报位置，提升用户体验。用户无需手动查找生成的海报位置",
+            type: "improvement"
+        },
+        {
+            date: "2025-09-06",
+            version: "2.3.2",
+            title: "更正日期修复错误",
+            description: "撤销之前错误的日期修复，恢复正确的2025年日期。之前误将2025年8月的正确日期改为2024年，现已恢复。感谢用户反馈！",
+            type: "bugfix"
+        },
+        {
+            date: "2024-12-20",
+            version: "2.3.0",
+            title: "新增博物馆配图功能",
+            description: "为博物馆详情页面添加图片支持，首先为故宫博物院添加配图。图片显示在标签页下方，为用户提供更直观的视觉体验，增强参观指南的实用性",
+            type: "feature"
+        },
         {
             date: "2024-12-20",
             version: "2.2.4",
@@ -175,6 +196,7 @@ const MUSEUMS = [
         location: '北京',
         description: '世界上现存规模最大、保存最为完整的木质结构古建筑群',
         tags: ['历史', '建筑', '文物'],
+        image: 'http://eb118-file.cdn.bcebos.com/upload/c67a7249b6884703bfc8faceb3a8ad9d_2209653549.png?x-bce-process=image/format,f_auto/resize,m_lfit,limit_1,w_500,h_500/quality,q_85',
         checklists: {
             parent: {
                 '3-6': [
@@ -8570,6 +8592,9 @@ class MuseumCheckApp {
                 <button class="tab-button" data-target="child">孩子任务</button>
                 <button class="tab-button" data-target="share">生成海报</button>
             </div>
+            ${museum.image ? `<div class="museum-image-section">
+                <img src="${museum.image}" alt="${museum.name}" class="museum-image" />
+            </div>` : ''}
             <div id="parentChecklist" class="checklist-content">
                 <h3>家长准备事项</h3>
                 ${this.renderChecklist(museum.id, 'parent', museum.checklists.parent[this.currentAge])}
@@ -9257,6 +9282,7 @@ class MuseumCheckApp {
             const photoAreaHeight = Math.min(300, completedTasks.length * 60); // Photo grid height estimate
             const footerHeight = 110; // Footer space
             const margins = 80; // Top and bottom margins
+            const museumImageHeight = museum.image ? 220 : 0; // Space for museum image if present
             
             // More accurate calculation
             const textHeight = completedTasks.length * avgLinesPerTask * lineHeight;
@@ -9265,7 +9291,7 @@ class MuseumCheckApp {
             // FIX: Add generous buffer for text wrapping unpredictability, especially for 9+ tasks
             const bufferForTextWrapping = completedTasks.length * 50; // Extra 50px per task for wrapping
             
-            calculatedHeight = baseHeight + textHeight + spacingHeight + photoAreaHeight + footerHeight + margins + bufferForTextWrapping;
+            calculatedHeight = baseHeight + museumImageHeight + textHeight + spacingHeight + photoAreaHeight + footerHeight + margins + bufferForTextWrapping;
         }
         
         const dynamicHeight = Math.max(minHeight, calculatedHeight);
@@ -9416,6 +9442,57 @@ class MuseumCheckApp {
 
     async drawTasksWithPhotos(ctx, completedTasks, taskPhotos, completed, startY, canvas, preview, museum) {
         let yPosition = startY;
+        
+        // Add museum main image at the top if available
+        if (museum.image) {
+            const museumImg = new Image();
+            museumImg.crossOrigin = 'anonymous';
+            
+            // Create a promise for museum image loading
+            const museumImagePromise = new Promise((resolve) => {
+                museumImg.onload = () => resolve(museumImg);
+                museumImg.onerror = () => resolve(null);
+                museumImg.src = museum.image;
+            });
+            
+            const loadedMuseumImg = await museumImagePromise;
+            
+            if (loadedMuseumImg) {
+                // Calculate museum image display size
+                const maxImageWidth = 280;
+                const maxImageHeight = 180;
+                const aspectRatio = loadedMuseumImg.naturalWidth / loadedMuseumImg.naturalHeight;
+                let imageWidth = maxImageWidth;
+                let imageHeight = maxImageHeight;
+                
+                if (aspectRatio > 1) {
+                    imageHeight = maxImageWidth / aspectRatio;
+                } else {
+                    imageWidth = maxImageHeight * aspectRatio;
+                }
+                
+                // Center the museum image
+                const imageX = (canvas.width - imageWidth) / 2;
+                const imageY = yPosition;
+                
+                // Draw museum image with subtle border
+                ctx.fillStyle = 'white';
+                ctx.fillRect(imageX - 3, imageY - 3, imageWidth + 6, imageHeight + 6);
+                ctx.strokeStyle = '#ddd';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(imageX - 3, imageY - 3, imageWidth + 6, imageHeight + 6);
+                
+                ctx.drawImage(loadedMuseumImg, imageX, imageY, imageWidth, imageHeight);
+                
+                // Add subtle label
+                ctx.fillStyle = '#666';
+                ctx.font = '16px "PingFang SC", "Microsoft YaHei", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(museum.name, canvas.width / 2, imageY + imageHeight + 20);
+                
+                yPosition = imageY + imageHeight + 40; // Update position after image
+            }
+        }
         
         ctx.font = '26px "PingFang SC", "Microsoft YaHei", sans-serif';
         ctx.fillStyle = '#333';
@@ -9786,6 +9863,10 @@ class MuseumCheckApp {
         // Show poster section and download button
         document.getElementById('achievementPosterSection').style.display = 'block';
         document.getElementById('downloadAchievementPoster').style.display = 'inline-block';
+        
+        // Auto-scroll to the generated poster for better user experience
+        const posterSection = document.getElementById('achievementPosterSection');
+        posterSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         
         // Track poster generation
         this.trackEvent('achievement_poster_generated', {
