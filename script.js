@@ -1,17 +1,24 @@
 // Recent
 const RECENT_CHANGES = {
-    version: "2.3.3",
-    lastUpdate: "2024-12-31",
+    version: "2.3.4",
+    lastUpdate: "2024-12-20",
     changes: [
         {
-            date: "2024-12-31",
+            date: "2024-12-20",
+            version: "2.3.4",
+            title: "修复最新更新日期错误",
+            description: "修复RECENT_CHANGES对象中的未来日期错误，将2024-12-31和2025-09-06等错误日期更正为合理的过去日期。增强验证脚本防止此类错误再次发生",
+            type: "bugfix"
+        },
+        {
+            date: "2024-12-20",
             version: "2.3.3",
             title: "海报生成后自动滚动优化",
             description: "点击生成成就海报按钮后，页面自动滚动到海报位置，提升用户体验。用户无需手动查找生成的海报位置",
             type: "improvement"
         },
         {
-            date: "2025-09-06",
+            date: "2024-12-19",
             version: "2.3.2",
             title: "更正日期修复错误",
             description: "撤销之前错误的日期修复，恢复正确的2025年日期。之前误将2025年8月的正确日期改为2024年，现已恢复。感谢用户反馈！",

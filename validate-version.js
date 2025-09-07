@@ -53,6 +53,58 @@ function validateVersionConsistency() {
         log(`   Version: ${currentVersion}`, 'green');
         log(`   Last Update: ${lastUpdate}`, 'green');
         
+        let hasIssues = false;
+        
+        // Enhanced date validation
+        log(`\n📅 Validating dates...`, 'blue');
+        const currentDate = new Date();
+        const lastUpdateDate = new Date(lastUpdate);
+        
+        // Check if lastUpdate is in the future
+        if (lastUpdateDate > currentDate) {
+            log(`❌ Error: lastUpdate date is in the future: ${lastUpdate}`, 'red');
+            hasIssues = true;
+        }
+        
+        // Extract and validate all dates in RECENT_CHANGES
+        const changesRegex = /changes:\s*\[([\s\S]*?)\]/;
+        const changesMatch = scriptContent.match(changesRegex);
+        if (changesMatch) {
+            const changesContent = changesMatch[1];
+            const entryDateRegex = /date:\s*["'](\d{4}-\d{2}-\d{2})["']/g;
+            let match;
+            const futureDates = [];
+            const invalidDates = [];
+            
+            while ((match = entryDateRegex.exec(changesContent)) !== null) {
+                const entryDate = match[1];
+                const date = new Date(entryDate);
+                
+                // Check if date is valid
+                if (isNaN(date.getTime())) {
+                    invalidDates.push(entryDate);
+                } else if (date > currentDate) {
+                    futureDates.push(entryDate);
+                }
+            }
+            
+            if (futureDates.length > 0) {
+                log(`❌ Error: Found ${futureDates.length} future date(s) in changelog:`, 'red');
+                futureDates.forEach(date => log(`   - ${date}`, 'red'));
+                hasIssues = true;
+            }
+            
+            if (invalidDates.length > 0) {
+                log(`❌ Error: Found ${invalidDates.length} invalid date(s) in changelog:`, 'red');
+                invalidDates.forEach(date => log(`   - ${date}`, 'red'));
+                hasIssues = true;
+            }
+            
+            if (futureDates.length === 0 && invalidDates.length === 0) {
+                log(`✅ All changelog dates are valid and not in the future`, 'green');
+            }
+        }
+        
         // Read index.html to check for hardcoded versions
         const htmlPath = path.join(__dirname, 'index.html');
         const htmlContent = fs.readFileSync(htmlPath, 'utf8');
@@ -62,8 +114,6 @@ function validateVersionConsistency() {
         const hardcodedDates = htmlContent.match(/\d{4}-\d{2}-\d{2}/g) || [];
         
         log(`\n🔍 Checking for hardcoded values in HTML...`, 'blue');
-        
-        let hasIssues = false;
         
         // Check if there are any hardcoded versions that don't match expected placeholders
         const expectedPlaceholders = ['v0.0.0']; // Our placeholder version
