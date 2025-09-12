@@ -8239,10 +8239,7 @@ const MUSEUMS = [
         }
     },
     {
-        id: 'chengdu-jinsha-museum',
-        name: '成都金沙遗址博物馆',
-        location: '成都',
-        description: '展示古蜀文明金沙文化的考古遗址博物馆',
+        id: 'chengdu-jinsha-site-museum',
         tags: ['古蜀文明', '考古', '青铜器'],
         checklists: {
             parent: {
@@ -10374,10 +10371,7 @@ const MUSEUMS = [
         }
     },
     {
-        id: 'dongying-museum',
-        name: '东营黄河口博物馆',
-        location: '东营',
-        description: '展示黄河入海文化和湿地生态文明',
+        id: 'dongying-yellow-river-museum',
         tags: ['黄河文化', '河口生态', '石油文化'],
         checklists: {
             parent: {
@@ -10679,7 +10673,7 @@ const MUSEUMS = [
         }
     },
     {
-        id: 'linyi-museum',
+        id: 'linyi-yimeng-culture-museum',
         name: '临沂博物馆',
         location: '临沂',
         description: '展示沂蒙文化和革命老区历史',
@@ -11106,10 +11100,7 @@ const MUSEUMS = [
         }
     },
     {
-        id: 'jiaxing-museum',
-        name: '嘉兴博物馆',
-        location: '嘉兴',
-        description: '展示嘉兴南湖红船文化和江南水乡风情',
+        id: 'jiaxing-red-boat-museum',
         tags: ['红船文化', '南湖', '江南水乡'],
         checklists: {
             parent: {
@@ -11167,7 +11158,7 @@ const MUSEUMS = [
         }
     },
     {
-        id: 'huzhou-museum',
+        id: 'huzhou-silk-museum',
         name: '湖州博物馆',
         location: '湖州',
         description: '展示湖州丝绸文化和太湖流域文明',
