@@ -29,6 +29,8 @@ body {
 header {
     text-align: center;
     margin-bottom: 30px;
+    position: relative;
+    padding-top: 50px; /* Make room for absolute positioned updates button */
 }
 
 header h1 {
@@ -39,53 +41,58 @@ header h1 {
 
 .subtitle {
     color: #666;
-    font-size: 1.2em;
+    font-size: 1.3em;
+    margin-bottom: 15px;
+}
+
+.value-proposition {
+    color: #888;
+    font-size: 1.1em;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.4;
 }
 
 /* Updates Section */
 .updates-section {
-    margin-top: 20px;
-    text-align: center;
+    margin-top: 15px;
+    text-align: right;
+    position: absolute;
+    top: 20px;
+    right: 20px;
 }
 
 .updates-button {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 25px;
+    background: rgba(0, 0, 0, 0.05);
+    color: #666;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 6px 12px;
+    border-radius: 12px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12px;
     font-family: inherit;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    gap: 6px;
+    transition: all 0.2s ease;
 }
 
 .updates-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+    background: rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.2);
 }
 
 .updates-icon {
-    font-size: 16px;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
+    font-size: 12px;
+    /* Remove pulsing animation */
 }
 
 .version-badge {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: bold;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: normal;
 }
 
 /* Updates Modal */
@@ -223,25 +230,101 @@ header h1 {
 .age-selector {
     text-align: center;
     margin-bottom: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .age-selector label {
     font-weight: bold;
-    margin-right: 10px;
+    margin-right: 15px;
+    font-size: 1.1em;
+    color: var(--primary-color);
 }
 
 .age-selector select {
-    padding: 8px 12px;
+    padding: 10px 15px;
     border: 2px solid var(--border-color);
-    border-radius: 5px;
+    border-radius: 8px;
     font-size: 16px;
     background-color: white;
+    min-width: 200px;
+    transition: border-color 0.2s ease;
+}
+
+.age-selector select:focus {
+    border-color: var(--primary-color);
+    outline: none;
 }
 
 .museum-list h2 {
     color: var(--primary-color);
     margin-bottom: 15px;
     text-align: center;
+}
+
+/* Search functionality styles */
+.search-section {
+    margin-bottom: 25px;
+}
+
+.search-container {
+    position: relative;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 45px 12px 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 25px;
+    font-size: 16px;
+    background-color: white;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.search-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+}
+
+.search-input::placeholder {
+    color: #999;
+    font-size: 15px;
+}
+
+.clear-search-button {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.clear-search-button:hover {
+    background-color: #f0f0f0;
+    color: #666;
+}
+
+.search-results-info {
+    text-align: center;
+    margin-top: 10px;
+    color: #666;
+    font-size: 14px;
+    font-style: italic;
 }
 
 .stats {
@@ -823,6 +906,20 @@ header h1 {
         font-size: 1em;
     }
     
+    .search-container {
+        max-width: 100%;
+        margin: 0 15px;
+    }
+    
+    .search-input {
+        font-size: 16px; /* Prevent zoom on iOS */
+        padding: 10px 40px 10px 12px;
+    }
+    
+    .search-input::placeholder {
+        font-size: 14px;
+    }
+    
     .museum-card {
         padding: 15px;
     }
@@ -869,4 +966,78 @@ main[role="main"] {
 /* Status indicators */
 [role="status"] {
     font-weight: 500;
+}
+
+/* Loading Indicator Styles */
+.loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    min-height: 200px;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+.loading-indicator p {
+    color: #666;
+    font-size: 1.1em;
+    margin: 0;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error Message Styles */
+.error-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    min-height: 200px;
+    background-color: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.error-message p {
+    color: #c53030;
+    font-size: 1.1em;
+    margin: 0 0 20px 0;
+    line-height: 1.5;
+}
+
+.retry-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.retry-button:hover {
+    background-color: #1e4085;
 }
