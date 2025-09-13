@@ -540,12 +540,13 @@ header h1 {
 
 .checklist-item {
     display: flex;
-    align-items: flex-start;
-    margin-bottom: 15px;
-    padding: 12px;
-    border-radius: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
     transition: all 0.3s ease;
-    flex-direction: column;
+    flex-direction: row;
+    gap: 12px;
 }
 
 .checklist-item:hover {
@@ -553,24 +554,23 @@ header h1 {
 }
 
 .checklist-item input[type="checkbox"] {
-    margin-right: 12px;
-    margin-top: 2px;
+    margin: 0;
     width: 18px;
     height: 18px;
-    align-self: flex-start;
+    flex-shrink: 0;
 }
 
 .checklist-item label {
     flex: 1;
     cursor: pointer;
     line-height: 1.4;
-    margin-bottom: 8px;
-    width: 100%;
+    margin: 0;
+    word-wrap: break-word;
 }
 
 .checklist-item.completed {
     background-color: #f8fff9;
-    border-left: 4px solid var(--accent-color);
+    border-left: 3px solid var(--accent-color);
 }
 
 .checklist-item.completed label {
@@ -669,12 +669,13 @@ header h1 {
 /* Checklist Customization Styles */
 .checklist-item {
     display: flex;
-    align-items: flex-start;
-    margin-bottom: 15px;
-    padding: 12px;
-    border-radius: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
     transition: all 0.3s ease;
-    flex-direction: column;
+    flex-direction: row;
+    gap: 12px;
     position: relative;
 }
 
