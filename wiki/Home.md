@@ -6,7 +6,7 @@
 
 MuseumCheck 是一个帮助中国家庭规划博物馆参观的互动应用，让孩子爱上博物馆之旅。
 
-- **在线体验**: https://museumcheck.cn/
+- **在线体验**: https://博物馆打卡.cn/
 - **GitHub**: https://github.com/jackandking/MuseumCheck
 - **版本**: 当前最新版本信息请查看应用内更新
 

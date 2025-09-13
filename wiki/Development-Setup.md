@@ -276,7 +276,7 @@ git push origin main
 ```
 
 ### 自定义域名
-项目使用 `museumcheck.cn` 域名，配置在 `CNAME` 文件中。
+项目使用 `博物馆打卡.cn` 域名，配置在 `CNAME` 文件中。
 
 ## 📚 参考资料
 

@@ -2030,7 +2030,7 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
         <meta name="author" content="MuseumCheck">
         <meta name="robots" content="index, follow">
         <meta name="language" content="zh-CN">
-        <link rel="canonical" href="https://museumcheck.cn/">
+        <link rel="canonical" href="https://博物馆打卡.cn/">
       `;
       
       // Verify enhanced title with keywords
@@ -2058,17 +2058,17 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
       expect(robots.content).toBe('index, follow');
       
       const canonical = document.querySelector('link[rel="canonical"]');
-      expect(canonical.href).toBe('https://museumcheck.cn/');
+      expect(canonical.href).toBe('https://xn--9kroa195ivupp99b.cn/');
     });
 
     test('should have Open Graph meta tags for social sharing', () => {
       // Setup DOM with Open Graph tags
       document.head.innerHTML = `
         <meta property="og:type" content="website">
-        <meta property="og:url" content="https://museumcheck.cn/">
+        <meta property="og:url" content="https://博物馆打卡.cn/">
         <meta property="og:title" content="博物馆打卡 - 中国120家博物馆亲子参观指南">
         <meta property="og:description" content="专为中国家庭设计的博物馆参观指南，收录全国120家知名博物馆，提供分龄参观清单，让孩子爱上博物馆文化之旅。">
-        <meta property="og:image" content="https://museumcheck.cn/logo-og.png">
+        <meta property="og:image" content="https://博物馆打卡.cn/logo-og.png">
         <meta property="og:site_name" content="MuseumCheck">
         <meta property="og:locale" content="zh_CN">
       `;
@@ -2079,7 +2079,7 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
       
       // Verify Open Graph URL
       const ogUrl = document.querySelector('meta[property="og:url"]');
-      expect(ogUrl.content).toBe('https://museumcheck.cn/');
+      expect(ogUrl.content).toBe('https://博物馆打卡.cn/');
       
       // Verify Open Graph title
       const ogTitle = document.querySelector('meta[property="og:title"]');
@@ -2100,10 +2100,10 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
       // Setup DOM with Twitter Card tags
       document.head.innerHTML = `
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:url" content="https://museumcheck.cn/">
+        <meta name="twitter:url" content="https://博物馆打卡.cn/">
         <meta name="twitter:title" content="博物馆打卡 - 中国120家博物馆亲子参观指南">
         <meta name="twitter:description" content="专为中国家庭设计的博物馆参观指南，收录全国120家知名博物馆，提供分龄参观清单，让孩子爱上博物馆文化之旅。">
-        <meta name="twitter:image" content="https://museumcheck.cn/logo-og.png">
+        <meta name="twitter:image" content="https://博物馆打卡.cn/logo-og.png">
       `;
       
       // Verify Twitter Card type
@@ -2112,7 +2112,7 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
       
       // Verify Twitter URL
       const twitterUrl = document.querySelector('meta[name="twitter:url"]');
-      expect(twitterUrl.content).toBe('https://museumcheck.cn/');
+      expect(twitterUrl.content).toBe('https://博物馆打卡.cn/');
       
       // Verify Twitter title and description
       const twitterTitle = document.querySelector('meta[name="twitter:title"]');
@@ -2132,7 +2132,7 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
             "name": "博物馆打卡",
             "alternateName": "MuseumCheck",
             "description": "专为中国家庭设计的博物馆参观指南应用",
-            "url": "https://museumcheck.cn",
+            "url": "https://博物馆打卡.cn",
             "applicationCategory": "EducationalApplication",
             "inLanguage": "zh-CN"
         }
@@ -2146,7 +2146,7 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
                     "@type": "ListItem",
                     "position": 1,
                     "name": "首页",
-                    "item": "https://museumcheck.cn"
+                    "item": "https://博物馆打卡.cn"
                 }
             ]
         }

@@ -11,11 +11,11 @@ MuseumCheck is a fully functional web application designed to help parents and c
 - `script.js` - Complete JavaScript application logic (124KB, 3,017 lines, 120 museums with detailed checklists)
 - `style.css` - Complete CSS styling with responsive design (12KB)
 - `README.md` - Comprehensive documentation
-- `CNAME` - GitHub Pages deployment configuration (museumcheck.cn)
+- `CNAME` - GitHub Pages deployment configuration (博物馆打卡.cn)
 - `.github/copilot-instructions.md` - This file
 - `.github/FUNDING.yml` - GitHub sponsorship configuration
 
-**Live Application**: https://jackandking.github.io/MuseumCheck/ and https://museumcheck.cn
+**Live Application**: https://jackandking.github.io/MuseumCheck/ and https://博物馆打卡.cn
 
 ## Development Environment Setup
 
@@ -207,7 +207,7 @@ Test in these browsers (minimum):
 ```
 /home/runner/work/MuseumCheck/MuseumCheck/
 ├── README.md              # Comprehensive documentation  
-├── CNAME                  # GitHub Pages domain (museumcheck.cn)
+├── CNAME                  # GitHub Pages domain (博物馆打卡.cn)
 ├── index.html             # Complete HTML application (4KB)
 ├── script.js              # Full JavaScript logic (124KB, 3,017 lines)
 ├── style.css              # Complete responsive CSS (12KB)
@@ -404,7 +404,7 @@ localStorage.setItem('museumChecklists', JSON.stringify(checklistData));
 
 ### GitHub Pages (ACTIVE)
 - **Primary URL**: https://jackandking.github.io/MuseumCheck/
-- **Custom Domain**: https://museumcheck.cn (configured via CNAME file)  
+- **Custom Domain**: https://博物馆打卡.cn (configured via CNAME file)  
 - **Auto-deployment**: Pushes to main branch auto-deploy to GitHub Pages
 - **No build step**: Direct deployment of static files
 
@@ -425,7 +425,7 @@ When updating the application:
 - **Architecture**: Single Page Application with modal dialogs
 - **Deployment**: Static hosting via GitHub Pages
 - **Analytics**: Google Analytics 4 (GA_MEASUREMENT_ID: G-YHF52B1NMH)
-- **Domain**: museumcheck.cn (custom domain via CNAME)
+- **Domain**: 博物馆打卡.cn (custom domain via CNAME)
 
 ### Complete Museum List (120 Museums)
 The application includes 120 major Chinese museums covering all provinces and regions, including:

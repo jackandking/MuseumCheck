@@ -431,7 +431,7 @@ GitHub Pages → CDN → 用户浏览器
 
 ### 自定义域名
 ```
-museumcheck.cn → CNAME配置 → 
+museumcheck.cn → GitHub Pages → 博物馆打卡.cn 
 GitHub Pages → SSL证书 → HTTPS访问
 ```
 
