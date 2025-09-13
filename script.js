@@ -714,7 +714,7 @@ const MUSEUMS = [
         location: '北京',
         description: '综合性历史艺术博物馆，展示中华民族悠久文化历史',
         tags: ['历史', '文化', '艺术'],
-        image: 'http://eb118-file.cdn.bcebos.com/upload/5b6fdbca17a04047b55adc6658a750bd_2211489532.png?x-bce-process=image/format,f_auto/resize,m_lfit,limit_1,w_500,h_500/quality,q_85',
+        image: 'https://eb118-file.cdn.bcebos.com/upload/5b6fdbca17a04047b55adc6658a750bd_2211489532.png?x-bce-process=image/format,f_auto/resize,m_lfit,limit_1,w_500,h_500/quality,q_85',
         checklists: {
             parent: {
                 '3-6': [
