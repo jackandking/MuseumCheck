@@ -315,6 +315,183 @@ test('should auto-adjust canvas height based on content', () => {
 ### No Exceptions Policy
 **Every bug fix must include unit tests.** No exceptions, even for "simple" fixes. Historical evidence shows simple fixes often cause unexpected regressions.
 
+## Systematic Issue Detection Requirements (CRITICAL)
+
+**MANDATORY**: Before making ANY changes to the codebase, especially when fixing bugs or adding features involving museum data, you MUST perform comprehensive systematic analysis to identify broader issues.
+
+### Pre-Change Analysis Protocol
+
+**ALWAYS run these checks before making changes:**
+
+1. **Data Integrity Analysis** (MANDATORY):
+   ```bash
+   # Create and run data validation script
+   node /tmp/analyze_duplicates.js
+   # Or use provided validation tools
+   ```
+
+2. **Systematic Issue Detection**:
+   - **Check for duplicate museum names**: Look for identical `name` fields
+   - **Check for duplicate museum IDs**: Look for identical `id` fields  
+   - **Validate data consistency**: Ensure all required fields present
+   - **Check for undefined values**: Find any `undefined` or `null` entries
+   - **Verify data counts**: Compare actual vs expected museum counts
+
+3. **Comprehensive Problem Reporting** (MANDATORY):
+   - **Document ALL discovered issues**: Not just the specific bug being fixed
+   - **Quantify systematic problems**: Provide exact counts and examples
+   - **Assess impact scope**: Determine if issues affect user experience
+   - **Prioritize fixes**: Address systematic issues before individual bugs
+
+### Data Validation Requirements
+
+**For ANY museum data changes, you MUST:**
+
+```bash
+# 1. Run comprehensive duplicate detection
+cd /home/runner/work/MuseumCheck/MuseumCheck
+node -e "
+const fs = require('fs');
+const content = fs.readFileSync('script.js', 'utf8');
+const startIdx = content.indexOf('const MUSEUMS = [');
+const endIdx = content.indexOf('];', startIdx) + 2;
+const museums = eval(content.substring(startIdx, endIdx).replace('const MUSEUMS = ', ''));
+
+console.log('Museum count:', museums.length);
+
+// Check duplicates
+const names = new Map();
+const ids = new Map();
+let dupNames = 0, dupIds = 0;
+
+museums.forEach((m, i) => {
+  if (names.has(m.name)) { 
+    console.log(\`DUPLICATE NAME: \\\${m.name} (index \${names.get(m.name)} and \${i})\`);
+    dupNames++;
+  } else names.set(m.name, i);
+  
+  if (ids.has(m.id)) { 
+    console.log(\`DUPLICATE ID: \\\${m.id} (index \${ids.get(m.id)} and \${i})\`);
+    dupIds++;
+  } else ids.set(m.id, i);
+});
+
+console.log(\`Total duplicate names: \${dupNames}\`);
+console.log(\`Total duplicate IDs: \${dupIds}\`);
+"
+
+# 2. Verify no undefined values
+grep -n "undefined\|null" script.js | grep -E "(name:|id:|location:)"
+
+# 3. Check expected vs actual counts
+echo "Expected museums: Check against documentation"
+echo "Actual museums: See count above"
+```
+
+### Mandatory Reporting Protocol
+
+**When you discover systematic issues (like 41 duplicate names), you MUST:**
+
+1. **STOP** the current task immediately
+2. **DOCUMENT** all discovered issues comprehensively:
+   - Exact counts of duplicates
+   - Specific examples with line numbers/indices
+   - Impact assessment on user experience
+   - Recommendation for systematic fix vs. individual fix
+
+3. **REPORT** to user with this format:
+   ```
+   🚨 SYSTEMATIC DATA QUALITY ISSUE DETECTED
+   
+   While working on [original task], comprehensive analysis revealed:
+   - [X] duplicate museum names
+   - [Y] duplicate museum IDs  
+   - [Z] undefined/null entries
+   - Total museums: [actual] (expected: [expected])
+   
+   RECOMMENDATION: Address systematic duplication before individual bug fixes.
+   This affects user experience through search confusion and data inconsistency.
+   
+   Specific examples:
+   1. [Museum name] appears [X] times with IDs [list]
+   2. [Museum ID] used for [Y] different museums
+   3. [etc.]
+   ```
+
+4. **ASK** user whether to:
+   - Fix the systematic issue first (recommended)
+   - Continue with original narrow fix (not recommended)
+   - Provide additional analysis tools
+
+### Systematic Fix Requirements
+
+**When addressing systematic issues:**
+
+1. **Create comprehensive fix plan**: Address ALL instances, not just individual cases
+2. **Preserve data integrity**: Ensure no data loss during deduplication
+3. **Update tests**: Ensure tests reflect correct post-fix expectations
+4. **Document changes**: Update museum counts and any dependent documentation
+
+### Example: Proper Systematic Response
+
+**BAD** (what happened before):
+- Found "首都博物馆" duplicate
+- Fixed only that specific duplicate  
+- Ignored 40 other duplicate names and 23 other duplicate IDs
+- Did not report broader issue
+
+**GOOD** (required approach):
+- Found "首都博物馆" duplicate during analysis
+- Ran comprehensive duplicate detection
+- Discovered 41 duplicate names and 24 duplicate IDs
+- Reported systematic issue to user immediately
+- Recommended comprehensive deduplication plan
+- Asked user for priority guidance before proceeding
+
+### Data Quality Tools
+
+Create these validation scripts in `/tmp/` for analysis:
+
+```javascript
+// /tmp/validate_museums.js - Comprehensive validation
+// /tmp/analyze_duplicates.js - Duplicate detection  
+// /tmp/check_data_integrity.js - Field validation
+```
+
+**AVAILABLE TOOLS** (already provided in repository):
+
+```bash
+# Quick validation using built-in tools
+npm run validate-data      # Comprehensive validation tool
+npm run test:data-quality  # Run data quality tests
+
+# Manual validation (as shown in validation checklist)
+node -e "/* validation code from checklist */"
+```
+
+### Integration with Testing
+
+Add systematic validation to test requirements:
+
+```javascript
+// tests/data-quality.test.js
+describe('Museum Data Quality', () => {
+  test('should have no duplicate museum names', () => {
+    // Comprehensive duplicate detection test
+  });
+  
+  test('should have no duplicate museum IDs', () => {
+    // ID uniqueness validation test
+  });
+  
+  test('should have expected museum count', () => {
+    // Total count validation test
+  });
+});
+```
+
+**CRITICAL**: This systematic approach prevents missing major data quality issues while focusing on individual bugs. Always analyze comprehensively before making changes.
+
 ## Common Development Tasks
 
 
@@ -458,6 +635,55 @@ The application includes 120 major Chinese museums covering all provinces and re
 
 ## Validation Checklist (RUN AFTER ANY CHANGES)
 
+**Data Quality Validation (MANDATORY FIRST STEP)**:
+- [ ] **Museum data integrity**: Run comprehensive duplicate detection analysis
+- [ ] **No duplicate museum names**: Each `name` field appears exactly once
+- [ ] **No duplicate museum IDs**: Each `id` field appears exactly once  
+- [ ] **No undefined values**: No `undefined`, `null`, or missing critical fields
+- [ ] **Expected museum count**: Verify actual count matches documented expectations
+- [ ] **Systematic issues identified**: Document any broader data quality problems discovered
+- [ ] **Issue reporting complete**: All discovered systematic issues reported to user
+
+```bash
+# MANDATORY: Run comprehensive data validation before any changes
+cd /home/runner/work/MuseumCheck/MuseumCheck
+npm run validate-data
+
+# Alternative: Quick validation with inline script
+node -e "
+const fs = require('fs');
+const content = fs.readFileSync('script.js', 'utf8');
+const startIdx = content.indexOf('const MUSEUMS = [');
+const endIdx = content.indexOf('];', startIdx) + 2;
+const museums = eval(content.substring(startIdx, endIdx).replace('const MUSEUMS = ', ''));
+
+console.log('✅ Museum count:', museums.length);
+
+const names = new Map(); const ids = new Map();
+let dupNames = 0, dupIds = 0;
+
+museums.forEach((m, i) => {
+  if (names.has(m.name)) { 
+    console.log(\`❌ DUPLICATE NAME: \${m.name} (indices \${names.get(m.name)} and \${i})\`);
+    dupNames++;
+  } else names.set(m.name, i);
+  
+  if (ids.has(m.id)) { 
+    console.log(\`❌ DUPLICATE ID: \${m.id} (indices \${ids.get(m.id)} and \${i})\`);
+    dupIds++;
+  } else ids.set(m.id, i);
+});
+
+console.log(dupNames === 0 ? '✅ No duplicate names' : \`❌ \${dupNames} duplicate names found\`);
+console.log(dupIds === 0 ? '✅ No duplicate IDs' : \`❌ \${dupIds} duplicate IDs found\`);
+console.log(''); 
+console.log('🚨 IF DUPLICATES FOUND: Report systematic issue before proceeding with changes');
+"
+
+# Or run data quality tests specifically
+npm run test:data-quality
+```
+
 **Unit Testing (MANDATORY FOR BUG FIXES)**:
 - [ ] **Unit tests exist**: Every bug fix has corresponding regression tests
 - [ ] **All tests pass**: `npm test` returns zero exit code  
@@ -467,7 +693,7 @@ The application includes 120 major Chinese museums covering all provinces and re
 **Application Testing**:
 - [ ] **Server starts in 1-2 seconds**: `python3 -m http.server 8000`
 - [ ] **Application loads at http://localhost:8000**
-- [ ] **All 26 museums display with Chinese names and locations**  
+- [ ] **All museums display correctly**: Verify count matches expected (check data validation above)
 - [ ] **Age selector works**: Changes between 3-6岁, 7-12岁, 13-18岁
 - [ ] **Museum modals open**: Click any museum card opens detailed view
 - [ ] **Tab switching works**: "家长准备" and "孩子任务" tabs function
@@ -475,12 +701,12 @@ The application includes 120 major Chinese museums covering all provinces and re
 - [ ] **Visit tracking works**: Museum checkboxes update visit counter
 - [ ] **Data persists**: Refresh browser, all progress remains
 - [ ] **localStorage contains expected data**: Check DevTools > Application
-- [ ] **Progress percentage calculates correctly**: e.g., 1/26 = 3.8%
+- [ ] **Progress percentage calculates correctly**: Based on actual museum count from validation
 - [ ] **Chinese text renders properly**: No character encoding issues
 - [ ] **Responsive design works**: Test mobile view (DevTools device toggle)
 - [ ] **HTTP responses are correct**: 200 OK for assets, 404 for missing files
 
-**CRITICAL**: If any checklist item fails, investigate before making changes. Run unit tests first (`npm test`) to catch issues early, then manually verify functionality.
+**CRITICAL**: If any checklist item fails, investigate before making changes. Run data quality validation FIRST to catch systematic issues, then unit tests (`npm test`) to catch issues early, then manually verify functionality.
 
 Always validate your changes by running through the complete user scenarios above before committing code.
 
