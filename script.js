@@ -2342,7 +2342,7 @@ const MUSEUMS = [
         location: '北京',
         description: '展示北京历史文化的市属综合性博物馆',
         tags: ['北京历史', '古都文化', '民俗'],
-        image: 'http://eb118-file.cdn.bcebos.com/upload/8e5e95e9a5b8432caa39da051544fcaa_1262462398.png?x-bce-process=image/format,f_auto/resize,m_lfit,limit_1,w_500,h_500/quality,q_85',
+        image: 'https://eb118-file.cdn.bcebos.com/upload/8e5e95e9a5b8432caa39da051544fcaa_1262462398.png?x-bce-process=image/format,f_auto/resize,m_lfit,limit_1,w_500,h_500/quality,q_85',
         checklists: {
             parent: {
                 '3-6': [
