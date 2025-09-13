@@ -1,8 +1,15 @@
 // Recent
 const RECENT_CHANGES = {
-    version: "4.6.0",
+    version: "4.6.1",
     lastUpdate: "2024-12-21",
     changes: [
+        {
+            date: "2024-12-21",
+            version: "4.6.1",
+            title: "优化清单页面专业度",
+            description: "响应用户反馈，重新设计家长清单和孩子清单页面布局。修复复选框与文字不对齐问题，采用更紧凑专业的设计风格，提升视觉层次和用户体验，让清单页面看起来更加专业规范。",
+            type: "improvement"
+        },
         {
             date: "2024-12-21",
             version: "4.6.0",
