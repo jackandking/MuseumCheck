@@ -1568,13 +1568,7 @@ main[role="main"] {
 }
 
 /* Enhanced Expert Guidance Styling */
-.expert-section {
-    margin-bottom: 24px;
-    padding: 16px;
-    background: #fafafa;
-    border-radius: 8px;
-    border-left: 4px solid var(--primary-color);
-}
+/* Removed duplicate .expert-section definition. Consolidated into a single definition earlier in the file. */
 
 .expert-section h4 {
     margin-bottom: 12px;
