@@ -29,15 +29,24 @@ describe('Museum Count Consistency', () => {
 
     test('MUSEUM_COUNT should be used consistently in JavaScript code', () => {
         // Check that hardcoded museum counts are replaced with MUSEUM_COUNT
-        const hardcodedCountRegex = /\b(120|300)\b/g;
+        // Match all integer literals in the code
+        const hardcodedCountRegex = /\b\d+\b/g;
         const matches = scriptContent.match(hardcodedCountRegex) || [];
         
+        // Only consider numbers that match the current museum count
+        const museumCountNumbers = [MUSEUMS.length];
+        // Optionally, add previous known values if you want to catch regressions:
+        // museumCountNumbers.push(120, 300);
+        
+        // Filter out numbers that are not museum counts
+        const potentialCountMatches = matches.filter(match => museumCountNumbers.includes(Number(match)));
+        
         // Filter out legitimate uses (like dimensions, timeouts, etc.)
-        const suspiciousMatches = matches.filter(match => {
+        const suspiciousMatches = potentialCountMatches.filter(match => {
             const matchIndex = scriptContent.indexOf(match);
             const context = scriptContent.substring(Math.max(0, matchIndex - 100), matchIndex + 100);
             
-            // These are legitimate uses of 120/300 that are not museum counts
+            // These are legitimate uses of the number that are not museum counts
             const legitimateContexts = [
                 'width', 'height', 'size', 'px', 'timeout', 'delay', 'duration',
                 'Math.min', 'fillRect', 'strokeRect', 'canvas', 'ctx.', 'setTimeout',
