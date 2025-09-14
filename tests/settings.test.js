@@ -5,7 +5,6 @@
  * - Settings modal HTML structure
  * - Settings icon click behavior
  * - Settings modal show/hide functionality
- * - Deployment date display
  * - Museum count display
  */
 
@@ -29,11 +28,7 @@ describe('Settings Page Tests', () => {
                     <span class="close">&times;</span>
                     <h2>⚙️ 设置</h2>
                     <div class="settings-section">
-                        <h3>📊 项目信息</h3>
-                        <div class="settings-item">
-                            <label class="settings-label">最近部署时间：</label>
-                            <span class="settings-value" id="deploymentDate">正在加载...</span>
-                        </div>
+                        <h3>📊 应用信息</h3>
                         <div class="settings-item">
                             <label class="settings-label">博物馆数量：</label>
                             <span class="settings-value" id="museumCountSettings">0</span>
@@ -68,10 +63,9 @@ describe('Settings Page Tests', () => {
             expect(closeButton.textContent.trim()).toBe('×');
         });
 
-        test('should have deployment date element', () => {
+        test('should not have deployment date element', () => {
             const deploymentDateElement = document.getElementById('deploymentDate');
-            expect(deploymentDateElement).toBeTruthy();
-            expect(deploymentDateElement.textContent).toBe('正在加载...');
+            expect(deploymentDateElement).toBeFalsy(); // Should not exist anymore
         });
 
         test('should have museum count element', () => {
@@ -87,10 +81,10 @@ describe('Settings Page Tests', () => {
             
             const sectionHeader = settingsSection.querySelector('h3');
             expect(sectionHeader).toBeTruthy();
-            expect(sectionHeader.textContent).toContain('项目信息');
+            expect(sectionHeader.textContent).toContain('应用信息');
             
             const settingsItems = settingsSection.querySelectorAll('.settings-item');
-            expect(settingsItems.length).toBe(2); // deployment date, museum count
+            expect(settingsItems.length).toBe(1); // only museum count
             
             // Check that each settings item has label and value
             settingsItems.forEach(item => {
@@ -116,19 +110,6 @@ describe('Settings Page Tests', () => {
                     document.getElementById('settingsModal').classList.add('hidden');
                 }),
                 renderSettingsInfo: jest.fn(() => {
-                    // Simulate what the real method does - use current date instead of hardcoded
-                    const deploymentDate = new Date();
-                    const formattedDate = deploymentDate.toLocaleString('zh-CN', {
-                        year: 'numeric',
-                        month: '2-digit', 
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        timeZone: 'Asia/Shanghai',
-                        timeZoneName: 'short'
-                    });
-                    document.getElementById('deploymentDate').textContent = formattedDate;
                     document.getElementById('museumCountSettings').textContent = '257'; // Mock museum count
                 }),
                 trackEvent: jest.fn()
@@ -163,24 +144,6 @@ describe('Settings Page Tests', () => {
             expect(settingsModal.classList.contains('hidden')).toBe(true);
         });
 
-        test('renderSettingsInfo should populate deployment date', () => {
-            const deploymentDateElement = document.getElementById('deploymentDate');
-            
-            // Element should have initial value
-            expect(deploymentDateElement.textContent).toBe('正在加载...');
-            
-            // Call renderSettingsInfo
-            mockApp.renderSettingsInfo();
-            
-            // Element should be updated
-            expect(deploymentDateElement.textContent).not.toBe('正在加载...');
-            expect(deploymentDateElement.textContent.length).toBeGreaterThan(0);
-            
-            // Should contain date-like format
-            expect(deploymentDateElement.textContent).toMatch(/\d{4}/); // Year
-            expect(deploymentDateElement.textContent).toMatch(/\d{2}/); // Month/day/hour/minute
-        });
-
         test('renderSettingsInfo should populate museum count', () => {
             const museumCountElement = document.getElementById('museumCountSettings');
             
@@ -198,18 +161,6 @@ describe('Settings Page Tests', () => {
             const museumCount = parseInt(museumCountElement.textContent);
             expect(museumCount).toBeGreaterThan(100); // We expect at least 100+ museums
             expect(museumCount).toBeLessThan(1000); // But not more than 1000 (sanity check)
-        });
-
-        test('should format deployment date in Chinese locale', () => {
-            mockApp.renderSettingsInfo();
-            
-            const deploymentDateElement = document.getElementById('deploymentDate');
-            const dateText = deploymentDateElement.textContent;
-            
-            // Should contain Chinese locale formatting elements
-            // The exact format may vary by environment, but should contain recognizable patterns
-            expect(dateText).toMatch(/2025/); // Should contain the year
-            expect(dateText.length).toBeGreaterThan(10); // Should be a reasonable length for formatted date
         });
     });
 
@@ -255,26 +206,6 @@ describe('Settings Page Tests', () => {
     });
 
     describe('Settings Data Format', () => {
-        test('should handle deployment date format correctly', () => {
-            // Test the date formatting logic using current date
-            const testDate = new Date();
-            
-            const formattedDate = testDate.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit', 
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                timeZone: 'Asia/Shanghai',
-                timeZoneName: 'short'
-            });
-            
-            expect(formattedDate).toContain('2025');
-            expect(typeof formattedDate).toBe('string');
-            expect(formattedDate.length).toBeGreaterThan(10);
-        });
-
         test('should validate museum count is numeric', () => {
             const mockMuseumCount = '257';
             const parsedCount = parseInt(mockMuseumCount);

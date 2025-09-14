@@ -18089,25 +18089,6 @@ class MuseumCheckApp {
     }
 
     renderSettingsInfo() {
-        // Use current date/time as the deployment date
-        // This represents when the user loaded the application
-        const deploymentDate = new Date();
-        
-        // Format deployment date in Chinese locale
-        const formattedDate = deploymentDate.toLocaleString('zh-CN', {
-            year: 'numeric',
-            month: '2-digit', 
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            timeZone: 'Asia/Shanghai',
-            timeZoneName: 'short'
-        });
-        
-        // Update deployment date display
-        document.getElementById('deploymentDate').textContent = formattedDate;
-        
         // Update museum count
         document.getElementById('museumCountSettings').textContent = MUSEUMS.length;
     }
