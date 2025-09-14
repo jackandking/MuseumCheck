@@ -925,7 +925,7 @@ header h1 {
     
     .achievement-inline .clear-data-button-icon {
         align-self: center;
-        margin-left: 0;
+        /* margin-left removed to avoid conflict with base style. Use a modifier class for alignment if needed. */
     }
 
     .achievement-buttons {
