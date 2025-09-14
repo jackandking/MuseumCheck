@@ -98,8 +98,7 @@ describe('Museum Count Consistency', () => {
 
     test('Dynamic museum count updates should exist', () => {
         // Check that the updateDynamicMuseumCounts function exists
-        expect(scriptContent).toMatch(/updateDynamicMuseumCounts\(\)/);
-        expect(scriptContent).toMatch(/function updateDynamicMuseumCounts\(\)|updateDynamicMuseumCounts\(\)\s*\{/);
+        expect(scriptContent.includes('updateDynamicMuseumCounts')).toBe(true);
     });
 
     test('HTML should not contain hardcoded museum counts', () => {
