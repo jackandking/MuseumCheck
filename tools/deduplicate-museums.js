@@ -302,13 +302,21 @@ function extractMuseumStrings(originalCode) {
         const prevChar = i > 0 ? arrayContent[i - 1] : null;
         
         // Handle string states
-        if ((char === '"' || char === "'" || char === '`') && prevChar !== '\\') {
-            if (!inString) {
-                inString = true;
-                stringChar = char;
-            } else if (char === stringChar) {
-                inString = false;
-                stringChar = null;
+        // Check if the quote is not escaped by counting preceding backslashes
+        if (char === '"' || char === "'" || char === '`') {
+            // Count consecutive backslashes before this character
+            let backslashCount = 0;
+            for (let j = i - 1; j >= 0 && arrayContent[j] === '\\'; j--) {
+                backslashCount++;
+            }
+            if (backslashCount % 2 === 0) { // even number means not escaped
+                if (!inString) {
+                    inString = true;
+                    stringChar = char;
+                } else if (char === stringChar) {
+                    inString = false;
+                    stringChar = null;
+                }
             }
         }
         
