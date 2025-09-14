@@ -1208,7 +1208,7 @@ main[role="main"] {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-wrap: wrap;
+    flex-shrink: 0;
 }
 
 /* Notification Styles */
@@ -1645,19 +1645,24 @@ main[role="main"] {
 /* Mobile Responsive Adjustments for Share Features */
 @media (max-width: 768px) {
     .checklist-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+        /* Keep horizontal layout since buttons are now icon-only */
+        gap: 8px;
     }
     
     .checklist-header h3 {
-        width: 100%;
+        font-size: 16px; /* Slightly smaller on mobile */
     }
     
     .share-button {
-        align-self: flex-end;
-        font-size: 12px;
-        padding: 6px 12px;
+        font-size: 14px;
+        padding: 6px 8px;
+        min-width: auto;
+    }
+    
+    .clear-checklist-button {
+        font-size: 14px;
+        padding: 6px 8px;
+        min-width: auto;
     }
     
     .notification {
