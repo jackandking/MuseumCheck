@@ -2021,6 +2021,31 @@ main[role="main"] {
     margin-bottom: 0;
 }
 
+.assessment-disclaimer {
+    background: #fff3cd !important;
+    border: 2px solid #ffeaa7 !important;
+    border-radius: 8px !important;
+    padding: 15px !important;
+    margin: 15px 0 !important;
+    color: #856404 !important;
+}
+
+.assessment-disclaimer p {
+    margin-bottom: 8px !important;
+    font-weight: 600;
+    color: #856404 !important;
+}
+
+.assessment-disclaimer ul {
+    margin: 8px 0 !important;
+    padding-left: 20px !important;
+}
+
+.assessment-disclaimer li {
+    margin-bottom: 4px;
+    color: #856404 !important;
+}
+
 .assessment-steps {
     margin-bottom: 30px;
 }
