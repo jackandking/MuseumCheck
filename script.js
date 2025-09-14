@@ -17094,6 +17094,23 @@ class MuseumCheckApp {
             }
         });
 
+        // Settings icon click
+        document.getElementById('settingsIcon').addEventListener('click', () => {
+            this.showSettingsModal();
+        });
+
+        // Settings modal close
+        document.querySelector('#settingsModal .close').addEventListener('click', () => {
+            this.closeSettingsModal();
+        });
+
+        // Click outside settings modal to close
+        document.getElementById('settingsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'settingsModal') {
+                this.closeSettingsModal();
+            }
+        });
+
         // Clear all data button
         document.getElementById('clearAllDataButton').addEventListener('click', () => {
             this.clearAllData();
@@ -18054,6 +18071,45 @@ class MuseumCheckApp {
         if (posterSection) {
             posterSection.style.display = 'none';
         }
+    }
+
+    showSettingsModal() {
+        this.renderSettingsInfo();
+        document.getElementById('settingsModal').classList.remove('hidden');
+        
+        // Track settings view
+        this.trackEvent('settings_viewed', {
+            'museum_count': MUSEUMS.length,
+            'visited_count': this.visitedMuseums.length
+        });
+    }
+
+    closeSettingsModal() {
+        document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    renderSettingsInfo() {
+        // Get latest deployment date from package.json version or use current date as fallback
+        // In a real deployment, this would come from build/deployment metadata
+        const deploymentDate = new Date('2025-09-14T10:08:04Z'); // Latest commit date from git log
+        
+        // Format deployment date in Chinese locale
+        const formattedDate = deploymentDate.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone: 'Asia/Shanghai',
+            timeZoneName: 'short'
+        });
+        
+        // Update deployment date display
+        document.getElementById('deploymentDate').textContent = formattedDate;
+        
+        // Update museum count
+        document.getElementById('museumCountSettings').textContent = MUSEUMS.length;
     }
 
     renderAchievements() {
