@@ -19350,7 +19350,9 @@ class MuseumCheckApp {
                 <h3>家长问卷 - ${museumName}参观体验</h3>
                 <p>请根据这次<strong>${museumName}之行</strong>中您与孩子的具体表现，选择最符合的答案：</p>
                 <div class="assessment-disclaimer">
-                    <p>💡 <strong>温馨提示：</strong>本测评仅针对这一次博物馆参观的亲子互动表现进行评估，分数仅供参考，请不要过分看重数值结果。重要的是通过测评了解亲子关系的优势和可改进之处。</p>
+                    <p>🎯 <strong>专项评估说明：</strong>本测评专门针对这一次<strong>${museumName}</strong>参观中的亲子互动表现进行评估。</p>
+                    <p>📊 <strong>分数参考提醒：</strong>测评分数<strong>仅供参考</strong>，请不要过分看重数值结果。每次博物馆参观都是独特的亲子体验。</p>
+                    <p>💡 <strong>价值导向：</strong>重要的是通过本次${museumName}之行的回顾，发现亲子关系的优势并找到可以改进的地方，让未来的博物馆之旅更加愉快和有意义。</p>
                 </div>
                 ${questions.map((q, index) => `
                     <div class="question-container">
@@ -19383,7 +19385,8 @@ class MuseumCheckApp {
                 <h3>孩子问卷 - ${museumName}参观体验</h3>
                 <p>请根据孩子在这次<strong>${museumName}之行</strong>中的具体表现，选择最符合的答案（可由孩子自己回答或家长根据观察代为选择）：</p>
                 <div class="assessment-disclaimer">
-                    <p>💡 <strong>温馨提示：</strong>这些问题专门针对本次博物馆参观体验，帮助您了解孩子在此次活动中的反应和参与度。</p>
+                    <p>👶 <strong>孩子视角评估：</strong>这些问题专门针对本次<strong>${museumName}</strong>参观体验，关注孩子的真实反应和参与度。</p>
+                    <p>🔍 <strong>观察重点：</strong>每个孩子在不同博物馆中的表现会有所不同，这很正常。重要的是了解孩子在此次活动中的感受。</p>
                 </div>
                 ${questions.map((q, index) => `
                     <div class="question-container">
@@ -19587,51 +19590,52 @@ class MuseumCheckApp {
     generateMuseumSpecificParentQuestions(museum) {
         const museumType = this.getMuseumType(museum);
         const baseName = museum.name;
+        const museumContext = this.getMuseumContext(museum);
         
         return [
             {
-                question: `在参观${baseName}时，您是如何引导孩子观察和理解展品的？`,
+                question: `在参观${baseName}时，您是如何引导孩子观察和理解${museumContext.exhibits}的？`,
                 options: [
                     { text: "主要是我自己在看，孩子跟着走", score: 0 },
-                    { text: "简单地告诉孩子这是什么", score: 1 },
-                    { text: "会引导孩子观察，并简单解释", score: 2 },
-                    { text: "耐心引导孩子发现细节，一起探讨", score: 3 }
+                    { text: `简单地告诉孩子这些${museumContext.exhibits}是什么`, score: 1 },
+                    { text: `会引导孩子仔细观察${museumContext.exhibits}，并简单解释`, score: 2 },
+                    { text: `耐心引导孩子发现${museumContext.exhibits}的细节，一起探讨其价值和意义`, score: 3 }
                 ]
             },
             {
-                question: `在${baseName}参观过程中，孩子遇到不理解的内容时，您是如何回应的？`,
+                question: `在${baseName}参观过程中，孩子对${museumContext.theme}内容不理解时，您是如何回应的？`,
                 options: [
                     { text: "告诉孩子长大了就懂了", score: 0 },
                     { text: "给出简单直接的答案", score: 1 },
-                    { text: "尝试用孩子能理解的方式解释", score: 2 },
-                    { text: "和孩子一起寻找答案，共同学习", score: 3 }
+                    { text: `尝试用孩子能理解的方式解释${museumContext.theme}`, score: 2 },
+                    { text: `和孩子一起寻找答案，共同探索${museumContext.theme}的奥秘`, score: 3 }
                 ]
             },
             {
-                question: `在参观${baseName}的${this.getMuseumFeature(museumType)}展区时，您关注孩子的哪些反应？`,
+                question: `在参观${baseName}的${this.getMuseumFeature(museumType)}展区时，您如何激发孩子的好奇心？`,
                 options: [
                     { text: "主要关注孩子是否听话跟着走", score: 0 },
                     { text: "注意孩子是否感到无聊或疲惫", score: 1 },
-                    { text: "观察孩子对哪些展品感兴趣", score: 2 },
-                    { text: "仔细倾听孩子的疑问和想法", score: 3 }
+                    { text: `引导孩子寻找${museumContext.highlights}，观察其特点`, score: 2 },
+                    { text: `鼓励孩子提问和分享发现，一起探讨${museumContext.highlights}背后的故事`, score: 3 }
                 ]
             },
             {
-                question: `这次${baseName}之行中，您和孩子的互动交流情况如何？`,
+                question: `这次${baseName}之行中，您和孩子关于${museumContext.theme}的交流如何？`,
                 options: [
-                    { text: "主要是我在说，孩子在听", score: 1 },
-                    { text: "偶尔会问孩子一些简单问题", score: 2 },
-                    { text: "经常和孩子交流观察到的内容", score: 3 },
-                    { text: "我们像朋友一样自然地交流讨论", score: 3 }
+                    { text: "主要是我在讲解，孩子在听", score: 1 },
+                    { text: `偶尔会问孩子对${museumContext.theme}的看法`, score: 2 },
+                    { text: `经常和孩子交流对${museumContext.theme}的观察和理解`, score: 3 },
+                    { text: `我们像探险伙伴一样共同发现${museumContext.theme}的魅力`, score: 3 }
                 ]
             },
             {
-                question: `参观${baseName}后，您计划如何延续这次的学习体验？`,
+                question: `参观${baseName}后，您计划如何延续孩子对${museumContext.theme}的学习兴趣？`,
                 options: [
                     { text: "参观结束就结束了", score: 0 },
-                    { text: "可能偶尔提起今天看到的内容", score: 1 },
-                    { text: "会和孩子一起回顾有趣的发现", score: 2 },
-                    { text: "准备拓展相关话题，继续深入探索", score: 3 }
+                    { text: `可能偶尔提起今天看到的${museumContext.theme}内容`, score: 1 },
+                    { text: `会和孩子一起回顾${museumContext.theme}中有趣的发现`, score: 2 },
+                    { text: `准备寻找相关书籍、纪录片等，和孩子继续深入探索${museumContext.theme}`, score: 3 }
                 ]
             }
         ];
@@ -19699,51 +19703,52 @@ class MuseumCheckApp {
     generateMuseumSpecificChildQuestions(museum) {
         const museumType = this.getMuseumType(museum);
         const baseName = museum.name;
+        const museumContext = this.getMuseumContext(museum);
         
         return [
             {
-                question: `在${baseName}参观时，孩子是否主动提出问题或分享发现？`,
+                question: `在${baseName}参观时，孩子是否对${museumContext.highlights}主动提出问题或分享发现？`,
                 options: [
                     { text: "全程很安静，没有主动交流", score: 0 },
-                    { text: "偶尔会指出感兴趣的东西", score: 1 },
-                    { text: "会问一些简单的问题", score: 2 },
-                    { text: "经常主动分享观察和想法", score: 3 }
+                    { text: `偶尔会指出感兴趣的${museumContext.highlights}`, score: 1 },
+                    { text: `会问一些关于${museumContext.highlights}的简单问题`, score: 2 },
+                    { text: `经常主动分享对${museumContext.highlights}的观察和想法`, score: 3 }
                 ]
             },
             {
-                question: `面对${this.getMuseumFeature(museumType)}展品时，孩子的参与程度如何？`,
+                question: `面对${baseName}的${this.getMuseumFeature(museumType)}时，孩子的好奇心如何？`,
                 options: [
                     { text: "显得无聊，只是被动跟着", score: 0 },
-                    { text: "会看但不太有反应", score: 1 },
-                    { text: "对部分内容表现出兴趣", score: 2 },
-                    { text: "积极观察，还想了解更多", score: 3 }
+                    { text: `会看${this.getMuseumFeature(museumType)}但不太有反应`, score: 1 },
+                    { text: `对部分${this.getMuseumFeature(museumType)}表现出兴趣`, score: 2 },
+                    { text: `积极观察${this.getMuseumFeature(museumType)}，还想深入了解`, score: 3 }
                 ]
             },
             {
-                question: `当您在${baseName}解释展品时，孩子的反应如何？`,
+                question: `当您在${baseName}讲解${museumContext.theme}时，孩子的专注度如何？`,
                 options: [
                     { text: "注意力很快就分散了", score: 0 },
-                    { text: "会听但表情平淡", score: 1 },
-                    { text: "认真听讲，偶尔点头", score: 2 },
-                    { text: "专注倾听，还会接话互动", score: 3 }
+                    { text: `会听您讲${museumContext.theme}但表情平淡`, score: 1 },
+                    { text: `认真听您讲解${museumContext.theme}，偶尔点头`, score: 2 },
+                    { text: `专注倾听${museumContext.theme}的讲解，还会接话互动`, score: 3 }
                 ]
             },
             {
-                question: `孩子在${baseName}参观过程中是否寻求您的关注和认可？`,
+                question: `孩子在${baseName}探索${museumContext.theme}过程中是否寻求您的关注和认可？`,
                 options: [
                     { text: "很少寻求关注，比较独立", score: 1 },
-                    { text: "偶尔会看向我", score: 2 },
-                    { text: "经常寻求我的回应和确认", score: 3 },
-                    { text: "总是希望和我分享感受", score: 3 }
+                    { text: "偶尔会看向我寻求确认", score: 2 },
+                    { text: `经常询问我对${museumContext.theme}的看法`, score: 3 },
+                    { text: `总是希望和我分享关于${museumContext.theme}的感受`, score: 3 }
                 ]
             },
             {
-                question: `离开${baseName}时，孩子的表现如何？`,
+                question: `离开${baseName}时，孩子对这次${museumContext.theme}之旅的反应如何？`,
                 options: [
                     { text: "迫不及待要离开", score: 0 },
                     { text: "没有特别的表现", score: 1 },
-                    { text: "有些不舍，还想再看看", score: 2 },
-                    { text: "兴奋地谈论今天的发现", score: 3 }
+                    { text: `有些不舍，还想再看看${museumContext.theme}相关展品`, score: 2 },
+                    { text: `兴奋地谈论今天关于${museumContext.theme}的发现`, score: 3 }
                 ]
             }
         ];
@@ -19799,6 +19804,115 @@ class MuseumCheckApp {
         ];
     }
     
+    getMuseumContext(museum) {
+        if (!museum || !museum.tags) {
+            return {
+                theme: '文化',
+                exhibits: '展品',
+                highlights: '展品'
+            };
+        }
+        
+        const tags = museum.tags;
+        const name = museum.name;
+        
+        // Specific context based on museum type and characteristics
+        if (tags.includes('历史') || tags.includes('古代') || tags.includes('文物')) {
+            return {
+                theme: '历史文化',
+                exhibits: '历史文物',
+                highlights: '珍贵文物和历史遗迹'
+            };
+        }
+        
+        if (tags.includes('艺术') || tags.includes('美术') || tags.includes('绘画') || tags.includes('雕塑')) {
+            return {
+                theme: '艺术文化',
+                exhibits: '艺术作品',
+                highlights: '精美的艺术品和创作技巧'
+            };
+        }
+        
+        if (tags.includes('科技') || tags.includes('科学') || tags.includes('创新')) {
+            return {
+                theme: '科学技术',
+                exhibits: '科技展品',
+                highlights: '科技成果和互动体验'
+            };
+        }
+        
+        if (tags.includes('自然') || tags.includes('生物') || tags.includes('地质')) {
+            return {
+                theme: '自然科学',
+                exhibits: '自然标本',
+                highlights: '珍奇的动植物标本和地质奇观'
+            };
+        }
+        
+        if (tags.includes('军事') || tags.includes('革命') || tags.includes('战争')) {
+            return {
+                theme: '军事历史',
+                exhibits: '军事装备和历史文献',
+                highlights: '军事装备和英雄事迹'
+            };
+        }
+        
+        if (tags.includes('民俗') || tags.includes('民族') || name.includes('民族')) {
+            return {
+                theme: '民族文化',
+                exhibits: '民俗展品',
+                highlights: '传统文化和民族特色'
+            };
+        }
+        
+        if (tags.includes('建筑') || tags.includes('园林')) {
+            return {
+                theme: '建筑文化',
+                exhibits: '建筑模型和设计',
+                highlights: '精美的建筑结构和园林设计'
+            };
+        }
+        
+        if (name.includes('故宫')) {
+            return {
+                theme: '宫廷文化',
+                exhibits: '宫廷文物',
+                highlights: '精美的宫廷珍宝和建筑艺术'
+            };
+        }
+        
+        if (name.includes('兵马俑') || name.includes('秦始皇')) {
+            return {
+                theme: '秦汉文化',
+                exhibits: '兵马俑和秦汉文物',
+                highlights: '威武的兵马俑和古代军阵'
+            };
+        }
+        
+        if (name.includes('丝绸')) {
+            return {
+                theme: '丝绸文化',
+                exhibits: '丝绸制品',
+                highlights: '精美的丝绸工艺和传统技艺'
+            };
+        }
+        
+        if (name.includes('茶叶') || name.includes('茶')) {
+            return {
+                theme: '茶文化',
+                exhibits: '茶具和茶叶',
+                highlights: '茶道文化和制茶工艺'
+            };
+        }
+        
+        // Default context
+        return {
+            theme: '文化历史',
+            exhibits: '展品',
+            highlights: '珍贵的展品和文化内涵'
+        };
+    }
+
     getMuseumType(museum) {
         if (!museum || !museum.tags) return 'general';
         
