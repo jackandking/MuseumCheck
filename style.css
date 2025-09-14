@@ -1026,7 +1026,7 @@ header h1 {
         gap: 10px;
         width: 100%;
         justify-content: center;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
     }
     
     .achievement-button,
