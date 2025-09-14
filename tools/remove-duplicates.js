@@ -129,13 +129,20 @@ function removeMuseumsByIndex(content, indicesToRemove) {
         const prevChar = i > 0 ? arrayContent[i - 1] : null;
         
         // Handle string states to avoid parsing inside strings
-        if ((char === '"' || char === "'" || char === '`') && prevChar !== '\\') {
-            if (!inString) {
-                inString = true;
-                stringChar = char;
-            } else if (char === stringChar) {
-                inString = false;
-                stringChar = null;
+        if (char === '"' || char === "'" || char === '`') {
+            // Count the number of consecutive backslashes before this character
+            let backslashCount = 0;
+            for (let k = i - 1; k >= 0 && arrayContent[k] === '\\'; k--) {
+                backslashCount++;
+            }
+            if (backslashCount % 2 === 0) { // even number means not escaped
+                if (!inString) {
+                    inString = true;
+                    stringChar = char;
+                } else if (char === stringChar) {
+                    inString = false;
+                    stringChar = null;
+                }
             }
         }
         
