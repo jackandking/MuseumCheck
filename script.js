@@ -1,6 +1,3 @@
-
-
-
 // Enhanced expert guidance system for parent-child interactions based on developmental psychology
 const EXPERT_GUIDANCE = {
     '3-6': {
