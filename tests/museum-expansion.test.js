@@ -1,11 +1,12 @@
 /**
- * Tests for the museum expansion to 300 total museums (Issue #149)
+ * Tests for the systematic museum data quality optimization (Issue #202)
+ * After deduplication: 257 unique, high-quality museums
  */
 
 const fs = require('fs');
 const path = require('path');
 
-describe('Museum Expansion to 300 Total Museums', () => {
+describe('Systematic Museum Data Quality Optimization', () => {
     let scriptContent;
 
     beforeAll(() => {
@@ -14,47 +15,50 @@ describe('Museum Expansion to 300 Total Museums', () => {
         scriptContent = fs.readFileSync(scriptPath, 'utf8');
     });
 
-    test('should have exactly 300 museums total', () => {
+    test('should have exactly 257 museums after deduplication', () => {
         // Count museum names within the MUSEUMS array (this is what users see)
         const museumsSection = scriptContent.match(/const MUSEUMS = \[([\s\S]*?)\];/)[1];
         const museumNames = museumsSection.match(/name: '[^']*'/g);
         expect(museumNames).not.toBeNull();
-        expect(museumNames.length).toBe(300);
+        expect(museumNames.length).toBe(257);
     });
 
-    test('should have valid museum structure', () => {
-        // Check that we have a reasonable number of unique museum IDs
-        // (Some duplicates are acceptable as they don't break functionality)
+    test('should have no duplicate museum names', () => {
         const museumsSection = scriptContent.match(/const MUSEUMS = \[([\s\S]*?)\];/)[1];
-        const museumIds = museumsSection.match(/id: '([^']*)'/g);
-        expect(museumIds).not.toBeNull();
+        const nameMatches = museumsSection.match(/name: '([^']*)'/g);
+        const names = nameMatches.map(match => match.match(/name: '([^']*)'/)[1]);
         
-        const ids = museumIds.map(match => match.match(/id: '([^']*)'/)[1]);
-        const uniqueIds = [...new Set(ids)];
-        
-        // Should have at least 275 unique museums (allowing for some duplicates)
-        expect(uniqueIds.length).toBeGreaterThanOrEqual(275);
-        expect(museumIds.length).toBeGreaterThanOrEqual(300); // Allow for slight variations
+        const uniqueNames = [...new Set(names)];
+        expect(uniqueNames.length).toBe(names.length);
     });
 
-    test('version should be current or higher than 4.0.0', () => {
+    test('should have no duplicate museum IDs', () => {
+        const museumsSection = scriptContent.match(/const MUSEUMS = \[([\s\S]*?)\];/)[1];
+        const idMatches = museumsSection.match(/id: '([^']*)'/g);
+        const ids = idMatches.map(match => match.match(/id: '([^']*)'/)[1]);
+        
+        const uniqueIds = [...new Set(ids)];
+        expect(uniqueIds.length).toBe(ids.length);
+    });
+
+    test('version should be current or higher than 4.7.0', () => {
         const versionMatch = scriptContent.match(/version: "([^"]+)"/);
         expect(versionMatch).not.toBeNull();
         const currentVersion = versionMatch[1];
         const [major, minor, patch] = currentVersion.split('.').map(Number);
         expect(major).toBeGreaterThanOrEqual(4);
         if (major === 4) {
-            expect(minor).toBeGreaterThanOrEqual(0);
-            if (minor === 0) {
+            expect(minor).toBeGreaterThanOrEqual(7);
+            if (minor === 7) {
                 expect(patch).toBeGreaterThanOrEqual(0);
             }
         }
     });
 
-    test('should have changelog entry for museum expansion', () => {
-        expect(scriptContent).toContain('4.0.0');
-        expect(scriptContent).toContain('博物馆数量大幅扩展至300家');
-        expect(scriptContent).toContain('新增96家');
+    test('should have changelog entry for data quality optimization', () => {
+        expect(scriptContent).toContain('4.7.0');
+        expect(scriptContent).toContain('系统性博物馆数据质量优化');
+        expect(scriptContent).toContain('移除了45个重复/不完整条目');
     });
 
     test('all museum entries should have required fields', () => {
@@ -65,11 +69,11 @@ describe('Museum Expansion to 300 Total Museums', () => {
         const descriptionCount = museumsSection.match(/description: '[^']*'/g)?.length || 0;
         const tagsCount = museumsSection.match(/tags: \[/g)?.length || 0;
         
-        // Should have at least 300 entries of each type
-        expect(nameCount).toBeGreaterThanOrEqual(300);
-        expect(locationCount).toBeGreaterThanOrEqual(300);
-        expect(descriptionCount).toBeGreaterThanOrEqual(300);
-        expect(tagsCount).toBeGreaterThanOrEqual(300);
+        // Should have exactly 257 entries of each type (all complete)
+        expect(nameCount).toBe(257);
+        expect(locationCount).toBe(257);
+        expect(descriptionCount).toBe(257);
+        expect(tagsCount).toBe(257);
     });
 
     test('should have Chinese content for all museums', () => {
@@ -80,8 +84,8 @@ describe('Museum Expansion to 300 Total Museums', () => {
         
         expect(chineseNameMatches).not.toBeNull();
         expect(chineseLocationMatches).not.toBeNull();
-        expect(chineseNameMatches.length).toBeGreaterThanOrEqual(300);
-        expect(chineseLocationMatches.length).toBeGreaterThanOrEqual(300);
+        expect(chineseNameMatches.length).toBe(257);
+        expect(chineseLocationMatches.length).toBe(257);
     });
 
     test('should have checklists for all age groups', () => {
@@ -92,10 +96,10 @@ describe('Museum Expansion to 300 Total Museums', () => {
         const ageGroup1318Count = museumsSection.match(/'13-18': \[/g)?.length || 0;
         
         // Each museum should have 2 checklists (parent + child) × 3 age groups = 6 entries per museum
-        // Should have at least 600 entries for 300+ museums
-        expect(ageGroup36Count).toBeGreaterThanOrEqual(600); 
-        expect(ageGroup712Count).toBeGreaterThanOrEqual(600); 
-        expect(ageGroup1318Count).toBeGreaterThanOrEqual(600);
+        // Should have exactly 514 entries for 257 museums (257 * 2 checklists types)
+        expect(ageGroup36Count).toBe(514); 
+        expect(ageGroup712Count).toBe(514); 
+        expect(ageGroup1318Count).toBe(514);
     });
 
     test('should have diverse geographic coverage', () => {
@@ -115,7 +119,8 @@ describe('Museum Expansion to 300 Total Museums', () => {
     });
 
     test('museums should follow ID naming convention', () => {
-        const museumIds = scriptContent.match(/id: '([^']*)'/g);
+        const museumsSection = scriptContent.match(/const MUSEUMS = \[([\s\S]*?)\];/)[1];
+        const museumIds = museumsSection.match(/id: '([^']*)'/g);
         expect(museumIds).not.toBeNull();
         
         museumIds.forEach(idMatch => {
