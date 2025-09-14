@@ -18089,9 +18089,9 @@ class MuseumCheckApp {
     }
 
     renderSettingsInfo() {
-        // Get latest deployment date from package.json version or use current date as fallback
-        // In a real deployment, this would come from build/deployment metadata
-        const deploymentDate = new Date('2025-09-14T10:08:04Z'); // Latest commit date from git log
+        // Use current date/time as the deployment date
+        // This represents when the user loaded the application
+        const deploymentDate = new Date();
         
         // Format deployment date in Chinese locale
         const formattedDate = deploymentDate.toLocaleString('zh-CN', {

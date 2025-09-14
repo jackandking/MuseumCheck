@@ -35,10 +35,6 @@ describe('Settings Page Tests', () => {
                             <span class="settings-value" id="deploymentDate">正在加载...</span>
                         </div>
                         <div class="settings-item">
-                            <label class="settings-label">版本号：</label>
-                            <span class="settings-value">v2.1.3</span>
-                        </div>
-                        <div class="settings-item">
                             <label class="settings-label">博物馆数量：</label>
                             <span class="settings-value" id="museumCountSettings">0</span>
                         </div>
@@ -84,14 +80,6 @@ describe('Settings Page Tests', () => {
             expect(museumCountElement.textContent).toBe('0');
         });
 
-        test('should have version number display', () => {
-            const versionElements = document.querySelectorAll('.settings-value');
-            const versionElement = Array.from(versionElements).find(el => 
-                el.textContent.match(/v\d+\.\d+\.\d+/)
-            );
-            expect(versionElement).toBeTruthy();
-            expect(versionElement.textContent).toBe('v2.1.3');
-        });
 
         test('should have proper section structure', () => {
             const settingsSection = document.querySelector('.settings-section');
@@ -102,7 +90,7 @@ describe('Settings Page Tests', () => {
             expect(sectionHeader.textContent).toContain('项目信息');
             
             const settingsItems = settingsSection.querySelectorAll('.settings-item');
-            expect(settingsItems.length).toBe(3); // deployment date, version, museum count
+            expect(settingsItems.length).toBe(2); // deployment date, museum count
             
             // Check that each settings item has label and value
             settingsItems.forEach(item => {
@@ -128,8 +116,8 @@ describe('Settings Page Tests', () => {
                     document.getElementById('settingsModal').classList.add('hidden');
                 }),
                 renderSettingsInfo: jest.fn(() => {
-                    // Simulate what the real method does
-                    const deploymentDate = new Date('2025-09-14T10:08:04Z');
+                    // Simulate what the real method does - use current date instead of hardcoded
+                    const deploymentDate = new Date();
                     const formattedDate = deploymentDate.toLocaleString('zh-CN', {
                         year: 'numeric',
                         month: '2-digit', 
@@ -268,8 +256,8 @@ describe('Settings Page Tests', () => {
 
     describe('Settings Data Format', () => {
         test('should handle deployment date format correctly', () => {
-            // Test the date formatting logic
-            const testDate = new Date('2025-09-14T10:08:04Z');
+            // Test the date formatting logic using current date
+            const testDate = new Date();
             
             const formattedDate = testDate.toLocaleString('zh-CN', {
                 year: 'numeric',
@@ -296,13 +284,7 @@ describe('Settings Page Tests', () => {
             expect(typeof parsedCount).toBe('number');
         });
 
-        test('should validate version number format', () => {
-            const versionNumber = 'v2.1.3';
-            
-            expect(versionNumber).toMatch(/^v\d+\.\d+\.\d+$/);
-            expect(typeof versionNumber).toBe('string');
-            expect(versionNumber.length).toBeGreaterThan(5);
-        });
+
     });
 
     describe('Settings Modal Integration', () => {
