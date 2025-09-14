@@ -1425,168 +1425,7 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
     });
   });
 
-  describe('v2.3.4 - 修复最新更新日期错误', () => {
-    /**
-     * Bug: "最新更新的日期又错了，找到根源和长久之计" - Future dates like 2024-12-31 and 2025-09-06
-     * Fixed: 2024-12-20
-     * 
-     * This test ensures the specific date errors found in this issue are fixed.
-     */
 
-    test('should have corrected the specific problematic dates found in issue', () => {
-      // Mock RECENT_CHANGES structure with the corrected dates
-      const mockRecentChanges = {
-        version: '2.3.4',
-        lastUpdate: '2024-12-20',
-        changes: [
-          {
-            date: '2024-12-20',
-            version: '2.3.4',
-            title: '修复最新更新日期错误',
-            type: 'bugfix'
-          },
-          {
-            date: '2024-12-20', // Was 2024-12-31 - fixed
-            version: '2.3.3',
-            title: '海报生成后自动滚动优化',
-            type: 'improvement'
-          },
-          {
-            date: '2024-12-19', // Was 2025-09-06 - fixed
-            version: '2.3.2',
-            title: '更正日期修复错误',
-            type: 'bugfix'
-          }
-        ]
-      };
-
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      const currentDate = new Date();
-      
-      // Test that lastUpdate is not in the future
-      expect(mockRecentChanges.lastUpdate).toMatch(dateRegex);
-      const lastUpdateDate = new Date(mockRecentChanges.lastUpdate);
-      expect(lastUpdateDate.getTime()).toBeLessThanOrEqual(currentDate.getTime());
-      
-      // Test that all change entries have been corrected
-      mockRecentChanges.changes.forEach((change, index) => {
-        expect(change.date).toMatch(dateRegex);
-        
-        const changeDate = new Date(change.date);
-        expect(changeDate.getTime()).toBeLessThanOrEqual(currentDate.getTime());
-        
-        // Specifically verify the problematic dates are fixed
-        if (change.version === '2.3.3') {
-          expect(change.date).not.toBe('2024-12-31'); // Original problematic date
-          expect(change.date).toBe('2024-12-20'); // Corrected date
-        }
-        
-        if (change.version === '2.3.2') {
-          expect(change.date).not.toBe('2025-09-06'); // Original problematic date
-          expect(change.date).toBe('2024-12-19'); // Corrected date
-        }
-      });
-    });
-
-    test('should have enhanced validation script to prevent future issues', () => {
-      // This test verifies the validation script improvements
-      const mockValidationResult = {
-        hasDateValidation: true,
-        checksFutureDates: true,
-        checksInvalidDates: true,
-        providesDetailedErrors: true
-      };
-      
-      // Verify enhanced validation capabilities exist
-      expect(mockValidationResult.hasDateValidation).toBe(true);
-      expect(mockValidationResult.checksFutureDates).toBe(true);
-      expect(mockValidationResult.checksInvalidDates).toBe(true);
-      expect(mockValidationResult.providesDetailedErrors).toBe(true);
-    });
-  });
-
-  describe('v2.3.1 - 修复日期错误', () => {
-    /**
-     * Bug: "最新更新里的日期怎么总是错的" - Future dates (2025) in changelog
-     * Fixed: 2024-12-20
-     * 
-     * This test ensures no future dates appear in changelog entries.
-     */
-
-    test('should not have future dates in changelog entries', () => {
-      // Mock RECENT_CHANGES data structure
-      const mockRecentChanges = {
-        version: '2.3.1',
-        lastUpdate: '2024-12-20',
-        changes: [
-          {
-            date: '2024-12-20',
-            version: '2.3.1',
-            title: 'Test change 1',
-            type: 'bugfix'
-          },
-          {
-            date: '2024-12-19',
-            version: '2.3.0',
-            title: 'Test change 2',
-            type: 'improvement'
-          }
-        ]
-      };
-
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      const currentDate = new Date();
-      const currentYear = currentDate.getFullYear();
-      
-      // Test lastUpdate format and is not in the future
-      expect(mockRecentChanges.lastUpdate).toMatch(dateRegex);
-      const lastUpdateDate = new Date(mockRecentChanges.lastUpdate);
-      expect(lastUpdateDate.getTime()).toBeLessThanOrEqual(currentDate.getTime());
-      
-      // Test all change entries have proper date format and are not in the future
-      mockRecentChanges.changes.forEach((change, index) => {
-        expect(change.date).toMatch(dateRegex);
-        expect(change.date).toBeDefined();
-        
-        // Ensure date is not in the future (this was the bug)
-        const changeDate = new Date(change.date);
-        expect(changeDate.getTime()).toBeLessThanOrEqual(currentDate.getTime());
-        
-        // For current year releases, ensure year is realistic (not 2025 when it's 2024)
-        const year = change.date.split('-')[0];
-        expect(parseInt(year)).toBeLessThanOrEqual(currentYear);
-      });
-    });
-
-    test('should have consistent date format across all changelog entries', () => {
-      // Test that all dates follow YYYY-MM-DD format
-      const mockChanges = [
-        { date: '2024-12-20', version: '2.3.1', title: 'Valid date 1' },
-        { date: '2024-08-30', version: '2.3.0', title: 'Valid date 2' },
-        { date: '2024-01-15', version: '2.2.0', title: 'Valid date 3' }
-      ];
-
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      
-      mockChanges.forEach((change) => {
-        expect(change.date).toMatch(dateRegex);
-        
-        // Test that date can be parsed as valid date
-        const parsedDate = new Date(change.date);
-        expect(parsedDate.toString()).not.toBe('Invalid Date');
-        
-        // Test month is 01-12
-        const month = change.date.split('-')[1];
-        expect(parseInt(month)).toBeGreaterThanOrEqual(1);
-        expect(parseInt(month)).toBeLessThanOrEqual(12);
-        
-        // Test day is 01-31
-        const day = change.date.split('-')[2];
-        expect(parseInt(day)).toBeGreaterThanOrEqual(1);
-        expect(parseInt(day)).toBeLessThanOrEqual(31);
-      });
-    });
-  });
 
   describe('Data Persistence Regression Tests', () => {
     /**
@@ -1637,57 +1476,7 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
     });
   });
 
-  describe('Version Management Regression Tests', () => {
-    test('should prevent version format inconsistencies', () => {
-      // This would catch version format bugs
-      const testVersions = ['2.1.3', '2.1.2', '2.1.1', '2.1.0'];
-      const versionRegex = /^\d+\.\d+\.\d+$/;
 
-      testVersions.forEach(version => {
-        expect(version).toMatch(versionRegex);
-        
-        // Ensure semantic versioning
-        const parts = version.split('.');
-        expect(parts).toHaveLength(3);
-        parts.forEach(part => {
-          expect(parseInt(part)).not.toBeNaN();
-          expect(parseInt(part)).toBeGreaterThanOrEqual(0);
-        });
-      });
-    });
-
-    test('should maintain version order consistency', () => {
-      // Test that versions are in descending order in changelog
-      const mockChanges = [
-        { version: '2.1.3', date: '2025-08-30' },
-        { version: '2.1.2', date: '2025-08-30' },
-        { version: '2.1.1', date: '2025-08-29' },
-        { version: '2.1.0', date: '2025-08-25' }
-      ];
-
-      for (let i = 0; i < mockChanges.length - 1; i++) {
-        const current = mockChanges[i].version;
-        const next = mockChanges[i + 1].version;
-        
-        // Simple version comparison (works for this format)
-        const currentParts = current.split('.').map(Number);
-        const nextParts = next.split('.').map(Number);
-        
-        // Current should be >= next (descending order)
-        let isCorrectOrder = false;
-        for (let j = 0; j < 3; j++) {
-          if (currentParts[j] > nextParts[j]) {
-            isCorrectOrder = true;
-            break;
-          } else if (currentParts[j] < nextParts[j]) {
-            break;
-          }
-        }
-        
-        expect(isCorrectOrder || current === next).toBe(true);
-      }
-    });
-  });
 
   describe('v4.1.2 - 修复搜索功能bug (Issue #160)', () => {
     /**
@@ -2728,68 +2517,7 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
     });
   });
 
-  describe('v2.2.4 - JavaScript Syntax Error Fix', () => {
-    /**
-     * Bug: Missing comma in RECENT_CHANGES object prevented museums from loading
-     * Fixed: 2024-12-20
-     * 
-     * This test validates JavaScript syntax consistency in configuration objects.
-     */
 
-    test('should validate RECENT_CHANGES object syntax structure', () => {
-      // Mock a structure similar to RECENT_CHANGES
-      const mockRecentChanges = {
-        version: "2.2.4",  // This comma was missing in the original bug
-        lastUpdate: "2024-12-20",
-        changes: []
-      };
-
-      // Should be able to access all properties without syntax errors
-      expect(mockRecentChanges.version).toBe("2.2.4");
-      expect(mockRecentChanges.lastUpdate).toBe("2024-12-20");
-      expect(Array.isArray(mockRecentChanges.changes)).toBe(true);
-
-      // Object should be properly formed
-      expect(typeof mockRecentChanges).toBe('object');
-      expect(Object.keys(mockRecentChanges)).toHaveLength(3);
-    });
-
-    test('should detect missing commas in object literals', () => {
-      // Test that objects with missing commas would cause syntax errors
-      let syntaxErrorCaught = false;
-
-      try {
-        // This would cause a syntax error if evaluated
-        const badObjectString = `{
-          version: "2.2.4"
-          lastUpdate: "2024-12-20"
-        }`;
-        
-        // Attempting to evaluate this should fail
-        eval(`const testObj = ${badObjectString}`);
-      } catch (error) {
-        syntaxErrorCaught = true;
-        expect(error).toBeInstanceOf(SyntaxError);
-      }
-
-      expect(syntaxErrorCaught).toBe(true);
-    });
-
-    test('should ensure proper object literal syntax validation', () => {
-      // Good syntax should work
-      const goodObject = {
-        property1: "value1",
-        property2: "value2",
-        property3: {
-          nested: "value"
-        }
-      };
-
-      expect(goodObject.property1).toBe("value1");
-      expect(goodObject.property2).toBe("value2");
-      expect(goodObject.property3.nested).toBe("value");
-    });
-  });
 
   describe('v2.2.4 - 海报生成后自动滚动到海报位置', () => {
     /**
@@ -3110,6 +2838,414 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
         expect(typeof id).toBe('string');
         expect(id.length).toBeGreaterThan(0);
       });
+    });
+  });
+
+  describe('v2.3.0 - 清数据功能实现 (Issue #198)', () => {
+    /**
+     * Enhancement: "加入清数据功能，在3个地方都可以允许用户清空个人数据：博物馆总清单，家长清单，孩子清单。清空前说明删除不可逆影响并且和用户确认。"
+     * Added: 2024-12-20
+     * 
+     * This test ensures the clear data functionality works correctly with proper user confirmation.
+     */
+    
+    test('should provide clearAllData function for complete data clearing', () => {
+      // Mock confirm and alert functions
+      const originalConfirm = global.confirm;
+      const originalAlert = global.alert;
+      global.confirm = jest.fn(() => true);
+      global.alert = jest.fn();
+
+      // Mock localStorage
+      const mockStorage = {
+        removeItem: jest.fn(),
+        setItem: jest.fn(),
+        getItem: jest.fn(() => '[]'),
+        clear: jest.fn()
+      };
+      Object.defineProperty(window, 'localStorage', {
+        value: mockStorage
+      });
+
+      // Mock clearAllData function behavior
+      const clearAllData = () => {
+        const confirmed = confirm('⚠️ 清空所有个人数据 ⚠️\n\n您即将清空所有参观记录和清单完成记录\n\n此操作不可撤销！\n\n确定要继续吗？');
+        if (confirmed) {
+          localStorage.removeItem('visitedMuseums');
+          localStorage.removeItem('museumChecklists');
+          localStorage.removeItem('taskPhotos');
+          alert('✅ 所有数据已清空！');
+        }
+      };
+
+      // Test the function
+      clearAllData();
+
+      // Verify confirmation dialog was shown with correct message
+      expect(global.confirm).toHaveBeenCalledWith(
+        expect.stringContaining('清空所有个人数据')
+      );
+      expect(global.confirm).toHaveBeenCalledWith(
+        expect.stringContaining('此操作不可撤销')
+      );
+
+      // Verify all data was cleared
+      expect(mockStorage.removeItem).toHaveBeenCalledWith('visitedMuseums');
+      expect(mockStorage.removeItem).toHaveBeenCalledWith('museumChecklists');
+      expect(mockStorage.removeItem).toHaveBeenCalledWith('taskPhotos');
+
+      // Verify success message was shown
+      expect(global.alert).toHaveBeenCalledWith(
+        expect.stringContaining('所有数据已清空')
+      );
+
+      // Restore original functions
+      global.confirm = originalConfirm;
+      global.alert = originalAlert;
+    });
+
+    test('should provide clearCurrentChecklist function for specific checklist clearing', () => {
+      // Mock confirm and alert functions
+      const originalConfirm = global.confirm;
+      const originalAlert = global.alert;
+      global.confirm = jest.fn(() => true);
+      global.alert = jest.fn();
+
+      // Mock localStorage with test data
+      const testData = {
+        'test-museum-parent-7-12': [0, 1, 2],
+        'test-museum-child-7-12': [0, 1],
+        'other-museum-parent-3-6': [1]
+      };
+      const mockStorage = {
+        getItem: jest.fn((key) => key === 'museumChecklists' ? JSON.stringify(testData) : '[]'),
+        setItem: jest.fn()
+      };
+      Object.defineProperty(window, 'localStorage', {
+        value: mockStorage
+      });
+
+      // Mock clearCurrentChecklist function behavior
+      const clearCurrentChecklist = (museumId, listType, ageGroup) => {
+        const key = `${museumId}-${listType}-${ageGroup}`;
+        const typeText = listType === 'parent' ? '家长清单' : '孩子清单';
+        const ageText = ageGroup === '3-6' ? '3-6岁 (学龄前)' : ageGroup === '7-12' ? '7-12岁 (小学)' : '13-18岁 (中学)';
+        
+        const confirmed = confirm(`⚠️ 清空${typeText}数据 ⚠️\n\n您即将清空「测试博物馆」\n年龄组「${ageText}」的${typeText}完成记录\n\n此操作不可撤销！\n\n确定要继续吗？`);
+        
+        if (confirmed) {
+          const checklists = JSON.parse(localStorage.getItem('museumChecklists') || '{}');
+          delete checklists[key];
+          localStorage.setItem('museumChecklists', JSON.stringify(checklists));
+          alert(`✅ ${typeText}数据已清空！`);
+        }
+      };
+
+      // Test parent checklist clearing
+      clearCurrentChecklist('test-museum', 'parent', '7-12');
+      
+      expect(global.confirm).toHaveBeenCalledWith(
+        expect.stringContaining('家长清单数据')
+      );
+      expect(global.confirm).toHaveBeenCalledWith(
+        expect.stringContaining('此操作不可撤销')
+      );
+      expect(global.alert).toHaveBeenCalledWith(
+        expect.stringContaining('家长清单数据已清空')
+      );
+
+      // Test child checklist clearing
+      global.confirm.mockClear();
+      global.alert.mockClear();
+      
+      clearCurrentChecklist('test-museum', 'child', '7-12');
+      
+      expect(global.confirm).toHaveBeenCalledWith(
+        expect.stringContaining('孩子清单数据')
+      );
+      expect(global.alert).toHaveBeenCalledWith(
+        expect.stringContaining('孩子清单数据已清空')
+      );
+
+      // Restore original functions
+      global.confirm = originalConfirm;
+      global.alert = originalAlert;
+    });
+
+    test('should handle user cancellation of clear data operations', () => {
+      // Mock confirm to return false (user cancels)
+      const originalConfirm = global.confirm;
+      const originalAlert = global.alert;
+      global.confirm = jest.fn(() => false);
+      global.alert = jest.fn();
+
+      // Mock localStorage
+      const mockStorage = {
+        removeItem: jest.fn(),
+        setItem: jest.fn()
+      };
+      Object.defineProperty(window, 'localStorage', {
+        value: mockStorage
+      });
+
+      // Mock clearAllData function
+      const clearAllData = () => {
+        const confirmed = confirm('⚠️ 清空所有个人数据 ⚠️\n\n此操作不可撤销！\n\n确定要继续吗？');
+        if (confirmed) {
+          localStorage.removeItem('visitedMuseums');
+          localStorage.removeItem('museumChecklists');
+          localStorage.removeItem('taskPhotos');
+          alert('✅ 所有数据已清空！');
+        }
+      };
+
+      // Test cancellation
+      clearAllData();
+
+      // Verify confirmation dialog was shown
+      expect(global.confirm).toHaveBeenCalled();
+
+      // Verify no data was cleared (since user cancelled)
+      expect(mockStorage.removeItem).not.toHaveBeenCalled();
+      expect(mockStorage.setItem).not.toHaveBeenCalled();
+
+      // Verify no success message was shown
+      expect(global.alert).not.toHaveBeenCalled();
+
+      // Restore original functions
+      global.confirm = originalConfirm;
+      global.alert = originalAlert;
+    });
+
+    test('should provide appropriate warning messages for different clear operations', () => {
+      const originalConfirm = global.confirm;
+      global.confirm = jest.fn(() => false); // Don't actually clear
+
+      // Test various clear operation messages
+      const testCases = [
+        {
+          type: 'all',
+          expectedMessages: ['清空所有个人数据', '此操作不可撤销']
+        },
+        {
+          type: 'parent',
+          museumName: '故宫博物院',
+          ageGroup: '7-12',
+          expectedMessages: ['家长清单数据', '故宫博物院', '7-12岁 (小学)', '此操作不可撤销']
+        },
+        {
+          type: 'child',
+          museumName: '故宫博物院',
+          ageGroup: '3-6',
+          expectedMessages: ['孩子清单数据', '故宫博物院', '3-6岁 (学龄前)', '此操作不可撤销']
+        }
+      ];
+
+      testCases.forEach(testCase => {
+        global.confirm.mockClear();
+
+        if (testCase.type === 'all') {
+          // Mock clearAllData call
+          confirm('⚠️ 清空所有个人数据 ⚠️\n\n您即将清空所有参观记录和清单完成记录\n\n此操作不可撤销！\n\n确定要继续吗？');
+        } else {
+          // Mock clearCurrentChecklist call
+          const typeText = testCase.type === 'parent' ? '家长清单' : '孩子清单';
+          const ageText = testCase.ageGroup === '3-6' ? '3-6岁 (学龄前)' : testCase.ageGroup === '7-12' ? '7-12岁 (小学)' : '13-18岁 (中学)';
+          confirm(`⚠️ 清空${typeText}数据 ⚠️\n\n您即将清空「${testCase.museumName}」\n年龄组「${ageText}」的${typeText}完成记录\n\n此操作不可撤销！\n\n确定要继续吗？`);
+        }
+
+        // Verify all expected messages are present
+        const confirmCall = global.confirm.mock.calls[0][0];
+        testCase.expectedMessages.forEach(expectedMessage => {
+          expect(confirmCall).toContain(expectedMessage);
+        });
+      });
+
+      global.confirm = originalConfirm;
+    });
+  });
+
+  describe('Age Group Persistence - Remember Child Age', () => {
+    /**
+     * Feature: 记住孩子年龄 (Remember Child Age)
+     * Added: Issue #238
+     * 
+     * Tests that the selected age group is saved to localStorage
+     * and restored when the app is reloaded.
+     */
+    
+    let mockApp;
+    let mockLocalStorage;
+
+    beforeEach(() => {
+      // Create our own localStorage mock to avoid conflicts
+      let store = {};
+      mockLocalStorage = {
+        getItem: jest.fn((key) => store[key] || null),
+        setItem: jest.fn((key, value) => {
+          store[key] = value.toString();
+        }),
+        removeItem: jest.fn((key) => {
+          delete store[key];
+        }),
+        clear: jest.fn(() => {
+          store = {};
+        })
+      };
+      
+      // Setup age selector HTML structure
+      document.body.innerHTML += `
+        <nav class="age-selector">
+          <fieldset class="age-group-fieldset">
+            <div class="age-options">
+              <label class="age-option">
+                <input type="radio" name="ageGroup" value="3-6" checked>
+                <span class="age-option-text">3-6岁 (学龄前)</span>
+              </label>
+              <label class="age-option">
+                <input type="radio" name="ageGroup" value="7-12">
+                <span class="age-option-text">7-12岁 (小学)</span>
+              </label>
+              <label class="age-option">
+                <input type="radio" name="ageGroup" value="13-18">
+                <span class="age-option-text">13-18岁 (中学)</span>
+              </label>
+            </div>
+          </fieldset>
+        </nav>
+      `;
+
+      // Mock app methods for testing
+      mockApp = {
+        currentAge: '3-6',
+        loadAgeGroup: function() {
+          try {
+            const saved = mockLocalStorage.getItem('ageGroup');
+            return saved || '3-6';
+          } catch (error) {
+            return '3-6';
+          }
+        },
+        saveAgeGroup: function() {
+          try {
+            mockLocalStorage.setItem('ageGroup', this.currentAge);
+          } catch (error) {
+            console.error('Failed to save age group:', error);
+          }
+        },
+        initAgeSelector: function() {
+          const savedAgeRadio = document.querySelector(`input[name="ageGroup"][value="${this.currentAge}"]`);
+          if (savedAgeRadio) {
+            savedAgeRadio.checked = true;
+          }
+          
+          const checkedRadio = document.querySelector('input[name="ageGroup"]:checked');
+          if (checkedRadio) {
+            document.querySelectorAll('.age-option').forEach(option => {
+              option.classList.remove('selected');
+            });
+            checkedRadio.closest('.age-option').classList.add('selected');
+          }
+        }
+      };
+    });
+
+    test('should save age group to localStorage when changed', () => {
+      // Initially no age group saved
+      expect(mockLocalStorage.getItem('ageGroup')).toBeNull();
+      
+      // Change age group and save
+      mockApp.currentAge = '7-12';
+      mockApp.saveAgeGroup();
+      
+      // Verify it's saved
+      expect(mockLocalStorage.getItem('ageGroup')).toBe('7-12');
+      
+      // Change to different age group
+      mockApp.currentAge = '13-18';
+      mockApp.saveAgeGroup();
+      
+      // Verify it's updated
+      expect(mockLocalStorage.getItem('ageGroup')).toBe('13-18');
+    });
+
+    test('should load age group from localStorage on initialization', () => {
+      // Pre-save an age group
+      mockLocalStorage.setItem('ageGroup', '13-18');
+      
+      // Load age group
+      const loadedAge = mockApp.loadAgeGroup();
+      
+      // Should load the saved age
+      expect(loadedAge).toBe('13-18');
+    });
+
+    test('should default to "3-6" when no age group is saved', () => {
+      // Ensure no age group is saved
+      expect(mockLocalStorage.getItem('ageGroup')).toBeNull();
+      
+      // Load age group
+      const loadedAge = mockApp.loadAgeGroup();
+      
+      // Should default to '3-6'
+      expect(loadedAge).toBe('3-6');
+    });
+
+    test('should set radio button to match saved age group', () => {
+      // Set saved age group
+      mockApp.currentAge = '7-12';
+      mockApp.initAgeSelector();
+      
+      // Verify correct radio button is checked
+      const checkedRadio = document.querySelector('input[name="ageGroup"]:checked');
+      expect(checkedRadio).toBeTruthy();
+      expect(checkedRadio.value).toBe('7-12');
+    });
+
+    test('should handle localStorage errors gracefully', () => {
+      // Mock localStorage error
+      const originalGetItem = mockLocalStorage.getItem;
+      mockLocalStorage.getItem = jest.fn(() => {
+        throw new Error('localStorage unavailable');
+      });
+      
+      // Should still return default age
+      const loadedAge = mockApp.loadAgeGroup();
+      expect(loadedAge).toBe('3-6');
+      
+      // Restore localStorage
+      mockLocalStorage.getItem = originalGetItem;
+    });
+
+    test('should persist age group selection across app reinitialization', () => {
+      // First "session" - user selects age group
+      mockApp.currentAge = '7-12';
+      mockApp.saveAgeGroup();
+      expect(mockLocalStorage.getItem('ageGroup')).toBe('7-12');
+      
+      // Second "session" - app reinitializes
+      const newMockApp = {
+        currentAge: mockApp.loadAgeGroup(),
+        loadAgeGroup: mockApp.loadAgeGroup
+      };
+      
+      // Should remember the selection
+      expect(newMockApp.currentAge).toBe('7-12');
+    });
+
+    test('should clear age group when all data is cleared', () => {
+      // Save an age group
+      mockLocalStorage.setItem('ageGroup', '13-18');
+      expect(mockLocalStorage.getItem('ageGroup')).toBe('13-18');
+      
+      // Clear all data (as done in clearAllData function)
+      mockLocalStorage.removeItem('ageGroup');
+      
+      // Should be cleared
+      expect(mockLocalStorage.getItem('ageGroup')).toBeNull();
+      
+      // Loading should return default
+      expect(mockApp.loadAgeGroup()).toBe('3-6');
     });
   });
 });

@@ -86,7 +86,9 @@ document.createElement = jest.fn((tagName) => {
 
 // Reset localStorage mock before each test
 beforeEach(() => {
-  localStorage.clear();
+  if (localStorage && typeof localStorage.clear === 'function') {
+    localStorage.clear();
+  }
   jest.clearAllMocks();
 });
 
@@ -103,8 +105,7 @@ global.testUtils = {
         </select>
         <div id="museumGrid"></div>
         <div id="stats"></div>
-        <span id="versionBadge">v0.0.0</span>
-        <span id="currentVersion">v0.0.0</span>
+
         <span id="lastUpdated">...</span>
         <div id="changesList"></div>
       </div>
