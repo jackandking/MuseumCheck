@@ -3261,4 +3261,453 @@ main[role="main"] {
     .score-number {
         font-size: 2.5em;
     }
+}/* ==========================================
+   ASSESSMENT FUNCTIONALITY STYLES
+   ========================================== */
+
+/* Assessment Modal Specific Styles */
+.assessment-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Step Indicators */
+.step-indicator {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+    gap: 20px;
+}
+
+.step-indicator .step {
+    padding: 10px 20px;
+    border-radius: 20px;
+    background: #f8f9fa;
+    color: #6c757d;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.step-indicator .step.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.step-indicator .step.completed {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+/* Assessment Introduction */
+.assessment-intro-content {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.assessment-museum h3 {
+    color: var(--primary-color);
+    font-size: 1.5em;
+    margin-bottom: 20px;
+}
+
+.assessment-description {
+    margin-bottom: 30px;
+}
+
+.assessment-description ul {
+    text-align: left;
+    max-width: 400px;
+    margin: 20px auto;
+}
+
+.assessment-description li {
+    margin: 10px 0;
+    padding-left: 5px;
+}
+
+.assessment-time {
+    color: #6c757d;
+    font-style: italic;
+    margin-top: 20px;
+}
+
+.privacy-note {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-top: 20px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+/* Question Groups */
+.assessment-questions {
+    padding: 20px 0;
+}
+
+.question-intro {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #6c757d;
+}
+
+.question-group {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.question-text {
+    font-size: 1.1em;
+    color: var(--text-color);
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.options-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.option-label {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.option-label:hover {
+    border-color: var(--primary-color);
+    background: rgba(44, 90, 160, 0.05);
+}
+
+.option-label.selected {
+    border-color: var(--primary-color);
+    background: rgba(44, 90, 160, 0.1);
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.option-label input[type="radio"] {
+    margin-right: 12px;
+    transform: scale(1.2);
+}
+
+.option-text {
+    flex: 1;
+}
+
+/* Assessment Results */
+.assessment-results {
+    padding: 20px 0;
+    text-align: center;
+}
+
+.result-score {
+    margin-bottom: 30px;
+    padding: 30px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+}
+
+.score-display {
+    margin-bottom: 15px;
+}
+
+.score-number {
+    font-size: 4em;
+    font-weight: bold;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+.score-label {
+    font-size: 1.2em;
+    color: #6c757d;
+    margin-left: 5px;
+}
+
+.level-title {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: var(--accent-color);
+    display: block;
+    margin-bottom: 10px;
+}
+
+.level-description {
+    color: #6c757d;
+    font-size: 1.1em;
+    line-height: 1.6;
+}
+
+.result-suggestions {
+    text-align: left;
+    max-width: 600px;
+    margin: 0 auto 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.result-suggestions h4 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.suggestions-list {
+    list-style: none;
+    padding: 0;
+}
+
+.suggestions-list li {
+    padding: 8px 0;
+    padding-left: 20px;
+    position: relative;
+}
+
+.suggestions-list li::before {
+    content: '•';
+    color: var(--accent-color);
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+}
+
+.result-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+/* Assessment History Modal */
+.assessment-history-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.assessment-history-summary {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 10px;
+}
+
+.history-overview {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+.history-stat {
+    text-align: center;
+}
+
+.history-stat .stat-number {
+    font-size: 2em;
+    font-weight: bold;
+    color: var(--primary-color);
+    display: block;
+}
+
+.history-stat .stat-label {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.history-filters {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.filter-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background: white;
+}
+
+.export-button {
+    padding: 8px 16px;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.export-button:hover {
+    background: #218838;
+}
+
+/* History List */
+.history-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.empty-icon {
+    font-size: 3em;
+    margin-bottom: 15px;
+}
+
+.history-list {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.history-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #f8f9fa;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.history-entry:hover {
+    background: #f8f9fa;
+}
+
+.history-entry:last-child {
+    border-bottom: none;
+}
+
+.history-museum h4 {
+    color: var(--text-color);
+    margin-bottom: 5px;
+    font-size: 1.1em;
+}
+
+.history-date {
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+.history-score {
+    text-align: right;
+}
+
+.history-score .score {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: var(--primary-color);
+    display: block;
+}
+
+.history-score .level {
+    font-size: 0.9em;
+    padding: 2px 8px;
+    border-radius: 12px;
+    color: white;
+}
+
+.level-优秀 { background: var(--accent-color); }
+.level-良好 { background: #ffc107; }
+.level-一般 { background: #fd7e14; }
+.level-需要改善 { background: #dc3545; }
+
+/* Assessment Buttons */
+.assessment-buttons {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 0;
+    margin-top: 30px;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Mobile Responsive for Assessment */
+@media (max-width: 768px) {
+    .step-indicator {
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .step-indicator .step {
+        padding: 8px 16px;
+        font-size: 0.8em;
+    }
+    
+    .question-group {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .question-text {
+        font-size: 1em;
+    }
+    
+    .option-label {
+        padding: 15px 12px;
+        font-size: 0.95em;
+    }
+    
+    .score-number {
+        font-size: 3em;
+    }
+    
+    .result-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .result-actions .btn-primary,
+    .result-actions .btn-secondary {
+        width: 100%;
+        min-height: 44px;
+    }
+    
+    .history-overview {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .history-filters {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .history-entry {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .history-score {
+        text-align: left;
+        width: 100%;
+    }
+    
+    .assessment-buttons {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .assessment-buttons .btn-primary,
+    .assessment-buttons .btn-secondary {
+        width: 100%;
+        min-height: 44px;
+    }
 }

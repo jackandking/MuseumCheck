@@ -16950,6 +16950,30 @@ class MuseumCheckApp {
                 e.target.classList.contains('close-button')) {
                 this.museumModalComponent.close();
             }
+            
+            // Close assessment history modal
+            if (e.target.classList.contains('modal') && e.target.id === 'assessmentHistoryModal') {
+                this.closeAssessmentHistoryModal();
+            }
+            
+            // Close assessment modal  
+            if (e.target.classList.contains('modal') && e.target.id === 'assessmentModal') {
+                this.closeAssessmentModal();
+            }
+            
+            // Close button for modals
+            if (e.target.classList.contains('close')) {
+                const modal = e.target.closest('.modal');
+                if (modal) {
+                    if (modal.id === 'assessmentHistoryModal') {
+                        this.closeAssessmentHistoryModal();
+                    } else if (modal.id === 'assessmentModal') {
+                        this.closeAssessmentModal();
+                    } else {
+                        this.museumModalComponent.close();
+                    }
+                }
+            }
         });
 
         // Settings modal events
@@ -16970,6 +16994,33 @@ class MuseumCheckApp {
         document.addEventListener('searchQueryChanged', (e) => {
             this.handleSearch(e.detail.query);
         });
+
+        // Assessment functionality events  
+        document.addEventListener('click', (e) => {
+            // Assessment history button
+            if (e.target.closest('button')?.textContent?.includes('测评历史')) {
+                this.openAssessmentHistoryModal();
+            }
+        });
+
+        // Assessment modal events
+        const assessmentModal = document.getElementById('assessmentModal');
+        if (assessmentModal) {
+            const closeBtn = assessmentModal.querySelector('.close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => this.closeAssessmentModal());
+            }
+
+            const nextBtn = document.getElementById('assessmentNext');
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => this.handleAssessmentNext());
+            }
+
+            const prevBtn = document.getElementById('assessmentPrev');
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => this.handleAssessmentPrev());
+            }
+        }
         
         console.log('✅ Event listeners configured');
     }
@@ -17397,6 +17448,884 @@ class MuseumCheckApp {
             checked: completedItems.includes(itemIndex),
             age_group: this.currentAge
         });
+    }
+
+    // ==========================================
+    // ASSESSMENT FUNCTIONALITY
+    // ==========================================
+
+    /**
+     * Assessment state management
+     */
+    initializeAssessment() {
+        this.assessmentState = {
+            museumId: null,
+            currentStep: 0, // 0: intro, 1: parent questions, 2: child questions, 3: results
+            parentAnswers: [],
+            childAnswers: [],
+            startTime: null,
+            isComplete: false
+        };
+    }
+
+    /**
+     * Open assessment history modal
+     */
+    openAssessmentHistoryModal() {
+        console.log('📊 Opening assessment history modal');
+        const modal = document.getElementById('assessmentHistoryModal');
+        if (modal) {
+            this.loadAssessmentHistory();
+            modal.classList.add('show');
+            modal.classList.remove('hidden');
+            
+            this.analyticsService.trackEvent('assessment_history_opened', {
+                total_assessments: this.getAssessmentHistoryCount()
+            });
+        }
+    }
+
+    /**
+     * Close assessment history modal
+     */
+    closeAssessmentHistoryModal() {
+        const modal = document.getElementById('assessmentHistoryModal');
+        if (modal) {
+            modal.classList.remove('show');
+            modal.classList.add('hidden');
+        }
+    }
+
+    /**
+     * Open assessment modal for a specific museum
+     */
+    openAssessmentModal(museumId = null) {
+        console.log(`🧡 Opening assessment modal for museum: ${museumId}`);
+        
+        if (museumId) {
+            // Check for existing progress
+            const savedProgress = this.loadAssessmentProgress(museumId);
+            if (savedProgress) {
+                if (confirm('您之前开始了这个博物馆的测评。是否继续之前的进度？')) {
+                    this.resumeAssessment(savedProgress);
+                } else {
+                    this.startNewAssessment(museumId);
+                }
+            } else {
+                this.startNewAssessment(museumId);
+            }
+        } else {
+            // General assessment without specific museum
+            this.startNewAssessment(null);
+        }
+
+        const modal = document.getElementById('assessmentModal');
+        if (modal) {
+            modal.classList.add('show');
+            modal.classList.remove('hidden');
+        }
+    }
+
+    /**
+     * Close assessment modal
+     */
+    closeAssessmentModal() {
+        const modal = document.getElementById('assessmentModal');
+        if (modal) {
+            modal.classList.remove('show');
+            modal.classList.add('hidden');
+        }
+
+        // Save progress if assessment is in progress
+        if (this.assessmentState && this.assessmentState.museumId && !this.assessmentState.isComplete) {
+            this.saveAssessmentProgress();
+        }
+    }
+
+    /**
+     * Start new assessment
+     */
+    startNewAssessment(museumId) {
+        this.initializeAssessment();
+        this.assessmentState.museumId = museumId;
+        this.assessmentState.startTime = new Date().toISOString();
+        this.showAssessmentStep(0);
+
+        this.analyticsService.trackEvent('assessment_started', {
+            museum_id: museumId,
+            age_group: this.currentAge
+        });
+    }
+
+    /**
+     * Resume existing assessment
+     */
+    resumeAssessment(savedProgress) {
+        this.assessmentState = { ...savedProgress };
+        this.showAssessmentStep(this.assessmentState.currentStep);
+
+        this.analyticsService.trackEvent('assessment_resumed', {
+            museum_id: this.assessmentState.museumId,
+            current_step: this.assessmentState.currentStep,
+            age_group: this.currentAge
+        });
+    }
+
+    /**
+     * Show specific assessment step
+     */
+    showAssessmentStep(step) {
+        console.log(`📝 Showing assessment step: ${step}`);
+        
+        this.assessmentState.currentStep = step;
+        
+        // Update step indicators
+        this.updateStepIndicators(step);
+        
+        // Show appropriate content
+        const formElement = document.getElementById('assessmentForm');
+        if (!formElement) return;
+
+        switch (step) {
+            case 0:
+                this.showAssessmentIntro();
+                break;
+            case 1:
+                this.showParentQuestions();
+                break;
+            case 2:
+                this.showChildQuestions();
+                break;
+            case 3:
+                this.showAssessmentResults();
+                break;
+        }
+
+        // Update navigation buttons
+        this.updateAssessmentButtons(step);
+
+        // Auto-scroll to form area for better mobile UX
+        this.scrollToFormArea();
+    }
+
+    /**
+     * Update step indicators
+     */
+    updateStepIndicators(currentStep) {
+        const steps = document.querySelectorAll('.step-indicator .step');
+        steps.forEach((step, index) => {
+            step.classList.remove('active', 'completed');
+            if (index === currentStep) {
+                step.classList.add('active');
+            } else if (index < currentStep) {
+                step.classList.add('completed');
+            }
+        });
+    }
+
+    /**
+     * Show assessment introduction
+     */
+    showAssessmentIntro() {
+        const formElement = document.getElementById('assessmentForm');
+        const museumName = this.assessmentState.museumId ? 
+            this.getMuseumById(this.assessmentState.museumId)?.name : '通用';
+
+        formElement.innerHTML = `
+            <div class="assessment-intro-content">
+                <div class="assessment-museum">
+                    <h3>🏛️ ${museumName}亲子测评</h3>
+                </div>
+                <div class="assessment-description">
+                    <p>这个测评将帮助您了解亲子关系现状，并提供针对性的改善建议。</p>
+                    <p>测评分为两部分：</p>
+                    <ul>
+                        <li>📋 <strong>家长问卷</strong> - 了解您的育儿方式和感受</li>
+                        <li>🧒 <strong>孩子问卷</strong> - 了解孩子的想法和感受</li>
+                    </ul>
+                    <p class="assessment-time">⏱️ 预计用时：5-8分钟</p>
+                </div>
+                <div class="assessment-privacy">
+                    <p class="privacy-note">🔒 您的答案将保存在本地，不会上传到服务器</p>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Parent questions for the assessment
+     */
+    getParentQuestions() {
+        return [
+            {
+                question: "您多久和孩子进行一次深度对话？",
+                options: [
+                    "几乎每天",
+                    "每周2-3次", 
+                    "每周1次",
+                    "偶尔",
+                    "很少"
+                ]
+            },
+            {
+                question: "当孩子遇到困难时，您通常会：",
+                options: [
+                    "立即帮助解决",
+                    "引导孩子自己思考解决方案",
+                    "提供建议但让孩子决定",
+                    "等孩子主动求助",
+                    "认为孩子应该独立解决"
+                ]
+            },
+            {
+                question: "您觉得您了解孩子的兴趣爱好吗？",
+                options: [
+                    "非常了解，经常交流",
+                    "比较了解",
+                    "了解一些",
+                    "不太了解",
+                    "基本不了解"
+                ]
+            },
+            {
+                question: "当您和孩子意见不一致时，您会：",
+                options: [
+                    "耐心听取孩子的想法",
+                    "解释自己的观点",
+                    "寻求折中方案",
+                    "坚持自己的决定",
+                    "避免冲突"
+                ]
+            },
+            {
+                question: "您认为亲子关系中最重要的是：",
+                options: [
+                    "相互理解和尊重",
+                    "有效的沟通",
+                    "共同的兴趣爱好",
+                    "明确的规则界限",
+                    "无条件的爱"
+                ]
+            }
+        ];
+    }
+
+    /**
+     * Child questions for the assessment  
+     */
+    getChildQuestions() {
+        const age = this.currentAge;
+        
+        if (age === '3-6') {
+            return [
+                {
+                    question: "你喜欢和爸爸妈妈一起玩吗？",
+                    options: ["很喜欢 😊", "喜欢 😄", "一般 😐", "不喜欢 😟"]
+                },
+                {
+                    question: "当你不开心的时候，你会：",
+                    options: ["告诉爸爸妈妈", "自己哭一会儿", "找玩具玩", "不想说话"]
+                },
+                {
+                    question: "你觉得爸爸妈妈听你说话吗？",
+                    options: ["总是听 👂", "经常听", "有时听", "很少听"]
+                }
+            ];
+        } else if (age === '7-12') {
+            return [
+                {
+                    question: "你觉得父母理解你吗？",
+                    options: ["非常理解", "比较理解", "有时理解", "不太理解", "不理解"]
+                },
+                {
+                    question: "当你有想法时，你会主动和父母分享吗？",
+                    options: ["总是会", "经常会", "有时会", "很少会", "从不会"]
+                },
+                {
+                    question: "你希望父母怎样对待你？",
+                    options: ["像朋友一样", "给我更多自由", "多关心我", "严格一些", "现在这样就好"]
+                },
+                {
+                    question: "你最喜欢和父母一起做什么？",
+                    options: ["聊天交流", "一起玩游戏", "外出游玩", "学习讨论", "看电视电影"]
+                }
+            ];
+        } else { // 13-18
+            return [
+                {
+                    question: "你认为与父母的关系如何？",
+                    options: ["非常亲密", "比较亲密", "一般", "有些疏远", "很疏远"]
+                },
+                {
+                    question: "当你遇到问题时，你会向父母寻求帮助吗？",
+                    options: ["总是会", "经常会", "有时会", "很少会", "从不会"]
+                },
+                {
+                    question: "你觉得父母对你的期待：",
+                    options: ["合理且支持", "合理但压力大", "过高难达到", "不清楚期待", "没有特别期待"]
+                },
+                {
+                    question: "你希望父母在哪方面给你更多支持？",
+                    options: ["理解我的想法", "给我更多自主权", "在学业上帮助", "情感上的支持", "现在已经很好"]
+                },
+                {
+                    question: "你觉得最影响亲子关系的因素是：",
+                    options: ["沟通方式", "相互理解", "时间投入", "价值观差异", "外界压力"]
+                }
+            ];
+        }
+    }
+
+    /**
+     * Show parent questions
+     */
+    showParentQuestions() {
+        const questions = this.getParentQuestions();
+        const formElement = document.getElementById('assessmentForm');
+        
+        let questionsHtml = `
+            <div class="assessment-questions">
+                <h3>📋 家长问卷</h3>
+                <p class="question-intro">请根据实际情况选择最符合的答案：</p>
+        `;
+
+        questions.forEach((q, qIndex) => {
+            const savedAnswer = this.assessmentState.parentAnswers[qIndex];
+            questionsHtml += `
+                <div class="question-group" data-question="${qIndex}">
+                    <h4 class="question-text">${qIndex + 1}. ${q.question}</h4>
+                    <div class="options-group">
+            `;
+            
+            q.options.forEach((option, oIndex) => {
+                const isSelected = savedAnswer === oIndex;
+                questionsHtml += `
+                    <label class="option-label ${isSelected ? 'selected' : ''}">
+                        <input type="radio" name="parent_q${qIndex}" value="${oIndex}" 
+                               ${isSelected ? 'checked' : ''}
+                               onchange="window.app.updateParentAnswer(${qIndex}, ${oIndex})">
+                        <span class="option-text">${option}</span>
+                    </label>
+                `;
+            });
+            
+            questionsHtml += `
+                    </div>
+                </div>
+            `;
+        });
+
+        questionsHtml += '</div>';
+        formElement.innerHTML = questionsHtml;
+    }
+
+    /**
+     * Show child questions
+     */
+    showChildQuestions() {
+        const questions = this.getChildQuestions();
+        const formElement = document.getElementById('assessmentForm');
+        
+        let questionsHtml = `
+            <div class="assessment-questions">
+                <h3>🧒 孩子问卷</h3>
+                <p class="question-intro">请让孩子根据自己的感受来回答：</p>
+        `;
+
+        questions.forEach((q, qIndex) => {
+            const savedAnswer = this.assessmentState.childAnswers[qIndex];
+            questionsHtml += `
+                <div class="question-group" data-question="${qIndex}">
+                    <h4 class="question-text">${qIndex + 1}. ${q.question}</h4>
+                    <div class="options-group">
+            `;
+            
+            q.options.forEach((option, oIndex) => {
+                const isSelected = savedAnswer === oIndex;
+                questionsHtml += `
+                    <label class="option-label ${isSelected ? 'selected' : ''}">
+                        <input type="radio" name="child_q${qIndex}" value="${oIndex}" 
+                               ${isSelected ? 'checked' : ''}
+                               onchange="window.app.updateChildAnswer(${qIndex}, ${oIndex})">
+                        <span class="option-text">${option}</span>
+                    </label>
+                `;
+            });
+            
+            questionsHtml += `
+                    </div>
+                </div>
+            `;
+        });
+
+        questionsHtml += '</div>';
+        formElement.innerHTML = questionsHtml;
+    }
+
+    /**
+     * Update parent answer
+     */
+    updateParentAnswer(questionIndex, answerIndex) {
+        if (!this.assessmentState.parentAnswers) {
+            this.assessmentState.parentAnswers = [];
+        }
+        this.assessmentState.parentAnswers[questionIndex] = answerIndex;
+        
+        // Update visual selection
+        const questionGroup = document.querySelector(`[data-question="${questionIndex}"]`);
+        if (questionGroup) {
+            questionGroup.querySelectorAll('.option-label').forEach((label, index) => {
+                label.classList.toggle('selected', index === answerIndex);
+            });
+        }
+
+        // Auto-save progress
+        this.saveAssessmentProgress();
+
+        this.analyticsService.trackEvent('assessment_answer_updated', {
+            question_type: 'parent',
+            question_index: questionIndex,
+            answer_index: answerIndex
+        });
+    }
+
+    /**
+     * Update child answer
+     */
+    updateChildAnswer(questionIndex, answerIndex) {
+        if (!this.assessmentState.childAnswers) {
+            this.assessmentState.childAnswers = [];
+        }
+        this.assessmentState.childAnswers[questionIndex] = answerIndex;
+        
+        // Update visual selection
+        const questionGroup = document.querySelector(`[data-question="${questionIndex}"]`);
+        if (questionGroup) {
+            questionGroup.querySelectorAll('.option-label').forEach((label, index) => {
+                label.classList.toggle('selected', index === answerIndex);
+            });
+        }
+
+        // Auto-save progress
+        this.saveAssessmentProgress();
+
+        this.analyticsService.trackEvent('assessment_answer_updated', {
+            question_type: 'child',
+            question_index: questionIndex,
+            answer_index: answerIndex
+        });
+    }
+
+    /**
+     * Show assessment results
+     */
+    showAssessmentResults() {
+        const results = this.calculateAssessmentResults();
+        const formElement = document.getElementById('assessmentForm');
+        
+        formElement.innerHTML = `
+            <div class="assessment-results">
+                <h3>🎯 测评结果</h3>
+                <div class="result-score">
+                    <div class="score-display">
+                        <span class="score-number">${results.score}</span>
+                        <span class="score-label">分</span>
+                    </div>
+                    <div class="score-level">
+                        <span class="level-title">${results.level.title}</span>
+                        <p class="level-description">${results.level.description}</p>
+                    </div>
+                </div>
+                
+                <div class="result-suggestions">
+                    <h4>💡 改善建议</h4>
+                    <ul class="suggestions-list">
+                        ${results.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                    </ul>
+                </div>
+
+                <div class="result-actions">
+                    <button class="btn-primary" onclick="window.app.saveAssessmentResult()">
+                        💾 保存结果
+                    </button>
+                    <button class="btn-secondary" onclick="window.app.restartAssessment()">
+                        🔄 重新测评
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Mark assessment as complete
+        this.assessmentState.isComplete = true;
+        this.assessmentState.completedAt = new Date().toISOString();
+        this.assessmentState.results = results;
+    }
+
+    /**
+     * Calculate assessment results
+     */
+    calculateAssessmentResults() {
+        const parentAnswers = this.assessmentState.parentAnswers || [];
+        const childAnswers = this.assessmentState.childAnswers || [];
+
+        // Simple scoring algorithm - higher scores for more positive answers
+        let parentScore = 0;
+        parentAnswers.forEach(answer => {
+            parentScore += (4 - answer); // Reverse scoring for most questions
+        });
+
+        let childScore = 0;
+        childAnswers.forEach(answer => {
+            childScore += (3 - answer); // Adjust for different option counts
+        });
+
+        const totalScore = Math.round(((parentScore + childScore) / (parentAnswers.length * 4 + childAnswers.length * 3)) * 100);
+
+        const level = this.getRelationshipLevel(totalScore);
+        const suggestions = this.getAssessmentSuggestions(totalScore, parentAnswers, childAnswers);
+
+        return {
+            score: totalScore,
+            level: level,
+            parentScore: parentScore,
+            childScore: childScore,
+            suggestions: suggestions
+        };
+    }
+
+    /**
+     * Get relationship level based on score
+     */
+    getRelationshipLevel(score) {
+        if (score >= 80) {
+            return {
+                title: "优秀",
+                description: "您和孩子的关系非常融洽，沟通顺畅，相互理解。"
+            };
+        } else if (score >= 60) {
+            return {
+                title: "良好", 
+                description: "您和孩子的关系总体良好，但还有进一步改善的空间。"
+            };
+        } else if (score >= 40) {
+            return {
+                title: "一般",
+                description: "您和孩子的关系需要更多关注和改善。"
+            };
+        } else {
+            return {
+                title: "需要改善",
+                description: "建议您更多关注亲子关系，寻求必要的帮助和指导。"
+            };
+        }
+    }
+
+    /**
+     * Get assessment suggestions
+     */
+    getAssessmentSuggestions(score, parentAnswers, childAnswers) {
+        const suggestions = [];
+
+        if (score >= 80) {
+            suggestions.push("继续保持良好的沟通习惯");
+            suggestions.push("可以尝试更多有挑战性的亲子活动");
+        } else if (score >= 60) {
+            suggestions.push("增加与孩子的深度对话时间");
+            suggestions.push("多关注孩子的内心感受");
+            suggestions.push("尝试从孩子的角度看问题");
+        } else {
+            suggestions.push("建立固定的亲子交流时间");
+            suggestions.push("学习更有效的沟通技巧");
+            suggestions.push("多参与孩子感兴趣的活动");
+            suggestions.push("考虑寻求专业的亲子关系指导");
+        }
+
+        return suggestions;
+    }
+
+    /**
+     * Update assessment navigation buttons
+     */
+    updateAssessmentButtons(step) {
+        const nextBtn = document.getElementById('assessmentNext');
+        const prevBtn = document.getElementById('assessmentPrev');
+
+        if (!nextBtn || !prevBtn) return;
+
+        // Previous button
+        prevBtn.style.display = step > 0 ? 'inline-block' : 'none';
+
+        // Next button
+        switch (step) {
+            case 0:
+                nextBtn.textContent = '开始测评';
+                nextBtn.style.display = 'inline-block';
+                break;
+            case 1:
+                nextBtn.textContent = '下一步';
+                nextBtn.style.display = 'inline-block';
+                break;
+            case 2:
+                nextBtn.textContent = '查看结果';
+                nextBtn.style.display = 'inline-block';
+                break;
+            case 3:
+                nextBtn.style.display = 'none';
+                break;
+        }
+    }
+
+    /**
+     * Handle next button click
+     */
+    handleAssessmentNext() {
+        const currentStep = this.assessmentState.currentStep;
+
+        if (currentStep === 1) {
+            // Validate parent questions
+            const parentQuestions = this.getParentQuestions();
+            if (this.assessmentState.parentAnswers.length < parentQuestions.length) {
+                alert('请完成所有家长问卷题目');
+                return;
+            }
+        } else if (currentStep === 2) {
+            // Validate child questions
+            const childQuestions = this.getChildQuestions();
+            if (this.assessmentState.childAnswers.length < childQuestions.length) {
+                alert('请完成所有孩子问卷题目');
+                return;
+            }
+        }
+
+        // Move to next step
+        if (currentStep < 3) {
+            this.showAssessmentStep(currentStep + 1);
+        }
+    }
+
+    /**
+     * Handle previous button click
+     */
+    handleAssessmentPrev() {
+        const currentStep = this.assessmentState.currentStep;
+        if (currentStep > 0) {
+            this.showAssessmentStep(currentStep - 1);
+        }
+    }
+
+    /**
+     * Scroll to form area for better mobile UX
+     */
+    scrollToFormArea() {
+        const formArea = document.getElementById('assessmentForm');
+        if (formArea) {
+            formArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    /**
+     * Save assessment progress to localStorage
+     */
+    saveAssessmentProgress() {
+        if (!this.assessmentState || !this.assessmentState.museumId) return;
+
+        const progressData = {
+            ...this.assessmentState,
+            lastUpdated: new Date().toISOString()
+        };
+
+        try {
+            localStorage.setItem('assessmentProgress', JSON.stringify(progressData));
+            console.log('📝 Assessment progress saved');
+        } catch (error) {
+            console.error('Failed to save assessment progress:', error);
+        }
+    }
+
+    /**
+     * Load assessment progress from localStorage
+     */
+    loadAssessmentProgress(museumId) {
+        try {
+            const saved = localStorage.getItem('assessmentProgress');
+            if (saved) {
+                const progress = JSON.parse(saved);
+                if (progress.museumId === museumId && !progress.isComplete) {
+                    return progress;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load assessment progress:', error);
+        }
+        return null;
+    }
+
+    /**
+     * Save assessment result permanently
+     */
+    saveAssessmentResult() {
+        if (!this.assessmentState || !this.assessmentState.isComplete) return;
+
+        try {
+            const results = JSON.parse(localStorage.getItem('assessmentResults') || '{}');
+            const key = this.assessmentState.museumId || 'general';
+            
+            results[key] = {
+                ...this.assessmentState,
+                savedAt: new Date().toISOString()
+            };
+
+            localStorage.setItem('assessmentResults', JSON.stringify(results));
+            
+            // Clear progress since it's now completed and saved
+            localStorage.removeItem('assessmentProgress');
+
+            alert('测评结果已保存！您可以在"测评历史"中查看。');
+            this.closeAssessmentModal();
+
+            this.analyticsService.trackEvent('assessment_completed', {
+                museum_id: this.assessmentState.museumId,
+                score: this.assessmentState.results.score,
+                level: this.assessmentState.results.level.title
+            });
+        } catch (error) {
+            console.error('Failed to save assessment result:', error);
+            alert('保存失败，请稍后重试。');
+        }
+    }
+
+    /**
+     * Restart current assessment
+     */
+    restartAssessment() {
+        if (confirm('确定要重新开始测评吗？当前进度将丢失。')) {
+            const museumId = this.assessmentState.museumId;
+            localStorage.removeItem('assessmentProgress');
+            this.startNewAssessment(museumId);
+        }
+    }
+
+    /**
+     * Load assessment history for display
+     */
+    loadAssessmentHistory() {
+        const historyContent = document.getElementById('assessmentHistoryContent');
+        const emptyState = document.getElementById('historyEmptyState');
+        const historyList = document.getElementById('historyList');
+
+        if (!historyContent) return;
+
+        try {
+            const results = JSON.parse(localStorage.getItem('assessmentResults') || '{}');
+            const resultEntries = Object.entries(results);
+
+            if (resultEntries.length === 0) {
+                emptyState.style.display = 'block';
+                historyList.style.display = 'none';
+                this.updateHistorySummary(0, 0, 0);
+            } else {
+                emptyState.style.display = 'none';
+                historyList.style.display = 'block';
+                
+                this.renderHistoryList(resultEntries);
+                this.updateHistorySummary(resultEntries);
+            }
+        } catch (error) {
+            console.error('Failed to load assessment history:', error);
+        }
+    }
+
+    /**
+     * Render assessment history list
+     */
+    renderHistoryList(resultEntries) {
+        const historyList = document.getElementById('historyList');
+        if (!historyList) return;
+
+        historyList.innerHTML = resultEntries.map(([key, result]) => {
+            const museum = this.getMuseumById(key);
+            const museumName = museum ? museum.name : '通用测评';
+            const date = new Date(result.completedAt || result.savedAt).toLocaleDateString();
+            const score = result.results.score;
+            const level = result.results.level.title;
+
+            return `
+                <div class="history-entry" onclick="window.app.viewAssessmentResult('${key}')">
+                    <div class="history-museum">
+                        <h4>${museumName}</h4>
+                        <span class="history-date">${date}</span>
+                    </div>
+                    <div class="history-score">
+                        <span class="score">${score}分</span>
+                        <span class="level level-${level}">${level}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Update history summary statistics
+     */
+    updateHistorySummary(resultEntries) {
+        const totalElement = document.getElementById('totalAssessments');
+        const averageElement = document.getElementById('averageScore');
+        const latestElement = document.getElementById('latestScore');
+
+        if (typeof resultEntries === 'number') {
+            // Called with count only
+            if (totalElement) totalElement.textContent = resultEntries;
+            if (averageElement) averageElement.textContent = '0';
+            if (latestElement) latestElement.textContent = '0';
+            return;
+        }
+
+        const scores = resultEntries.map(([, result]) => result.results.score);
+        const averageScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+        const latestScore = scores.length > 0 ? scores[scores.length - 1] : 0;
+
+        if (totalElement) totalElement.textContent = resultEntries.length;
+        if (averageElement) averageElement.textContent = averageScore;
+        if (latestElement) latestElement.textContent = latestScore;
+    }
+
+    /**
+     * View specific assessment result
+     */
+    viewAssessmentResult(resultKey) {
+        try {
+            const results = JSON.parse(localStorage.getItem('assessmentResults') || '{}');
+            const result = results[resultKey];
+            
+            if (result) {
+                // Set assessment state to show this result
+                this.assessmentState = { ...result };
+                this.closeAssessmentHistoryModal();
+                this.openAssessmentModal();
+                this.showAssessmentStep(3); // Show results step
+            }
+        } catch (error) {
+            console.error('Failed to view assessment result:', error);
+        }
+    }
+
+    /**
+     * Get assessment history count
+     */
+    getAssessmentHistoryCount() {
+        try {
+            const results = JSON.parse(localStorage.getItem('assessmentResults') || '{}');
+            return Object.keys(results).length;
+        } catch (error) {
+            return 0;
+        }
+    }
+
+    /**
+     * Get museum by ID
+     */
+    getMuseumById(museumId) {
+        return MUSEUMS.find(m => m.id === museumId);
     }
 
     // ==========================================
