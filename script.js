@@ -17373,7 +17373,14 @@ class MuseumCheckApp {
                 const checkbox = card.querySelector('.visit-checkbox');
                 checkbox.addEventListener('change', (e) => {
                     e.stopPropagation();
-                    this.toggleMuseumVisit(museum.id);
+                    const wasChecked = checkbox.checked;
+                    const result = this.toggleMuseumVisit(museum.id);
+                    
+                    // If toggleMuseumVisit indicates the action was cancelled (user went to modal),
+                    // revert the checkbox state since the museum wasn't actually marked as visited
+                    if (result === 'cancelled') {
+                        checkbox.checked = !wasChecked;
+                    }
                 });
 
                 // Add assessment button event
@@ -17437,7 +17444,7 @@ class MuseumCheckApp {
                 'visited': false,
                 'age_group': this.currentAge
             });
-            return;
+            return 'unchecked';
         }
         
         // If checking (adding visit), validate child task completion first
@@ -17456,8 +17463,9 @@ class MuseumCheckApp {
                 
                 if (confirmed) {
                     // User chose to enter guide page - open museum modal
+                    // Return 'cancelled' to indicate checkbox should be reverted
                     this.openMuseumModal(museum);
-                    return;
+                    return 'cancelled';
                 }
                 // If user clicked "取消", continue with force check-in below
             }
@@ -17478,7 +17486,10 @@ class MuseumCheckApp {
                 'age_group': this.currentAge,
                 'force_checkin': completedChildTasks.length === 0
             });
+            return 'checked';
         }
+        
+        return 'no_action';
     }
 
     updateStats() {
