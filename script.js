@@ -19390,10 +19390,26 @@ class MuseumCheckApp {
         
         title.textContent = `🧡 ${museum.name} - 亲子测评`;
         
-        // Check for existing progress
+        // Check for completed assessment results FIRST
+        const completedResult = this.getCompletedAssessmentResult(museumId);
+        
+        // Check for existing progress (declare here so it's available throughout)
         const savedProgress = this.loadAssessmentProgress(museumId);
         
-        if (savedProgress) {
+        if (completedResult) {
+            // Show completed results with option to retake
+            this.assessmentState = {
+                museumId: museumId,
+                currentStep: 3, // Results step
+                parentAnswers: completedResult.parentAnswers || [],
+                childAnswers: completedResult.childAnswers || [],
+                score: completedResult.score,
+                timestamp: completedResult.date
+            };
+            
+            // Show completed results in review mode
+            this.showCompletedAssessmentResults();
+        } else if (savedProgress) {
             // Resume from saved progress
             this.assessmentState = {
                 museumId: savedProgress.museumId,
@@ -19430,7 +19446,8 @@ class MuseumCheckApp {
         this.trackEvent('assessment_started', {
             'museum_id': museumId,
             'museum_name': museum.name,
-            'is_resume': !!savedProgress
+            'is_resume': !!savedProgress,
+            'is_completed_review': !!completedResult
         });
     }
 
@@ -19492,6 +19509,138 @@ class MuseumCheckApp {
         }
     }
 
+    // Get completed assessment result for a museum
+    getCompletedAssessmentResult(museumId) {
+        try {
+            const results = JSON.parse(localStorage.getItem('assessmentResults') || '{}');
+            return results[museumId] || null;
+        } catch (error) {
+            console.warn('Failed to load completed assessment result:', error);
+            return null;
+        }
+    }
+
+    // Show completed assessment results with option to retake
+    showCompletedAssessmentResults() {
+        const form = document.getElementById('assessmentForm');
+        const score = this.assessmentState.score;
+        const level = this.getRelationshipLevel(score);
+        const suggestions = this.getRelationshipSuggestions(score);
+        const museum = MUSEUMS.find(m => m.id === this.assessmentState.museumId);
+        const completionDate = new Date(this.assessmentState.timestamp).toLocaleDateString('zh-CN');
+
+        form.innerHTML = `
+            <div class="assessment-results completed-review">
+                <div class="review-header">
+                    <p class="review-notice">📋 这是您之前完成的测评结果 (${completionDate})</p>
+                </div>
+                <div class="score-display">
+                    <div class="score-circle">
+                        <div class="score-number">${score}</div>
+                        <div class="score-max">/ 100</div>
+                    </div>
+                    <div class="score-info">
+                        <div class="score-level">${level.title}</div>
+                        <div class="score-description">${level.description}</div>
+                    </div>
+                </div>
+                
+                <div class="suggestions-section">
+                    <h4>💡 改善建议</h4>
+                    <div class="suggestions-list">
+                        ${suggestions.map(suggestion => `
+                            <div class="suggestion-item">
+                                <span class="suggestion-icon">${suggestion.icon}</span>
+                                <div class="suggestion-content">
+                                    <div class="suggestion-title">${suggestion.title}</div>
+                                    <div class="suggestion-desc">${suggestion.description}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                ${museum ? `
+                <div class="museum-specific-tips">
+                    <h4>🏛️ ${museum.name}专属建议</h4>
+                    <p>基于您的测评结果，建议在参观${museum.name}时特别关注亲子互动和情感连接。</p>
+                </div>
+                ` : ''}
+
+                <div class="review-actions">
+                    <button id="retakeAssessment" class="btn-secondary">🔄 重新测评</button>
+                    <button id="viewHistory" class="btn-outline">📊 查看历史</button>
+                </div>
+            </div>
+        `;
+
+        // Update step indicator to show results step
+        const steps = document.querySelectorAll('.step');
+        steps.forEach((step, index) => {
+            if (index < 3) {
+                step.classList.add('completed');
+            }
+            if (index === 2) { // Results step
+                step.classList.add('active');
+            } else {
+                step.classList.remove('active');
+            }
+        });
+
+        // Update navigation buttons for review mode
+        const nextBtn = document.getElementById('assessmentNext');
+        const prevBtn = document.getElementById('assessmentPrev');
+        
+        nextBtn.textContent = '关闭';
+        nextBtn.style.display = 'block';
+        nextBtn.onclick = () => {
+            document.getElementById('assessmentModal').classList.add('hidden');
+            
+            // Track review closure
+            this.trackEvent('assessment_review_closed', {
+                'museum_id': this.assessmentState.museumId,
+                'score': this.assessmentState.score
+            });
+        };
+        
+        prevBtn.style.display = 'none'; // No previous step in review mode
+
+        // Setup retake button
+        document.getElementById('retakeAssessment').onclick = () => {
+            if (confirm('确定要重新开始测评吗？之前的结果将被保存到历史记录中。')) {
+                // Clear current progress but keep results in history
+                this.clearAssessmentProgress();
+                
+                // Start fresh assessment
+                this.assessmentState = {
+                    museumId: this.assessmentState.museumId,
+                    currentStep: 0,
+                    parentAnswers: [],
+                    childAnswers: [],
+                    score: 0,
+                    timestamp: new Date().toISOString()
+                };
+                
+                this.showAssessmentStep(0);
+                
+                // Track retake
+                this.trackEvent('assessment_retaken', {
+                    'museum_id': this.assessmentState.museumId,
+                    'previous_score': score
+                });
+            }
+        };
+
+        // Setup view history button
+        document.getElementById('viewHistory').onclick = () => {
+            document.getElementById('assessmentModal').classList.add('hidden');
+            this.showAssessmentHistoryModal();
+        };
+
+        // Auto-scroll to form area for better UX
+        this.scrollToFormArea();
+    }
+
     // Show dialog for resuming progress
     showResumeProgressDialog(savedProgress) {
         const resumeDialog = document.createElement('div');
@@ -19513,6 +19662,7 @@ class MuseumCheckApp {
         
         // Handle resume button
         document.getElementById('resumeAssessment').onclick = () => {
+            this.restoreAssessmentModalStructure();
             this.showAssessmentStep(savedProgress.currentStep);
         };
         
@@ -19527,8 +19677,36 @@ class MuseumCheckApp {
                 score: 0,
                 timestamp: new Date().toISOString()
             };
+            this.restoreAssessmentModalStructure();
             this.showAssessmentStep(0);
         };
+    }
+
+    // Restore the original assessment modal structure after resume dialog
+    restoreAssessmentModalStructure() {
+        const assessmentContent = document.getElementById('assessmentContent');
+        assessmentContent.innerHTML = `
+            <div class="assessment-intro">
+                <!-- Simplified introduction - verbose content removed -->
+            </div>
+            <div class="assessment-steps">
+                <div class="step-indicator">
+                    <span class="step active" data-step="1">1. 家长问卷</span>
+                    <span class="step" data-step="2">2. 孩子问卷</span>
+                    <span class="step" data-step="3">3. 测评结果</span>
+                </div>
+            </div>
+            <div class="assessment-form" id="assessmentForm">
+                <!-- Content will be filled dynamically -->
+            </div>
+            <div class="assessment-buttons">
+                <button id="assessmentPrev" class="btn-secondary" style="display: none;">上一步</button>
+                <button id="assessmentNext" class="btn-primary">开始测评</button>
+            </div>
+        `;
+        
+        // Re-setup event listeners for the restored buttons
+        this.setupAssessmentEventListeners();
     }
 
     // Get step name for display
