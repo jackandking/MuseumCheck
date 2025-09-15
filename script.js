@@ -17495,7 +17495,10 @@ class MuseumCheckApp {
     updateStats() {
         const visitedCount = this.visitedMuseums.length;
         const totalCount = MUSEUMS.length;
-        const percentage = totalCount > 0 ? Math.round((visitedCount / totalCount) * 100) : 0;
+        // Fix percentage display: use one decimal place to show meaningful progress for small percentages
+        const percentage = totalCount > 0 
+            ? (visitedCount > 0 ? Math.round((visitedCount / totalCount) * 100 * 10) / 10 : 0)
+            : 0;
 
         document.getElementById('visitedCount').textContent = visitedCount;
         document.getElementById('totalCount').textContent = totalCount;
@@ -19144,7 +19147,9 @@ class MuseumCheckApp {
         ctx.fillText(`🏛️ 已参观 ${visitedCount} / ${MUSEUM_COUNT} 家博物馆`, canvas.width / 2, yPosition);
         
         yPosition += 60;
-        const percentage = Math.round((visitedCount / MUSEUM_COUNT) * 100);
+        const percentage = visitedCount > 0 
+            ? Math.round((visitedCount / MUSEUM_COUNT) * 100 * 10) / 10 
+            : 0;
         ctx.font = '28px "PingFang SC", "Microsoft YaHei", sans-serif';
         ctx.fillText(`完成度: ${percentage}% | 获得成就: ${achievedAchievements.length}个`, canvas.width / 2, yPosition);
         
