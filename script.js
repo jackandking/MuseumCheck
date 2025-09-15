@@ -17509,6 +17509,7 @@ class MuseumCheckApp {
         }
         
         return achievements;
+    }
 }
 
 // Global error handling
