@@ -153,6 +153,213 @@ const UtilityFunctions = {
     }
 };
 
+// ===== DATA VALIDATION MODULE =====
+// Centralized data validation functions for better maintainability
+const DataValidator = {
+    // Museum data validation
+    validateMuseumData: (museums) => {
+        if (!Array.isArray(museums)) {
+            return { isValid: false, errors: ['Museums must be an array'] };
+        }
+        
+        const errors = [];
+        const seenIds = new Set();
+        const seenNames = new Set();
+        
+        museums.forEach((museum, index) => {
+            const prefix = `Museum ${index}: `;
+            
+            // Check required fields
+            if (!museum.id) errors.push(`${prefix}missing id`);
+            if (!museum.name) errors.push(`${prefix}missing name`);
+            if (!museum.location) errors.push(`${prefix}missing location`);
+            
+            // Check for duplicates
+            if (museum.id && seenIds.has(museum.id)) {
+                errors.push(`${prefix}duplicate id "${museum.id}"`);
+            }
+            if (museum.name && seenNames.has(museum.name)) {
+                errors.push(`${prefix}duplicate name "${museum.name}"`);
+            }
+            
+            if (museum.id) seenIds.add(museum.id);
+            if (museum.name) seenNames.add(museum.name);
+            
+            // Validate checklists structure
+            if (museum.checklists) {
+                const checklistErrors = DataValidator.validateChecklistStructure(museum.checklists, prefix);
+                errors.push(...checklistErrors);
+            }
+        });
+        
+        return {
+            isValid: errors.length === 0,
+            errors,
+            stats: {
+                totalCount: museums.length,
+                uniqueIds: seenIds.size,
+                uniqueNames: seenNames.size
+            }
+        };
+    },
+    
+    validateChecklistStructure: (checklists, prefix = '') => {
+        const errors = [];
+        
+        if (!checklists.parent || !checklists.child) {
+            errors.push(`${prefix}missing parent or child checklists`);
+            return errors;
+        }
+        
+        APP_CONFIG.AGE_GROUPS.forEach(age => {
+            if (!checklists.parent[age]) {
+                errors.push(`${prefix}missing parent checklist for age ${age}`);
+            }
+            if (!checklists.child[age]) {
+                errors.push(`${prefix}missing child checklist for age ${age}`);
+            }
+            
+            if (checklists.parent[age] && !Array.isArray(checklists.parent[age])) {
+                errors.push(`${prefix}parent checklist for age ${age} must be an array`);
+            }
+            if (checklists.child[age] && !Array.isArray(checklists.child[age])) {
+                errors.push(`${prefix}child checklist for age ${age} must be an array`);
+            }
+        });
+        
+        return errors;
+    },
+    
+    // Local storage data validation
+    validateStorageData: (key, data, expectedType = 'object') => {
+        try {
+            if (expectedType === 'array' && !Array.isArray(data)) {
+                return { isValid: false, error: `${key} should be an array` };
+            }
+            if (expectedType === 'object' && (typeof data !== 'object' || data === null)) {
+                return { isValid: false, error: `${key} should be an object` };
+            }
+            return { isValid: true };
+        } catch (error) {
+            return { isValid: false, error: `${key} validation failed: ${error.message}` };
+        }
+    },
+    
+    // Age group validation
+    validateAgeGroup: (ageGroup) => {
+        return {
+            isValid: APP_CONFIG.AGE_GROUPS.includes(ageGroup),
+            error: APP_CONFIG.AGE_GROUPS.includes(ageGroup) ? null : 
+                  `Invalid age group: ${ageGroup}. Must be one of: ${APP_CONFIG.AGE_GROUPS.join(', ')}`
+        };
+    }
+};
+
+// ===== STORAGE MANAGER MODULE =====  
+// Centralized local storage management with error handling and validation
+const StorageManager = {
+    // Enhanced storage operations with validation
+    safeGet: (key, defaultValue = null, expectedType = 'object') => {
+        try {
+            const item = localStorage.getItem(key);
+            if (!item) return defaultValue;
+            
+            const parsed = JSON.parse(item);
+            const validation = DataValidator.validateStorageData(key, parsed, expectedType);
+            
+            if (!validation.isValid) {
+                console.warn(`Storage validation failed for ${key}:`, validation.error);
+                return defaultValue;
+            }
+            
+            return parsed;
+        } catch (error) {
+            console.warn(`Error reading from localStorage key "${key}":`, error);
+            return defaultValue;
+        }
+    },
+    
+    safeSet: (key, value) => {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+            return { success: true };
+        } catch (error) {
+            if (error.name === 'QuotaExceededError') {
+                return { 
+                    success: false, 
+                    error: 'Storage quota exceeded', 
+                    shouldClearOldData: true 
+                };
+            }
+            console.warn(`Error writing to localStorage key "${key}":`, error);
+            return { success: false, error: error.message };
+        }
+    },
+    
+    // Specialized getters for app data
+    getVisitedMuseums: () => {
+        return StorageManager.safeGet(APP_CONFIG.LOCAL_STORAGE_KEYS.VISITED_MUSEUMS, [], 'array');
+    },
+    
+    getMuseumChecklists: () => {
+        return StorageManager.safeGet(APP_CONFIG.LOCAL_STORAGE_KEYS.MUSEUM_CHECKLISTS, {}, 'object');
+    },
+    
+    getCurrentAge: () => {
+        const age = StorageManager.safeGet(APP_CONFIG.LOCAL_STORAGE_KEYS.CURRENT_AGE, APP_CONFIG.DEFAULT_AGE, 'string');
+        const validation = DataValidator.validateAgeGroup(age);
+        return validation.isValid ? age : APP_CONFIG.DEFAULT_AGE;
+    },
+    
+    getAssessmentHistory: () => {
+        return StorageManager.safeGet(APP_CONFIG.LOCAL_STORAGE_KEYS.ASSESSMENT_HISTORY, [], 'array');
+    },
+    
+    getSharingState: () => {
+        return StorageManager.safeGet(APP_CONFIG.LOCAL_STORAGE_KEYS.SHARING_STATE, {}, 'object');
+    },
+    
+    // Batch operations for efficiency
+    batchSet: (operations) => {
+        const results = [];
+        for (const { key, value } of operations) {
+            results.push({ key, ...StorageManager.safeSet(key, value) });
+        }
+        return results;
+    },
+    
+    // Storage cleanup utilities
+    getStorageUsage: () => {
+        let totalSize = 0;
+        const details = {};
+        
+        Object.values(APP_CONFIG.LOCAL_STORAGE_KEYS).forEach(key => {
+            const item = localStorage.getItem(key);
+            const size = item ? item.length : 0;
+            details[key] = size;
+            totalSize += size;
+        });
+        
+        return { totalSize, details };
+    },
+    
+    clearExpiredData: (maxAge = 90 * 24 * 60 * 60 * 1000) => { // 90 days default
+        const now = Date.now();
+        const assessmentHistory = StorageManager.getAssessmentHistory();
+        
+        const filteredHistory = assessmentHistory.filter(entry => 
+            entry.timestamp && (now - entry.timestamp) < maxAge
+        );
+        
+        if (filteredHistory.length !== assessmentHistory.length) {
+            StorageManager.safeSet(APP_CONFIG.LOCAL_STORAGE_KEYS.ASSESSMENT_HISTORY, filteredHistory);
+            return { cleaned: true, removed: assessmentHistory.length - filteredHistory.length };
+        }
+        
+        return { cleaned: false, removed: 0 };
+    }
+};
+
 // ===== EXPERT GUIDANCE SYSTEM =====
 // Enhanced expert guidance system for parent-child interactions based on developmental psychology
 const EXPERT_GUIDANCE = {
@@ -514,6 +721,171 @@ const MULTIPLE_INTELLIGENCE_STRATEGIES = {
         name: '自然智能',
         description: '通过观察、分类、保护意识培养',
         activities: ['材质分类识别', '环境观察', '生态思考', '保护意识培养']
+    }
+};
+
+// ===== UI MANAGEMENT MODULE =====
+// Centralized UI operations and DOM manipulation functions
+const UIManager = {
+    // Modal management
+    showModal: (modalId) => {
+        const modal = UtilityFunctions.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'block';
+            // Prevent body scroll when modal is open
+            document.body.style.overflow = 'hidden';
+        }
+    },
+    
+    hideModal: (modalId) => {
+        const modal = UtilityFunctions.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            // Restore body scroll
+            document.body.style.overflow = '';
+        }
+    },
+    
+    // Notification system
+    showNotification: (message, duration = UI_CONSTANTS.ANIMATION.NOTIFICATION_DURATION, type = 'info') => {
+        const notification = UtilityFunctions.getElementById('notification');
+        if (!notification) return;
+        
+        notification.textContent = message;
+        notification.className = `notification show ${type}`;
+        notification.style.display = 'block';
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, UI_CONSTANTS.ANIMATION.TRANSITION_DURATION);
+        }, duration);
+    },
+    
+    // Element visibility management
+    showElement: (element) => {
+        if (element) {
+            element.style.display = 'block';
+            element.classList.remove('hidden');
+        }
+    },
+    
+    hideElement: (element) => {
+        if (element) {
+            element.style.display = 'none';
+            element.classList.add('hidden');
+        }
+    },
+    
+    toggleElement: (element) => {
+        if (element) {
+            const isHidden = element.classList.contains('hidden') || element.style.display === 'none';
+            if (isHidden) {
+                UIManager.showElement(element);
+            } else {
+                UIManager.hideElement(element);
+            }
+        }
+    },
+    
+    // Form management
+    clearForm: (formElement) => {
+        if (formElement) {
+            const inputs = formElement.querySelectorAll('input, textarea, select');
+            inputs.forEach(input => {
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    input.checked = false;
+                } else {
+                    input.value = '';
+                }
+            });
+        }
+    },
+    
+    // Loading states
+    setLoadingState: (element, isLoading = true, loadingText = '加载中...') => {
+        if (!element) return;
+        
+        if (isLoading) {
+            element.dataset.originalText = element.textContent;
+            element.textContent = loadingText;
+            element.disabled = true;
+            element.classList.add('loading');
+        } else {
+            element.textContent = element.dataset.originalText || element.textContent;
+            element.disabled = false;
+            element.classList.remove('loading');
+            delete element.dataset.originalText;
+        }
+    },
+    
+    // Highlighting and animations
+    highlightElement: (element, duration = UI_CONSTANTS.ANIMATION.HIGHLIGHT_DURATION) => {
+        if (!element) return;
+        
+        const originalBackground = element.style.backgroundColor;
+        const originalTransition = element.style.transition;
+        
+        element.style.transition = UI_CONSTANTS.COLORS.TRANSITION_PROPERTY;
+        element.style.backgroundColor = UI_CONSTANTS.COLORS.HIGHLIGHT_DEFAULT;
+        
+        setTimeout(() => {
+            element.style.backgroundColor = originalBackground;
+            setTimeout(() => {
+                element.style.transition = originalTransition;
+            }, UI_CONSTANTS.ANIMATION.TRANSITION_DURATION);
+        }, duration);
+    },
+    
+    // Text utilities
+    updateCounter: (element, count, total = null, formatFn = null) => {
+        if (!element) return;
+        
+        let text;
+        if (formatFn && typeof formatFn === 'function') {
+            text = formatFn(count, total);
+        } else if (total !== null) {
+            const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+            text = `${count}/${total} (${percentage}%)`;
+        } else {
+            text = count.toString();
+        }
+        
+        element.textContent = text;
+    },
+    
+    // Responsive utilities
+    isMobileView: () => window.innerWidth <= 768,
+    
+    addResponsiveClass: (element, mobileClass, desktopClass) => {
+        if (!element) return;
+        
+        const removeClass = UIManager.isMobileView() ? desktopClass : mobileClass;
+        const addClass = UIManager.isMobileView() ? mobileClass : desktopClass;
+        
+        if (removeClass) element.classList.remove(removeClass);
+        if (addClass) element.classList.add(addClass);
+    },
+    
+    // Scroll utilities
+    scrollToTop: (smooth = true) => {
+        window.scrollTo({
+            top: 0,
+            behavior: smooth ? 'smooth' : 'auto'
+        });
+    },
+    
+    scrollToElement: (element, offset = 0, smooth = true) => {
+        if (!element) return;
+        
+        const elementTop = element.getBoundingClientRect().top + window.pageYOffset;
+        window.scrollTo({
+            top: elementTop - offset,
+            behavior: smooth ? 'smooth' : 'auto'
+        });
     }
 };
 
@@ -16863,6 +17235,201 @@ const MUSEUMS = [
 
 // Single source of truth for museum count - automatically calculated
 const MUSEUM_COUNT = MUSEUMS.length;
+
+// ===== EVENT HANDLER MODULE =====
+// Centralized event handling logic for better organization
+const EventHandlers = {
+    // Age group change handler
+    handleAgeGroupChange: (app, event) => {
+        const selectedAge = event.target.value;
+        if (DataValidator.validateAgeGroup(selectedAge).isValid) {
+            app.currentAge = selectedAge;
+            StorageManager.safeSet(APP_CONFIG.LOCAL_STORAGE_KEYS.CURRENT_AGE, selectedAge);
+            
+            // Update visual state
+            UtilityFunctions.querySelectorAll(DOM_SELECTORS.AGE_GROUP.OPTIONS).forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.target.closest('.age-option')?.classList.add('selected');
+            
+            // Track the event
+            app.trackEvent('age_group_changed', { 
+                previous_age: app.currentAge, 
+                new_age: selectedAge 
+            });
+        }
+    },
+    
+    // Search functionality
+    handleSearchInput: (app, event) => {
+        const query = UtilityFunctions.sanitizeString(event.target.value).toLowerCase();
+        app.searchQuery = query;
+        
+        // Apply debouncing for performance
+        clearTimeout(app.searchTimeout);
+        app.searchTimeout = setTimeout(() => {
+            app.filterMuseums(query);
+            app.renderMuseums();
+            
+            // Track search events
+            if (query.length >= 2) {
+                app.trackEvent('search_performed', { 
+                    query_length: query.length,
+                    results_count: app.filteredMuseums.length 
+                });
+            }
+        }, APP_CONFIG.SEARCH.DEBOUNCE_DELAY);
+    },
+    
+    // Clear search handler
+    handleClearSearch: (app) => {
+        const searchInput = UtilityFunctions.querySelector(DOM_SELECTORS.SEARCH.INPUT);
+        if (searchInput) {
+            searchInput.value = '';
+            app.searchQuery = '';
+            app.filteredMuseums = MUSEUMS;
+            app.renderMuseums();
+            
+            app.trackEvent('search_cleared');
+        }
+    },
+    
+    // Modal close handlers
+    handleModalClose: (modalId, app = null) => {
+        UIManager.hideModal(modalId);
+        if (app) {
+            app.trackEvent('modal_closed', { modal_id: modalId });
+        }
+    },
+    
+    // Museum card click handler
+    handleMuseumCardClick: (app, museumId) => {
+        const museum = MUSEUMS.find(m => m.id === museumId);
+        if (museum) {
+            app.openMuseumModal(museum);
+            app.trackEvent('museum_card_clicked', { 
+                museum_id: museumId,
+                museum_name: museum.name 
+            });
+        }
+    },
+    
+    // Visit checkbox handler
+    handleVisitCheckbox: (app, museumId, isChecked) => {
+        if (isChecked) {
+            if (!app.visitedMuseums.includes(museumId)) {
+                app.visitedMuseums.push(museumId);
+            }
+        } else {
+            app.visitedMuseums = app.visitedMuseums.filter(id => id !== museumId);
+        }
+        
+        StorageManager.safeSet(APP_CONFIG.LOCAL_STORAGE_KEYS.VISITED_MUSEUMS, app.visitedMuseums);
+        app.updateStats();
+        
+        app.trackEvent(isChecked ? 'museum_visited' : 'museum_unvisited', { 
+            museum_id: museumId,
+            total_visited: app.visitedMuseums.length 
+        });
+    },
+    
+    // Checklist item handler
+    handleChecklistItem: (app, checkboxElement, museumId, type, ageGroup, itemIndex) => {
+        const isChecked = checkboxElement.checked;
+        const checklistKey = `${museumId}-${type}-${ageGroup}`;
+        
+        if (!app.museumChecklists[checklistKey]) {
+            app.museumChecklists[checklistKey] = [];
+        }
+        
+        if (isChecked) {
+            if (!app.museumChecklists[checklistKey].includes(itemIndex)) {
+                app.museumChecklists[checklistKey].push(itemIndex);
+            }
+        } else {
+            app.museumChecklists[checklistKey] = app.museumChecklists[checklistKey]
+                .filter(index => index !== itemIndex);
+        }
+        
+        StorageManager.safeSet(APP_CONFIG.LOCAL_STORAGE_KEYS.MUSEUM_CHECKLISTS, app.museumChecklists);
+        
+        app.trackEvent('checklist_item_changed', { 
+            museum_id: museumId,
+            type: type,
+            age_group: ageGroup,
+            item_index: itemIndex,
+            checked: isChecked 
+        });
+    },
+    
+    // Tab switching handler
+    handleTabSwitch: (app, activeTab) => {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        const activeButton = document.querySelector(`[data-tab="${activeTab}"]`);
+        const activeContent = document.getElementById(activeTab);
+        
+        if (activeButton && activeContent) {
+            activeButton.classList.add('active');
+            activeContent.classList.add('active');
+        }
+        
+        app.trackEvent('tab_switched', { tab: activeTab });
+    },
+    
+    // Keyboard navigation handler
+    handleKeyboardNavigation: (event) => {
+        // Handle Escape key to close modals
+        if (event.key === 'Escape') {
+            const openModals = document.querySelectorAll('.modal:not(.hidden)');
+            openModals.forEach(modal => {
+                UIManager.hideModal(modal.id);
+            });
+        }
+        
+        // Handle Enter key on focusable elements
+        if (event.key === 'Enter') {
+            const activeElement = document.activeElement;
+            if (activeElement && (activeElement.classList.contains('museum-card') || 
+                               activeElement.classList.contains('button'))) {
+                activeElement.click();
+            }
+        }
+    },
+    
+    // Window resize handler
+    handleWindowResize: UtilityFunctions.debounce((app) => {
+        // Update responsive classes if needed
+        const museumCards = document.querySelectorAll('.museum-card');
+        museumCards.forEach(card => {
+            UIManager.addResponsiveClass(card, 'mobile-card', 'desktop-card');
+        });
+        
+        app.trackEvent('window_resized', { 
+            width: window.innerWidth, 
+            height: window.innerHeight,
+            is_mobile: UIManager.isMobileView()
+        });
+    }, 250),
+    
+    // Error handler for async operations
+    handleAsyncError: (error, context, app = null) => {
+        console.error(`Error in ${context}:`, error);
+        UIManager.showNotification(`操作失败：${error.message}`, UI_CONSTANTS.ANIMATION.NOTIFICATION_DURATION, 'error');
+        
+        if (app) {
+            app.trackEvent('async_error', { 
+                context: context,
+                error_message: error.message,
+                error_type: error.name 
+            });
+        }
+    }
+};
 
 class MuseumCheckApp {
     constructor() {
