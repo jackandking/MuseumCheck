@@ -603,6 +603,308 @@ When updating the application:
 - **Analytics**: Google Analytics 4 (GA_MEASUREMENT_ID: G-YHF52B1NMH)
 - **Domain**: museumcheck.cn (custom domain via CNAME)
 
+## Mobile UX Best Practices (手机用户体验最佳实践)
+
+**CRITICAL**: This application is primarily used on mobile devices by families visiting museums. Mobile UX is the top priority for all development decisions.
+
+### 📱 Touch-Friendly Design Principles
+
+#### **Button and Interactive Element Guidelines**
+- **Minimum touch target**: 44px × 44px (iOS guideline compliance)
+- **Recommended spacing**: 8px minimum between touch targets
+- **Icon-first approach**: Use emoji icons (🔗, 🗑️, ✏️) instead of long text labels on mobile
+- **Avoid text-heavy buttons**: Replace "我的成就" with "🎖️" on mobile breakpoints
+
+```css
+/* Example: Mobile-friendly button design */
+@media (max-width: 768px) {
+  .achievement-button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 12px;
+    gap: 8px; /* Consistent spacing */
+  }
+  
+  /* Icon-only on mobile to save space */
+  .clear-data-button-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    font-size: 16px; /* Large enough emoji */
+    padding: 0;
+  }
+}
+```
+
+#### **Layout Optimization Strategies**
+- **Single column on mobile**: Always use `grid-template-columns: 1fr` under 768px
+- **Vertical stacking**: Convert horizontal layouts to `flex-direction: column`
+- **Compact arrangements**: Use inline layouts like `.achievement-inline` to group related elements
+- **Reduce margins**: Cut padding and margins by ~30% on mobile breakpoints
+
+```css
+/* Example: Responsive layout adaptation */
+@media (max-width: 768px) {
+  .museum-grid {
+    grid-template-columns: 1fr; /* Single column */
+    gap: 15px; /* Reduced from desktop 20px */
+  }
+  
+  .stats {
+    flex-direction: column;
+    align-items: stretch; /* Full width on mobile */
+    gap: 10px; /* Consistent vertical rhythm */
+  }
+}
+```
+
+### 🚀 Performance and Scroll Optimization
+
+#### **Prevent iOS Zoom Issues**
+- **Input font size**: Minimum 16px on input fields prevents iOS zoom
+- **Viewport control**: Proper meta viewport prevents unwanted scaling
+
+```css
+/* Critical: Prevent iOS zoom on inputs */
+@media (max-width: 480px) {
+  .search-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+```
+
+```html
+<!-- Required viewport meta tag -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+```
+
+#### **Scroll Behavior Optimization**
+- **Smooth scrolling**: Use `scroll-behavior: smooth` and `scrollIntoView({ behavior: 'smooth' })`
+- **Touch scroll areas**: Full-height modals with proper overflow handling
+- **Momentum scrolling**: `-webkit-overflow-scrolling: touch` for smooth iOS scrolling
+
+```css
+/* Optimized modal scrolling */
+.modal-content {
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
+}
+```
+
+### 🎯 Mobile-Specific Component Patterns
+
+#### **Modal Dialog Design**
+- **Full-screen approach**: Modals should use 95% of viewport width/height on mobile
+- **Easy dismissal**: Large X button (minimum 44px) in top-right corner
+- **Swipe gestures**: Consider adding swipe-to-dismiss functionality
+- **Tab navigation**: Horizontal tabs with adequate spacing
+
+```css
+@media (max-width: 768px) {
+  .modal {
+    width: 95vw;
+    height: 95vh;
+    margin: 2.5vh auto;
+    border-radius: 12px;
+  }
+  
+  .modal-close {
+    width: 44px;
+    height: 44px;
+    font-size: 24px;
+    touch-action: manipulation;
+  }
+}
+```
+
+#### **Form and Input Optimization**
+- **Large input fields**: Minimum 44px height for touch interaction
+- **Clear visual feedback**: Distinct focus states and active states
+- **Error messaging**: Inline, immediate feedback for form validation
+
+```css
+/* Mobile-optimized inputs */
+@media (max-width: 768px) {
+  input, textarea, select {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 12px;
+    border-radius: 8px;
+  }
+  
+  input:focus {
+    border-width: 2px; /* Stronger visual feedback */
+    outline: none;
+  }
+}
+```
+
+#### **Progressive Enhancement for Small Screens**
+
+**Breakpoint Strategy:**
+```css
+/* Mobile-first approach */
+@media (max-width: 480px) {
+  /* Extra small phones */
+  .container {
+    padding: 10px;
+    margin: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Tablets and standard mobile */
+  .museum-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 769px) {
+  /* Desktop enhancements only */
+  .museum-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+```
+
+### 🎨 Visual Design for Mobile
+
+#### **Typography Scaling**
+- **Readable font sizes**: 14px minimum for body text on mobile
+- **Contrast ratios**: Ensure WCAG AA compliance (4.5:1 minimum)
+- **Line height**: 1.4-1.6 for better mobile readability
+
+```css
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 18px; }
+}
+```
+
+#### **Color and Visual Hierarchy**
+- **High contrast**: Ensure text is readable in bright outdoor conditions (museum visits)
+- **Touch state feedback**: Clear visual changes on tap/touch
+- **Loading states**: Provide visual feedback for slow network conditions
+
+```css
+/* High contrast for outdoor visibility */
+.museum-card {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  color: #333333; /* High contrast text */
+}
+
+.museum-card:active {
+  background: #f5f5f5; /* Clear touch feedback */
+  transform: scale(0.98); /* Subtle press animation */
+}
+```
+
+### 💡 User Experience Patterns
+
+#### **Navigation and Information Architecture**
+- **Flat navigation**: Avoid deep menu hierarchies on mobile
+- **Breadcrumb alternatives**: Use modal titles and clear back buttons
+- **Search prominence**: Make search easily accessible but not overwhelming
+
+#### **Content Prioritization**
+- **Progressive disclosure**: Show essential information first, details on demand
+- **Scannable layouts**: Use bullet points, icons, and short paragraphs
+- **Chunked information**: Break long content into digestible sections
+
+```css
+/* Content hierarchy for mobile scanning */
+@media (max-width: 768px) {
+  .checklist-item {
+    padding: 12px;
+    margin-bottom: 8px;
+    border-left: 3px solid #007bff; /* Visual hierarchy */
+  }
+  
+  .checklist-item p {
+    margin: 0;
+    line-height: 1.4;
+    font-size: 14px;
+  }
+}
+```
+
+### 🔧 Implementation Guidelines
+
+#### **Development Workflow**
+1. **Mobile-first CSS**: Write styles for mobile, then enhance for desktop
+2. **Touch testing**: Test all interactive elements with finger navigation
+3. **Performance budgets**: Keep JavaScript bundles under 100KB for mobile
+4. **Network resilience**: Design for slow 3G connections (museum WiFi)
+
+#### **Testing Requirements**
+- **Device testing**: Test on iPhone SE (375px) and larger Android phones
+- **Orientation testing**: Support both portrait and landscape modes
+- **Accessibility**: Test with screen readers and keyboard navigation
+- **Performance**: Ensure smooth 60fps animations and interactions
+
+```javascript
+// Example: Touch-optimized event handling
+const handleTouch = (element) => {
+  // Prevent double-tap zoom on buttons
+  element.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+  }, { passive: false });
+  
+  // Provide immediate visual feedback
+  element.addEventListener('touchstart', () => {
+    element.classList.add('touching');
+  });
+  
+  element.addEventListener('touchend', () => {
+    element.classList.remove('touching');
+  });
+};
+```
+
+#### **Common Mobile UX Anti-Patterns to Avoid**
+- ❌ **Hover-dependent interactions** (no hover on mobile)
+- ❌ **Tiny touch targets** (under 44px)
+- ❌ **Horizontal scrolling** (except for carousels)
+- ❌ **Long text in buttons** (use icons + labels)
+- ❌ **Multiple modals** (stick to single modal paradigm)
+- ❌ **Complex gestures** (keep interactions simple)
+- ❌ **Auto-playing media** (respect mobile data usage)
+
+#### **Mobile-Specific Features to Implement**
+- ✅ **Pull-to-refresh** for data updates
+- ✅ **Swipe gestures** for modal navigation
+- ✅ **Touch-friendly sharing** (Web Share API)
+- ✅ **Offline functionality** (Service Workers)
+- ✅ **Add to home screen** (PWA capabilities)
+
+### 📊 Mobile Analytics and Monitoring
+
+Track mobile-specific metrics:
+```javascript
+// Example: Mobile UX analytics
+gtag('event', 'mobile_interaction', {
+  'interaction_type': 'modal_open',
+  'device_type': window.innerWidth < 768 ? 'mobile' : 'desktop',
+  'screen_size': `${window.innerWidth}x${window.innerHeight}`
+});
+```
+
+**Key Mobile Metrics:**
+- Modal completion rates on mobile vs desktop
+- Touch target success rates
+- Scroll depth in mobile modals
+- Time to interactive on mobile devices
+- Mobile abandonment rates
+
 ### Complete Museum List (120 Museums)
 The application includes 120 major Chinese museums covering all provinces and regions, including:
 1. 故宫博物院 (Beijing)
@@ -708,4 +1010,392 @@ npm run test:data-quality
 **CRITICAL**: If any checklist item fails, investigate before making changes. Run data quality validation FIRST to catch systematic issues, then unit tests (`npm test`) to catch issues early, then manually verify functionality.
 
 Always validate your changes by running through the complete user scenarios above before committing code.
+
+## Mobile UX Best Practices (手机用户体验最佳实践)
+
+**CRITICAL**: MuseumCheck is a mobile-first application. **All changes must prioritize mobile experience** and follow these established patterns to maintain the high-quality mobile UX that users depend on.
+
+### Mobile Design Philosophy
+
+**Primary Principle**: **Minimize cognitive load and physical effort** for parents juggling children while navigating museums.
+
+**Core Goals**:
+- **Reduce scrolling**: Compact, scannable layouts that fit mobile screens
+- **Minimize taps**: Essential actions accessible in 1-2 taps maximum  
+- **Eliminate text input**: Use selection-based interactions wherever possible
+- **Optimize for one-handed use**: All critical actions within thumb reach
+- **Prevent accidental touches**: Adequate spacing between interactive elements
+
+### Responsive Breakpoints (响应式断点)
+
+**Established Breakpoints** (DO NOT CHANGE without comprehensive testing):
+```css
+/* Small phones (iPhone SE, etc.) */
+@media (max-width: 480px) { /* Critical optimizations */ }
+
+/* Standard mobile (iPhone 6+, Android) */  
+@media (max-width: 768px) { /* Primary mobile styles */ }
+
+/* Desktop/tablet */
+@media (min-width: 769px) { /* Desktop enhancements */ }
+```
+
+**Mobile Viewport Priority**: Design for 375px width (iPhone 8/X baseline) first, then scale up.
+
+### Touch Interface Guidelines (触屏界面指南)
+
+#### **Button Sizing and Spacing**
+```css
+/* MANDATORY: Minimum touch target size */
+.touch-target {
+    min-width: 44px;   /* Apple HIG requirement */
+    min-height: 44px;
+    padding: 12px 16px; /* Internal padding for comfort */
+}
+
+/* MANDATORY: Minimum spacing between touch targets */
+.touch-targets-container {
+    gap: 8px; /* Minimum 8px between interactive elements */
+}
+```
+
+#### **Icon vs. Text Buttons (Mobile Strategy)**
+**PRINCIPLE**: Use icons on mobile, text on desktop to optimize space.
+
+```css
+/* Example from current implementation */
+@media (max-width: 768px) {
+    .button-text { display: none; }  /* Hide text labels */
+    .button-icon { display: block; } /* Show icon only */
+    
+    .clear-data-button-icon {
+        width: 24px;
+        height: 24px;
+        /* Emoji icon: 🗑️ */
+    }
+}
+```
+
+**Icon Selection Standards**:
+- **🔗** Share/link actions
+- **🗑️** Delete/clear actions  
+- **✏️** Edit actions
+- **📊** Statistics/analytics
+- **🎖️** Achievements/rewards
+- **➕** Add new item
+
+### Layout Optimization for Mobile (移动端布局优化)
+
+#### **Vertical Stack Principle** 
+**RULE**: Convert horizontal layouts to vertical stacks on mobile.
+
+```css
+@media (max-width: 768px) {
+    .desktop-horizontal {
+        flex-direction: column !important;
+        gap: 10px;
+    }
+    
+    /* Grid simplification */
+    .desktop-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+    }
+}
+```
+
+#### **Museum Card Mobile Layout**
+**Current Optimized Pattern**:
+```css
+@media (max-width: 480px) {
+    .museum-card {
+        padding: 15px;        /* Reduced from desktop 20px */
+        margin-bottom: 12px;  /* Tighter spacing */
+    }
+    
+    .museum-card h3 {
+        font-size: 1.1em;     /* Smaller title */
+        line-height: 1.3;     /* Better readability */
+    }
+}
+```
+
+### Modal and Dialog Optimization (弹窗优化)
+
+#### **Mobile Modal Best Practices**
+**CRITICAL**: Mobile modals must feel natural and responsive.
+
+```css
+/* Current pattern - DO NOT BREAK */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95vw !important;  /* Near full-width */
+        max-height: 90vh;        /* Prevent overflow */
+        margin: 5vh auto;        /* Centered with breathing room */
+    }
+    
+    .modal-header {
+        padding: 15px;           /* Reduced padding */
+        position: sticky;        /* Keep header visible during scroll */
+        top: 0;
+        background: white;
+        z-index: 10;
+    }
+}
+```
+
+#### **Checklist Item Mobile Optimization**
+**Pattern**: Horizontal layout with touch-optimized spacing.
+```css
+.checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;               /* Minimum touch spacing */
+    padding: 12px 15px;      /* Touch-comfortable padding */
+    min-height: 44px;        /* Minimum touch target */
+}
+
+.checklist-checkbox {
+    flex-shrink: 0;          /* Prevent checkbox shrinking */
+    margin-top: 2px;         /* Align with text baseline */
+}
+```
+
+### Typography for Mobile Readability (移动端排版)
+
+#### **Font Size Standards**
+```css
+/* Prevent iOS zoom - MANDATORY */
+input, textarea, select {
+    font-size: 16px !important; /* iOS won't zoom if >= 16px */
+}
+
+/* Mobile font scaling */
+@media (max-width: 768px) {
+    h1 { font-size: 1.8em; }     /* Smaller than desktop 2.5em */
+    h2 { font-size: 1.5em; }     /* Smaller than desktop 2em */  
+    h3 { font-size: 1.2em; }     /* Smaller than desktop 1.5em */
+    
+    body { 
+        font-size: 14px;          /* Base mobile font size */
+        line-height: 1.4;         /* Compact line spacing */
+    }
+}
+
+/* Ultra-small phone optimization */
+@media (max-width: 480px) {
+    h1 { font-size: 1.6em; }     /* Further reduced */
+    body { font-size: 13px; }    /* Smaller base size */
+}
+```
+
+#### **Chinese Text Optimization**
+```css
+/* Chinese character display - CRITICAL for this app */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 
+                 "PingFang SC", "Hiragino Sans GB", 
+                 "Microsoft YaHei", sans-serif;
+}
+
+/* Better Chinese text wrapping */
+.chinese-text {
+    word-break: break-all;       /* Wrap Chinese characters properly */
+    line-height: 1.6;            /* More space for Chinese readability */
+}
+```
+
+### Form and Input Mobile Optimization (表单优化)
+
+#### **Search Input Mobile Pattern**
+```css
+/* Current optimized pattern */
+@media (max-width: 480px) {
+    .search-input {
+        font-size: 16px;         /* Prevent iOS zoom */
+        padding: 10px 40px 10px 12px;  /* Touch-optimized padding */
+        border-radius: 8px;      /* Finger-friendly corners */
+    }
+    
+    .search-input::placeholder {
+        font-size: 14px;         /* Slightly smaller placeholder */
+    }
+}
+```
+
+#### **Age Selector Mobile Layout**
+```css
+/* Current responsive pattern */
+@media (max-width: 768px) {
+    .age-options {
+        flex-direction: column;   /* Stack vertically */
+        gap: 8px;                /* Minimal spacing */
+        align-items: center;
+    }
+    
+    .age-option {
+        min-width: 200px;        /* Consistent touch target */
+        padding: 6px 12px;       /* Reduced from desktop padding */
+        font-size: 15px;         /* Readable but compact */
+    }
+}
+```
+
+### Performance Optimization for Mobile (移动端性能)
+
+#### **Animation Guidelines**
+**RULE**: Reduce animations on mobile for better performance and battery life.
+
+```css
+/* Desktop: Rich animations */
+@media (min-width: 769px) {
+    .hover-effect {
+        transition: all 0.3s ease;
+        transform: translateY(-2px);
+    }
+}
+
+/* Mobile: Simplified animations */
+@media (max-width: 768px) {
+    .hover-effect {
+        transition: background-color 0.2s ease; /* Only color change */
+        /* No transform animations */
+    }
+}
+```
+
+#### **Loading States for Mobile**
+**CRITICAL**: Mobile users have shorter attention spans and slower connections.
+
+```css
+.mobile-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;        /* Compact padding */
+    min-height: 200px;         /* Reasonable height */
+}
+
+.loading-text {
+    font-size: 14px;           /* Smaller text */
+    margin-top: 15px;          /* Reduced spacing */
+    color: #666;
+}
+```
+
+### Navigation and Information Architecture (导航优化)
+
+#### **Progressive Disclosure Pattern**
+**PRINCIPLE**: Show only essential information first, provide access to details on demand.
+
+**Current Implementation**:
+1. **Museum Cards**: Show name, location, basic tags only
+2. **Modal on Tap**: Full details, checklists, expert guidance  
+3. **Tab System**: Separate parent vs. child content
+4. **Expandable Sections**: Expert guidance, settings
+
+#### **Breadcrumb and Back Navigation**
+```css
+/* Mobile-optimized modal header */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.close-button {
+    font-size: 24px;          /* Large enough for easy tapping */
+    padding: 8px;             /* Extra touch area */
+    color: #666;
+}
+```
+
+### Testing Requirements for Mobile Changes (移动端测试要求)
+
+#### **Mandatory Mobile Testing Checklist**
+**EVERY change must be tested on**:
+
+1. **Physical Devices** (if available):
+   - iPhone (Safari)  
+   - Android phone (Chrome)
+
+2. **Browser DevTools** (minimum requirement):
+   ```bash
+   # Chrome DevTools mobile simulation
+   # F12 > Device Toggle > iPhone 8 (375x667)
+   # Test at 375px, 414px, and 480px widths
+   ```
+
+3. **Touch Interaction Testing**:
+   - All buttons reachable with thumb (one-handed use)
+   - No accidental taps between closely spaced elements
+   - Scroll performance smooth with no lag
+   - Pinch-to-zoom disabled for app content (viewport meta tag)
+
+4. **Performance Testing**:
+   ```bash
+   # Chrome DevTools Performance tab
+   # Throttle CPU: 4x slowdown
+   # Throttle Network: Fast 3G
+   # Test modal opening/closing performance
+   ```
+
+#### **Mobile-Specific User Scenarios** 
+**Test these scenarios after ANY UI change**:
+
+1. **Parent with Crying Child Scenario**:
+   - Can complete museum check-in in under 10 seconds
+   - One-handed operation possible  
+   - Large, obvious buttons for critical actions
+
+2. **Museum Visit In-Progress Scenario**:
+   - Quick access to child checklist (2 taps max)
+   - Easy marking items as complete
+   - Progress visible at a glance
+
+3. **Network Interruption Scenario**:
+   - App works offline (localStorage-based)
+   - No broken states when connection drops
+   - Graceful handling of network errors
+
+### Code Review Checklist for Mobile UX (代码审查清单)
+
+**MANDATORY checks before any commit affecting UI**:
+
+- [ ] **Touch targets ≥ 44px**: All interactive elements meet minimum size
+- [ ] **Spacing ≥ 8px**: Adequate space between touch targets  
+- [ ] **Font size ≥ 16px**: Input fields prevent iOS zoom
+- [ ] **Responsive breakpoints**: Changes work at 375px, 768px, 480px
+- [ ] **One-handed usability**: Critical actions within thumb reach
+- [ ] **Chinese text rendering**: Proper font stacks and line heights
+- [ ] **Performance impact**: No new animations/transitions on mobile
+- [ ] **Loading states**: Clear feedback for any async operations
+- [ ] **Error handling**: Mobile-appropriate error messages and recovery
+
+### Emergency Mobile UX Recovery (紧急修复指南)
+
+**If mobile UX breaks after a change**:
+
+1. **Immediate Rollback**:
+   ```bash
+   git revert <commit-hash>
+   # Test on mobile immediately
+   ```
+
+2. **Common Mobile Break Points**:
+   - Modal sizing (check viewport units)
+   - Touch target sizing (check min-width/height)
+   - Font size changes (check for iOS zoom trigger)
+   - Flex layout changes (check flex-direction on mobile)
+
+3. **Quick Mobile Test**:
+   ```bash
+   python3 -m http.server 8000
+   # Chrome DevTools > Device Toggle > iPhone 8
+   # Test museum card click > modal opens > checklist works
+   ```
+
+**Remember**: Mobile users represent 70%+ of MuseumCheck traffic. Mobile experience is not optional – it IS the experience.
 
