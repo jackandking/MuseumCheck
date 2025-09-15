@@ -17373,7 +17373,14 @@ class MuseumCheckApp {
                 const checkbox = card.querySelector('.visit-checkbox');
                 checkbox.addEventListener('change', (e) => {
                     e.stopPropagation();
-                    this.toggleMuseumVisit(museum.id);
+                    const wasChecked = checkbox.checked;
+                    const result = this.toggleMuseumVisit(museum.id);
+                    
+                    // If toggleMuseumVisit indicates the action was cancelled (user went to modal),
+                    // revert the checkbox state since the museum wasn't actually marked as visited
+                    if (result === 'cancelled') {
+                        checkbox.checked = !wasChecked;
+                    }
                 });
 
                 // Add assessment button event
@@ -17437,7 +17444,7 @@ class MuseumCheckApp {
                 'visited': false,
                 'age_group': this.currentAge
             });
-            return;
+            return 'unchecked';
         }
         
         // If checking (adding visit), validate child task completion first
@@ -17456,8 +17463,9 @@ class MuseumCheckApp {
                 
                 if (confirmed) {
                     // User chose to enter guide page - open museum modal
+                    // Return 'cancelled' to indicate checkbox should be reverted
                     this.openMuseumModal(museum);
-                    return;
+                    return 'cancelled';
                 }
                 // If user clicked "取消", continue with force check-in below
             }
@@ -17478,13 +17486,19 @@ class MuseumCheckApp {
                 'age_group': this.currentAge,
                 'force_checkin': completedChildTasks.length === 0
             });
+            return 'checked';
         }
+        
+        return 'no_action';
     }
 
     updateStats() {
         const visitedCount = this.visitedMuseums.length;
         const totalCount = MUSEUMS.length;
-        const percentage = totalCount > 0 ? Math.round((visitedCount / totalCount) * 100) : 0;
+        // Fix percentage display: use one decimal place to show meaningful progress for small percentages
+        const percentage = totalCount > 0 
+            ? (visitedCount > 0 ? Math.round((visitedCount / totalCount) * 100 * 10) / 10 : 0)
+            : 0;
 
         document.getElementById('visitedCount').textContent = visitedCount;
         document.getElementById('totalCount').textContent = totalCount;
@@ -17946,6 +17960,11 @@ class MuseumCheckApp {
                 document.getElementById('parentChecklist').style.display = target === 'parent' ? 'block' : 'none';
                 document.getElementById('childChecklist').style.display = target === 'child' ? 'block' : 'none';
                 document.getElementById('shareChecklist').style.display = target === 'share' ? 'block' : 'none';
+                
+                // Enhanced UX: Smooth scroll to the content area after tab switch
+                setTimeout(() => {
+                    this.scrollToTabContent(target);
+                }, 100);
             });
         });
 
@@ -17959,6 +17978,14 @@ class MuseumCheckApp {
         });
 
         modal.classList.remove('hidden');
+        
+        // Enhanced UX: Ensure modal content starts at the top
+        setTimeout(() => {
+            const modalContent = modal.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.scrollTop = 0;
+            }
+        }, 100);
         
         // Set up checklist event listeners after modal content is rendered
         this.addChecklistEventListeners();
@@ -18047,6 +18074,11 @@ class MuseumCheckApp {
                     completed.push(index);
                     // Trigger small rocket animation for task completion
                     this.triggerSmallRocket();
+                    
+                    // Enhanced UX: Auto-scroll to next unchecked item after a brief celebration
+                    setTimeout(() => {
+                        this.scrollToNextUncheckedItem(e.target);
+                    }, 800);
                 } else if (!e.target.checked && itemIndex > -1) {
                     completed.splice(itemIndex, 1);
                 }
@@ -18331,8 +18363,13 @@ class MuseumCheckApp {
         const newText = prompt('请输入新的清单项目：');
         
         if (newText && newText.trim()) {
-            this.insertChecklistItem(checklistKey, newText.trim());
+            const newItemIndex = this.insertChecklistItem(checklistKey, newText.trim());
             this.refreshCurrentChecklist();
+            
+            // Enhanced UX: Scroll to newly added item after a brief delay to ensure DOM is updated
+            setTimeout(() => {
+                this.scrollToNewItem(checklistKey, newItemIndex);
+            }, 200);
         }
     }
 
@@ -18387,6 +18424,9 @@ class MuseumCheckApp {
         });
 
         this.saveCustomChecklists();
+        
+        // Return the index of the newly added item
+        return this.customChecklists[checklistKey].length - 1;
     }
 
     initializeCustomChecklist(checklistKey) {
@@ -19107,7 +19147,9 @@ class MuseumCheckApp {
         ctx.fillText(`🏛️ 已参观 ${visitedCount} / ${MUSEUM_COUNT} 家博物馆`, canvas.width / 2, yPosition);
         
         yPosition += 60;
-        const percentage = Math.round((visitedCount / MUSEUM_COUNT) * 100);
+        const percentage = visitedCount > 0 
+            ? Math.round((visitedCount / MUSEUM_COUNT) * 100 * 10) / 10 
+            : 0;
         ctx.font = '28px "PingFang SC", "Microsoft YaHei", sans-serif';
         ctx.fillText(`完成度: ${percentage}% | 获得成就: ${achievedAchievements.length}个`, canvas.width / 2, yPosition);
         
@@ -19408,26 +19450,166 @@ class MuseumCheckApp {
         
         title.textContent = `🧡 ${museum.name} - 亲子关系测评`;
         
-        // Initialize assessment state
-        this.assessmentState = {
-            museumId,
-            currentStep: 0,
-            parentAnswers: [],
-            childAnswers: [],
-            score: 0
-        };
+        // Check for existing progress
+        const savedProgress = this.loadAssessmentProgress(museumId);
         
-        this.showAssessmentStep(0);
+        if (savedProgress) {
+            // Resume from saved progress
+            this.assessmentState = {
+                museumId: savedProgress.museumId,
+                currentStep: savedProgress.currentStep,
+                parentAnswers: savedProgress.parentAnswers || [],
+                childAnswers: savedProgress.childAnswers || [],
+                score: 0,
+                timestamp: savedProgress.timestamp
+            };
+            
+            // Show resume option to user
+            this.showResumeProgressDialog(savedProgress);
+        } else {
+            // Initialize fresh assessment state
+            this.assessmentState = {
+                museumId,
+                currentStep: 0,
+                parentAnswers: [],
+                childAnswers: [],
+                score: 0,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Show initial step
+            this.showAssessmentStep(0);
+        }
+        
         modal.classList.remove('hidden');
         
         // Setup modal event listeners
         this.setupAssessmentEventListeners();
         
-        // Track event
+        // Track assessment start
         this.trackEvent('assessment_started', {
             'museum_id': museumId,
-            'museum_name': museum.name
+            'museum_name': museum.name,
+            'is_resume': !!savedProgress
         });
+    }
+
+    // Save assessment progress to localStorage
+    saveAssessmentProgress(progressData) {
+        try {
+            progressData.timestamp = new Date().toISOString();
+            localStorage.setItem('assessmentProgress', JSON.stringify(progressData));
+            
+            // Track progress save
+            this.trackEvent('assessment_progress_saved', {
+                'museum_id': progressData.museumId,
+                'current_step': progressData.currentStep,
+                'parent_answers_count': (progressData.parentAnswers || []).length,
+                'child_answers_count': (progressData.childAnswers || []).length
+            });
+            
+            return true;
+        } catch (error) {
+            console.warn('Failed to save assessment progress:', error);
+            return false;
+        }
+    }
+
+    // Load assessment progress from localStorage
+    loadAssessmentProgress(museumId) {
+        try {
+            const savedProgress = localStorage.getItem('assessmentProgress');
+            if (!savedProgress) return null;
+            
+            const progress = JSON.parse(savedProgress);
+            
+            // Verify the progress is for the same museum and not too old (24 hours)
+            if (progress.museumId === museumId) {
+                const timestamp = new Date(progress.timestamp);
+                const now = new Date();
+                const hoursDiff = (now - timestamp) / (1000 * 60 * 60);
+                
+                if (hoursDiff < 24) { // Progress valid for 24 hours
+                    return progress;
+                }
+            }
+            
+            return null;
+        } catch (error) {
+            console.warn('Failed to load assessment progress:', error);
+            return null;
+        }
+    }
+
+    // Clear assessment progress
+    clearAssessmentProgress() {
+        try {
+            localStorage.removeItem('assessmentProgress');
+            return true;
+        } catch (error) {
+            console.warn('Failed to clear assessment progress:', error);
+            return false;
+        }
+    }
+
+    // Show dialog for resuming progress
+    showResumeProgressDialog(savedProgress) {
+        const resumeDialog = document.createElement('div');
+        resumeDialog.className = 'resume-progress-dialog';
+        resumeDialog.innerHTML = `
+            <div class="resume-progress-content">
+                <h3>📋 发现未完成的测评</h3>
+                <p>您在这个博物馆有一个未完成的亲子关系测评，是否继续完成？</p>
+                <div class="progress-info">
+                    <p><strong>上次进度：</strong></p>
+                    <ul>
+                        <li>测评步骤：${this.getStepName(savedProgress.currentStep)}</li>
+                        <li>家长问卷：${(savedProgress.parentAnswers || []).length}/5 题已完成</li>
+                        <li>孩子问卷：${(savedProgress.childAnswers || []).length}/5 题已完成</li>
+                        <li>保存时间：${new Date(savedProgress.timestamp).toLocaleString()}</li>
+                    </ul>
+                </div>
+                <div class="resume-progress-buttons">
+                    <button id="resumeAssessment" class="btn-primary">继续完成</button>
+                    <button id="startNewAssessment" class="btn-secondary">重新开始</button>
+                </div>
+            </div>
+        `;
+        
+        // Insert into assessment modal
+        const assessmentContent = document.getElementById('assessmentContent');
+        assessmentContent.innerHTML = '';
+        assessmentContent.appendChild(resumeDialog);
+        
+        // Handle resume button
+        document.getElementById('resumeAssessment').onclick = () => {
+            this.showAssessmentStep(savedProgress.currentStep);
+        };
+        
+        // Handle restart button  
+        document.getElementById('startNewAssessment').onclick = () => {
+            this.clearAssessmentProgress();
+            this.assessmentState = {
+                museumId: savedProgress.museumId,
+                currentStep: 0,
+                parentAnswers: [],
+                childAnswers: [],
+                score: 0,
+                timestamp: new Date().toISOString()
+            };
+            this.showAssessmentStep(0);
+        };
+    }
+
+    // Get step name for display
+    getStepName(step) {
+        switch(step) {
+            case 0: return '测评介绍';
+            case 1: return '家长问卷';
+            case 2: return '孩子问卷';  
+            case 3: return '测评结果';
+            default: return '未知步骤';
+        }
     }
 
     setupAssessmentEventListeners() {
@@ -19438,6 +19620,35 @@ class MuseumCheckApp {
 
         // Close modal
         const closeModal = () => {
+            // If in middle of assessment, ask user about saving progress
+            if (this.assessmentState && this.assessmentState.currentStep > 0 && this.assessmentState.currentStep < 3) {
+                const hasAnswers = (this.assessmentState.parentAnswers && this.assessmentState.parentAnswers.length > 0) ||
+                                 (this.assessmentState.childAnswers && this.assessmentState.childAnswers.length > 0);
+                
+                if (hasAnswers) {
+                    const shouldSave = confirm(
+                        '您的测评尚未完成，是否保存当前进度？\n\n' +
+                        '选择"确定"：保存进度，下次可以继续完成\n' +
+                        '选择"取消"：不保存，直接退出'
+                    );
+                    
+                    if (shouldSave) {
+                        // Progress is already auto-saved, just show confirmation
+                        this.trackEvent('assessment_progress_kept', {
+                            'museum_id': this.assessmentState.museumId,
+                            'current_step': this.assessmentState.currentStep
+                        });
+                    } else {
+                        // Clear saved progress
+                        this.clearAssessmentProgress();
+                        this.trackEvent('assessment_progress_discarded', {
+                            'museum_id': this.assessmentState.museumId,
+                            'current_step': this.assessmentState.currentStep
+                        });
+                    }
+                }
+            }
+            
             modal.classList.add('hidden');
             this.assessmentState = null;
         };
@@ -19471,29 +19682,62 @@ class MuseumCheckApp {
         // Show/hide navigation buttons
         prevBtn.style.display = step > 0 ? 'inline-block' : 'none';
         
+        // Auto-scroll to assessment form top for better mobile UX
+        setTimeout(() => {
+            const assessmentModal = document.getElementById('assessmentModal');
+            const assessmentForm = document.getElementById('assessmentForm');
+            if (assessmentModal && assessmentForm) {
+                assessmentForm.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start',
+                    inline: 'nearest'
+                });
+            }
+        }, 100);
+        
         if (step === 0) {
-            // Introduction step
+            // Introduction step - Optimized for mobile UX
             const museum = this.getCurrentMuseum();
             const museumName = museum ? museum.name : '博物馆';
             
             form.innerHTML = `
-                <div class="assessment-intro">
-                    <h3>${museumName} - 亲子关系测评</h3>
-                    <p>通过回顾这次<strong>${museumName}</strong>参观体验，了解您和孩子在此次博物馆之行中的亲子互动表现。</p>
-                    <div class="assessment-disclaimer" style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 15px 0;">
-                        <p><strong>⚠️ 重要说明：</strong></p>
-                        <ul style="text-align: left; margin: 10px 0; padding-left: 20px;">
-                            <li>本测评<strong>仅针对这次博物馆参观</strong>的亲子关系表现</li>
-                            <li>评分结果<strong>仅供参考</strong>，请勿过分看重具体数值</li>
-                            <li>重点是了解优势和改进方向，促进亲子关系发展</li>
-                        </ul>
+                <div class="assessment-intro-optimized">
+                    <div class="assessment-welcome">
+                        <h3>${museumName} - 亲子关系测评</h3>
+                        <p class="assessment-subtitle">通过回顾这次<strong>${museumName}</strong>参观体验，了解亲子互动表现</p>
                     </div>
-                    <p><strong>测评包含两个部分：</strong></p>
-                    <ul style="text-align: left; margin: 20px 0;">
-                        <li>第一部分：家长在此次参观中的表现（5道题）</li>
-                        <li>第二部分：孩子在此次参观中的表现（5道题）</li>
-                    </ul>
-                    <p>整个过程大约需要3分钟，请根据这次参观的实际情况如实回答。</p>
+                    
+                    <div class="assessment-quick-info">
+                        <div class="quick-info-item">
+                            <span class="info-icon">👨‍👩‍👧‍👦</span>
+                            <span class="info-text">家长+孩子 两部分问卷</span>
+                        </div>
+                        <div class="quick-info-item">
+                            <span class="info-icon">⏱️</span>
+                            <span class="info-text">约3分钟完成</span>
+                        </div>
+                        <div class="quick-info-item">
+                            <span class="info-icon">💡</span>
+                            <span class="info-text">获得改善建议</span>
+                        </div>
+                    </div>
+
+                    <div class="assessment-disclaimer-compact">
+                        <p><strong>📋 测评说明</strong></p>
+                        <p class="disclaimer-text">本测评仅针对此次参观，评分供参考，重点关注改进方向</p>
+                    </div>
+                    
+                    <details class="assessment-details" style="margin: 15px 0; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px;">
+                        <summary style="cursor: pointer; font-weight: bold; color: #6c5ce7;">📖 详细说明（点击展开）</summary>
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0;">
+                            <p><strong>测评包含两个部分：</strong></p>
+                            <ul style="text-align: left; margin: 10px 0; padding-left: 20px; font-size: 0.9em;">
+                                <li>第一部分：家长在此次参观中的表现（5道题）</li>
+                                <li>第二部分：孩子在此次参观中的表现（5道题）</li>
+                            </ul>
+                            <p style="font-size: 0.9em; color: #666;">请根据这次参观的实际情况如实回答，结果仅供参考，重点是了解优势和改进方向。</p>
+                        </div>
+                    </details>
                 </div>
             `;
             nextBtn.textContent = '开始测评';
@@ -19510,11 +19754,103 @@ class MuseumCheckApp {
             this.showAssessmentResults();
             nextBtn.textContent = '完成测评';
             nextBtn.onclick = () => {
+                // Clear saved progress since assessment is completed
+                this.clearAssessmentProgress();
                 document.getElementById('assessmentModal').classList.add('hidden');
+                
+                // Track completion
+                this.trackEvent('assessment_completed_and_closed', {
+                    'museum_id': this.assessmentState.museumId,
+                    'score': this.assessmentState.score
+                });
             };
         }
 
         this.assessmentState.currentStep = step;
+        
+        // Auto-scroll to form area for better UX
+        this.scrollToFormArea();
+        
+        // Auto-save progress (except for results step)
+        if (step < 3) {
+            this.autoSaveAssessmentProgress();
+        }
+        
+        // Update step visual states for better accessibility
+        this.updateStepVisualStates(step);
+    }
+    
+    // Auto-scroll to form area on step changes  
+    scrollToFormArea() {
+        const modalContent = document.querySelector('.modal-content.assessment-content');
+        const assessmentForm = document.getElementById('assessmentForm');
+        
+        if (modalContent && assessmentForm) {
+            // For mobile devices, scroll to the form content specifically
+            if (window.innerWidth <= 768) {
+                // On mobile, scroll to top of form to ensure buttons are visible
+                setTimeout(() => {
+                    modalContent.scrollTo({ 
+                        top: 0, 
+                        behavior: 'smooth' 
+                    });
+                }, 100);
+            } else {
+                // On desktop, smooth scroll to top of modal
+                modalContent.scrollTo({ 
+                    top: 0, 
+                    behavior: 'smooth' 
+                });
+            }
+        }
+    }
+    
+    // Auto-save assessment progress
+    autoSaveAssessmentProgress() {
+        if (this.assessmentState) {
+            const progressData = {
+                museumId: this.assessmentState.museumId,
+                currentStep: this.assessmentState.currentStep,
+                parentAnswers: this.assessmentState.parentAnswers || [],
+                childAnswers: this.assessmentState.childAnswers || [],
+                timestamp: this.assessmentState.timestamp
+            };
+            
+            this.saveAssessmentProgress(progressData);
+        }
+    }
+    
+    // Update visual states for better accessibility and UX
+    updateStepVisualStates(currentStep) {
+        const steps = document.querySelectorAll('.step');
+        
+        steps.forEach((stepEl, index) => {
+            // Clear all states first
+            stepEl.classList.remove('active', 'completed', 'disabled', 'current');
+            stepEl.removeAttribute('aria-current');
+            stepEl.removeAttribute('aria-label');
+            
+            if (index < currentStep) {
+                // Completed steps
+                stepEl.classList.add('completed');
+                stepEl.style.cursor = 'default';
+                stepEl.style.opacity = '0.8';
+                stepEl.setAttribute('aria-label', `步骤${index + 1}: ${this.getStepName(index + 1)} - 已完成`);
+            } else if (index === currentStep) {
+                // Current active step
+                stepEl.classList.add('active', 'current');
+                stepEl.style.cursor = 'default';
+                stepEl.style.opacity = '1';
+                stepEl.setAttribute('aria-current', 'step');
+                stepEl.setAttribute('aria-label', `当前步骤: ${this.getStepName(index + 1)}`);
+            } else {
+                // Future/disabled steps
+                stepEl.classList.add('disabled');
+                stepEl.style.cursor = 'not-allowed';
+                stepEl.style.opacity = '0.5';
+                stepEl.setAttribute('aria-label', `步骤${index + 1}: ${this.getStepName(index + 1)} - 未开始`);
+            }
+        });
     }
 
     showParentQuestions() {
@@ -19609,6 +19945,9 @@ class MuseumCheckApp {
                 } else {
                     this.assessmentState.childAnswers[questionIndex] = optionIndex;
                 }
+                
+                // Auto-save progress after each answer
+                this.autoSaveAssessmentProgress();
             });
         });
     }
@@ -20428,6 +20767,7 @@ class MuseumCheckApp {
                 localStorage.removeItem('taskPhotos');
                 localStorage.removeItem('ageGroup');
                 localStorage.removeItem('assessmentResults');
+                localStorage.removeItem('assessmentProgress'); // Clear assessment progress
                 
                 // Clear IndexedDB data if supported
                 if (this.indexedDBSupported) {
@@ -20549,6 +20889,158 @@ class MuseumCheckApp {
             '13-18': '13-18岁 (中学)'
         };
         return labels[ageGroup] || ageGroup;
+    }
+    
+    // Enhanced UX: Smooth scrolling helper functions for better user experience
+    
+    /**
+     * Scroll to the next unchecked item after user completes a checklist item
+     * This guides users to the next task that needs attention
+     */
+    scrollToNextUncheckedItem(currentCheckbox) {
+        const currentItem = currentCheckbox.closest('.checklist-item');
+        const container = currentItem.closest('.checklist-content, #modalContent');
+        
+        if (!container) return;
+        
+        // Find all unchecked items in the current visible tab/container
+        const allCheckboxes = container.querySelectorAll('input[type="checkbox"]');
+        let foundCurrentIndex = -1;
+        
+        // Find the index of current checkbox
+        for (let i = 0; i < allCheckboxes.length; i++) {
+            if (allCheckboxes[i] === currentCheckbox) {
+                foundCurrentIndex = i;
+                break;
+            }
+        }
+        
+        // Look for next unchecked item
+        if (foundCurrentIndex !== -1) {
+            for (let i = foundCurrentIndex + 1; i < allCheckboxes.length; i++) {
+                if (!allCheckboxes[i].checked) {
+                    const nextItem = allCheckboxes[i].closest('.checklist-item');
+                    this.smoothScrollToElement(nextItem, 'center');
+                    
+                    // Add subtle highlight to draw attention
+                    this.highlightElement(nextItem, 2000);
+                    return;
+                }
+            }
+            
+            // If no next unchecked item, scroll to add button or completion message
+            const addButton = container.querySelector('.add-item-btn');
+            if (addButton) {
+                this.smoothScrollToElement(addButton.closest('.add-item-section'), 'center');
+            }
+        }
+    }
+    
+    /**
+     * Scroll to the appropriate content area after tab switch
+     */
+    scrollToTabContent(targetTab) {
+        let targetElement;
+        
+        switch (targetTab) {
+            case 'expert':
+                targetElement = document.getElementById('expertGuidance');
+                break;
+            case 'parent':
+                targetElement = document.getElementById('parentChecklist');
+                break;
+            case 'child':
+                targetElement = document.getElementById('childChecklist');
+                break;
+            case 'share':
+                targetElement = document.getElementById('shareChecklist');
+                break;
+            default:
+                return;
+        }
+        
+        if (targetElement && targetElement.style.display !== 'none') {
+            // Scroll to the content section header
+            const header = targetElement.querySelector('h3, .checklist-header');
+            const scrollTarget = header || targetElement;
+            this.smoothScrollToElement(scrollTarget, 'start');
+        }
+    }
+    
+    /**
+     * Scroll to a newly added checklist item
+     */
+    scrollToNewItem(checklistKey, itemIndex) {
+        // Try to find the newly added item by its index
+        const items = document.querySelectorAll(`[data-checklist-key="${checklistKey}"] .checklist-item`);
+        
+        if (items.length > itemIndex) {
+            const newItem = items[itemIndex];
+            this.smoothScrollToElement(newItem, 'center');
+            
+            // Add celebration highlight for the new item
+            this.highlightElement(newItem, 3000, 'rgba(52, 211, 153, 0.2)'); // Green highlight
+        }
+    }
+    
+    /**
+     * Smooth scroll to any element with customizable positioning
+     */
+    smoothScrollToElement(element, position = 'center', offset = 0) {
+        if (!element) return;
+        
+        const modalContent = document.querySelector('#museumModal .modal-content');
+        if (!modalContent) return;
+        
+        const elementRect = element.getBoundingClientRect();
+        const modalRect = modalContent.getBoundingClientRect();
+        const modalScrollTop = modalContent.scrollTop;
+        
+        let targetScrollTop;
+        
+        switch (position) {
+            case 'start':
+                targetScrollTop = modalScrollTop + (elementRect.top - modalRect.top) - 20 + offset;
+                break;
+            case 'center':
+                targetScrollTop = modalScrollTop + (elementRect.top - modalRect.top) - (modalRect.height / 2) + (elementRect.height / 2) + offset;
+                break;
+            case 'end':
+                targetScrollTop = modalScrollTop + (elementRect.bottom - modalRect.bottom) + 20 + offset;
+                break;
+            default:
+                targetScrollTop = modalScrollTop + (elementRect.top - modalRect.top) + offset;
+        }
+        
+        // Ensure we don't scroll beyond boundaries
+        targetScrollTop = Math.max(0, targetScrollTop);
+        
+        modalContent.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth'
+        });
+    }
+    
+    /**
+     * Add a temporary highlight effect to draw attention to an element
+     */
+    highlightElement(element, duration = 2000, color = 'rgba(59, 130, 246, 0.2)') {
+        if (!element) return;
+        
+        const originalTransition = element.style.transition;
+        const originalBackground = element.style.backgroundColor;
+        
+        // Add highlight
+        element.style.transition = 'background-color 0.3s ease-in-out';
+        element.style.backgroundColor = color;
+        
+        // Remove highlight after duration
+        setTimeout(() => {
+            element.style.backgroundColor = originalBackground;
+            setTimeout(() => {
+                element.style.transition = originalTransition;
+            }, 300);
+        }, duration);
     }
 }
 
