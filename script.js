@@ -16946,22 +16946,13 @@ class MuseumCheckApp {
 
         // Modal close events
         document.addEventListener('click', (e) => {
+            // Close museum modal
             if (e.target.classList.contains('modal') || 
                 e.target.classList.contains('close-button')) {
                 this.museumModalComponent.close();
             }
             
-            // Close assessment history modal
-            if (e.target.classList.contains('modal') && e.target.id === 'assessmentHistoryModal') {
-                this.closeAssessmentHistoryModal();
-            }
-            
-            // Close assessment modal  
-            if (e.target.classList.contains('modal') && e.target.id === 'assessmentModal') {
-                this.closeAssessmentModal();
-            }
-            
-            // Close button for modals
+            // Handle specific modal close buttons
             if (e.target.classList.contains('close')) {
                 const modal = e.target.closest('.modal');
                 if (modal) {
@@ -16972,6 +16963,17 @@ class MuseumCheckApp {
                     } else {
                         this.museumModalComponent.close();
                     }
+                }
+            }
+            
+            // Close modals when clicking on the modal background
+            if (e.target.classList.contains('modal')) {
+                if (e.target.id === 'assessmentHistoryModal') {
+                    this.closeAssessmentHistoryModal();
+                } else if (e.target.id === 'assessmentModal') {
+                    this.closeAssessmentModal();
+                } else {
+                    this.museumModalComponent.close();
                 }
             }
         });
@@ -17002,6 +17004,33 @@ class MuseumCheckApp {
                 this.openAssessmentHistoryModal();
             }
         });
+
+        // Assessment modal events - handled by global click handler
+        // Event listeners for next/previous buttons
+
+        // Keyboard events for modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                // Close any open modals
+                if (!document.getElementById('assessmentHistoryModal').classList.contains('hidden')) {
+                    this.closeAssessmentHistoryModal();
+                }
+                if (!document.getElementById('assessmentModal').classList.contains('hidden')) {
+                    this.closeAssessmentModal();
+                }
+            }
+        });
+
+        // Assessment modal button events
+        const assessmentNextBtn = document.getElementById('assessmentNext');
+        if (assessmentNextBtn) {
+            assessmentNextBtn.addEventListener('click', () => this.handleAssessmentNext());
+        }
+
+        const assessmentPrevBtn = document.getElementById('assessmentPrev');
+        if (assessmentPrevBtn) {
+            assessmentPrevBtn.addEventListener('click', () => this.handleAssessmentPrev());
+        }
 
         // Assessment modal events
         const assessmentModal = document.getElementById('assessmentModal');
