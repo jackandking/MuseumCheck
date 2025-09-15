@@ -1,4 +1,159 @@
 
+// ===== APPLICATION CONSTANTS =====
+// UI Timing Constants
+const UI_CONSTANTS = {
+    ANIMATION: {
+        HIGHLIGHT_DURATION: 2000,           // Duration for element highlighting (ms)
+        TRANSITION_DURATION: 300,           // Standard transition duration (ms)
+        MODAL_OPEN_DELAY: 500,             // Delay before opening modal (ms)
+        NOTIFICATION_DURATION: 2500,        // Default notification display duration (ms)
+        NOTIFICATION_DURATION_LARGE: 3500   // Extended notification duration for large content (ms)
+    },
+    
+    COLORS: {
+        HIGHLIGHT_DEFAULT: 'rgba(59, 130, 246, 0.2)',  // Default highlight color
+        TRANSITION_PROPERTY: 'background-color 0.3s ease-in-out'  // Standard transition
+    }
+};
+
+// DOM Selector Constants for better maintainability
+const DOM_SELECTORS = {
+    AGE_GROUP: {
+        RADIO_BUTTONS: 'input[name="ageGroup"]',
+        CHECKED_RADIO: 'input[name="ageGroup"]:checked',
+        OPTIONS: '.age-option',
+        SELECTED_OPTION: '.age-option.selected'
+    },
+    
+    SEARCH: {
+        INPUT: '#museumSearch',
+        CLEAR_BUTTON: '#clearSearch'
+    },
+    
+    MODALS: {
+        MUSEUM_MODAL: '#museumModal',
+        MUSEUM_MODAL_CLOSE: '#museumModal .close',
+        ACHIEVEMENT_MODAL: '#achievementModal',
+        ACHIEVEMENT_MODAL_CLOSE: '#achievementModal .close',
+        ASSESSMENT_HISTORY_MODAL: '#assessmentHistoryModal',
+        ASSESSMENT_HISTORY_MODAL_CLOSE: '#assessmentHistoryModal .close'
+    },
+    
+    BUTTONS: {
+        ACHIEVEMENT: '#achievementButton',
+        ASSESSMENT_HISTORY: '#assessmentHistoryButton'
+    },
+    
+    ELEMENTS: {
+        NOTIFICATION: '#notification',
+        MUSEUM_GRID: '#museumGrid'
+    }
+};
+
+// Application Configuration Constants
+const APP_CONFIG = {
+    LOCAL_STORAGE_KEYS: {
+        VISITED_MUSEUMS: 'visitedMuseums',
+        MUSEUM_CHECKLISTS: 'museumChecklists',
+        CURRENT_AGE: 'currentAge',
+        ASSESSMENT_HISTORY: 'museumCheckAssessmentHistory',
+        SHARING_STATE: 'museumCheckSharingState'
+    },
+    
+    AGE_GROUPS: ['3-6', '7-12', '13-18'],   // Supported age groups
+    DEFAULT_AGE: '7-12',                    // Default age group for new users
+    
+    SEARCH: {
+        MIN_QUERY_LENGTH: 0,                // Minimum characters to trigger search
+        DEBOUNCE_DELAY: 300                 // Search input debounce delay (ms)
+    }
+};
+
+// ===== UTILITY FUNCTIONS =====
+// Small utility functions for common DOM operations and data handling
+const UtilityFunctions = {
+    // DOM helper functions
+    querySelector: (selector) => document.querySelector(selector),
+    querySelectorAll: (selector) => document.querySelectorAll(selector),
+    getElementById: (id) => document.getElementById(id),
+    
+    // Age group helper functions  
+    getSelectedAgeGroup: () => {
+        const checkedRadio = document.querySelector(DOM_SELECTORS.AGE_GROUP.CHECKED_RADIO);
+        return checkedRadio ? checkedRadio.value : APP_CONFIG.DEFAULT_AGE;
+    },
+    
+    setSelectedAgeGroup: (ageGroup) => {
+        const targetRadio = document.querySelector(`input[name="ageGroup"][value="${ageGroup}"]`);
+        if (targetRadio) {
+            targetRadio.checked = true;
+            // Update visual state for browsers that don't support :has()
+            document.querySelectorAll(DOM_SELECTORS.AGE_GROUP.OPTIONS).forEach(option => {
+                option.classList.remove('selected');
+            });
+            targetRadio.closest('.age-option')?.classList.add('selected');
+        }
+    },
+    
+    // Local storage helper functions
+    getFromStorage: (key, defaultValue = null) => {
+        try {
+            const item = localStorage.getItem(key);
+            return item ? JSON.parse(item) : defaultValue;
+        } catch (error) {
+            console.warn(`Error reading from localStorage key "${key}":`, error);
+            return defaultValue;
+        }
+    },
+    
+    setToStorage: (key, value) => {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+            return true;
+        } catch (error) {
+            console.warn(`Error writing to localStorage key "${key}":`, error);
+            return false;
+        }
+    },
+    
+    // Validation helpers
+    isValidAgeGroup: (ageGroup) => APP_CONFIG.AGE_GROUPS.includes(ageGroup),
+    
+    isValidMuseumId: (museumId, museums) => museums.some(m => m.id === museumId),
+    
+    // String helpers
+    sanitizeString: (str) => str ? str.trim() : '',
+    
+    truncateString: (str, maxLength) => {
+        if (!str || str.length <= maxLength) return str;
+        return str.substring(0, maxLength) + '...';
+    },
+    
+    // Array helpers
+    shuffleArray: (array) => {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    },
+    
+    // Event handling helpers
+    debounce: (func, wait) => {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+};
+
+// ===== EXPERT GUIDANCE SYSTEM =====
 // Enhanced expert guidance system for parent-child interactions based on developmental psychology
 const EXPERT_GUIDANCE = {
     '3-6': {
@@ -16725,16 +16880,16 @@ class MuseumCheckApp {
 
     initAgeSelector() {
         // Set the radio button to match the saved age group
-        const savedAgeRadio = document.querySelector(`input[name="ageGroup"][value="${this.currentAge}"]`);
+        const savedAgeRadio = UtilityFunctions.querySelector(`input[name="ageGroup"][value="${this.currentAge}"]`);
         if (savedAgeRadio) {
             savedAgeRadio.checked = true;
         }
         
         // Set initial selected state for browsers that don't support :has()
-        const checkedRadio = document.querySelector('input[name="ageGroup"]:checked');
+        const checkedRadio = UtilityFunctions.querySelector(DOM_SELECTORS.AGE_GROUP.CHECKED_RADIO);
         if (checkedRadio) {
             // Remove previous selected states
-            document.querySelectorAll('.age-option').forEach(option => {
+            UtilityFunctions.querySelectorAll(DOM_SELECTORS.AGE_GROUP.OPTIONS).forEach(option => {
                 option.classList.remove('selected');
             });
             // Add selected state to the current radio
@@ -16798,7 +16953,7 @@ class MuseumCheckApp {
                 // Open museum modal
                 setTimeout(() => {
                     this.openMuseumModal(museum, checklistType);
-                }, 500); // Small delay to ensure DOM is ready
+                }, UI_CONSTANTS.ANIMATION.MODAL_OPEN_DELAY); // Small delay to ensure DOM is ready
             }
         }
     }
@@ -19262,7 +19417,7 @@ class MuseumCheckApp {
             if (rocket && rocket.parentNode) {
                 rocket.parentNode.removeChild(rocket);
             }
-        }, isLarge ? 3500 : 2500);
+        }, isLarge ? UI_CONSTANTS.ANIMATION.NOTIFICATION_DURATION_LARGE : UI_CONSTANTS.ANIMATION.NOTIFICATION_DURATION);
         
         return rocket;
     }
@@ -20809,7 +20964,7 @@ class MuseumCheckApp {
                     this.smoothScrollToElement(nextItem, 'center');
                     
                     // Add subtle highlight to draw attention
-                    this.highlightElement(nextItem, 2000);
+                    this.highlightElement(nextItem, UI_CONSTANTS.ANIMATION.HIGHLIGHT_DURATION);
                     return;
                 }
             }
@@ -20910,14 +21065,14 @@ class MuseumCheckApp {
     /**
      * Add a temporary highlight effect to draw attention to an element
      */
-    highlightElement(element, duration = 2000, color = 'rgba(59, 130, 246, 0.2)') {
+    highlightElement(element, duration = UI_CONSTANTS.ANIMATION.HIGHLIGHT_DURATION, color = UI_CONSTANTS.COLORS.HIGHLIGHT_DEFAULT) {
         if (!element) return;
         
         const originalTransition = element.style.transition;
         const originalBackground = element.style.backgroundColor;
         
         // Add highlight
-        element.style.transition = 'background-color 0.3s ease-in-out';
+        element.style.transition = UI_CONSTANTS.COLORS.TRANSITION_PROPERTY;
         element.style.backgroundColor = color;
         
         // Remove highlight after duration
@@ -20925,7 +21080,7 @@ class MuseumCheckApp {
             element.style.backgroundColor = originalBackground;
             setTimeout(() => {
                 element.style.transition = originalTransition;
-            }, 300);
+            }, UI_CONSTANTS.ANIMATION.TRANSITION_DURATION);
         }, duration);
     }
 }
