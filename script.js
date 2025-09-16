@@ -1,4 +1,366 @@
 
+// ===== APPLICATION CONSTANTS =====
+// UI Timing Constants
+const UI_CONSTANTS = {
+    ANIMATION: {
+        HIGHLIGHT_DURATION: 2000,           // Duration for element highlighting (ms)
+        TRANSITION_DURATION: 300,           // Standard transition duration (ms)
+        MODAL_OPEN_DELAY: 500,             // Delay before opening modal (ms)
+        NOTIFICATION_DURATION: 2500,        // Default notification display duration (ms)
+        NOTIFICATION_DURATION_LARGE: 3500   // Extended notification duration for large content (ms)
+    },
+    
+    COLORS: {
+        HIGHLIGHT_DEFAULT: 'rgba(59, 130, 246, 0.2)',  // Default highlight color
+        TRANSITION_PROPERTY: 'background-color 0.3s ease-in-out'  // Standard transition
+    }
+};
+
+// DOM Selector Constants for better maintainability
+const DOM_SELECTORS = {
+    AGE_GROUP: {
+        RADIO_BUTTONS: 'input[name="ageGroup"]',
+        CHECKED_RADIO: 'input[name="ageGroup"]:checked',
+        OPTIONS: '.age-option',
+        SELECTED_OPTION: '.age-option.selected'
+    },
+    
+    SEARCH: {
+        INPUT: '#museumSearch',
+        CLEAR_BUTTON: '#clearSearch'
+    },
+    
+    MODALS: {
+        MUSEUM_MODAL: '#museumModal',
+        MUSEUM_MODAL_CLOSE: '#museumModal .close',
+        ACHIEVEMENT_MODAL: '#achievementModal',
+        ACHIEVEMENT_MODAL_CLOSE: '#achievementModal .close',
+        ASSESSMENT_HISTORY_MODAL: '#assessmentHistoryModal',
+        ASSESSMENT_HISTORY_MODAL_CLOSE: '#assessmentHistoryModal .close'
+    },
+    
+    BUTTONS: {
+        ACHIEVEMENT: '#achievementButton',
+        ASSESSMENT_HISTORY: '#assessmentHistoryButton'
+    },
+    
+    ELEMENTS: {
+        NOTIFICATION: '#notification',
+        MUSEUM_GRID: '#museumGrid'
+    }
+};
+
+// Application Configuration Constants
+const APP_CONFIG = {
+    LOCAL_STORAGE_KEYS: {
+        VISITED_MUSEUMS: 'visitedMuseums',
+        MUSEUM_CHECKLISTS: 'museumChecklists',
+        CURRENT_AGE: 'currentAge',
+        ASSESSMENT_HISTORY: 'museumCheckAssessmentHistory',
+        SHARING_STATE: 'museumCheckSharingState'
+    },
+    
+    AGE_GROUPS: ['3-6', '7-12', '13-18'],   // Supported age groups
+    DEFAULT_AGE: '7-12',                    // Default age group for new users
+    
+    SEARCH: {
+        MIN_QUERY_LENGTH: 0,                // Minimum characters to trigger search
+        DEBOUNCE_DELAY: 300                 // Search input debounce delay (ms)
+    }
+};
+
+// ===== UTILITY FUNCTIONS =====
+// Small utility functions for common DOM operations and data handling
+const UtilityFunctions = {
+    // DOM helper functions
+    querySelector: (selector) => document.querySelector(selector),
+    querySelectorAll: (selector) => document.querySelectorAll(selector),
+    getElementById: (id) => document.getElementById(id),
+    
+    // Age group helper functions  
+    getSelectedAgeGroup: () => {
+        const checkedRadio = document.querySelector(DOM_SELECTORS.AGE_GROUP.CHECKED_RADIO);
+        return checkedRadio ? checkedRadio.value : APP_CONFIG.DEFAULT_AGE;
+    },
+    
+    setSelectedAgeGroup: (ageGroup) => {
+        const targetRadio = document.querySelector(`input[name="ageGroup"][value="${ageGroup}"]`);
+        if (targetRadio) {
+            targetRadio.checked = true;
+            // Update visual state for browsers that don't support :has()
+            document.querySelectorAll(DOM_SELECTORS.AGE_GROUP.OPTIONS).forEach(option => {
+                option.classList.remove('selected');
+            });
+            targetRadio.closest('.age-option')?.classList.add('selected');
+        }
+    },
+    
+    // Local storage helper functions
+    getFromStorage: (key, defaultValue = null) => {
+        try {
+            const item = localStorage.getItem(key);
+            return item ? JSON.parse(item) : defaultValue;
+        } catch (error) {
+            console.warn(`Error reading from localStorage key "${key}":`, error);
+            return defaultValue;
+        }
+    },
+    
+    setToStorage: (key, value) => {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+            return true;
+        } catch (error) {
+            console.warn(`Error writing to localStorage key "${key}":`, error);
+            return false;
+        }
+    },
+    
+    // Validation helpers
+    isValidAgeGroup: (ageGroup) => APP_CONFIG.AGE_GROUPS.includes(ageGroup),
+    
+    isValidMuseumId: (museumId, museums) => museums.some(m => m.id === museumId),
+    
+    // String helpers
+    sanitizeString: (str) => str ? str.trim() : '',
+    
+    truncateString: (str, maxLength) => {
+        if (!str || str.length <= maxLength) return str;
+        return str.substring(0, maxLength) + '...';
+    },
+    
+    // Array helpers
+    shuffleArray: (array) => {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    },
+    
+    // Event handling helpers
+    debounce: (func, wait) => {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+};
+
+// ===== DATA VALIDATION MODULE =====
+// Centralized data validation functions for better maintainability
+const DataValidator = {
+    // Museum data validation
+    validateMuseumData: (museums) => {
+        if (!Array.isArray(museums)) {
+            return { isValid: false, errors: ['Museums must be an array'] };
+        }
+        
+        const errors = [];
+        const seenIds = new Set();
+        const seenNames = new Set();
+        
+        museums.forEach((museum, index) => {
+            const prefix = `Museum ${index}: `;
+            
+            // Check required fields
+            if (!museum.id) errors.push(`${prefix}missing id`);
+            if (!museum.name) errors.push(`${prefix}missing name`);
+            if (!museum.location) errors.push(`${prefix}missing location`);
+            
+            // Check for duplicates
+            if (museum.id && seenIds.has(museum.id)) {
+                errors.push(`${prefix}duplicate id "${museum.id}"`);
+            }
+            if (museum.name && seenNames.has(museum.name)) {
+                errors.push(`${prefix}duplicate name "${museum.name}"`);
+            }
+            
+            if (museum.id) seenIds.add(museum.id);
+            if (museum.name) seenNames.add(museum.name);
+            
+            // Validate checklists structure
+            if (museum.checklists) {
+                const checklistErrors = DataValidator.validateChecklistStructure(museum.checklists, prefix);
+                errors.push(...checklistErrors);
+            }
+        });
+        
+        return {
+            isValid: errors.length === 0,
+            errors,
+            stats: {
+                totalCount: museums.length,
+                uniqueIds: seenIds.size,
+                uniqueNames: seenNames.size
+            }
+        };
+    },
+    
+    validateChecklistStructure: (checklists, prefix = '') => {
+        const errors = [];
+        
+        if (!checklists.parent || !checklists.child) {
+            errors.push(`${prefix}missing parent or child checklists`);
+            return errors;
+        }
+        
+        APP_CONFIG.AGE_GROUPS.forEach(age => {
+            if (!checklists.parent[age]) {
+                errors.push(`${prefix}missing parent checklist for age ${age}`);
+            }
+            if (!checklists.child[age]) {
+                errors.push(`${prefix}missing child checklist for age ${age}`);
+            }
+            
+            if (checklists.parent[age] && !Array.isArray(checklists.parent[age])) {
+                errors.push(`${prefix}parent checklist for age ${age} must be an array`);
+            }
+            if (checklists.child[age] && !Array.isArray(checklists.child[age])) {
+                errors.push(`${prefix}child checklist for age ${age} must be an array`);
+            }
+        });
+        
+        return errors;
+    },
+    
+    // Local storage data validation
+    validateStorageData: (key, data, expectedType = 'object') => {
+        try {
+            if (expectedType === 'array' && !Array.isArray(data)) {
+                return { isValid: false, error: `${key} should be an array` };
+            }
+            if (expectedType === 'object' && (typeof data !== 'object' || data === null)) {
+                return { isValid: false, error: `${key} should be an object` };
+            }
+            return { isValid: true };
+        } catch (error) {
+            return { isValid: false, error: `${key} validation failed: ${error.message}` };
+        }
+    },
+    
+    // Age group validation
+    validateAgeGroup: (ageGroup) => {
+        return {
+            isValid: APP_CONFIG.AGE_GROUPS.includes(ageGroup),
+            error: APP_CONFIG.AGE_GROUPS.includes(ageGroup) ? null : 
+                  `Invalid age group: ${ageGroup}. Must be one of: ${APP_CONFIG.AGE_GROUPS.join(', ')}`
+        };
+    }
+};
+
+// ===== STORAGE MANAGER MODULE =====  
+// Centralized local storage management with error handling and validation
+const StorageManager = {
+    // Enhanced storage operations with validation
+    safeGet: (key, defaultValue = null, expectedType = 'object') => {
+        try {
+            const item = localStorage.getItem(key);
+            if (!item) return defaultValue;
+            
+            const parsed = JSON.parse(item);
+            const validation = DataValidator.validateStorageData(key, parsed, expectedType);
+            
+            if (!validation.isValid) {
+                console.warn(`Storage validation failed for ${key}:`, validation.error);
+                return defaultValue;
+            }
+            
+            return parsed;
+        } catch (error) {
+            console.warn(`Error reading from localStorage key "${key}":`, error);
+            return defaultValue;
+        }
+    },
+    
+    safeSet: (key, value) => {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+            return { success: true };
+        } catch (error) {
+            if (error.name === 'QuotaExceededError') {
+                return { 
+                    success: false, 
+                    error: 'Storage quota exceeded', 
+                    shouldClearOldData: true 
+                };
+            }
+            console.warn(`Error writing to localStorage key "${key}":`, error);
+            return { success: false, error: error.message };
+        }
+    },
+    
+    // Specialized getters for app data
+    getVisitedMuseums: () => {
+        return StorageManager.safeGet(APP_CONFIG.LOCAL_STORAGE_KEYS.VISITED_MUSEUMS, [], 'array');
+    },
+    
+    getMuseumChecklists: () => {
+        return StorageManager.safeGet(APP_CONFIG.LOCAL_STORAGE_KEYS.MUSEUM_CHECKLISTS, {}, 'object');
+    },
+    
+    getCurrentAge: () => {
+        const age = StorageManager.safeGet(APP_CONFIG.LOCAL_STORAGE_KEYS.CURRENT_AGE, APP_CONFIG.DEFAULT_AGE, 'string');
+        const validation = DataValidator.validateAgeGroup(age);
+        return validation.isValid ? age : APP_CONFIG.DEFAULT_AGE;
+    },
+    
+    getAssessmentHistory: () => {
+        return StorageManager.safeGet(APP_CONFIG.LOCAL_STORAGE_KEYS.ASSESSMENT_HISTORY, [], 'array');
+    },
+    
+    getSharingState: () => {
+        return StorageManager.safeGet(APP_CONFIG.LOCAL_STORAGE_KEYS.SHARING_STATE, {}, 'object');
+    },
+    
+    // Batch operations for efficiency
+    batchSet: (operations) => {
+        const results = [];
+        for (const { key, value } of operations) {
+            results.push({ key, ...StorageManager.safeSet(key, value) });
+        }
+        return results;
+    },
+    
+    // Storage cleanup utilities
+    getStorageUsage: () => {
+        let totalSize = 0;
+        const details = {};
+        
+        Object.values(APP_CONFIG.LOCAL_STORAGE_KEYS).forEach(key => {
+            const item = localStorage.getItem(key);
+            const size = item ? item.length : 0;
+            details[key] = size;
+            totalSize += size;
+        });
+        
+        return { totalSize, details };
+    },
+    
+    clearExpiredData: (maxAge = 90 * 24 * 60 * 60 * 1000) => { // 90 days default
+        const now = Date.now();
+        const assessmentHistory = StorageManager.getAssessmentHistory();
+        
+        const filteredHistory = assessmentHistory.filter(entry => 
+            entry.timestamp && (now - entry.timestamp) < maxAge
+        );
+        
+        if (filteredHistory.length !== assessmentHistory.length) {
+            StorageManager.safeSet(APP_CONFIG.LOCAL_STORAGE_KEYS.ASSESSMENT_HISTORY, filteredHistory);
+            return { cleaned: true, removed: assessmentHistory.length - filteredHistory.length };
+        }
+        
+        return { cleaned: false, removed: 0 };
+    }
+};
+
+// ===== EXPERT GUIDANCE SYSTEM =====
 // Enhanced expert guidance system for parent-child interactions based on developmental psychology
 const EXPERT_GUIDANCE = {
     '3-6': {
@@ -359,6 +721,171 @@ const MULTIPLE_INTELLIGENCE_STRATEGIES = {
         name: '自然智能',
         description: '通过观察、分类、保护意识培养',
         activities: ['材质分类识别', '环境观察', '生态思考', '保护意识培养']
+    }
+};
+
+// ===== UI MANAGEMENT MODULE =====
+// Centralized UI operations and DOM manipulation functions
+const UIManager = {
+    // Modal management
+    showModal: (modalId) => {
+        const modal = UtilityFunctions.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'block';
+            // Prevent body scroll when modal is open
+            document.body.style.overflow = 'hidden';
+        }
+    },
+    
+    hideModal: (modalId) => {
+        const modal = UtilityFunctions.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            // Restore body scroll
+            document.body.style.overflow = '';
+        }
+    },
+    
+    // Notification system
+    showNotification: (message, duration = UI_CONSTANTS.ANIMATION.NOTIFICATION_DURATION, type = 'info') => {
+        const notification = UtilityFunctions.getElementById('notification');
+        if (!notification) return;
+        
+        notification.textContent = message;
+        notification.className = `notification show ${type}`;
+        notification.style.display = 'block';
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, UI_CONSTANTS.ANIMATION.TRANSITION_DURATION);
+        }, duration);
+    },
+    
+    // Element visibility management
+    showElement: (element) => {
+        if (element) {
+            element.style.display = 'block';
+            element.classList.remove('hidden');
+        }
+    },
+    
+    hideElement: (element) => {
+        if (element) {
+            element.style.display = 'none';
+            element.classList.add('hidden');
+        }
+    },
+    
+    toggleElement: (element) => {
+        if (element) {
+            const isHidden = element.classList.contains('hidden') || element.style.display === 'none';
+            if (isHidden) {
+                UIManager.showElement(element);
+            } else {
+                UIManager.hideElement(element);
+            }
+        }
+    },
+    
+    // Form management
+    clearForm: (formElement) => {
+        if (formElement) {
+            const inputs = formElement.querySelectorAll('input, textarea, select');
+            inputs.forEach(input => {
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    input.checked = false;
+                } else {
+                    input.value = '';
+                }
+            });
+        }
+    },
+    
+    // Loading states
+    setLoadingState: (element, isLoading = true, loadingText = '加载中...') => {
+        if (!element) return;
+        
+        if (isLoading) {
+            element.dataset.originalText = element.textContent;
+            element.textContent = loadingText;
+            element.disabled = true;
+            element.classList.add('loading');
+        } else {
+            element.textContent = element.dataset.originalText || element.textContent;
+            element.disabled = false;
+            element.classList.remove('loading');
+            delete element.dataset.originalText;
+        }
+    },
+    
+    // Highlighting and animations
+    highlightElement: (element, duration = UI_CONSTANTS.ANIMATION.HIGHLIGHT_DURATION) => {
+        if (!element) return;
+        
+        const originalBackground = element.style.backgroundColor;
+        const originalTransition = element.style.transition;
+        
+        element.style.transition = UI_CONSTANTS.COLORS.TRANSITION_PROPERTY;
+        element.style.backgroundColor = UI_CONSTANTS.COLORS.HIGHLIGHT_DEFAULT;
+        
+        setTimeout(() => {
+            element.style.backgroundColor = originalBackground;
+            setTimeout(() => {
+                element.style.transition = originalTransition;
+            }, UI_CONSTANTS.ANIMATION.TRANSITION_DURATION);
+        }, duration);
+    },
+    
+    // Text utilities
+    updateCounter: (element, count, total = null, formatFn = null) => {
+        if (!element) return;
+        
+        let text;
+        if (formatFn && typeof formatFn === 'function') {
+            text = formatFn(count, total);
+        } else if (total !== null) {
+            const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+            text = `${count}/${total} (${percentage}%)`;
+        } else {
+            text = count.toString();
+        }
+        
+        element.textContent = text;
+    },
+    
+    // Responsive utilities
+    isMobileView: () => window.innerWidth <= 768,
+    
+    addResponsiveClass: (element, mobileClass, desktopClass) => {
+        if (!element) return;
+        
+        const removeClass = UIManager.isMobileView() ? desktopClass : mobileClass;
+        const addClass = UIManager.isMobileView() ? mobileClass : desktopClass;
+        
+        if (removeClass) element.classList.remove(removeClass);
+        if (addClass) element.classList.add(addClass);
+    },
+    
+    // Scroll utilities
+    scrollToTop: (smooth = true) => {
+        window.scrollTo({
+            top: 0,
+            behavior: smooth ? 'smooth' : 'auto'
+        });
+    },
+    
+    scrollToElement: (element, offset = 0, smooth = true) => {
+        if (!element) return;
+        
+        const elementTop = element.getBoundingClientRect().top + window.pageYOffset;
+        window.scrollTo({
+            top: elementTop - offset,
+            behavior: smooth ? 'smooth' : 'auto'
+        });
     }
 };
 
@@ -16709,6 +17236,1854 @@ const MUSEUMS = [
 // Single source of truth for museum count - automatically calculated
 const MUSEUM_COUNT = MUSEUMS.length;
 
+// ===== ASSESSMENT MANAGER MODULE =====
+// AssessmentManager - Centralized parent-child assessment operations
+class AssessmentManager {
+    constructor(app, analyticsManager) {
+        this.app = app;
+        this.analyticsManager = analyticsManager;
+        this.currentAssessment = null;
+        this.assessmentHistory = [];
+        this.loadAssessmentHistory();
+    }
+    
+    loadAssessmentHistory() {
+        try {
+            const stored = localStorage.getItem('assessment_history');
+            this.assessmentHistory = stored ? JSON.parse(stored) : [];
+        } catch (error) {
+            console.warn('Failed to load assessment history:', error);
+            this.assessmentHistory = [];
+        }
+    }
+    
+    saveAssessmentHistory() {
+        try {
+            localStorage.setItem('assessment_history', JSON.stringify(this.assessmentHistory));
+        } catch (error) {
+            console.warn('Failed to save assessment history:', error);
+        }
+    }
+    
+    startAssessment(museumId, options = {}) {
+        const museum = MUSEUMS.find(m => m.id === museumId);
+        if (!museum) {
+            throw new Error(`Museum with ID ${museumId} not found`);
+        }
+        
+        const {
+            parentAge = 35,
+            childAge = 8,
+            assessmentType = 'full', // 'full', 'quick', 'follow-up'
+            resumeFrom = null
+        } = options;
+        
+        this.currentAssessment = {
+            id: Date.now().toString(),
+            museumId: museumId,
+            museumName: museum.name,
+            startTime: new Date().toISOString(),
+            parentAge: parentAge,
+            childAge: childAge,
+            assessmentType: assessmentType,
+            status: 'in_progress',
+            currentStep: resumeFrom || 1,
+            steps: this.generateAssessmentSteps(assessmentType),
+            responses: {
+                parent: {},
+                child: {},
+                observation: {}
+            },
+            scores: {
+                communication: 0,
+                engagement: 0,
+                learning: 0,
+                bonding: 0,
+                overall: 0
+            }
+        };
+        
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent('assessment_started', {
+                museum_id: museumId,
+                assessment_type: assessmentType,
+                parent_age: parentAge,
+                child_age: childAge,
+                resume_from: resumeFrom
+            });
+        }
+        
+        return this.currentAssessment;
+    }
+    
+    generateAssessmentSteps(assessmentType) {
+        const baseSteps = [
+            {
+                id: 1,
+                title: '参观前准备',
+                type: 'parent',
+                questions: [
+                    '您对这次博物馆之行的期待是什么？',
+                    '您希望孩子从这次参观中学到什么？',
+                    '您提前做了哪些准备工作？'
+                ]
+            },
+            {
+                id: 2,
+                title: '孩子期待调查',
+                type: 'child',
+                questions: [
+                    '你对去博物馆有什么感觉？',
+                    '你最想看到什么？',
+                    '你有什么问题想要了解吗？'
+                ]
+            },
+            {
+                id: 3,
+                title: '参观过程观察',
+                type: 'observation',
+                questions: [
+                    '亲子互动频率如何？',
+                    '孩子的参与度和兴趣程度',
+                    '家长的引导方式和效果',
+                    '遇到的挑战和解决方式'
+                ]
+            },
+            {
+                id: 4,
+                title: '参观后反思',
+                type: 'parent',
+                questions: [
+                    '这次参观达到了您的期望吗？',
+                    '您觉得孩子有什么收获？',
+                    '有什么可以改进的地方？'
+                ]
+            },
+            {
+                id: 5,
+                title: '孩子感受分享',
+                type: 'child',
+                questions: [
+                    '你最喜欢的展品是什么？',
+                    '你学到了什么新知识？',
+                    '下次还想来博物馆吗？'
+                ]
+            },
+            {
+                id: 6,
+                title: '关系评估',
+                type: 'relationship',
+                questions: [
+                    '这次活动增进了您与孩子的关系吗？',
+                    '您们在参观过程中的沟通效果如何？',
+                    '您对未来的亲子文化活动有什么计划？'
+                ]
+            }
+        ];
+        
+        if (assessmentType === 'quick') {
+            return baseSteps.slice(0, 4); // 只保留前4步
+        } else if (assessmentType === 'follow-up') {
+            return baseSteps.slice(3); // 从第4步开始
+        }
+        
+        return baseSteps;
+    }
+    
+    recordResponse(stepId, questionIndex, response, responseType = 'text') {
+        if (!this.currentAssessment) {
+            throw new Error('No active assessment found');
+        }
+        
+        const step = this.currentAssessment.steps.find(s => s.id === stepId);
+        if (!step) {
+            throw new Error(`Step ${stepId} not found`);
+        }
+        
+        if (!this.currentAssessment.responses[step.type]) {
+            this.currentAssessment.responses[step.type] = {};
+        }
+        
+        if (!this.currentAssessment.responses[step.type][stepId]) {
+            this.currentAssessment.responses[step.type][stepId] = {};
+        }
+        
+        this.currentAssessment.responses[step.type][stepId][questionIndex] = {
+            response: response,
+            type: responseType,
+            timestamp: new Date().toISOString()
+        };
+        
+        // Auto-save progress
+        this.saveAssessmentProgress();
+    }
+    
+    saveAssessmentProgress() {
+        if (!this.currentAssessment) return;
+        
+        try {
+            localStorage.setItem('current_assessment_progress', JSON.stringify(this.currentAssessment));
+        } catch (error) {
+            console.warn('Failed to save assessment progress:', error);
+        }
+    }
+    
+    loadAssessmentProgress() {
+        try {
+            const stored = localStorage.getItem('current_assessment_progress');
+            if (stored) {
+                this.currentAssessment = JSON.parse(stored);
+                return this.currentAssessment;
+            }
+        } catch (error) {
+            console.warn('Failed to load assessment progress:', error);
+        }
+        return null;
+    }
+    
+    clearAssessmentProgress() {
+        try {
+            localStorage.removeItem('current_assessment_progress');
+        } catch (error) {
+            console.warn('Failed to clear assessment progress:', error);
+        }
+    }
+    
+    calculateScores() {
+        if (!this.currentAssessment) {
+            throw new Error('No active assessment found');
+        }
+        
+        const responses = this.currentAssessment.responses;
+        const scores = {
+            communication: 0,
+            engagement: 0,
+            learning: 0,
+            bonding: 0,
+            overall: 0
+        };
+        
+        // Basic scoring algorithm - can be enhanced with ML/AI
+        let totalResponses = 0;
+        let positiveResponses = 0;
+        
+        // Count positive indicators in responses
+        Object.values(responses).forEach(typeResponses => {
+            Object.values(typeResponses).forEach(stepResponses => {
+                Object.values(stepResponses).forEach(response => {
+                    totalResponses++;
+                    
+                    // Simple sentiment analysis (could be enhanced)
+                    const text = response.response.toLowerCase();
+                    const positiveWords = ['好', '很好', '非常', '喜欢', '开心', '有趣', '学到', '收获', '满意'];
+                    const hasPositive = positiveWords.some(word => text.includes(word));
+                    
+                    if (hasPositive) {
+                        positiveResponses++;
+                    }
+                });
+            });
+        });
+        
+        // Calculate base score
+        const baseScore = totalResponses > 0 ? (positiveResponses / totalResponses) * 100 : 50;
+        
+        // Apply scores to different categories
+        scores.communication = Math.min(100, baseScore + Math.random() * 10 - 5);
+        scores.engagement = Math.min(100, baseScore + Math.random() * 10 - 5);
+        scores.learning = Math.min(100, baseScore + Math.random() * 10 - 5);
+        scores.bonding = Math.min(100, baseScore + Math.random() * 10 - 5);
+        scores.overall = (scores.communication + scores.engagement + scores.learning + scores.bonding) / 4;
+        
+        // Round scores
+        Object.keys(scores).forEach(key => {
+            scores[key] = Math.round(scores[key] * 10) / 10;
+        });
+        
+        this.currentAssessment.scores = scores;
+        return scores;
+    }
+    
+    completeAssessment() {
+        if (!this.currentAssessment) {
+            throw new Error('No active assessment found');
+        }
+        
+        // Calculate final scores
+        const scores = this.calculateScores();
+        
+        // Finalize assessment
+        this.currentAssessment.status = 'completed';
+        this.currentAssessment.endTime = new Date().toISOString();
+        this.currentAssessment.duration = new Date(this.currentAssessment.endTime).getTime() - 
+                                         new Date(this.currentAssessment.startTime).getTime();
+        
+        // Add to history
+        this.assessmentHistory.push({ ...this.currentAssessment });
+        this.saveAssessmentHistory();
+        
+        // Clear progress
+        this.clearAssessmentProgress();
+        
+        // Track completion
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent('assessment_completed', {
+                museum_id: this.currentAssessment.museumId,
+                assessment_type: this.currentAssessment.assessmentType,
+                duration: this.currentAssessment.duration,
+                overall_score: scores.overall,
+                communication_score: scores.communication,
+                engagement_score: scores.engagement,
+                learning_score: scores.learning,
+                bonding_score: scores.bonding
+            });
+        }
+        
+        const completedAssessment = { ...this.currentAssessment };
+        this.currentAssessment = null;
+        
+        return completedAssessment;
+    }
+    
+    generateRecommendations(assessment) {
+        const scores = assessment.scores;
+        const recommendations = [];
+        
+        if (scores.communication < 70) {
+            recommendations.push({
+                category: 'communication',
+                title: '加强亲子沟通',
+                suggestions: [
+                    '参观时多问开放性问题，如"你觉得这个展品怎么样？"',
+                    '鼓励孩子表达自己的想法和感受',
+                    '认真倾听孩子的问题，及时给予回应'
+                ]
+            });
+        }
+        
+        if (scores.engagement < 70) {
+            recommendations.push({
+                category: 'engagement',
+                title: '提升孩子参与度',
+                suggestions: [
+                    '选择孩子感兴趣的展区先参观',
+                    '使用互动式讲解方式，让孩子参与其中',
+                    '适当安排休息时间，避免疲劳'
+                ]
+            });
+        }
+        
+        if (scores.learning < 70) {
+            recommendations.push({
+                category: 'learning',
+                title: '增强学习效果',
+                suggestions: [
+                    '参观前做适当的知识准备',
+                    '参观后进行总结和分享',
+                    '将博物馆知识与日常生活联系起来'
+                ]
+            });
+        }
+        
+        if (scores.bonding < 70) {
+            recommendations.push({
+                category: 'bonding',
+                title: '深化亲子关系',
+                suggestions: [
+                    '创造更多互动机会，如一起完成任务',
+                    '分享自己的感受和经历',
+                    '制定下次参观的计划'
+                ]
+            });
+        }
+        
+        return recommendations;
+    }
+    
+    getAssessmentHistory(limit = null) {
+        const history = [...this.assessmentHistory].reverse(); // 最新的在前
+        return limit ? history.slice(0, limit) : history;
+    }
+    
+    getAssessmentById(assessmentId) {
+        return this.assessmentHistory.find(a => a.id === assessmentId);
+    }
+    
+    exportAssessmentData(assessmentId = null) {
+        if (assessmentId) {
+            const assessment = this.getAssessmentById(assessmentId);
+            return assessment ? {
+                export_date: new Date().toISOString(),
+                assessment: assessment,
+                recommendations: this.generateRecommendations(assessment)
+            } : null;
+        }
+        
+        return {
+            export_date: new Date().toISOString(),
+            total_assessments: this.assessmentHistory.length,
+            assessments: this.assessmentHistory.map(a => ({
+                ...a,
+                recommendations: this.generateRecommendations(a)
+            }))
+        };
+    }
+    
+    getAssessmentStats() {
+        if (this.assessmentHistory.length === 0) {
+            return {
+                total: 0,
+                averageScores: { overall: 0, communication: 0, engagement: 0, learning: 0, bonding: 0 },
+                mostAssessedMuseum: null,
+                assessmentFrequency: 0
+            };
+        }
+        
+        const totalAssessments = this.assessmentHistory.length;
+        const averageScores = {
+            overall: 0,
+            communication: 0,
+            engagement: 0,
+            learning: 0,
+            bonding: 0
+        };
+        
+        // Calculate averages
+        this.assessmentHistory.forEach(assessment => {
+            Object.keys(averageScores).forEach(key => {
+                averageScores[key] += assessment.scores[key];
+            });
+        });
+        
+        Object.keys(averageScores).forEach(key => {
+            averageScores[key] = Math.round((averageScores[key] / totalAssessments) * 10) / 10;
+        });
+        
+        // Find most assessed museum
+        const museumCounts = {};
+        this.assessmentHistory.forEach(assessment => {
+            museumCounts[assessment.museumId] = (museumCounts[assessment.museumId] || 0) + 1;
+        });
+        
+        const mostAssessedMuseumId = Object.keys(museumCounts).reduce((a, b) => 
+            museumCounts[a] > museumCounts[b] ? a : b
+        );
+        
+        const mostAssessedMuseum = MUSEUMS.find(m => m.id === mostAssessedMuseumId);
+        
+        return {
+            total: totalAssessments,
+            averageScores: averageScores,
+            mostAssessedMuseum: mostAssessedMuseum,
+            assessmentFrequency: totalAssessments
+        };
+    }
+}
+
+// ===== MUSEUM MANAGER MODULE =====
+// MuseumManager - Centralized museum check-in and management operations
+class MuseumManager {
+    constructor(app, analyticsManager) {
+        this.app = app;
+        this.analyticsManager = analyticsManager;
+        this.visitCache = new Set();
+        this.initializeCache();
+    }
+    
+    initializeCache() {
+        const visitedMuseums = this.app.loadVisitedMuseums();
+        this.visitCache = new Set(visitedMuseums);
+    }
+    
+    checkInMuseum(museumId) {
+        const museum = this.getMuseumById(museumId);
+        if (!museum) {
+            throw new Error(`Museum with ID ${museumId} not found`);
+        }
+        
+        const wasAlreadyVisited = this.isMuseumVisited(museumId);
+        
+        if (!wasAlreadyVisited) {
+            this.visitCache.add(museumId);
+            const visitedArray = Array.from(this.visitCache);
+            this.app.saveVisitedMuseums(visitedArray);
+            
+            // Track analytics
+            if (this.analyticsManager) {
+                this.analyticsManager.trackEvent('museum_checked_in', {
+                    museum_id: museumId,
+                    museum_name: museum.name,
+                    museum_location: museum.location,
+                    total_visited: visitedArray.length,
+                    visit_date: new Date().toISOString()
+                });
+            }
+            
+            return {
+                success: true,
+                wasNew: true,
+                totalVisited: visitedArray.length,
+                museum: museum
+            };
+        }
+        
+        return {
+            success: true,
+            wasNew: false,
+            totalVisited: this.visitCache.size,
+            museum: museum
+        };
+    }
+    
+    checkOutMuseum(museumId) {
+        const museum = this.getMuseumById(museumId);
+        if (!museum) {
+            throw new Error(`Museum with ID ${museumId} not found`);
+        }
+        
+        const wasVisited = this.isMuseumVisited(museumId);
+        
+        if (wasVisited) {
+            this.visitCache.delete(museumId);
+            const visitedArray = Array.from(this.visitCache);
+            this.app.saveVisitedMuseums(visitedArray);
+            
+            // Track analytics
+            if (this.analyticsManager) {
+                this.analyticsManager.trackEvent('museum_checked_out', {
+                    museum_id: museumId,
+                    museum_name: museum.name,
+                    total_visited: visitedArray.length,
+                    checkout_date: new Date().toISOString()
+                });
+            }
+            
+            return {
+                success: true,
+                wasVisited: true,
+                totalVisited: visitedArray.length,
+                museum: museum
+            };
+        }
+        
+        return {
+            success: true,
+            wasVisited: false,
+            totalVisited: this.visitCache.size,
+            museum: museum
+        };
+    }
+    
+    isMuseumVisited(museumId) {
+        return this.visitCache.has(museumId);
+    }
+    
+    getMuseumById(museumId) {
+        return MUSEUMS.find(museum => museum.id === museumId);
+    }
+    
+    getVisitedMuseums() {
+        return Array.from(this.visitCache).map(id => this.getMuseumById(id)).filter(Boolean);
+    }
+    
+    getUnvisitedMuseums() {
+        return MUSEUMS.filter(museum => !this.isMuseumVisited(museum.id));
+    }
+    
+    getVisitStats() {
+        const totalMuseums = MUSEUMS.length;
+        const visitedCount = this.visitCache.size;
+        const unvisitedCount = totalMuseums - visitedCount;
+        const completionPercentage = totalMuseums > 0 ? Math.round((visitedCount / totalMuseums) * 100 * 10) / 10 : 0;
+        
+        return {
+            total: totalMuseums,
+            visited: visitedCount,
+            unvisited: unvisitedCount,
+            completionPercentage
+        };
+    }
+    
+    searchMuseums(query, options = {}) {
+        const {
+            includeVisited = true,
+            includeUnvisited = true,
+            filterByLocation = null,
+            filterByTags = [],
+            sortBy = 'name' // 'name', 'location', 'visited'
+        } = options;
+        
+        let results = MUSEUMS;
+        
+        // Filter by visit status
+        if (!includeVisited || !includeUnvisited) {
+            results = results.filter(museum => {
+                const isVisited = this.isMuseumVisited(museum.id);
+                return (includeVisited && isVisited) || (includeUnvisited && !isVisited);
+            });
+        }
+        
+        // Filter by location
+        if (filterByLocation) {
+            results = results.filter(museum => 
+                museum.location.toLowerCase().includes(filterByLocation.toLowerCase())
+            );
+        }
+        
+        // Filter by tags
+        if (filterByTags.length > 0) {
+            results = results.filter(museum => 
+                museum.tags && museum.tags.some(tag => 
+                    filterByTags.some(filterTag => 
+                        tag.toLowerCase().includes(filterTag.toLowerCase())
+                    )
+                )
+            );
+        }
+        
+        // Text search
+        if (query && query.trim()) {
+            const searchTerm = query.toLowerCase().trim();
+            results = results.filter(museum => 
+                museum.name.toLowerCase().includes(searchTerm) ||
+                museum.location.toLowerCase().includes(searchTerm) ||
+                museum.description.toLowerCase().includes(searchTerm) ||
+                (museum.tags && museum.tags.some(tag => 
+                    tag.toLowerCase().includes(searchTerm)
+                ))
+            );
+        }
+        
+        // Sort results
+        results.sort((a, b) => {
+            switch (sortBy) {
+                case 'location':
+                    return a.location.localeCompare(b.location, 'zh-CN');
+                case 'visited':
+                    const aVisited = this.isMuseumVisited(a.id) ? 1 : 0;
+                    const bVisited = this.isMuseumVisited(b.id) ? 1 : 0;
+                    return bVisited - aVisited; // Visited first
+                case 'name':
+                default:
+                    return a.name.localeCompare(b.name, 'zh-CN');
+            }
+        });
+        
+        return results;
+    }
+    
+    getRecommendations(currentMuseumId = null, count = 5) {
+        const visitedMuseums = this.getVisitedMuseums();
+        const unvisitedMuseums = this.getUnvisitedMuseums();
+        
+        if (unvisitedMuseums.length === 0) {
+            return [];
+        }
+        
+        let recommendations = [];
+        
+        if (visitedMuseums.length > 0) {
+            // Get recommendations based on visited museums
+            const visitedLocations = [...new Set(visitedMuseums.map(m => m.location))];
+            const visitedTags = [...new Set(visitedMuseums.flatMap(m => m.tags || []))];
+            
+            // Score unvisited museums based on similarity
+            const scoredMuseums = unvisitedMuseums.map(museum => {
+                let score = 0;
+                
+                // Location similarity
+                if (visitedLocations.includes(museum.location)) {
+                    score += 3;
+                }
+                
+                // Tag similarity
+                const commonTags = (museum.tags || []).filter(tag => visitedTags.includes(tag));
+                score += commonTags.length * 2;
+                
+                // Exclude current museum from recommendations
+                if (currentMuseumId === museum.id) {
+                    score -= 10;
+                }
+                
+                return { ...museum, score };
+            });
+            
+            recommendations = scoredMuseums
+                .sort((a, b) => b.score - a.score)
+                .slice(0, count);
+        } else {
+            // For new users, recommend popular/famous museums
+            const famousMuseumIds = ['forbidden-city', 'national-museum', 'shanghai-museum', 'terracotta-warriors'];
+            const famousMuseums = famousMuseumIds
+                .map(id => unvisitedMuseums.find(m => m.id === id))
+                .filter(Boolean);
+            
+            recommendations = [
+                ...famousMuseums,
+                ...unvisitedMuseums.filter(m => !famousMuseumIds.includes(m.id))
+            ].slice(0, count);
+        }
+        
+        return recommendations;
+    }
+    
+    exportVisitData() {
+        const stats = this.getVisitStats();
+        const visitedMuseums = this.getVisitedMuseums();
+        
+        return {
+            export_date: new Date().toISOString(),
+            stats: stats,
+            visited_museums: visitedMuseums.map(museum => ({
+                id: museum.id,
+                name: museum.name,
+                location: museum.location,
+                tags: museum.tags
+            })),
+            recommendations: this.getRecommendations(null, 10)
+        };
+    }
+    
+    clearAllVisits() {
+        this.visitCache.clear();
+        this.app.saveVisitedMuseums([]);
+        
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent('all_visits_cleared', {
+                timestamp: new Date().toISOString()
+            });
+        }
+    }
+    
+    importVisitData(visitIds) {
+        if (!Array.isArray(visitIds)) {
+            throw new Error('Visit data must be an array of museum IDs');
+        }
+        
+        // Validate all museum IDs exist
+        const validIds = visitIds.filter(id => this.getMuseumById(id) !== null);
+        
+        this.visitCache = new Set(validIds);
+        this.app.saveVisitedMuseums(Array.from(this.visitCache));
+        
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent('visit_data_imported', {
+                total_imported: validIds.length,
+                invalid_ids: visitIds.length - validIds.length,
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        return {
+            imported: validIds.length,
+            invalid: visitIds.length - validIds.length,
+            total: this.visitCache.size
+        };
+    }
+}
+
+// ===== CHECKLIST MANAGER MODULE =====
+// ChecklistManager - Centralized checklist operations and management
+class ChecklistManager {
+    constructor(app, analyticsManager) {
+        this.app = app;
+        this.analyticsManager = analyticsManager;
+        this.checklistCache = new Map();
+        this.completionStats = new Map();
+    }
+    
+    getMuseumChecklist(museumId, checklistType, ageGroup) {
+        const museum = MUSEUMS.find(m => m.id === museumId);
+        if (!museum || !museum.checklists) {
+            return [];
+        }
+        
+        const typeChecklists = museum.checklists[checklistType];
+        if (!typeChecklists) {
+            return [];
+        }
+        
+        return typeChecklists[ageGroup] || [];
+    }
+    
+    loadChecklistProgress(museumId, checklistType, ageGroup) {
+        const key = `${museumId}-${checklistType}-${ageGroup}`;
+        const allChecklists = this.app.loadMuseumChecklists();
+        return allChecklists[key] || [];
+    }
+    
+    saveChecklistProgress(museumId, checklistType, ageGroup, progress) {
+        const key = `${museumId}-${checklistType}-${ageGroup}`;
+        const allChecklists = this.app.loadMuseumChecklists();
+        allChecklists[key] = progress;
+        
+        // Update cache
+        this.checklistCache.set(key, progress);
+        
+        // Save to storage
+        this.app.saveMuseumChecklists(allChecklists);
+        
+        // Track analytics
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent('checklist_progress_saved', {
+                museum_id: museumId,
+                checklist_type: checklistType,
+                age_group: ageGroup,
+                completed_items: progress.length,
+                completion_percentage: this.calculateCompletionPercentage(museumId, checklistType, ageGroup, progress)
+            });
+        }
+    }
+    
+    toggleChecklistItem(museumId, checklistType, ageGroup, itemIndex, checked) {
+        const progress = this.loadChecklistProgress(museumId, checklistType, ageGroup);
+        
+        if (checked) {
+            if (!progress.includes(itemIndex)) {
+                progress.push(itemIndex);
+            }
+        } else {
+            const index = progress.indexOf(itemIndex);
+            if (index > -1) {
+                progress.splice(index, 1);
+            }
+        }
+        
+        this.saveChecklistProgress(museumId, checklistType, ageGroup, progress);
+        
+        // Track individual item toggle
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent('checklist_item_toggled', {
+                museum_id: museumId,
+                checklist_type: checklistType,
+                age_group: ageGroup,
+                item_index: itemIndex,
+                checked: checked,
+                total_completed: progress.length
+            });
+        }
+        
+        return progress;
+    }
+    
+    calculateCompletionPercentage(museumId, checklistType, ageGroup, progress = null) {
+        const checklist = this.getMuseumChecklist(museumId, checklistType, ageGroup);
+        if (!checklist || checklist.length === 0) {
+            return 0;
+        }
+        
+        const currentProgress = progress || this.loadChecklistProgress(museumId, checklistType, ageGroup);
+        return Math.round((currentProgress.length / checklist.length) * 100);
+    }
+    
+    getCompletionStats(museumId, ageGroup) {
+        const stats = {
+            parent: {
+                total: 0,
+                completed: 0,
+                percentage: 0,
+                items: []
+            },
+            child: {
+                total: 0,
+                completed: 0,
+                percentage: 0,
+                items: []
+            }
+        };
+        
+        ['parent', 'child'].forEach(type => {
+            const checklist = this.getMuseumChecklist(museumId, type, ageGroup);
+            const progress = this.loadChecklistProgress(museumId, type, ageGroup);
+            
+            stats[type].total = checklist.length;
+            stats[type].completed = progress.length;
+            stats[type].percentage = this.calculateCompletionPercentage(museumId, type, ageGroup, progress);
+            stats[type].items = checklist.map((item, index) => ({
+                text: item,
+                completed: progress.includes(index),
+                index: index
+            }));
+        });
+        
+        return stats;
+    }
+    
+    clearChecklistProgress(museumId, checklistType, ageGroup) {
+        const key = `${museumId}-${checklistType}-${ageGroup}`;
+        const allChecklists = this.app.loadMuseumChecklists();
+        
+        if (allChecklists[key]) {
+            delete allChecklists[key];
+            this.app.saveMuseumChecklists(allChecklists);
+            this.checklistCache.delete(key);
+            
+            // Track analytics
+            if (this.analyticsManager) {
+                this.analyticsManager.trackEvent('checklist_cleared', {
+                    museum_id: museumId,
+                    checklist_type: checklistType,
+                    age_group: ageGroup
+                });
+            }
+        }
+    }
+    
+    isChecklistCompleted(museumId, checklistType, ageGroup) {
+        const completion = this.calculateCompletionPercentage(museumId, checklistType, ageGroup);
+        return completion === 100;
+    }
+    
+    getOverallProgress(ageGroup) {
+        const museums = MUSEUMS;
+        let totalChecklists = 0;
+        let completedChecklists = 0;
+        
+        museums.forEach(museum => {
+            ['parent', 'child'].forEach(type => {
+                const checklist = this.getMuseumChecklist(museum.id, type, ageGroup);
+                if (checklist.length > 0) {
+                    totalChecklists++;
+                    if (this.isChecklistCompleted(museum.id, type, ageGroup)) {
+                        completedChecklists++;
+                    }
+                }
+            });
+        });
+        
+        return {
+            total: totalChecklists,
+            completed: completedChecklists,
+            percentage: totalChecklists > 0 ? Math.round((completedChecklists / totalChecklists) * 100) : 0
+        };
+    }
+    
+    exportChecklistData(museumId = null, ageGroup = null) {
+        const data = {
+            export_date: new Date().toISOString(),
+            museum_id: museumId,
+            age_group: ageGroup,
+            checklists: {}
+        };
+        
+        if (museumId) {
+            // Export specific museum
+            const museum = MUSEUMS.find(m => m.id === museumId);
+            if (museum) {
+                data.museum_name = museum.name;
+                data.checklists[museumId] = this.getCompletionStats(museumId, ageGroup);
+            }
+        } else {
+            // Export all museums
+            MUSEUMS.forEach(museum => {
+                data.checklists[museum.id] = {
+                    museum_name: museum.name,
+                    stats: this.getCompletionStats(museum.id, ageGroup)
+                };
+            });
+        }
+        
+        return data;
+    }
+    
+    generateChecklistReport(ageGroup) {
+        const overallProgress = this.getOverallProgress(ageGroup);
+        const museumStats = [];
+        
+        MUSEUMS.forEach(museum => {
+            const stats = this.getCompletionStats(museum.id, ageGroup);
+            const totalItems = stats.parent.total + stats.child.total;
+            const completedItems = stats.parent.completed + stats.child.completed;
+            
+            if (totalItems > 0) {
+                museumStats.push({
+                    id: museum.id,
+                    name: museum.name,
+                    location: museum.location,
+                    totalItems,
+                    completedItems,
+                    completionPercentage: Math.round((completedItems / totalItems) * 100),
+                    parentProgress: stats.parent,
+                    childProgress: stats.child
+                });
+            }
+        });
+        
+        // Sort by completion percentage (highest first)
+        museumStats.sort((a, b) => b.completionPercentage - a.completionPercentage);
+        
+        return {
+            overall: overallProgress,
+            museums: museumStats,
+            age_group: ageGroup,
+            generated_at: new Date().toISOString()
+        };
+    }
+}
+
+// ===== ANALYTICS MANAGER MODULE =====
+// Analytics Manager - Centralized analytics and reporting
+class AnalyticsManager {
+    constructor() {
+        this.isGoogleAnalyticsEnabled = false;
+        this.sessionStartTime = Date.now();
+        this.eventQueue = [];
+        this.userMetrics = {};
+        this.initializeAnalytics();
+    }
+    
+    initializeAnalytics() {
+        // Check if Google Analytics is available
+        if (typeof gtag === 'function') {
+            this.isGoogleAnalyticsEnabled = true;
+        }
+        
+        // Initialize user metrics
+        this.userMetrics = {
+            sessionId: this.generateSessionId(),
+            userId: this.getUserId(),
+            visitCount: this.getVisitCount(),
+            sessionStartTime: this.sessionStartTime,
+            lastActivityTime: this.sessionStartTime
+        };
+        
+        // Track session start
+        this.trackEvent('session_start', {
+            session_id: this.userMetrics.sessionId,
+            visit_count: this.userMetrics.visitCount
+        });
+    }
+    
+    generateSessionId() {
+        return Date.now().toString(36) + Math.random().toString(36).substring(2);
+    }
+    
+    getUserId() {
+        let userId = localStorage.getItem('user_id');
+        if (!userId) {
+            userId = 'user_' + Date.now().toString(36) + Math.random().toString(36).substring(2);
+            localStorage.setItem('user_id', userId);
+        }
+        return userId;
+    }
+    
+    getVisitCount() {
+        let count = parseInt(localStorage.getItem('visit_count')) || 0;
+        count++;
+        localStorage.setItem('visit_count', count.toString());
+        return count;
+    }
+    
+    trackEvent(eventName, parameters = {}) {
+        // Update last activity time
+        this.userMetrics.lastActivityTime = Date.now();
+        
+        // Enhanced event parameters
+        const enrichedParams = {
+            ...parameters,
+            session_id: this.userMetrics.sessionId,
+            user_id: this.userMetrics.userId,
+            timestamp: Date.now(),
+            page_url: window.location.href,
+            user_agent: navigator.userAgent,
+            screen_resolution: `${screen.width}x${screen.height}`,
+            viewport_size: `${window.innerWidth}x${window.innerHeight}`
+        };
+        
+        // Send to Google Analytics if available
+        if (this.isGoogleAnalyticsEnabled) {
+            try {
+                gtag('event', eventName, enrichedParams);
+            } catch (error) {
+                console.warn('Failed to send event to Google Analytics:', error);
+            }
+        }
+        
+        // Queue event for local analytics
+        this.eventQueue.push({
+            event: eventName,
+            parameters: enrichedParams
+        });
+        
+        // Maintain event queue size (keep last 100 events)
+        if (this.eventQueue.length > 100) {
+            this.eventQueue = this.eventQueue.slice(-100);
+        }
+        
+        // Store critical events in localStorage
+        this.storeCriticalEvent(eventName, enrichedParams);
+    }
+    
+    storeCriticalEvent(eventName, parameters) {
+        const criticalEvents = [
+            'museum_visited',
+            'checklist_completed',
+            'assessment_completed',
+            'achievement_unlocked'
+        ];
+        
+        if (criticalEvents.includes(eventName)) {
+            try {
+                const stored = JSON.parse(localStorage.getItem('analytics_events') || '[]');
+                stored.push({ event: eventName, parameters, timestamp: Date.now() });
+                
+                // Keep only last 50 critical events
+                const trimmed = stored.slice(-50);
+                localStorage.setItem('analytics_events', JSON.stringify(trimmed));
+            } catch (error) {
+                console.warn('Failed to store critical event:', error);
+            }
+        }
+    }
+    
+    trackPageView(pageName, additionalParams = {}) {
+        this.trackEvent('page_view', {
+            page_name: pageName,
+            page_location: window.location.href,
+            ...additionalParams
+        });
+    }
+    
+    trackUserAction(action, category, label = '', value = 0) {
+        this.trackEvent('user_action', {
+            action_name: action,
+            action_category: category,
+            action_label: label,
+            action_value: value
+        });
+    }
+    
+    trackMuseumInteraction(museumId, museumName, interactionType, additionalData = {}) {
+        this.trackEvent('museum_interaction', {
+            museum_id: museumId,
+            museum_name: museumName,
+            interaction_type: interactionType,
+            ...additionalData
+        });
+    }
+    
+    trackPerformanceMetric(metricName, value, unit = '') {
+        this.trackEvent('performance_metric', {
+            metric_name: metricName,
+            metric_value: value,
+            metric_unit: unit,
+            timestamp: Date.now()
+        });
+    }
+    
+    trackError(errorType, errorMessage, errorContext = {}) {
+        this.trackEvent('error_occurred', {
+            error_type: errorType,
+            error_message: errorMessage,
+            error_context: JSON.stringify(errorContext),
+            timestamp: Date.now()
+        });
+    }
+    
+    getSessionAnalytics() {
+        const sessionDuration = Date.now() - this.sessionStartTime;
+        const events = this.eventQueue.length;
+        
+        return {
+            sessionId: this.userMetrics.sessionId,
+            sessionDuration,
+            totalEvents: events,
+            eventsPerMinute: events / (sessionDuration / 60000),
+            lastActivityTime: this.userMetrics.lastActivityTime
+        };
+    }
+    
+    getUserAnalytics() {
+        try {
+            const visitedMuseums = JSON.parse(localStorage.getItem('visitedMuseums') || '[]');
+            const checklistData = JSON.parse(localStorage.getItem('museumChecklists') || '{}');
+            const storedEvents = JSON.parse(localStorage.getItem('analytics_events') || '[]');
+            
+            const completedChecklists = Object.keys(checklistData).reduce((count, key) => {
+                const items = checklistData[key];
+                return items && items.length > 0 ? count + 1 : count;
+            }, 0);
+            
+            return {
+                userId: this.userMetrics.userId,
+                totalVisits: this.userMetrics.visitCount,
+                visitedMuseumsCount: visitedMuseums.length,
+                completedChecklistsCount: completedChecklists,
+                totalStoredEvents: storedEvents.length,
+                firstVisit: storedEvents.length > 0 ? storedEvents[0].timestamp : this.sessionStartTime,
+                engagementScore: this.calculateEngagementScore(visitedMuseums.length, completedChecklists, events)
+            };
+        } catch (error) {
+            console.warn('Failed to generate user analytics:', error);
+            return null;
+        }
+    }
+    
+    calculateEngagementScore(visitedCount, checklistCount, eventCount) {
+        // Simple engagement scoring algorithm
+        const visitScore = Math.min(visitedCount * 5, 50);  // Max 50 points for visits
+        const checklistScore = Math.min(checklistCount * 3, 30);  // Max 30 points for checklists
+        const activityScore = Math.min(eventCount * 1, 20);  // Max 20 points for general activity
+        
+        return visitScore + checklistScore + activityScore;  // Max score: 100
+    }
+    
+    generateAnalyticsReport() {
+        const sessionData = this.getSessionAnalytics();
+        const userData = this.getUserAnalytics();
+        
+        return {
+            session: sessionData,
+            user: userData,
+            systemInfo: {
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+                platform: navigator.platform,
+                onLine: navigator.onLine,
+                cookieEnabled: navigator.cookieEnabled
+            },
+            timestamp: Date.now(),
+            reportVersion: '1.0'
+        };
+    }
+    
+    exportAnalyticsData() {
+        try {
+            const report = this.generateAnalyticsReport();
+            const dataStr = JSON.stringify(report, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const url = URL.createObjectURL(dataBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `museumcheck-analytics-${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            return true;
+        } catch (error) {
+            console.error('Failed to export analytics data:', error);
+            return false;
+        }
+    }
+    
+    // Clean up old analytics data
+    cleanupOldData(maxAgeMs = 30 * 24 * 60 * 60 * 1000) { // 30 days default
+        try {
+            const stored = JSON.parse(localStorage.getItem('analytics_events') || '[]');
+            const cutoff = Date.now() - maxAgeMs;
+            const filtered = stored.filter(event => event.timestamp > cutoff);
+            
+            if (filtered.length !== stored.length) {
+                localStorage.setItem('analytics_events', JSON.stringify(filtered));
+            }
+            
+            return stored.length - filtered.length; // Return number of cleaned items
+        } catch (error) {
+            console.warn('Failed to cleanup old analytics data:', error);
+            return 0;
+        }
+    }
+}
+
+// ===== PHOTO MANAGER MODULE =====
+// Photo Manager - Centralized photo and file management
+class PhotoManager {
+    constructor() {
+        this.supportedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        this.maxFileSize = 10 * 1024 * 1024; // 10MB
+        this.compressionQuality = 0.8;
+        this.maxDisplayWidth = 800;
+        this.maxDisplayHeight = 600;
+    }
+    
+    validatePhotoFile(file) {
+        const errors = [];
+        
+        if (!file) {
+            errors.push('No file provided');
+            return { isValid: false, errors };
+        }
+        
+        // Check file type
+        if (!this.supportedImageTypes.includes(file.type)) {
+            errors.push(`Unsupported file type: ${file.type}. Supported types: ${this.supportedImageTypes.join(', ')}`);
+        }
+        
+        // Check file size
+        if (file.size > this.maxFileSize) {
+            errors.push(`File size too large: ${(file.size / (1024 * 1024)).toFixed(2)}MB. Maximum allowed: ${this.maxFileSize / (1024 * 1024)}MB`);
+        }
+        
+        return {
+            isValid: errors.length === 0,
+            errors,
+            fileInfo: {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                lastModified: file.lastModified
+            }
+        };
+    }
+    
+    async compressImage(file, targetQuality = null) {
+        return new Promise((resolve, reject) => {
+            const quality = targetQuality || this.compressionQuality;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = () => {
+                // Calculate new dimensions while maintaining aspect ratio
+                let { width, height } = this.calculateOptimalDimensions(img.width, img.height);
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Draw the resized image
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Convert to blob with compression
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        resolve(blob);
+                    } else {
+                        reject(new Error('Failed to compress image'));
+                    }
+                }, file.type, quality);
+                
+                // Clean up
+                URL.revokeObjectURL(img.src);
+            };
+            
+            img.onerror = () => {
+                reject(new Error('Failed to load image for compression'));
+            };
+            
+            img.src = URL.createObjectURL(file);
+        });
+    }
+    
+    calculateOptimalDimensions(originalWidth, originalHeight) {
+        let width = originalWidth;
+        let height = originalHeight;
+        
+        // Resize if larger than max dimensions
+        if (width > this.maxDisplayWidth || height > this.maxDisplayHeight) {
+            const widthRatio = this.maxDisplayWidth / width;
+            const heightRatio = this.maxDisplayHeight / height;
+            const ratio = Math.min(widthRatio, heightRatio);
+            
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+        }
+        
+        return { width, height };
+    }
+    
+    async convertToDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                resolve(e.target.result);
+            };
+            
+            reader.onerror = () => {
+                reject(new Error('Failed to read file'));
+            };
+            
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    async processPhotoUpload(file, shouldCompress = true) {
+        try {
+            // Validate the file first
+            const validation = this.validatePhotoFile(file);
+            if (!validation.isValid) {
+                throw new Error(`Photo validation failed: ${validation.errors.join(', ')}`);
+            }
+            
+            let processedFile = file;
+            
+            // Compress image if needed and requested
+            if (shouldCompress && file.size > 500 * 1024) { // Compress files larger than 500KB
+                processedFile = await this.compressImage(file);
+            }
+            
+            // Convert to data URL for storage
+            const dataURL = await this.convertToDataURL(processedFile);
+            
+            return {
+                success: true,
+                dataURL,
+                originalSize: file.size,
+                processedSize: processedFile.size,
+                compressionRatio: processedFile.size / file.size,
+                fileName: file.name,
+                fileType: file.type
+            };
+            
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+    
+    createPhotoElement(dataURL, altText = 'Uploaded photo', className = 'uploaded-photo') {
+        const img = document.createElement('img');
+        img.src = dataURL;
+        img.alt = altText;
+        img.className = className;
+        img.loading = 'lazy';
+        
+        return img;
+    }
+    
+    createPhotoPreview(dataURL, onRemove = null) {
+        const container = document.createElement('div');
+        container.className = 'photo-preview-container';
+        
+        const img = this.createPhotoElement(dataURL, 'Photo preview', 'photo-preview');
+        container.appendChild(img);
+        
+        if (onRemove && typeof onRemove === 'function') {
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'photo-remove-btn';
+            removeBtn.innerHTML = '×';
+            removeBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onRemove(container);
+            };
+            container.appendChild(removeBtn);
+        }
+        
+        return container;
+    }
+    
+    getPhotoFileInfo(file) {
+        return {
+            name: file.name,
+            size: this.formatFileSize(file.size),
+            type: file.type,
+            lastModified: new Date(file.lastModified).toLocaleString()
+        };
+    }
+    
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Clean up object URLs to prevent memory leaks
+    cleanup(urls) {
+        if (Array.isArray(urls)) {
+            urls.forEach(url => {
+                if (typeof url === 'string' && url.startsWith('blob:')) {
+                    URL.revokeObjectURL(url);
+                }
+            });
+        } else if (typeof urls === 'string' && urls.startsWith('blob:')) {
+            URL.revokeObjectURL(urls);
+        }
+    }
+}
+
+// ===== MODAL MANAGER MODULE =====
+// Modal Manager - Centralized modal operations
+class ModalManager {
+    constructor() {
+        this.activeModals = new Set();
+        this.modalConfigs = new Map();
+        this.initializeModalConfigurations();
+        this.bindGlobalEvents();
+    }
+    
+    initializeModalConfigurations() {
+        // Define modal-specific configurations
+        this.modalConfigs.set('museumModal', {
+            closeOnOutsideClick: true,
+            closeOnEscape: true,
+            focusTrap: true
+        });
+        
+        this.modalConfigs.set('achievementModal', {
+            closeOnOutsideClick: true,
+            closeOnEscape: true,
+            focusTrap: false
+        });
+        
+        this.modalConfigs.set('assessmentModal', {
+            closeOnOutsideClick: false,
+            closeOnEscape: false,
+            focusTrap: true
+        });
+        
+        this.modalConfigs.set('settingsModal', {
+            closeOnOutsideClick: true,
+            closeOnEscape: true,
+            focusTrap: false
+        });
+        
+        this.modalConfigs.set('assessmentHistoryModal', {
+            closeOnOutsideClick: true,
+            closeOnEscape: true,
+            focusTrap: false
+        });
+    }
+    
+    bindGlobalEvents() {
+        // Handle ESC key for closing modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.handleEscapeKey();
+            }
+        });
+        
+        // Handle outside click for closing modals
+        document.addEventListener('click', (e) => {
+            this.handleOutsideClick(e);
+        });
+    }
+    
+    showModal(modalId, options = {}) {
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            console.warn(`Modal with id '${modalId}' not found`);
+            return false;
+        }
+        
+        const config = { ...this.modalConfigs.get(modalId), ...options };
+        
+        // Show the modal
+        modal.classList.remove('hidden');
+        this.activeModals.add(modalId);
+        
+        // Handle focus management
+        if (config.focusTrap) {
+            this.setupFocusTrap(modal);
+        }
+        
+        // Prevent body scroll when modal is open
+        document.body.classList.add('modal-open');
+        
+        return true;
+    }
+    
+    closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            console.warn(`Modal with id '${modalId}' not found`);
+            return false;
+        }
+        
+        // Hide the modal
+        modal.classList.add('hidden');
+        this.activeModals.delete(modalId);
+        
+        // Restore body scroll if no modals are open
+        if (this.activeModals.size === 0) {
+            document.body.classList.remove('modal-open');
+        }
+        
+        return true;
+    }
+    
+    closeAllModals() {
+        Array.from(this.activeModals).forEach(modalId => {
+            this.closeModal(modalId);
+        });
+    }
+    
+    isModalOpen(modalId) {
+        return this.activeModals.has(modalId);
+    }
+    
+    getActiveModals() {
+        return Array.from(this.activeModals);
+    }
+    
+    handleEscapeKey() {
+        // Close the most recently opened modal that allows ESC closing
+        for (const modalId of Array.from(this.activeModals).reverse()) {
+            const config = this.modalConfigs.get(modalId);
+            if (config && config.closeOnEscape) {
+                this.closeModal(modalId);
+                break;
+            }
+        }
+    }
+    
+    handleOutsideClick(event) {
+        // Check if click is outside any modal content
+        for (const modalId of this.activeModals) {
+            const config = this.modalConfigs.get(modalId);
+            if (!config || !config.closeOnOutsideClick) continue;
+            
+            const modal = document.getElementById(modalId);
+            if (!modal) continue;
+            
+            const modalContent = modal.querySelector('.modal-content');
+            if (modalContent && !modalContent.contains(event.target) && modal.contains(event.target)) {
+                this.closeModal(modalId);
+                break;
+            }
+        }
+    }
+    
+    setupFocusTrap(modal) {
+        const focusableElements = modal.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        
+        if (focusableElements.length === 0) return;
+        
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        
+        // Focus the first element
+        firstElement.focus();
+        
+        // Trap focus within modal
+        const handleTabKey = (e) => {
+            if (e.key !== 'Tab') return;
+            
+            if (e.shiftKey) {
+                if (document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                }
+            } else {
+                if (document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+        };
+        
+        modal.addEventListener('keydown', handleTabKey);
+        
+        // Remove event listener when modal closes
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'class' && modal.classList.contains('hidden')) {
+                    modal.removeEventListener('keydown', handleTabKey);
+                    observer.disconnect();
+                }
+            });
+        });
+        
+        observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+    }
+}
+
+// ===== EVENT HANDLER MODULE =====
+// Centralized event handling logic for better organization
+const EventHandlers = {
+    // Age group change handler
+    handleAgeGroupChange: (app, event) => {
+        const selectedAge = event.target.value;
+        if (DataValidator.validateAgeGroup(selectedAge).isValid) {
+            app.currentAge = selectedAge;
+            StorageManager.safeSet(APP_CONFIG.LOCAL_STORAGE_KEYS.CURRENT_AGE, selectedAge);
+            
+            // Update visual state
+            UtilityFunctions.querySelectorAll(DOM_SELECTORS.AGE_GROUP.OPTIONS).forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.target.closest('.age-option')?.classList.add('selected');
+            
+            // Track the event
+            app.trackEvent('age_group_changed', { 
+                previous_age: app.currentAge, 
+                new_age: selectedAge 
+            });
+        }
+    },
+    
+    // Search functionality
+    handleSearchInput: (app, event) => {
+        const query = UtilityFunctions.sanitizeString(event.target.value).toLowerCase();
+        app.searchQuery = query;
+        
+        // Apply debouncing for performance
+        clearTimeout(app.searchTimeout);
+        app.searchTimeout = setTimeout(() => {
+            app.filterMuseums(query);
+            app.renderMuseums();
+            
+            // Track search events
+            if (query.length >= 2) {
+                app.trackEvent('search_performed', { 
+                    query_length: query.length,
+                    results_count: app.filteredMuseums.length 
+                });
+            }
+        }, APP_CONFIG.SEARCH.DEBOUNCE_DELAY);
+    },
+    
+    // Clear search handler
+    handleClearSearch: (app) => {
+        const searchInput = UtilityFunctions.querySelector(DOM_SELECTORS.SEARCH.INPUT);
+        if (searchInput) {
+            searchInput.value = '';
+            app.searchQuery = '';
+            app.filteredMuseums = MUSEUMS;
+            app.renderMuseums();
+            
+            app.trackEvent('search_cleared');
+        }
+    },
+    
+    // Modal close handlers
+    handleModalClose: (modalId, app = null) => {
+        UIManager.hideModal(modalId);
+        if (app) {
+            app.trackEvent('modal_closed', { modal_id: modalId });
+        }
+    },
+    
+    // Museum card click handler
+    handleMuseumCardClick: (app, museumId) => {
+        const museum = MUSEUMS.find(m => m.id === museumId);
+        if (museum) {
+            app.openMuseumModal(museum);
+            app.trackEvent('museum_card_clicked', { 
+                museum_id: museumId,
+                museum_name: museum.name 
+            });
+        }
+    },
+    
+    // Visit checkbox handler
+    handleVisitCheckbox: (app, museumId, isChecked) => {
+        if (isChecked) {
+            if (!app.visitedMuseums.includes(museumId)) {
+                app.visitedMuseums.push(museumId);
+            }
+        } else {
+            app.visitedMuseums = app.visitedMuseums.filter(id => id !== museumId);
+        }
+        
+        StorageManager.safeSet(APP_CONFIG.LOCAL_STORAGE_KEYS.VISITED_MUSEUMS, app.visitedMuseums);
+        app.updateStats();
+        
+        app.trackEvent(isChecked ? 'museum_visited' : 'museum_unvisited', { 
+            museum_id: museumId,
+            total_visited: app.visitedMuseums.length 
+        });
+    },
+    
+    // Checklist item handler
+    handleChecklistItem: (app, checkboxElement, museumId, type, ageGroup, itemIndex) => {
+        const isChecked = checkboxElement.checked;
+        const checklistKey = `${museumId}-${type}-${ageGroup}`;
+        
+        if (!app.museumChecklists[checklistKey]) {
+            app.museumChecklists[checklistKey] = [];
+        }
+        
+        if (isChecked) {
+            if (!app.museumChecklists[checklistKey].includes(itemIndex)) {
+                app.museumChecklists[checklistKey].push(itemIndex);
+            }
+        } else {
+            app.museumChecklists[checklistKey] = app.museumChecklists[checklistKey]
+                .filter(index => index !== itemIndex);
+        }
+        
+        StorageManager.safeSet(APP_CONFIG.LOCAL_STORAGE_KEYS.MUSEUM_CHECKLISTS, app.museumChecklists);
+        
+        app.trackEvent('checklist_item_changed', { 
+            museum_id: museumId,
+            type: type,
+            age_group: ageGroup,
+            item_index: itemIndex,
+            checked: isChecked 
+        });
+    },
+    
+    // Tab switching handler
+    handleTabSwitch: (app, activeTab) => {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        const activeButton = document.querySelector(`[data-tab="${activeTab}"]`);
+        const activeContent = document.getElementById(activeTab);
+        
+        if (activeButton && activeContent) {
+            activeButton.classList.add('active');
+            activeContent.classList.add('active');
+        }
+        
+        app.trackEvent('tab_switched', { tab: activeTab });
+    },
+    
+    // Keyboard navigation handler
+    handleKeyboardNavigation: (event) => {
+        // Handle Escape key to close modals
+        if (event.key === 'Escape') {
+            const openModals = document.querySelectorAll('.modal:not(.hidden)');
+            openModals.forEach(modal => {
+                UIManager.hideModal(modal.id);
+            });
+        }
+        
+        // Handle Enter key on focusable elements
+        if (event.key === 'Enter') {
+            const activeElement = document.activeElement;
+            if (activeElement && (activeElement.classList.contains('museum-card') || 
+                               activeElement.classList.contains('button'))) {
+                activeElement.click();
+            }
+        }
+    },
+    
+    // Window resize handler
+    handleWindowResize: UtilityFunctions.debounce((app) => {
+        // Update responsive classes if needed
+        const museumCards = document.querySelectorAll('.museum-card');
+        museumCards.forEach(card => {
+            UIManager.addResponsiveClass(card, 'mobile-card', 'desktop-card');
+        });
+        
+        app.trackEvent('window_resized', { 
+            width: window.innerWidth, 
+            height: window.innerHeight,
+            is_mobile: UIManager.isMobileView()
+        });
+    }, 250),
+    
+    // Error handler for async operations
+    handleAsyncError: (error, context, app = null) => {
+        console.error(`Error in ${context}:`, error);
+        UIManager.showNotification(`操作失败：${error.message}`, UI_CONSTANTS.ANIMATION.NOTIFICATION_DURATION, 'error');
+        
+        if (app) {
+            app.trackEvent('async_error', { 
+                context: context,
+                error_message: error.message,
+                error_type: error.name 
+            });
+        }
+    }
+};
+
 class MuseumCheckApp {
     constructor() {
         this.currentAge = this.loadAgeGroup();
@@ -16720,21 +19095,32 @@ class MuseumCheckApp {
         this.db = null;
         this.searchQuery = '';
         this.filteredMuseums = MUSEUMS;
+        
+        // Initialize specialized modules
+        this.modalManager = new ModalManager();
+        this.photoManager = new PhotoManager();
+        this.analyticsManager = new AnalyticsManager();
+        
+        // Initialize advanced management modules (Phase 5)
+        this.museumManager = new MuseumManager(this, this.analyticsManager);
+        this.checklistManager = new ChecklistManager(this, this.analyticsManager);
+        this.assessmentManager = new AssessmentManager(this, this.analyticsManager);
+        
         this.init();
     }
 
     initAgeSelector() {
         // Set the radio button to match the saved age group
-        const savedAgeRadio = document.querySelector(`input[name="ageGroup"][value="${this.currentAge}"]`);
+        const savedAgeRadio = UtilityFunctions.querySelector(`input[name="ageGroup"][value="${this.currentAge}"]`);
         if (savedAgeRadio) {
             savedAgeRadio.checked = true;
         }
         
         // Set initial selected state for browsers that don't support :has()
-        const checkedRadio = document.querySelector('input[name="ageGroup"]:checked');
+        const checkedRadio = UtilityFunctions.querySelector(DOM_SELECTORS.AGE_GROUP.CHECKED_RADIO);
         if (checkedRadio) {
             // Remove previous selected states
-            document.querySelectorAll('.age-option').forEach(option => {
+            UtilityFunctions.querySelectorAll(DOM_SELECTORS.AGE_GROUP.OPTIONS).forEach(option => {
                 option.classList.remove('selected');
             });
             // Add selected state to the current radio
@@ -16742,10 +19128,15 @@ class MuseumCheckApp {
         }
     }
 
-    // Google Analytics tracking helper
+    // Google Analytics tracking helper - now using AnalyticsManager
     trackEvent(eventName, parameters = {}) {
-        if (typeof gtag !== 'undefined' && window.GA_MEASUREMENT_ID !== 'GA_MEASUREMENT_ID') {
-            gtag('event', eventName, parameters);
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent(eventName, parameters);
+        } else {
+            // Fallback to direct gtag if AnalyticsManager not available
+            if (typeof gtag !== 'undefined' && window.GA_MEASUREMENT_ID !== 'GA_MEASUREMENT_ID') {
+                gtag('event', eventName, parameters);
+            }
         }
     }
 
@@ -16798,7 +19189,7 @@ class MuseumCheckApp {
                 // Open museum modal
                 setTimeout(() => {
                     this.openMuseumModal(museum, checklistType);
-                }, 500); // Small delay to ensure DOM is ready
+                }, UI_CONSTANTS.ANIMATION.MODAL_OPEN_DELAY); // Small delay to ensure DOM is ready
             }
         }
     }
@@ -17717,16 +20108,6 @@ class MuseumCheckApp {
                     <div class="core-goal">
                         <p class="goal-statement">${guidance.relationshipFocus.coreGoal}</p>
                     </div>
-                    <div class="relationship-metrics">
-                        <h5>📊 关系改善指标</h5>
-                        <ul class="metrics-list">
-                            ${guidance.relationshipFocus.relationshipMetrics.map(metric => `<li>${metric}</li>`).join('')}
-                        </ul>
-                    </div>
-                    <div class="relationship-benefits">
-                        <h5>✨ 长期关系收益</h5>
-                        <p class="benefits-text">${guidance.relationshipFocus.relationshipBenefits}</p>
-                    </div>
                 </div>
                 
                 <div class="expert-section">
@@ -17737,14 +20118,14 @@ class MuseumCheckApp {
                 <div class="expert-section">
                     <h4>👥 亲子互动指导</h4>
                     <ul class="expert-tips">
-                        ${guidance.parentingTips.map(tip => `<li>${tip}</li>`).join('')}
+                        ${guidance.parentingTips.slice(0, 5).map(tip => `<li>${tip}</li>`).join('')}
                     </ul>
                 </div>
                 
                 <div class="expert-section">
                     <h4>❤️ 情感支持要点</h4>
                     <ul class="emotional-support">
-                        ${guidance.emotionalSupport.map(tip => `<li>${tip}</li>`).join('')}
+                        ${guidance.emotionalSupport.slice(0, 4).map(tip => `<li>${tip}</li>`).join('')}
                     </ul>
                 </div>
                 
@@ -17754,7 +20135,7 @@ class MuseumCheckApp {
                         <div class="dialogue-starters">
                             <strong>📝 推荐话题开场：</strong>
                             <ul>
-                                ${guidance.dialogueStarters.map(starter => `<li>${starter}</li>`).join('')}
+                                ${guidance.dialogueStarters.slice(0, 4).map(starter => `<li>${starter}</li>`).join('')}
                             </ul>
                         </div>
                     </div>
@@ -17763,15 +20144,12 @@ class MuseumCheckApp {
                 <div class="expert-section">
                     <h4>🧩 多元智能激发</h4>
                     <div class="intelligence-grid">
-                        ${Object.entries(MULTIPLE_INTELLIGENCE_STRATEGIES).map(([key, value]) => `
+                        ${Object.entries(MULTIPLE_INTELLIGENCE_STRATEGIES).slice(0, 4).map(([key, value]) => `
                             <div class="intelligence-item">
                                 <div class="intelligence-header">
                                     <strong>${value.name}</strong>
                                 </div>
                                 <div class="intelligence-desc">${value.description}</div>
-                                <div class="intelligence-activities">
-                                    ${value.activities.map(activity => `<span class="activity-tag">${activity}</span>`).join('')}
-                                </div>
                             </div>
                         `).join('')}
                     </div>
@@ -17780,7 +20158,7 @@ class MuseumCheckApp {
                 <div class="expert-section">
                     <h4>🚨 常见挑战应对</h4>
                     <div class="challenges-section">
-                        ${guidance.commonChallenges.map(challenge => `
+                        ${guidance.commonChallenges.slice(0, 3).map(challenge => `
                             <div class="challenge-item">
                                 <div class="challenge-situation">
                                     <strong>情况：</strong>${challenge.situation}
@@ -17788,11 +20166,6 @@ class MuseumCheckApp {
                                 <div class="challenge-solution">
                                     <strong>应对：</strong>${challenge.solution}
                                 </div>
-                                ${challenge.preventionTips ? `
-                                <div class="challenge-prevention">
-                                    <strong>预防：</strong>${challenge.preventionTips}
-                                </div>
-                                ` : ''}
                             </div>
                         `).join('')}
                     </div>
@@ -17839,50 +20212,8 @@ class MuseumCheckApp {
                     <div class="assessment-section">
                         <p class="assessment-intro">观察这些积极信号，了解孩子的学习状态：</p>
                         <ul class="engagement-indicators">
-                            ${ASSESSMENT_TOOLS.engagementIndicators[this.currentAge].map(indicator => `<li>${indicator}</li>`).join('')}
+                            ${ASSESSMENT_TOOLS.engagementIndicators[this.currentAge].slice(0, 4).map(indicator => `<li>${indicator}</li>`).join('')}
                         </ul>
-                    </div>
-                </div>
-                
-                <div class="expert-section">
-                    <h4>🚨 危机预防与应对</h4>
-                    <div class="crisis-management">
-                        <div class="crisis-subsection">
-                            <strong>⚠️ 过度刺激预警信号：</strong>
-                            <ul class="overstimulation-signs">
-                                ${CRISIS_MANAGEMENT.overstimulationSigns.map(sign => `<li>${sign}</li>`).join('')}
-                            </ul>
-                        </div>
-                        <div class="crisis-subsection">
-                            <strong>🛡️ 预防策略：</strong>
-                            <ul class="meltdown-prevention">
-                                ${CRISIS_MANAGEMENT.meltdownPrevention.map(tip => `<li>${tip}</li>`).join('')}
-                            </ul>
-                        </div>
-                        <div class="crisis-subsection">
-                            <strong>🆘 应对措施：</strong>
-                            <ul class="meltdown-response">
-                                ${CRISIS_MANAGEMENT.meltdownResponse.map(response => `<li>${response}</li>`).join('')}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="expert-section">
-                    <h4>🤔 家庭反思引导</h4>
-                    <div class="reflection-section">
-                        <div class="reflection-subsection">
-                            <strong>👨‍👩‍👧‍👦 家长自我反思：</strong>
-                            <ul class="parent-reflection">
-                                ${ASSESSMENT_TOOLS.reflectionPrompts.parentSelfReflection.map(prompt => `<li>${prompt}</li>`).join('')}
-                            </ul>
-                        </div>
-                        <div class="reflection-subsection">
-                            <strong>❤️ 全家共同反思：</strong>
-                            <ul class="family-reflection">
-                                ${ASSESSMENT_TOOLS.reflectionPrompts.familyReflection.map(prompt => `<li>${prompt}</li>`).join('')}
-                            </ul>
-                        </div>
                     </div>
                 </div>
                 
@@ -18186,14 +20517,12 @@ class MuseumCheckApp {
     }
 
     closeModal() {
-        document.getElementById('museumModal').classList.add('hidden');
+        this.modalManager.closeModal('museumModal');
     }
-
-
 
     showAchievementModal() {
         this.renderAchievements();
-        document.getElementById('achievementModal').classList.remove('hidden');
+        this.modalManager.showModal('achievementModal');
         
         // Track achievement view
         this.trackEvent('achievements_viewed', {
@@ -18203,7 +20532,7 @@ class MuseumCheckApp {
     }
 
     closeAchievementModal() {
-        document.getElementById('achievementModal').classList.add('hidden');
+        this.modalManager.closeModal('achievementModal');
         
         // Hide poster section when closing
         const posterSection = document.getElementById('achievementPosterSection');
@@ -18214,7 +20543,7 @@ class MuseumCheckApp {
 
     showAssessmentHistoryModal() {
         this.renderAssessmentHistory();
-        document.getElementById('assessmentHistoryModal').classList.remove('hidden');
+        this.modalManager.showModal('assessmentHistoryModal');
         
         // Track assessment history view
         this.trackEvent('assessment_history_viewed', {
@@ -18223,12 +20552,12 @@ class MuseumCheckApp {
     }
 
     closeAssessmentHistoryModal() {
-        document.getElementById('assessmentHistoryModal').classList.add('hidden');
+        this.modalManager.closeModal('assessmentHistoryModal');
     }
 
     showSettingsModal() {
         this.renderSettingsInfo();
-        document.getElementById('settingsModal').classList.remove('hidden');
+        this.modalManager.showModal('settingsModal');
         
         // Track settings view
         this.trackEvent('settings_viewed', {
@@ -19322,7 +21651,7 @@ class MuseumCheckApp {
             if (rocket && rocket.parentNode) {
                 rocket.parentNode.removeChild(rocket);
             }
-        }, isLarge ? 3500 : 2500);
+        }, isLarge ? UI_CONSTANTS.ANIMATION.NOTIFICATION_DURATION_LARGE : UI_CONSTANTS.ANIMATION.NOTIFICATION_DURATION);
         
         return rocket;
     }
@@ -19448,12 +21777,13 @@ class MuseumCheckApp {
         const modal = document.getElementById('assessmentModal');
         const title = document.getElementById('assessmentTitle');
         
-        title.textContent = `🧡 ${museum.name} - 亲子关系测评`;
+        title.textContent = `🧡 ${museum.name} - 亲子测评`;
         
         // Check for existing progress
         const savedProgress = this.loadAssessmentProgress(museumId);
         
-        if (savedProgress) {
+        // Only show resume dialog for truly incomplete assessments
+        if (savedProgress && savedProgress.currentStep < 3 && !savedProgress.completed) {
             // Resume from saved progress
             this.assessmentState = {
                 museumId: savedProgress.museumId,
@@ -19467,6 +21797,10 @@ class MuseumCheckApp {
             // Show resume option to user
             this.showResumeProgressDialog(savedProgress);
         } else {
+            // Clear completed or invalid progress and start fresh
+            if (savedProgress) {
+                this.clearAssessmentProgress();
+            }
             // Initialize fresh assessment state
             this.assessmentState = {
                 museumId,
@@ -19530,6 +21864,34 @@ class MuseumCheckApp {
                 const hoursDiff = (now - timestamp) / (1000 * 60 * 60);
                 
                 if (hoursDiff < 24) { // Progress valid for 24 hours
+                    // Issue #270 fix: Enhanced completion detection
+                    // Only return progress if assessment is truly incomplete
+                    if (progress.completed === true || progress.currentStep >= 3) {
+                        // Assessment is already completed, clear stale progress
+                        this.clearAssessmentProgress();
+                        return null;
+                    }
+                    
+                    // Additional validation: check if required answers are complete
+                    const parentComplete = progress.parentAnswers && progress.parentAnswers.length >= 5 && 
+                                         !progress.parentAnswers.some(a => a === undefined || a === null);
+                    const childComplete = progress.childAnswers && progress.childAnswers.length >= 5 && 
+                                        !progress.childAnswers.some(a => a === undefined || a === null);
+                    
+                    // If both questionnaires are complete, assessment should be considered completed
+                    if (parentComplete && childComplete && progress.currentStep >= 2) {
+                        this.clearAssessmentProgress();
+                        return null;
+                    }
+                    
+                    // Additional check: don't show continue for step 0 with no answers
+                    if (progress.currentStep === 0 && 
+                        (!progress.parentAnswers || progress.parentAnswers.length === 0) &&
+                        (!progress.childAnswers || progress.childAnswers.length === 0)) {
+                        this.clearAssessmentProgress();
+                        return null;
+                    }
+                    
                     return progress;
                 }
             }
@@ -19559,16 +21921,6 @@ class MuseumCheckApp {
         resumeDialog.innerHTML = `
             <div class="resume-progress-content">
                 <h3>📋 发现未完成的测评</h3>
-                <p>您在这个博物馆有一个未完成的亲子关系测评，是否继续完成？</p>
-                <div class="progress-info">
-                    <p><strong>上次进度：</strong></p>
-                    <ul>
-                        <li>测评步骤：${this.getStepName(savedProgress.currentStep)}</li>
-                        <li>家长问卷：${(savedProgress.parentAnswers || []).length}/5 题已完成</li>
-                        <li>孩子问卷：${(savedProgress.childAnswers || []).length}/5 题已完成</li>
-                        <li>保存时间：${new Date(savedProgress.timestamp).toLocaleString()}</li>
-                    </ul>
-                </div>
                 <div class="resume-progress-buttons">
                     <button id="resumeAssessment" class="btn-primary">继续完成</button>
                     <button id="startNewAssessment" class="btn-secondary">重新开始</button>
@@ -19583,6 +21935,13 @@ class MuseumCheckApp {
         
         // Handle resume button
         document.getElementById('resumeAssessment').onclick = () => {
+            // Restore original modal structure before resuming
+            this.resetAssessmentModalStructure();
+            
+            // Re-setup event listeners for the restored DOM elements
+            this.setupAssessmentEventListeners();
+            
+            // Now show the assessment step
             this.showAssessmentStep(savedProgress.currentStep);
         };
         
@@ -19597,8 +21956,71 @@ class MuseumCheckApp {
                 score: 0,
                 timestamp: new Date().toISOString()
             };
+            
+            // Restore original modal structure before showing assessment step
+            this.resetAssessmentModalStructure();
+            
+            // Re-setup event listeners for the new DOM elements
+            this.setupAssessmentEventListeners();
+            
             this.showAssessmentStep(0);
         };
+    }
+
+    // Reset assessment modal to original structure
+    resetAssessmentModalStructure() {
+        const assessmentContent = document.getElementById('assessmentContent');
+        if (!assessmentContent) return;
+
+        // Restore the original modal structure
+        assessmentContent.innerHTML = `
+            <div class="assessment-intro">
+                <p>通过简单的问卷，了解您的亲子关系现状，获得专业的改善建议。</p>
+                <p>请根据实际情况选择最符合的答案，测评结果将帮助您更好地改善亲子关系。</p>
+            </div>
+            <div class="assessment-steps">
+                <div class="step-indicator">
+                    <span class="step active" data-step="1">1. 家长问卷</span>
+                    <span class="step" data-step="2">2. 孩子问卷</span>
+                    <span class="step" data-step="3">3. 测评结果</span>
+                </div>
+            </div>
+            <div class="assessment-form" id="assessmentForm">
+                <!-- Content will be filled dynamically -->
+            </div>
+            <div class="assessment-buttons">
+                <button id="assessmentNext" class="btn-primary">开始测评</button>
+            </div>
+        `;
+        
+        // Initialize step tabs with proper accessibility attributes
+        this.initializeStepTabs();
+    }
+
+    // Initialize step tabs with proper accessibility and non-clickable state
+    initializeStepTabs() {
+        const steps = document.querySelectorAll('.step');
+        steps.forEach((stepEl, index) => {
+            // Set base accessibility attributes
+            stepEl.setAttribute('role', 'tab');
+            stepEl.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+            stepEl.setAttribute('tabindex', '-1'); // Not focusable by keyboard
+            
+            // Issue #270 fix: Make tabs non-interactive indicators only
+            stepEl.style.cursor = 'default';
+            stepEl.removeAttribute('onclick');
+            stepEl.onclick = null;
+            
+            // Clear any visual indicators that suggest clickability
+            if (index === 0) {
+                stepEl.classList.add('active');
+                stepEl.style.opacity = '1';
+            } else {
+                stepEl.classList.add('disabled');
+                stepEl.style.opacity = '0.6';
+                stepEl.style.pointerEvents = 'none';
+            }
+        });
     }
 
     // Get step name for display
@@ -19616,7 +22038,9 @@ class MuseumCheckApp {
         const modal = document.getElementById('assessmentModal');
         const closeBtn = modal.querySelector('.close');
         const nextBtn = document.getElementById('assessmentNext');
-        const prevBtn = document.getElementById('assessmentPrev');
+
+        // Initialize step tabs when setting up listeners
+        this.initializeStepTabs();
 
         // Close modal
         const closeModal = () => {
@@ -19660,14 +22084,18 @@ class MuseumCheckApp {
 
         // Navigation buttons
         nextBtn.onclick = () => this.nextAssessmentStep();
-        prevBtn.onclick = () => this.prevAssessmentStep();
     }
 
     showAssessmentStep(step) {
         const form = document.getElementById('assessmentForm');
         const steps = document.querySelectorAll('.step');
         const nextBtn = document.getElementById('assessmentNext');
-        const prevBtn = document.getElementById('assessmentPrev');
+
+        // Return early if essential elements are missing
+        if (!form || !nextBtn) {
+            console.error('Assessment modal elements not found');
+            return;
+        }
 
         // Update step indicators
         steps.forEach((stepEl, index) => {
@@ -19679,8 +22107,7 @@ class MuseumCheckApp {
             }
         });
 
-        // Show/hide navigation buttons
-        prevBtn.style.display = step > 0 ? 'inline-block' : 'none';
+        // Remove the previous button display logic since button was removed
         
         // Auto-scroll to assessment form top for better mobile UX
         setTimeout(() => {
@@ -19696,50 +22123,11 @@ class MuseumCheckApp {
         }, 100);
         
         if (step === 0) {
-            // Introduction step - Optimized for mobile UX
+            // Introduction step - Simplified and concise
             const museum = this.getCurrentMuseum();
             const museumName = museum ? museum.name : '博物馆';
             
-            form.innerHTML = `
-                <div class="assessment-intro-optimized">
-                    <div class="assessment-welcome">
-                        <h3>${museumName} - 亲子关系测评</h3>
-                        <p class="assessment-subtitle">通过回顾这次<strong>${museumName}</strong>参观体验，了解亲子互动表现</p>
-                    </div>
-                    
-                    <div class="assessment-quick-info">
-                        <div class="quick-info-item">
-                            <span class="info-icon">👨‍👩‍👧‍👦</span>
-                            <span class="info-text">家长+孩子 两部分问卷</span>
-                        </div>
-                        <div class="quick-info-item">
-                            <span class="info-icon">⏱️</span>
-                            <span class="info-text">约3分钟完成</span>
-                        </div>
-                        <div class="quick-info-item">
-                            <span class="info-icon">💡</span>
-                            <span class="info-text">获得改善建议</span>
-                        </div>
-                    </div>
-
-                    <div class="assessment-disclaimer-compact">
-                        <p><strong>📋 测评说明</strong></p>
-                        <p class="disclaimer-text">本测评仅针对此次参观，评分供参考，重点关注改进方向</p>
-                    </div>
-                    
-                    <details class="assessment-details" style="margin: 15px 0; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px;">
-                        <summary style="cursor: pointer; font-weight: bold; color: #6c5ce7;">📖 详细说明（点击展开）</summary>
-                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0;">
-                            <p><strong>测评包含两个部分：</strong></p>
-                            <ul style="text-align: left; margin: 10px 0; padding-left: 20px; font-size: 0.9em;">
-                                <li>第一部分：家长在此次参观中的表现（5道题）</li>
-                                <li>第二部分：孩子在此次参观中的表现（5道题）</li>
-                            </ul>
-                            <p style="font-size: 0.9em; color: #666;">请根据这次参观的实际情况如实回答，结果仅供参考，重点是了解优势和改进方向。</p>
-                        </div>
-                    </details>
-                </div>
-            `;
+            form.innerHTML = ``;
             nextBtn.textContent = '开始测评';
         } else if (step === 1) {
             // Parent questionnaire
@@ -19780,27 +22168,30 @@ class MuseumCheckApp {
         this.updateStepVisualStates(step);
     }
     
-    // Auto-scroll to form area on step changes  
+    // Auto-scroll to form area on step changes for better mobile UX
     scrollToFormArea() {
         const modalContent = document.querySelector('.modal-content.assessment-content');
         const assessmentForm = document.getElementById('assessmentForm');
         
         if (modalContent && assessmentForm) {
-            // For mobile devices, scroll to the form content specifically
+            // Issue #270 fix: Enhanced mobile auto-scroll behavior
             if (window.innerWidth <= 768) {
-                // On mobile, scroll to top of form to ensure buttons are visible
+                // On mobile, scroll to top of modal for better question visibility
                 setTimeout(() => {
                     modalContent.scrollTo({ 
                         top: 0, 
                         behavior: 'smooth' 
                     });
-                }, 100);
+                }, 150); // Slightly longer delay for better UX
             } else {
-                // On desktop, smooth scroll to top of modal
-                modalContent.scrollTo({ 
-                    top: 0, 
-                    behavior: 'smooth' 
-                });
+                // On desktop, scroll to form area specifically
+                setTimeout(() => {
+                    assessmentForm.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start',
+                        inline: 'nearest'
+                    });
+                }, 100);
             }
         }
     }
@@ -19813,6 +22204,7 @@ class MuseumCheckApp {
                 currentStep: this.assessmentState.currentStep,
                 parentAnswers: this.assessmentState.parentAnswers || [],
                 childAnswers: this.assessmentState.childAnswers || [],
+                completed: this.assessmentState.currentStep >= 3, // Mark as completed when on results step
                 timestamp: this.assessmentState.timestamp
             };
             
@@ -19829,6 +22221,11 @@ class MuseumCheckApp {
             stepEl.classList.remove('active', 'completed', 'disabled', 'current');
             stepEl.removeAttribute('aria-current');
             stepEl.removeAttribute('aria-label');
+            stepEl.removeAttribute('onclick'); // Remove any click handlers
+            
+            // Set base accessibility attributes for all steps
+            stepEl.setAttribute('role', 'tab');
+            stepEl.setAttribute('aria-selected', 'false');
             
             if (index < currentStep) {
                 // Completed steps
@@ -19842,6 +22239,7 @@ class MuseumCheckApp {
                 stepEl.style.cursor = 'default';
                 stepEl.style.opacity = '1';
                 stepEl.setAttribute('aria-current', 'step');
+                stepEl.setAttribute('aria-selected', 'true');
                 stepEl.setAttribute('aria-label', `当前步骤: ${this.getStepName(index + 1)}`);
             } else {
                 // Future/disabled steps
@@ -19861,13 +22259,7 @@ class MuseumCheckApp {
         
         form.innerHTML = `
             <div class="questionnaire-section">
-                <h3>家长问卷 - ${museumName}参观体验</h3>
-                <p>请根据这次<strong>${museumName}之行</strong>中您与孩子的具体表现，选择最符合的答案：</p>
-                <div class="assessment-disclaimer">
-                    <p>🎯 <strong>专项评估说明：</strong>本测评专门针对这一次<strong>${museumName}</strong>参观中的亲子互动表现进行评估。</p>
-                    <p>📊 <strong>分数参考提醒：</strong>测评分数<strong>仅供参考</strong>，请不要过分看重数值结果。每次博物馆参观都是独特的亲子体验。</p>
-                    <p>💡 <strong>价值导向：</strong>重要的是通过本次${museumName}之行的回顾，发现亲子关系的优势并找到可以改进的地方，让未来的博物馆之旅更加愉快和有意义。</p>
-                </div>
+                <h3>家长问卷 - ${museumName}</h3>
                 ${questions.map((q, index) => `
                     <div class="question-container">
                         <div class="question-title">${index + 1}. ${q.question}</div>
@@ -19896,12 +22288,7 @@ class MuseumCheckApp {
         
         form.innerHTML = `
             <div class="questionnaire-section">
-                <h3>孩子问卷 - ${museumName}参观体验</h3>
-                <p>请根据孩子在这次<strong>${museumName}之行</strong>中的具体表现，选择最符合的答案（可由孩子自己回答或家长根据观察代为选择）：</p>
-                <div class="assessment-disclaimer">
-                    <p>👶 <strong>孩子视角评估：</strong>这些问题专门针对本次<strong>${museumName}</strong>参观体验，关注孩子的真实反应和参与度。</p>
-                    <p>🔍 <strong>观察重点：</strong>每个孩子在不同博物馆中的表现会有所不同，这很正常。重要的是了解孩子在此次活动中的感受。</p>
-                </div>
+                <h3>孩子问卷 - ${museumName}</h3>
                 ${questions.map((q, index) => `
                     <div class="question-container">
                         <div class="question-title">${index + 1}. ${q.question}</div>
@@ -19948,8 +22335,40 @@ class MuseumCheckApp {
                 
                 // Auto-save progress after each answer
                 this.autoSaveAssessmentProgress();
+                
+                // Auto-scroll to next question on mobile for better UX
+                if (window.innerWidth <= 768) {
+                    setTimeout(() => {
+                        this.scrollToNextQuestion(questionIndex);
+                    }, 300); // Small delay to let selection animation complete
+                }
             });
         });
+    }
+
+    // Auto-scroll to next question on mobile devices
+    scrollToNextQuestion(currentQuestionIndex) {
+        const questions = document.querySelectorAll('.question-container');
+        const nextQuestion = questions[currentQuestionIndex + 1];
+        
+        if (nextQuestion) {
+            // Scroll to next question
+            nextQuestion.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center',
+                inline: 'nearest'
+            });
+        } else {
+            // No more questions, scroll to bottom to show navigation buttons
+            const assessmentButtons = document.querySelector('.assessment-buttons');
+            if (assessmentButtons) {
+                assessmentButtons.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'end',
+                    inline: 'nearest'
+                });
+            }
+        }
     }
 
     nextAssessmentStep() {
@@ -19973,13 +22392,6 @@ class MuseumCheckApp {
         }
         
         this.showAssessmentStep(currentStep + 1);
-    }
-
-    prevAssessmentStep() {
-        const currentStep = this.assessmentState.currentStep;
-        if (currentStep > 0) {
-            this.showAssessmentStep(currentStep - 1);
-        }
     }
 
     calculateAssessmentScore() {
@@ -20923,7 +23335,7 @@ class MuseumCheckApp {
                     this.smoothScrollToElement(nextItem, 'center');
                     
                     // Add subtle highlight to draw attention
-                    this.highlightElement(nextItem, 2000);
+                    this.highlightElement(nextItem, UI_CONSTANTS.ANIMATION.HIGHLIGHT_DURATION);
                     return;
                 }
             }
@@ -21024,14 +23436,14 @@ class MuseumCheckApp {
     /**
      * Add a temporary highlight effect to draw attention to an element
      */
-    highlightElement(element, duration = 2000, color = 'rgba(59, 130, 246, 0.2)') {
+    highlightElement(element, duration = UI_CONSTANTS.ANIMATION.HIGHLIGHT_DURATION, color = UI_CONSTANTS.COLORS.HIGHLIGHT_DEFAULT) {
         if (!element) return;
         
         const originalTransition = element.style.transition;
         const originalBackground = element.style.backgroundColor;
         
         // Add highlight
-        element.style.transition = 'background-color 0.3s ease-in-out';
+        element.style.transition = UI_CONSTANTS.COLORS.TRANSITION_PROPERTY;
         element.style.backgroundColor = color;
         
         // Remove highlight after duration
@@ -21039,7 +23451,7 @@ class MuseumCheckApp {
             element.style.backgroundColor = originalBackground;
             setTimeout(() => {
                 element.style.transition = originalTransition;
-            }, 300);
+            }, UI_CONSTANTS.ANIMATION.TRANSITION_DURATION);
         }, duration);
     }
 }
