@@ -17236,6 +17236,674 @@ const MUSEUMS = [
 // Single source of truth for museum count - automatically calculated
 const MUSEUM_COUNT = MUSEUMS.length;
 
+// ===== ANALYTICS MANAGER MODULE =====
+// Analytics Manager - Centralized analytics and reporting
+class AnalyticsManager {
+    constructor() {
+        this.isGoogleAnalyticsEnabled = false;
+        this.sessionStartTime = Date.now();
+        this.eventQueue = [];
+        this.userMetrics = {};
+        this.initializeAnalytics();
+    }
+    
+    initializeAnalytics() {
+        // Check if Google Analytics is available
+        if (typeof gtag === 'function') {
+            this.isGoogleAnalyticsEnabled = true;
+        }
+        
+        // Initialize user metrics
+        this.userMetrics = {
+            sessionId: this.generateSessionId(),
+            userId: this.getUserId(),
+            visitCount: this.getVisitCount(),
+            sessionStartTime: this.sessionStartTime,
+            lastActivityTime: this.sessionStartTime
+        };
+        
+        // Track session start
+        this.trackEvent('session_start', {
+            session_id: this.userMetrics.sessionId,
+            visit_count: this.userMetrics.visitCount
+        });
+    }
+    
+    generateSessionId() {
+        return Date.now().toString(36) + Math.random().toString(36).substring(2);
+    }
+    
+    getUserId() {
+        let userId = localStorage.getItem('user_id');
+        if (!userId) {
+            userId = 'user_' + Date.now().toString(36) + Math.random().toString(36).substring(2);
+            localStorage.setItem('user_id', userId);
+        }
+        return userId;
+    }
+    
+    getVisitCount() {
+        let count = parseInt(localStorage.getItem('visit_count')) || 0;
+        count++;
+        localStorage.setItem('visit_count', count.toString());
+        return count;
+    }
+    
+    trackEvent(eventName, parameters = {}) {
+        // Update last activity time
+        this.userMetrics.lastActivityTime = Date.now();
+        
+        // Enhanced event parameters
+        const enrichedParams = {
+            ...parameters,
+            session_id: this.userMetrics.sessionId,
+            user_id: this.userMetrics.userId,
+            timestamp: Date.now(),
+            page_url: window.location.href,
+            user_agent: navigator.userAgent,
+            screen_resolution: `${screen.width}x${screen.height}`,
+            viewport_size: `${window.innerWidth}x${window.innerHeight}`
+        };
+        
+        // Send to Google Analytics if available
+        if (this.isGoogleAnalyticsEnabled) {
+            try {
+                gtag('event', eventName, enrichedParams);
+            } catch (error) {
+                console.warn('Failed to send event to Google Analytics:', error);
+            }
+        }
+        
+        // Queue event for local analytics
+        this.eventQueue.push({
+            event: eventName,
+            parameters: enrichedParams
+        });
+        
+        // Maintain event queue size (keep last 100 events)
+        if (this.eventQueue.length > 100) {
+            this.eventQueue = this.eventQueue.slice(-100);
+        }
+        
+        // Store critical events in localStorage
+        this.storeCriticalEvent(eventName, enrichedParams);
+    }
+    
+    storeCriticalEvent(eventName, parameters) {
+        const criticalEvents = [
+            'museum_visited',
+            'checklist_completed',
+            'assessment_completed',
+            'achievement_unlocked'
+        ];
+        
+        if (criticalEvents.includes(eventName)) {
+            try {
+                const stored = JSON.parse(localStorage.getItem('analytics_events') || '[]');
+                stored.push({ event: eventName, parameters, timestamp: Date.now() });
+                
+                // Keep only last 50 critical events
+                const trimmed = stored.slice(-50);
+                localStorage.setItem('analytics_events', JSON.stringify(trimmed));
+            } catch (error) {
+                console.warn('Failed to store critical event:', error);
+            }
+        }
+    }
+    
+    trackPageView(pageName, additionalParams = {}) {
+        this.trackEvent('page_view', {
+            page_name: pageName,
+            page_location: window.location.href,
+            ...additionalParams
+        });
+    }
+    
+    trackUserAction(action, category, label = '', value = 0) {
+        this.trackEvent('user_action', {
+            action_name: action,
+            action_category: category,
+            action_label: label,
+            action_value: value
+        });
+    }
+    
+    trackMuseumInteraction(museumId, museumName, interactionType, additionalData = {}) {
+        this.trackEvent('museum_interaction', {
+            museum_id: museumId,
+            museum_name: museumName,
+            interaction_type: interactionType,
+            ...additionalData
+        });
+    }
+    
+    trackPerformanceMetric(metricName, value, unit = '') {
+        this.trackEvent('performance_metric', {
+            metric_name: metricName,
+            metric_value: value,
+            metric_unit: unit,
+            timestamp: Date.now()
+        });
+    }
+    
+    trackError(errorType, errorMessage, errorContext = {}) {
+        this.trackEvent('error_occurred', {
+            error_type: errorType,
+            error_message: errorMessage,
+            error_context: JSON.stringify(errorContext),
+            timestamp: Date.now()
+        });
+    }
+    
+    getSessionAnalytics() {
+        const sessionDuration = Date.now() - this.sessionStartTime;
+        const events = this.eventQueue.length;
+        
+        return {
+            sessionId: this.userMetrics.sessionId,
+            sessionDuration,
+            totalEvents: events,
+            eventsPerMinute: events / (sessionDuration / 60000),
+            lastActivityTime: this.userMetrics.lastActivityTime
+        };
+    }
+    
+    getUserAnalytics() {
+        try {
+            const visitedMuseums = JSON.parse(localStorage.getItem('visitedMuseums') || '[]');
+            const checklistData = JSON.parse(localStorage.getItem('museumChecklists') || '{}');
+            const storedEvents = JSON.parse(localStorage.getItem('analytics_events') || '[]');
+            
+            const completedChecklists = Object.keys(checklistData).reduce((count, key) => {
+                const items = checklistData[key];
+                return items && items.length > 0 ? count + 1 : count;
+            }, 0);
+            
+            return {
+                userId: this.userMetrics.userId,
+                totalVisits: this.userMetrics.visitCount,
+                visitedMuseumsCount: visitedMuseums.length,
+                completedChecklistsCount: completedChecklists,
+                totalStoredEvents: storedEvents.length,
+                firstVisit: storedEvents.length > 0 ? storedEvents[0].timestamp : this.sessionStartTime,
+                engagementScore: this.calculateEngagementScore(visitedMuseums.length, completedChecklists, events)
+            };
+        } catch (error) {
+            console.warn('Failed to generate user analytics:', error);
+            return null;
+        }
+    }
+    
+    calculateEngagementScore(visitedCount, checklistCount, eventCount) {
+        // Simple engagement scoring algorithm
+        const visitScore = Math.min(visitedCount * 5, 50);  // Max 50 points for visits
+        const checklistScore = Math.min(checklistCount * 3, 30);  // Max 30 points for checklists
+        const activityScore = Math.min(eventCount * 1, 20);  // Max 20 points for general activity
+        
+        return visitScore + checklistScore + activityScore;  // Max score: 100
+    }
+    
+    generateAnalyticsReport() {
+        const sessionData = this.getSessionAnalytics();
+        const userData = this.getUserAnalytics();
+        
+        return {
+            session: sessionData,
+            user: userData,
+            systemInfo: {
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+                platform: navigator.platform,
+                onLine: navigator.onLine,
+                cookieEnabled: navigator.cookieEnabled
+            },
+            timestamp: Date.now(),
+            reportVersion: '1.0'
+        };
+    }
+    
+    exportAnalyticsData() {
+        try {
+            const report = this.generateAnalyticsReport();
+            const dataStr = JSON.stringify(report, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const url = URL.createObjectURL(dataBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `museumcheck-analytics-${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            return true;
+        } catch (error) {
+            console.error('Failed to export analytics data:', error);
+            return false;
+        }
+    }
+    
+    // Clean up old analytics data
+    cleanupOldData(maxAgeMs = 30 * 24 * 60 * 60 * 1000) { // 30 days default
+        try {
+            const stored = JSON.parse(localStorage.getItem('analytics_events') || '[]');
+            const cutoff = Date.now() - maxAgeMs;
+            const filtered = stored.filter(event => event.timestamp > cutoff);
+            
+            if (filtered.length !== stored.length) {
+                localStorage.setItem('analytics_events', JSON.stringify(filtered));
+            }
+            
+            return stored.length - filtered.length; // Return number of cleaned items
+        } catch (error) {
+            console.warn('Failed to cleanup old analytics data:', error);
+            return 0;
+        }
+    }
+}
+
+// ===== PHOTO MANAGER MODULE =====
+// Photo Manager - Centralized photo and file management
+class PhotoManager {
+    constructor() {
+        this.supportedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        this.maxFileSize = 10 * 1024 * 1024; // 10MB
+        this.compressionQuality = 0.8;
+        this.maxDisplayWidth = 800;
+        this.maxDisplayHeight = 600;
+    }
+    
+    validatePhotoFile(file) {
+        const errors = [];
+        
+        if (!file) {
+            errors.push('No file provided');
+            return { isValid: false, errors };
+        }
+        
+        // Check file type
+        if (!this.supportedImageTypes.includes(file.type)) {
+            errors.push(`Unsupported file type: ${file.type}. Supported types: ${this.supportedImageTypes.join(', ')}`);
+        }
+        
+        // Check file size
+        if (file.size > this.maxFileSize) {
+            errors.push(`File size too large: ${(file.size / (1024 * 1024)).toFixed(2)}MB. Maximum allowed: ${this.maxFileSize / (1024 * 1024)}MB`);
+        }
+        
+        return {
+            isValid: errors.length === 0,
+            errors,
+            fileInfo: {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                lastModified: file.lastModified
+            }
+        };
+    }
+    
+    async compressImage(file, targetQuality = null) {
+        return new Promise((resolve, reject) => {
+            const quality = targetQuality || this.compressionQuality;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = () => {
+                // Calculate new dimensions while maintaining aspect ratio
+                let { width, height } = this.calculateOptimalDimensions(img.width, img.height);
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Draw the resized image
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Convert to blob with compression
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        resolve(blob);
+                    } else {
+                        reject(new Error('Failed to compress image'));
+                    }
+                }, file.type, quality);
+                
+                // Clean up
+                URL.revokeObjectURL(img.src);
+            };
+            
+            img.onerror = () => {
+                reject(new Error('Failed to load image for compression'));
+            };
+            
+            img.src = URL.createObjectURL(file);
+        });
+    }
+    
+    calculateOptimalDimensions(originalWidth, originalHeight) {
+        let width = originalWidth;
+        let height = originalHeight;
+        
+        // Resize if larger than max dimensions
+        if (width > this.maxDisplayWidth || height > this.maxDisplayHeight) {
+            const widthRatio = this.maxDisplayWidth / width;
+            const heightRatio = this.maxDisplayHeight / height;
+            const ratio = Math.min(widthRatio, heightRatio);
+            
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+        }
+        
+        return { width, height };
+    }
+    
+    async convertToDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                resolve(e.target.result);
+            };
+            
+            reader.onerror = () => {
+                reject(new Error('Failed to read file'));
+            };
+            
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    async processPhotoUpload(file, shouldCompress = true) {
+        try {
+            // Validate the file first
+            const validation = this.validatePhotoFile(file);
+            if (!validation.isValid) {
+                throw new Error(`Photo validation failed: ${validation.errors.join(', ')}`);
+            }
+            
+            let processedFile = file;
+            
+            // Compress image if needed and requested
+            if (shouldCompress && file.size > 500 * 1024) { // Compress files larger than 500KB
+                processedFile = await this.compressImage(file);
+            }
+            
+            // Convert to data URL for storage
+            const dataURL = await this.convertToDataURL(processedFile);
+            
+            return {
+                success: true,
+                dataURL,
+                originalSize: file.size,
+                processedSize: processedFile.size,
+                compressionRatio: processedFile.size / file.size,
+                fileName: file.name,
+                fileType: file.type
+            };
+            
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+    
+    createPhotoElement(dataURL, altText = 'Uploaded photo', className = 'uploaded-photo') {
+        const img = document.createElement('img');
+        img.src = dataURL;
+        img.alt = altText;
+        img.className = className;
+        img.loading = 'lazy';
+        
+        return img;
+    }
+    
+    createPhotoPreview(dataURL, onRemove = null) {
+        const container = document.createElement('div');
+        container.className = 'photo-preview-container';
+        
+        const img = this.createPhotoElement(dataURL, 'Photo preview', 'photo-preview');
+        container.appendChild(img);
+        
+        if (onRemove && typeof onRemove === 'function') {
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'photo-remove-btn';
+            removeBtn.innerHTML = '×';
+            removeBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onRemove(container);
+            };
+            container.appendChild(removeBtn);
+        }
+        
+        return container;
+    }
+    
+    getPhotoFileInfo(file) {
+        return {
+            name: file.name,
+            size: this.formatFileSize(file.size),
+            type: file.type,
+            lastModified: new Date(file.lastModified).toLocaleString()
+        };
+    }
+    
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Clean up object URLs to prevent memory leaks
+    cleanup(urls) {
+        if (Array.isArray(urls)) {
+            urls.forEach(url => {
+                if (typeof url === 'string' && url.startsWith('blob:')) {
+                    URL.revokeObjectURL(url);
+                }
+            });
+        } else if (typeof urls === 'string' && urls.startsWith('blob:')) {
+            URL.revokeObjectURL(urls);
+        }
+    }
+}
+
+// ===== MODAL MANAGER MODULE =====
+// Modal Manager - Centralized modal operations
+class ModalManager {
+    constructor() {
+        this.activeModals = new Set();
+        this.modalConfigs = new Map();
+        this.initializeModalConfigurations();
+        this.bindGlobalEvents();
+    }
+    
+    initializeModalConfigurations() {
+        // Define modal-specific configurations
+        this.modalConfigs.set('museumModal', {
+            closeOnOutsideClick: true,
+            closeOnEscape: true,
+            focusTrap: true
+        });
+        
+        this.modalConfigs.set('achievementModal', {
+            closeOnOutsideClick: true,
+            closeOnEscape: true,
+            focusTrap: false
+        });
+        
+        this.modalConfigs.set('assessmentModal', {
+            closeOnOutsideClick: false,
+            closeOnEscape: false,
+            focusTrap: true
+        });
+        
+        this.modalConfigs.set('settingsModal', {
+            closeOnOutsideClick: true,
+            closeOnEscape: true,
+            focusTrap: false
+        });
+        
+        this.modalConfigs.set('assessmentHistoryModal', {
+            closeOnOutsideClick: true,
+            closeOnEscape: true,
+            focusTrap: false
+        });
+    }
+    
+    bindGlobalEvents() {
+        // Handle ESC key for closing modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.handleEscapeKey();
+            }
+        });
+        
+        // Handle outside click for closing modals
+        document.addEventListener('click', (e) => {
+            this.handleOutsideClick(e);
+        });
+    }
+    
+    showModal(modalId, options = {}) {
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            console.warn(`Modal with id '${modalId}' not found`);
+            return false;
+        }
+        
+        const config = { ...this.modalConfigs.get(modalId), ...options };
+        
+        // Show the modal
+        modal.classList.remove('hidden');
+        this.activeModals.add(modalId);
+        
+        // Handle focus management
+        if (config.focusTrap) {
+            this.setupFocusTrap(modal);
+        }
+        
+        // Prevent body scroll when modal is open
+        document.body.classList.add('modal-open');
+        
+        return true;
+    }
+    
+    closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            console.warn(`Modal with id '${modalId}' not found`);
+            return false;
+        }
+        
+        // Hide the modal
+        modal.classList.add('hidden');
+        this.activeModals.delete(modalId);
+        
+        // Restore body scroll if no modals are open
+        if (this.activeModals.size === 0) {
+            document.body.classList.remove('modal-open');
+        }
+        
+        return true;
+    }
+    
+    closeAllModals() {
+        Array.from(this.activeModals).forEach(modalId => {
+            this.closeModal(modalId);
+        });
+    }
+    
+    isModalOpen(modalId) {
+        return this.activeModals.has(modalId);
+    }
+    
+    getActiveModals() {
+        return Array.from(this.activeModals);
+    }
+    
+    handleEscapeKey() {
+        // Close the most recently opened modal that allows ESC closing
+        for (const modalId of Array.from(this.activeModals).reverse()) {
+            const config = this.modalConfigs.get(modalId);
+            if (config && config.closeOnEscape) {
+                this.closeModal(modalId);
+                break;
+            }
+        }
+    }
+    
+    handleOutsideClick(event) {
+        // Check if click is outside any modal content
+        for (const modalId of this.activeModals) {
+            const config = this.modalConfigs.get(modalId);
+            if (!config || !config.closeOnOutsideClick) continue;
+            
+            const modal = document.getElementById(modalId);
+            if (!modal) continue;
+            
+            const modalContent = modal.querySelector('.modal-content');
+            if (modalContent && !modalContent.contains(event.target) && modal.contains(event.target)) {
+                this.closeModal(modalId);
+                break;
+            }
+        }
+    }
+    
+    setupFocusTrap(modal) {
+        const focusableElements = modal.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        
+        if (focusableElements.length === 0) return;
+        
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        
+        // Focus the first element
+        firstElement.focus();
+        
+        // Trap focus within modal
+        const handleTabKey = (e) => {
+            if (e.key !== 'Tab') return;
+            
+            if (e.shiftKey) {
+                if (document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                }
+            } else {
+                if (document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+        };
+        
+        modal.addEventListener('keydown', handleTabKey);
+        
+        // Remove event listener when modal closes
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'class' && modal.classList.contains('hidden')) {
+                    modal.removeEventListener('keydown', handleTabKey);
+                    observer.disconnect();
+                }
+            });
+        });
+        
+        observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+    }
+}
+
 // ===== EVENT HANDLER MODULE =====
 // Centralized event handling logic for better organization
 const EventHandlers = {
@@ -17442,6 +18110,12 @@ class MuseumCheckApp {
         this.db = null;
         this.searchQuery = '';
         this.filteredMuseums = MUSEUMS;
+        
+        // Initialize specialized modules
+        this.modalManager = new ModalManager();
+        this.photoManager = new PhotoManager();
+        this.analyticsManager = new AnalyticsManager();
+        
         this.init();
     }
 
@@ -17464,10 +18138,15 @@ class MuseumCheckApp {
         }
     }
 
-    // Google Analytics tracking helper
+    // Google Analytics tracking helper - now using AnalyticsManager
     trackEvent(eventName, parameters = {}) {
-        if (typeof gtag !== 'undefined' && window.GA_MEASUREMENT_ID !== 'GA_MEASUREMENT_ID') {
-            gtag('event', eventName, parameters);
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent(eventName, parameters);
+        } else {
+            // Fallback to direct gtag if AnalyticsManager not available
+            if (typeof gtag !== 'undefined' && window.GA_MEASUREMENT_ID !== 'GA_MEASUREMENT_ID') {
+                gtag('event', eventName, parameters);
+            }
         }
     }
 
@@ -18848,14 +19527,12 @@ class MuseumCheckApp {
     }
 
     closeModal() {
-        document.getElementById('museumModal').classList.add('hidden');
+        this.modalManager.closeModal('museumModal');
     }
-
-
 
     showAchievementModal() {
         this.renderAchievements();
-        document.getElementById('achievementModal').classList.remove('hidden');
+        this.modalManager.showModal('achievementModal');
         
         // Track achievement view
         this.trackEvent('achievements_viewed', {
@@ -18865,7 +19542,7 @@ class MuseumCheckApp {
     }
 
     closeAchievementModal() {
-        document.getElementById('achievementModal').classList.add('hidden');
+        this.modalManager.closeModal('achievementModal');
         
         // Hide poster section when closing
         const posterSection = document.getElementById('achievementPosterSection');
@@ -18876,7 +19553,7 @@ class MuseumCheckApp {
 
     showAssessmentHistoryModal() {
         this.renderAssessmentHistory();
-        document.getElementById('assessmentHistoryModal').classList.remove('hidden');
+        this.modalManager.showModal('assessmentHistoryModal');
         
         // Track assessment history view
         this.trackEvent('assessment_history_viewed', {
@@ -18885,12 +19562,12 @@ class MuseumCheckApp {
     }
 
     closeAssessmentHistoryModal() {
-        document.getElementById('assessmentHistoryModal').classList.add('hidden');
+        this.modalManager.closeModal('assessmentHistoryModal');
     }
 
     showSettingsModal() {
         this.renderSettingsInfo();
-        document.getElementById('settingsModal').classList.remove('hidden');
+        this.modalManager.showModal('settingsModal');
         
         // Track settings view
         this.trackEvent('settings_viewed', {
