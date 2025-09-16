@@ -17236,6 +17236,991 @@ const MUSEUMS = [
 // Single source of truth for museum count - automatically calculated
 const MUSEUM_COUNT = MUSEUMS.length;
 
+// ===== ASSESSMENT MANAGER MODULE =====
+// AssessmentManager - Centralized parent-child assessment operations
+class AssessmentManager {
+    constructor(app, analyticsManager) {
+        this.app = app;
+        this.analyticsManager = analyticsManager;
+        this.currentAssessment = null;
+        this.assessmentHistory = [];
+        this.loadAssessmentHistory();
+    }
+    
+    loadAssessmentHistory() {
+        try {
+            const stored = localStorage.getItem('assessment_history');
+            this.assessmentHistory = stored ? JSON.parse(stored) : [];
+        } catch (error) {
+            console.warn('Failed to load assessment history:', error);
+            this.assessmentHistory = [];
+        }
+    }
+    
+    saveAssessmentHistory() {
+        try {
+            localStorage.setItem('assessment_history', JSON.stringify(this.assessmentHistory));
+        } catch (error) {
+            console.warn('Failed to save assessment history:', error);
+        }
+    }
+    
+    startAssessment(museumId, options = {}) {
+        const museum = MUSEUMS.find(m => m.id === museumId);
+        if (!museum) {
+            throw new Error(`Museum with ID ${museumId} not found`);
+        }
+        
+        const {
+            parentAge = 35,
+            childAge = 8,
+            assessmentType = 'full', // 'full', 'quick', 'follow-up'
+            resumeFrom = null
+        } = options;
+        
+        this.currentAssessment = {
+            id: Date.now().toString(),
+            museumId: museumId,
+            museumName: museum.name,
+            startTime: new Date().toISOString(),
+            parentAge: parentAge,
+            childAge: childAge,
+            assessmentType: assessmentType,
+            status: 'in_progress',
+            currentStep: resumeFrom || 1,
+            steps: this.generateAssessmentSteps(assessmentType),
+            responses: {
+                parent: {},
+                child: {},
+                observation: {}
+            },
+            scores: {
+                communication: 0,
+                engagement: 0,
+                learning: 0,
+                bonding: 0,
+                overall: 0
+            }
+        };
+        
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent('assessment_started', {
+                museum_id: museumId,
+                assessment_type: assessmentType,
+                parent_age: parentAge,
+                child_age: childAge,
+                resume_from: resumeFrom
+            });
+        }
+        
+        return this.currentAssessment;
+    }
+    
+    generateAssessmentSteps(assessmentType) {
+        const baseSteps = [
+            {
+                id: 1,
+                title: '参观前准备',
+                type: 'parent',
+                questions: [
+                    '您对这次博物馆之行的期待是什么？',
+                    '您希望孩子从这次参观中学到什么？',
+                    '您提前做了哪些准备工作？'
+                ]
+            },
+            {
+                id: 2,
+                title: '孩子期待调查',
+                type: 'child',
+                questions: [
+                    '你对去博物馆有什么感觉？',
+                    '你最想看到什么？',
+                    '你有什么问题想要了解吗？'
+                ]
+            },
+            {
+                id: 3,
+                title: '参观过程观察',
+                type: 'observation',
+                questions: [
+                    '亲子互动频率如何？',
+                    '孩子的参与度和兴趣程度',
+                    '家长的引导方式和效果',
+                    '遇到的挑战和解决方式'
+                ]
+            },
+            {
+                id: 4,
+                title: '参观后反思',
+                type: 'parent',
+                questions: [
+                    '这次参观达到了您的期望吗？',
+                    '您觉得孩子有什么收获？',
+                    '有什么可以改进的地方？'
+                ]
+            },
+            {
+                id: 5,
+                title: '孩子感受分享',
+                type: 'child',
+                questions: [
+                    '你最喜欢的展品是什么？',
+                    '你学到了什么新知识？',
+                    '下次还想来博物馆吗？'
+                ]
+            },
+            {
+                id: 6,
+                title: '关系评估',
+                type: 'relationship',
+                questions: [
+                    '这次活动增进了您与孩子的关系吗？',
+                    '您们在参观过程中的沟通效果如何？',
+                    '您对未来的亲子文化活动有什么计划？'
+                ]
+            }
+        ];
+        
+        if (assessmentType === 'quick') {
+            return baseSteps.slice(0, 4); // 只保留前4步
+        } else if (assessmentType === 'follow-up') {
+            return baseSteps.slice(3); // 从第4步开始
+        }
+        
+        return baseSteps;
+    }
+    
+    recordResponse(stepId, questionIndex, response, responseType = 'text') {
+        if (!this.currentAssessment) {
+            throw new Error('No active assessment found');
+        }
+        
+        const step = this.currentAssessment.steps.find(s => s.id === stepId);
+        if (!step) {
+            throw new Error(`Step ${stepId} not found`);
+        }
+        
+        if (!this.currentAssessment.responses[step.type]) {
+            this.currentAssessment.responses[step.type] = {};
+        }
+        
+        if (!this.currentAssessment.responses[step.type][stepId]) {
+            this.currentAssessment.responses[step.type][stepId] = {};
+        }
+        
+        this.currentAssessment.responses[step.type][stepId][questionIndex] = {
+            response: response,
+            type: responseType,
+            timestamp: new Date().toISOString()
+        };
+        
+        // Auto-save progress
+        this.saveAssessmentProgress();
+    }
+    
+    saveAssessmentProgress() {
+        if (!this.currentAssessment) return;
+        
+        try {
+            localStorage.setItem('current_assessment_progress', JSON.stringify(this.currentAssessment));
+        } catch (error) {
+            console.warn('Failed to save assessment progress:', error);
+        }
+    }
+    
+    loadAssessmentProgress() {
+        try {
+            const stored = localStorage.getItem('current_assessment_progress');
+            if (stored) {
+                this.currentAssessment = JSON.parse(stored);
+                return this.currentAssessment;
+            }
+        } catch (error) {
+            console.warn('Failed to load assessment progress:', error);
+        }
+        return null;
+    }
+    
+    clearAssessmentProgress() {
+        try {
+            localStorage.removeItem('current_assessment_progress');
+        } catch (error) {
+            console.warn('Failed to clear assessment progress:', error);
+        }
+    }
+    
+    calculateScores() {
+        if (!this.currentAssessment) {
+            throw new Error('No active assessment found');
+        }
+        
+        const responses = this.currentAssessment.responses;
+        const scores = {
+            communication: 0,
+            engagement: 0,
+            learning: 0,
+            bonding: 0,
+            overall: 0
+        };
+        
+        // Basic scoring algorithm - can be enhanced with ML/AI
+        let totalResponses = 0;
+        let positiveResponses = 0;
+        
+        // Count positive indicators in responses
+        Object.values(responses).forEach(typeResponses => {
+            Object.values(typeResponses).forEach(stepResponses => {
+                Object.values(stepResponses).forEach(response => {
+                    totalResponses++;
+                    
+                    // Simple sentiment analysis (could be enhanced)
+                    const text = response.response.toLowerCase();
+                    const positiveWords = ['好', '很好', '非常', '喜欢', '开心', '有趣', '学到', '收获', '满意'];
+                    const hasPositive = positiveWords.some(word => text.includes(word));
+                    
+                    if (hasPositive) {
+                        positiveResponses++;
+                    }
+                });
+            });
+        });
+        
+        // Calculate base score
+        const baseScore = totalResponses > 0 ? (positiveResponses / totalResponses) * 100 : 50;
+        
+        // Apply scores to different categories
+        scores.communication = Math.min(100, baseScore + Math.random() * 10 - 5);
+        scores.engagement = Math.min(100, baseScore + Math.random() * 10 - 5);
+        scores.learning = Math.min(100, baseScore + Math.random() * 10 - 5);
+        scores.bonding = Math.min(100, baseScore + Math.random() * 10 - 5);
+        scores.overall = (scores.communication + scores.engagement + scores.learning + scores.bonding) / 4;
+        
+        // Round scores
+        Object.keys(scores).forEach(key => {
+            scores[key] = Math.round(scores[key] * 10) / 10;
+        });
+        
+        this.currentAssessment.scores = scores;
+        return scores;
+    }
+    
+    completeAssessment() {
+        if (!this.currentAssessment) {
+            throw new Error('No active assessment found');
+        }
+        
+        // Calculate final scores
+        const scores = this.calculateScores();
+        
+        // Finalize assessment
+        this.currentAssessment.status = 'completed';
+        this.currentAssessment.endTime = new Date().toISOString();
+        this.currentAssessment.duration = new Date(this.currentAssessment.endTime).getTime() - 
+                                         new Date(this.currentAssessment.startTime).getTime();
+        
+        // Add to history
+        this.assessmentHistory.push({ ...this.currentAssessment });
+        this.saveAssessmentHistory();
+        
+        // Clear progress
+        this.clearAssessmentProgress();
+        
+        // Track completion
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent('assessment_completed', {
+                museum_id: this.currentAssessment.museumId,
+                assessment_type: this.currentAssessment.assessmentType,
+                duration: this.currentAssessment.duration,
+                overall_score: scores.overall,
+                communication_score: scores.communication,
+                engagement_score: scores.engagement,
+                learning_score: scores.learning,
+                bonding_score: scores.bonding
+            });
+        }
+        
+        const completedAssessment = { ...this.currentAssessment };
+        this.currentAssessment = null;
+        
+        return completedAssessment;
+    }
+    
+    generateRecommendations(assessment) {
+        const scores = assessment.scores;
+        const recommendations = [];
+        
+        if (scores.communication < 70) {
+            recommendations.push({
+                category: 'communication',
+                title: '加强亲子沟通',
+                suggestions: [
+                    '参观时多问开放性问题，如"你觉得这个展品怎么样？"',
+                    '鼓励孩子表达自己的想法和感受',
+                    '认真倾听孩子的问题，及时给予回应'
+                ]
+            });
+        }
+        
+        if (scores.engagement < 70) {
+            recommendations.push({
+                category: 'engagement',
+                title: '提升孩子参与度',
+                suggestions: [
+                    '选择孩子感兴趣的展区先参观',
+                    '使用互动式讲解方式，让孩子参与其中',
+                    '适当安排休息时间，避免疲劳'
+                ]
+            });
+        }
+        
+        if (scores.learning < 70) {
+            recommendations.push({
+                category: 'learning',
+                title: '增强学习效果',
+                suggestions: [
+                    '参观前做适当的知识准备',
+                    '参观后进行总结和分享',
+                    '将博物馆知识与日常生活联系起来'
+                ]
+            });
+        }
+        
+        if (scores.bonding < 70) {
+            recommendations.push({
+                category: 'bonding',
+                title: '深化亲子关系',
+                suggestions: [
+                    '创造更多互动机会，如一起完成任务',
+                    '分享自己的感受和经历',
+                    '制定下次参观的计划'
+                ]
+            });
+        }
+        
+        return recommendations;
+    }
+    
+    getAssessmentHistory(limit = null) {
+        const history = [...this.assessmentHistory].reverse(); // 最新的在前
+        return limit ? history.slice(0, limit) : history;
+    }
+    
+    getAssessmentById(assessmentId) {
+        return this.assessmentHistory.find(a => a.id === assessmentId);
+    }
+    
+    exportAssessmentData(assessmentId = null) {
+        if (assessmentId) {
+            const assessment = this.getAssessmentById(assessmentId);
+            return assessment ? {
+                export_date: new Date().toISOString(),
+                assessment: assessment,
+                recommendations: this.generateRecommendations(assessment)
+            } : null;
+        }
+        
+        return {
+            export_date: new Date().toISOString(),
+            total_assessments: this.assessmentHistory.length,
+            assessments: this.assessmentHistory.map(a => ({
+                ...a,
+                recommendations: this.generateRecommendations(a)
+            }))
+        };
+    }
+    
+    getAssessmentStats() {
+        if (this.assessmentHistory.length === 0) {
+            return {
+                total: 0,
+                averageScores: { overall: 0, communication: 0, engagement: 0, learning: 0, bonding: 0 },
+                mostAssessedMuseum: null,
+                assessmentFrequency: 0
+            };
+        }
+        
+        const totalAssessments = this.assessmentHistory.length;
+        const averageScores = {
+            overall: 0,
+            communication: 0,
+            engagement: 0,
+            learning: 0,
+            bonding: 0
+        };
+        
+        // Calculate averages
+        this.assessmentHistory.forEach(assessment => {
+            Object.keys(averageScores).forEach(key => {
+                averageScores[key] += assessment.scores[key];
+            });
+        });
+        
+        Object.keys(averageScores).forEach(key => {
+            averageScores[key] = Math.round((averageScores[key] / totalAssessments) * 10) / 10;
+        });
+        
+        // Find most assessed museum
+        const museumCounts = {};
+        this.assessmentHistory.forEach(assessment => {
+            museumCounts[assessment.museumId] = (museumCounts[assessment.museumId] || 0) + 1;
+        });
+        
+        const mostAssessedMuseumId = Object.keys(museumCounts).reduce((a, b) => 
+            museumCounts[a] > museumCounts[b] ? a : b
+        );
+        
+        const mostAssessedMuseum = MUSEUMS.find(m => m.id === mostAssessedMuseumId);
+        
+        return {
+            total: totalAssessments,
+            averageScores: averageScores,
+            mostAssessedMuseum: mostAssessedMuseum,
+            assessmentFrequency: totalAssessments
+        };
+    }
+}
+
+// ===== MUSEUM MANAGER MODULE =====
+// MuseumManager - Centralized museum check-in and management operations
+class MuseumManager {
+    constructor(app, analyticsManager) {
+        this.app = app;
+        this.analyticsManager = analyticsManager;
+        this.visitCache = new Set();
+        this.initializeCache();
+    }
+    
+    initializeCache() {
+        const visitedMuseums = this.app.loadVisitedMuseums();
+        this.visitCache = new Set(visitedMuseums);
+    }
+    
+    checkInMuseum(museumId) {
+        const museum = this.getMuseumById(museumId);
+        if (!museum) {
+            throw new Error(`Museum with ID ${museumId} not found`);
+        }
+        
+        const wasAlreadyVisited = this.isMuseumVisited(museumId);
+        
+        if (!wasAlreadyVisited) {
+            this.visitCache.add(museumId);
+            const visitedArray = Array.from(this.visitCache);
+            this.app.saveVisitedMuseums(visitedArray);
+            
+            // Track analytics
+            if (this.analyticsManager) {
+                this.analyticsManager.trackEvent('museum_checked_in', {
+                    museum_id: museumId,
+                    museum_name: museum.name,
+                    museum_location: museum.location,
+                    total_visited: visitedArray.length,
+                    visit_date: new Date().toISOString()
+                });
+            }
+            
+            return {
+                success: true,
+                wasNew: true,
+                totalVisited: visitedArray.length,
+                museum: museum
+            };
+        }
+        
+        return {
+            success: true,
+            wasNew: false,
+            totalVisited: this.visitCache.size,
+            museum: museum
+        };
+    }
+    
+    checkOutMuseum(museumId) {
+        const museum = this.getMuseumById(museumId);
+        if (!museum) {
+            throw new Error(`Museum with ID ${museumId} not found`);
+        }
+        
+        const wasVisited = this.isMuseumVisited(museumId);
+        
+        if (wasVisited) {
+            this.visitCache.delete(museumId);
+            const visitedArray = Array.from(this.visitCache);
+            this.app.saveVisitedMuseums(visitedArray);
+            
+            // Track analytics
+            if (this.analyticsManager) {
+                this.analyticsManager.trackEvent('museum_checked_out', {
+                    museum_id: museumId,
+                    museum_name: museum.name,
+                    total_visited: visitedArray.length,
+                    checkout_date: new Date().toISOString()
+                });
+            }
+            
+            return {
+                success: true,
+                wasVisited: true,
+                totalVisited: visitedArray.length,
+                museum: museum
+            };
+        }
+        
+        return {
+            success: true,
+            wasVisited: false,
+            totalVisited: this.visitCache.size,
+            museum: museum
+        };
+    }
+    
+    isMuseumVisited(museumId) {
+        return this.visitCache.has(museumId);
+    }
+    
+    getMuseumById(museumId) {
+        return MUSEUMS.find(museum => museum.id === museumId);
+    }
+    
+    getVisitedMuseums() {
+        return Array.from(this.visitCache).map(id => this.getMuseumById(id)).filter(Boolean);
+    }
+    
+    getUnvisitedMuseums() {
+        return MUSEUMS.filter(museum => !this.isMuseumVisited(museum.id));
+    }
+    
+    getVisitStats() {
+        const totalMuseums = MUSEUMS.length;
+        const visitedCount = this.visitCache.size;
+        const unvisitedCount = totalMuseums - visitedCount;
+        const completionPercentage = totalMuseums > 0 ? Math.round((visitedCount / totalMuseums) * 100 * 10) / 10 : 0;
+        
+        return {
+            total: totalMuseums,
+            visited: visitedCount,
+            unvisited: unvisitedCount,
+            completionPercentage
+        };
+    }
+    
+    searchMuseums(query, options = {}) {
+        const {
+            includeVisited = true,
+            includeUnvisited = true,
+            filterByLocation = null,
+            filterByTags = [],
+            sortBy = 'name' // 'name', 'location', 'visited'
+        } = options;
+        
+        let results = MUSEUMS;
+        
+        // Filter by visit status
+        if (!includeVisited || !includeUnvisited) {
+            results = results.filter(museum => {
+                const isVisited = this.isMuseumVisited(museum.id);
+                return (includeVisited && isVisited) || (includeUnvisited && !isVisited);
+            });
+        }
+        
+        // Filter by location
+        if (filterByLocation) {
+            results = results.filter(museum => 
+                museum.location.toLowerCase().includes(filterByLocation.toLowerCase())
+            );
+        }
+        
+        // Filter by tags
+        if (filterByTags.length > 0) {
+            results = results.filter(museum => 
+                museum.tags && museum.tags.some(tag => 
+                    filterByTags.some(filterTag => 
+                        tag.toLowerCase().includes(filterTag.toLowerCase())
+                    )
+                )
+            );
+        }
+        
+        // Text search
+        if (query && query.trim()) {
+            const searchTerm = query.toLowerCase().trim();
+            results = results.filter(museum => 
+                museum.name.toLowerCase().includes(searchTerm) ||
+                museum.location.toLowerCase().includes(searchTerm) ||
+                museum.description.toLowerCase().includes(searchTerm) ||
+                (museum.tags && museum.tags.some(tag => 
+                    tag.toLowerCase().includes(searchTerm)
+                ))
+            );
+        }
+        
+        // Sort results
+        results.sort((a, b) => {
+            switch (sortBy) {
+                case 'location':
+                    return a.location.localeCompare(b.location, 'zh-CN');
+                case 'visited':
+                    const aVisited = this.isMuseumVisited(a.id) ? 1 : 0;
+                    const bVisited = this.isMuseumVisited(b.id) ? 1 : 0;
+                    return bVisited - aVisited; // Visited first
+                case 'name':
+                default:
+                    return a.name.localeCompare(b.name, 'zh-CN');
+            }
+        });
+        
+        return results;
+    }
+    
+    getRecommendations(currentMuseumId = null, count = 5) {
+        const visitedMuseums = this.getVisitedMuseums();
+        const unvisitedMuseums = this.getUnvisitedMuseums();
+        
+        if (unvisitedMuseums.length === 0) {
+            return [];
+        }
+        
+        let recommendations = [];
+        
+        if (visitedMuseums.length > 0) {
+            // Get recommendations based on visited museums
+            const visitedLocations = [...new Set(visitedMuseums.map(m => m.location))];
+            const visitedTags = [...new Set(visitedMuseums.flatMap(m => m.tags || []))];
+            
+            // Score unvisited museums based on similarity
+            const scoredMuseums = unvisitedMuseums.map(museum => {
+                let score = 0;
+                
+                // Location similarity
+                if (visitedLocations.includes(museum.location)) {
+                    score += 3;
+                }
+                
+                // Tag similarity
+                const commonTags = (museum.tags || []).filter(tag => visitedTags.includes(tag));
+                score += commonTags.length * 2;
+                
+                // Exclude current museum from recommendations
+                if (currentMuseumId === museum.id) {
+                    score -= 10;
+                }
+                
+                return { ...museum, score };
+            });
+            
+            recommendations = scoredMuseums
+                .sort((a, b) => b.score - a.score)
+                .slice(0, count);
+        } else {
+            // For new users, recommend popular/famous museums
+            const famousMuseumIds = ['forbidden-city', 'national-museum', 'shanghai-museum', 'terracotta-warriors'];
+            const famousMuseums = famousMuseumIds
+                .map(id => unvisitedMuseums.find(m => m.id === id))
+                .filter(Boolean);
+            
+            recommendations = [
+                ...famousMuseums,
+                ...unvisitedMuseums.filter(m => !famousMuseumIds.includes(m.id))
+            ].slice(0, count);
+        }
+        
+        return recommendations;
+    }
+    
+    exportVisitData() {
+        const stats = this.getVisitStats();
+        const visitedMuseums = this.getVisitedMuseums();
+        
+        return {
+            export_date: new Date().toISOString(),
+            stats: stats,
+            visited_museums: visitedMuseums.map(museum => ({
+                id: museum.id,
+                name: museum.name,
+                location: museum.location,
+                tags: museum.tags
+            })),
+            recommendations: this.getRecommendations(null, 10)
+        };
+    }
+    
+    clearAllVisits() {
+        this.visitCache.clear();
+        this.app.saveVisitedMuseums([]);
+        
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent('all_visits_cleared', {
+                timestamp: new Date().toISOString()
+            });
+        }
+    }
+    
+    importVisitData(visitIds) {
+        if (!Array.isArray(visitIds)) {
+            throw new Error('Visit data must be an array of museum IDs');
+        }
+        
+        // Validate all museum IDs exist
+        const validIds = visitIds.filter(id => this.getMuseumById(id) !== null);
+        
+        this.visitCache = new Set(validIds);
+        this.app.saveVisitedMuseums(Array.from(this.visitCache));
+        
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent('visit_data_imported', {
+                total_imported: validIds.length,
+                invalid_ids: visitIds.length - validIds.length,
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        return {
+            imported: validIds.length,
+            invalid: visitIds.length - validIds.length,
+            total: this.visitCache.size
+        };
+    }
+}
+
+// ===== CHECKLIST MANAGER MODULE =====
+// ChecklistManager - Centralized checklist operations and management
+class ChecklistManager {
+    constructor(app, analyticsManager) {
+        this.app = app;
+        this.analyticsManager = analyticsManager;
+        this.checklistCache = new Map();
+        this.completionStats = new Map();
+    }
+    
+    getMuseumChecklist(museumId, checklistType, ageGroup) {
+        const museum = MUSEUMS.find(m => m.id === museumId);
+        if (!museum || !museum.checklists) {
+            return [];
+        }
+        
+        const typeChecklists = museum.checklists[checklistType];
+        if (!typeChecklists) {
+            return [];
+        }
+        
+        return typeChecklists[ageGroup] || [];
+    }
+    
+    loadChecklistProgress(museumId, checklistType, ageGroup) {
+        const key = `${museumId}-${checklistType}-${ageGroup}`;
+        const allChecklists = this.app.loadMuseumChecklists();
+        return allChecklists[key] || [];
+    }
+    
+    saveChecklistProgress(museumId, checklistType, ageGroup, progress) {
+        const key = `${museumId}-${checklistType}-${ageGroup}`;
+        const allChecklists = this.app.loadMuseumChecklists();
+        allChecklists[key] = progress;
+        
+        // Update cache
+        this.checklistCache.set(key, progress);
+        
+        // Save to storage
+        this.app.saveMuseumChecklists(allChecklists);
+        
+        // Track analytics
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent('checklist_progress_saved', {
+                museum_id: museumId,
+                checklist_type: checklistType,
+                age_group: ageGroup,
+                completed_items: progress.length,
+                completion_percentage: this.calculateCompletionPercentage(museumId, checklistType, ageGroup, progress)
+            });
+        }
+    }
+    
+    toggleChecklistItem(museumId, checklistType, ageGroup, itemIndex, checked) {
+        const progress = this.loadChecklistProgress(museumId, checklistType, ageGroup);
+        
+        if (checked) {
+            if (!progress.includes(itemIndex)) {
+                progress.push(itemIndex);
+            }
+        } else {
+            const index = progress.indexOf(itemIndex);
+            if (index > -1) {
+                progress.splice(index, 1);
+            }
+        }
+        
+        this.saveChecklistProgress(museumId, checklistType, ageGroup, progress);
+        
+        // Track individual item toggle
+        if (this.analyticsManager) {
+            this.analyticsManager.trackEvent('checklist_item_toggled', {
+                museum_id: museumId,
+                checklist_type: checklistType,
+                age_group: ageGroup,
+                item_index: itemIndex,
+                checked: checked,
+                total_completed: progress.length
+            });
+        }
+        
+        return progress;
+    }
+    
+    calculateCompletionPercentage(museumId, checklistType, ageGroup, progress = null) {
+        const checklist = this.getMuseumChecklist(museumId, checklistType, ageGroup);
+        if (!checklist || checklist.length === 0) {
+            return 0;
+        }
+        
+        const currentProgress = progress || this.loadChecklistProgress(museumId, checklistType, ageGroup);
+        return Math.round((currentProgress.length / checklist.length) * 100);
+    }
+    
+    getCompletionStats(museumId, ageGroup) {
+        const stats = {
+            parent: {
+                total: 0,
+                completed: 0,
+                percentage: 0,
+                items: []
+            },
+            child: {
+                total: 0,
+                completed: 0,
+                percentage: 0,
+                items: []
+            }
+        };
+        
+        ['parent', 'child'].forEach(type => {
+            const checklist = this.getMuseumChecklist(museumId, type, ageGroup);
+            const progress = this.loadChecklistProgress(museumId, type, ageGroup);
+            
+            stats[type].total = checklist.length;
+            stats[type].completed = progress.length;
+            stats[type].percentage = this.calculateCompletionPercentage(museumId, type, ageGroup, progress);
+            stats[type].items = checklist.map((item, index) => ({
+                text: item,
+                completed: progress.includes(index),
+                index: index
+            }));
+        });
+        
+        return stats;
+    }
+    
+    clearChecklistProgress(museumId, checklistType, ageGroup) {
+        const key = `${museumId}-${checklistType}-${ageGroup}`;
+        const allChecklists = this.app.loadMuseumChecklists();
+        
+        if (allChecklists[key]) {
+            delete allChecklists[key];
+            this.app.saveMuseumChecklists(allChecklists);
+            this.checklistCache.delete(key);
+            
+            // Track analytics
+            if (this.analyticsManager) {
+                this.analyticsManager.trackEvent('checklist_cleared', {
+                    museum_id: museumId,
+                    checklist_type: checklistType,
+                    age_group: ageGroup
+                });
+            }
+        }
+    }
+    
+    isChecklistCompleted(museumId, checklistType, ageGroup) {
+        const completion = this.calculateCompletionPercentage(museumId, checklistType, ageGroup);
+        return completion === 100;
+    }
+    
+    getOverallProgress(ageGroup) {
+        const museums = MUSEUMS;
+        let totalChecklists = 0;
+        let completedChecklists = 0;
+        
+        museums.forEach(museum => {
+            ['parent', 'child'].forEach(type => {
+                const checklist = this.getMuseumChecklist(museum.id, type, ageGroup);
+                if (checklist.length > 0) {
+                    totalChecklists++;
+                    if (this.isChecklistCompleted(museum.id, type, ageGroup)) {
+                        completedChecklists++;
+                    }
+                }
+            });
+        });
+        
+        return {
+            total: totalChecklists,
+            completed: completedChecklists,
+            percentage: totalChecklists > 0 ? Math.round((completedChecklists / totalChecklists) * 100) : 0
+        };
+    }
+    
+    exportChecklistData(museumId = null, ageGroup = null) {
+        const data = {
+            export_date: new Date().toISOString(),
+            museum_id: museumId,
+            age_group: ageGroup,
+            checklists: {}
+        };
+        
+        if (museumId) {
+            // Export specific museum
+            const museum = MUSEUMS.find(m => m.id === museumId);
+            if (museum) {
+                data.museum_name = museum.name;
+                data.checklists[museumId] = this.getCompletionStats(museumId, ageGroup);
+            }
+        } else {
+            // Export all museums
+            MUSEUMS.forEach(museum => {
+                data.checklists[museum.id] = {
+                    museum_name: museum.name,
+                    stats: this.getCompletionStats(museum.id, ageGroup)
+                };
+            });
+        }
+        
+        return data;
+    }
+    
+    generateChecklistReport(ageGroup) {
+        const overallProgress = this.getOverallProgress(ageGroup);
+        const museumStats = [];
+        
+        MUSEUMS.forEach(museum => {
+            const stats = this.getCompletionStats(museum.id, ageGroup);
+            const totalItems = stats.parent.total + stats.child.total;
+            const completedItems = stats.parent.completed + stats.child.completed;
+            
+            if (totalItems > 0) {
+                museumStats.push({
+                    id: museum.id,
+                    name: museum.name,
+                    location: museum.location,
+                    totalItems,
+                    completedItems,
+                    completionPercentage: Math.round((completedItems / totalItems) * 100),
+                    parentProgress: stats.parent,
+                    childProgress: stats.child
+                });
+            }
+        });
+        
+        // Sort by completion percentage (highest first)
+        museumStats.sort((a, b) => b.completionPercentage - a.completionPercentage);
+        
+        return {
+            overall: overallProgress,
+            museums: museumStats,
+            age_group: ageGroup,
+            generated_at: new Date().toISOString()
+        };
+    }
+}
+
 // ===== ANALYTICS MANAGER MODULE =====
 // Analytics Manager - Centralized analytics and reporting
 class AnalyticsManager {
@@ -18115,6 +19100,11 @@ class MuseumCheckApp {
         this.modalManager = new ModalManager();
         this.photoManager = new PhotoManager();
         this.analyticsManager = new AnalyticsManager();
+        
+        // Initialize advanced management modules (Phase 5)
+        this.museumManager = new MuseumManager(this, this.analyticsManager);
+        this.checklistManager = new ChecklistManager(this, this.analyticsManager);
+        this.assessmentManager = new AssessmentManager(this, this.analyticsManager);
         
         this.init();
     }
