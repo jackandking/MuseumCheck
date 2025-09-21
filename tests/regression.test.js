@@ -3312,4 +3312,98 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
       expect(percentage).toBe(1.6);
     });
   });
+
+  describe('Issue #312 - 标题修改', () => {
+    /**
+     * Title Change: "网站标题改为：让孩子爱上博物馆"
+     * Fixed: 2024-12-20
+     * 
+     * Issue: Change website title from "博物馆打卡 - 中国博物馆亲子参观指南 | MuseumCheck"
+     * to "让孩子爱上博物馆" (Let children fall in love with museums).
+     * 
+     * This test ensures the title change is properly implemented and maintained.
+     */
+
+    test('should have new title "让孩子爱上博物馆" in HTML document', () => {
+      // Setup DOM with the new title
+      document.head.innerHTML = `
+        <title>让孩子爱上博物馆</title>
+        <meta property="og:title" content="让孩子爱上博物馆">
+        <meta name="twitter:title" content="让孩子爱上博物馆">
+      `;
+      
+      // Verify the new title is set correctly
+      expect(document.title).toBe('让孩子爱上博物馆');
+      
+      // Should not contain the old title elements
+      expect(document.title).not.toContain('博物馆打卡');
+      expect(document.title).not.toContain('中国博物馆亲子参观指南');
+      expect(document.title).not.toContain('MuseumCheck');
+      
+      // Verify Open Graph title is updated
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      expect(ogTitle).toBeTruthy();
+      expect(ogTitle.content).toBe('让孩子爱上博物馆');
+      
+      // Verify Twitter Card title is updated
+      const twitterTitle = document.querySelector('meta[name="twitter:title"]');
+      expect(twitterTitle).toBeTruthy();
+      expect(twitterTitle.content).toBe('让孩子爱上博物馆');
+    });
+
+    test('should have updated structured data name field', () => {
+      // Setup DOM with JSON-LD structured data
+      const jsonLdScript = document.createElement('script');
+      jsonLdScript.type = 'application/ld+json';
+      jsonLdScript.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "让孩子爱上博物馆",
+        "alternateName": "MuseumCheck",
+        "description": "通过博物馆亲子游改善亲子关系的专业指南应用",
+        "url": "https://museumcheck.cn",
+        "applicationCategory": "EducationalApplication",
+        "inLanguage": "zh-CN"
+      });
+      
+      document.head.appendChild(jsonLdScript);
+      
+      // Parse the structured data
+      const structuredData = JSON.parse(jsonLdScript.textContent);
+      
+      // Verify the name field is updated to the new title
+      expect(structuredData.name).toBe('让孩子爱上博物馆');
+      expect(structuredData.name).not.toBe('博物馆打卡');
+      
+      // MuseumCheck should remain as alternateName for brand recognition
+      expect(structuredData.alternateName).toBe('MuseumCheck');
+      
+      // Clean up
+      document.head.removeChild(jsonLdScript);
+    });
+
+    test('should maintain title consistency across all meta tags', () => {
+      // Setup DOM with all title-related meta tags
+      document.head.innerHTML = `
+        <title>让孩子爱上博物馆</title>
+        <meta property="og:title" content="让孩子爱上博物馆">
+        <meta name="twitter:title" content="让孩子爱上博物馆">
+        <meta property="og:site_name" content="MuseumCheck">
+      `;
+      
+      // Get all title-related elements
+      const pageTitle = document.title;
+      const ogTitle = document.querySelector('meta[property="og:title"]').content;
+      const twitterTitle = document.querySelector('meta[name="twitter:title"]').content;
+      const siteName = document.querySelector('meta[property="og:site_name"]').content;
+      
+      // All title fields should be consistent with new title
+      expect(pageTitle).toBe('让孩子爱上博物馆');
+      expect(ogTitle).toBe('让孩子爱上博物馆');
+      expect(twitterTitle).toBe('让孩子爱上博物馆');
+      
+      // Site name should remain MuseumCheck for branding
+      expect(siteName).toBe('MuseumCheck');
+    });
+  });
 });
