@@ -37,10 +37,9 @@
     
     <link rel="stylesheet" href="style.css">
     
-    <!-- Cache busting meta tags -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+    <!-- Preload critical resources -->
+    <link rel="preload" href="museums-data.js" as="script">
+    <link rel="preload" href="script.js" as="script">
     
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-YHF52B1NMH"></script>
@@ -346,7 +345,7 @@
         </div>
     </div>
 
-    <script src="museums-data.js"></script>
-    <script src="script.js"></script>
+    <script src="museums-data.js" defer></script>
+    <script src="script.js" defer></script>
 </body>
 </html>
