@@ -865,6 +865,26 @@ header h1 {
     margin-top: 2px;
 }
 
+/* Mobile optimization for scores - make them inline and match achievement text size */
+@media (max-width: 768px) {
+    .assessment-score-item {
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+        text-align: left;
+    }
+    
+    .score-value {
+        font-size: 0.9em; /* Match achievement text size */
+        font-weight: 500; /* Match achievement text weight */
+    }
+    
+    .score-label {
+        font-size: 0.9em; /* Match achievement text size */
+        margin-top: 0;
+    }
+}
+
 .assessment-history-button-inline {
     flex: 0 0 auto;
 }
@@ -1242,15 +1262,15 @@ header h1 {
     }
     
     .stats {
-        margin-bottom: 20px;
-        padding: 12px;
+        margin-bottom: 15px;
+        padding: 8px;
         border-radius: 8px;
         position: sticky;
-        top: 10px;
+        top: 5px;
     }
     
     .progress-display {
-        margin-bottom: 8px;
+        margin-bottom: 5px;
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
@@ -1265,8 +1285,8 @@ header h1 {
     }
     
     .achievement-stats {
-        margin-top: 12px;
-        padding: 10px;
+        margin-top: 6px;
+        padding: 8px;
         border-radius: 6px;
     }
     
@@ -1278,7 +1298,7 @@ header h1 {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
     }
     
@@ -1295,8 +1315,8 @@ header h1 {
     }
     
     .assessment-stats {
-        margin-top: 10px;
-        padding: 10px;
+        margin-top: 6px;
+        padding: 8px;
         border-radius: 6px;
     }
     
@@ -1304,21 +1324,13 @@ header h1 {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
     }
     
     .assessment-scores {
-        gap: 12px;
+        gap: 8px;
         flex: 1;
-    }
-    
-    .score-value {
-        font-size: 1.2em;
-    }
-    
-    .score-label {
-        font-size: 0.75em;
     }
     
     .assessment-history-button-inline {
@@ -4803,4 +4815,14 @@ main[role="main"] {
     .next-goal-section {
         padding: 20px;
     }
+}
+
+/* Assessment hiding for Douyin mini-program compliance */
+.hide-assessments .assessment-button,
+.hide-assessments .assessment-history-button,
+.hide-assessments .assessment-stats,
+.hide-assessments .assessment-inline,
+.hide-assessments #assessmentModal,
+.hide-assessments #assessmentHistoryModal {
+    display: none !important;
 }
