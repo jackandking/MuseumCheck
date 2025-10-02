@@ -2793,6 +2793,7 @@ class MuseumCheckApp {
         this.museumChecklists = this.loadMuseumChecklists();
         this.taskPhotos = this.loadTaskPhotos(); // Will fallback to localStorage initially
         this.customChecklists = this.loadCustomChecklists();
+        this.fireworks = this.loadFireworks(); // Load fireworks data
         this.indexedDBSupported = false;
         this.db = null;
         this.searchQuery = '';
@@ -3265,6 +3266,23 @@ class MuseumCheckApp {
         document.getElementById('generateAchievementPoster').addEventListener('click', () => {
             this.generateAchievementPoster();
         });
+
+        // Fireworks button
+        document.getElementById('fireworksButton').addEventListener('click', () => {
+            this.showFireworksModal();
+        });
+
+        // Fireworks modal close
+        document.querySelector('#fireworksModal .close').addEventListener('click', () => {
+            this.closeFireworksModal();
+        });
+
+        // Click outside fireworks modal to close
+        document.getElementById('fireworksModal').addEventListener('click', (e) => {
+            if (e.target.id === 'fireworksModal') {
+                this.closeFireworksModal();
+            }
+        });
     }
 
     // Search functionality methods
@@ -3415,6 +3433,56 @@ class MuseumCheckApp {
         } catch (error) {
             console.error('Failed to save custom checklists:', error);
         }
+    }
+
+    loadFireworks() {
+        try {
+            const saved = localStorage.getItem('fireworks');
+            return saved ? JSON.parse(saved) : [];
+        } catch (error) {
+            console.error('Failed to load fireworks:', error);
+            return [];
+        }
+    }
+
+    saveFireworks() {
+        try {
+            localStorage.setItem('fireworks', JSON.stringify(this.fireworks));
+        } catch (error) {
+            console.error('Failed to save fireworks:', error);
+        }
+    }
+
+    addFirework(museumId, museumName, taskContent, ageGroup) {
+        const firework = {
+            id: Date.now() + Math.random(), // Unique ID
+            museumId: museumId,
+            museumName: museumName,
+            taskContent: taskContent,
+            ageGroup: ageGroup,
+            timestamp: Date.now(),
+            date: new Date().toISOString()
+        };
+        
+        this.fireworks.push(firework);
+        this.saveFireworks();
+        
+        // Track firework creation
+        this.trackEvent('firework_created', {
+            'museum_id': museumId,
+            'age_group': ageGroup,
+            'timestamp': new Date().toISOString()
+        });
+        
+        return firework;
+    }
+
+    getFireworksByMuseum(museumId) {
+        return this.fireworks.filter(fw => fw.museumId === museumId);
+    }
+
+    getAllFireworks() {
+        return this.fireworks;
     }
 
     saveMuseumChecklists() {
@@ -3622,6 +3690,12 @@ class MuseumCheckApp {
         
         // Update achievements
         this.updateAchievements(visitedCount);
+        
+        // Update fireworks count
+        const fireworksCountElement = document.getElementById('fireworksCount');
+        if (fireworksCountElement) {
+            fireworksCountElement.textContent = this.fireworks.length;
+        }
         
         // 🐛 Fix: Update main page assessment scores on initialization
         this.updateMainPageAssessmentScores();
@@ -4277,6 +4351,9 @@ class MuseumCheckApp {
                 <div class="checklist-header">
                     <h3>孩子探索任务</h3>
                     <div class="checklist-actions">
+                        <button class="fireworks-museum-button" data-museum-id="${museum.id}" title="查看本馆烟花">
+                            🎆
+                        </button>
                         <button class="share-button" data-type="child" title="分享孩子任务清单">
                             🔗
                         </button>
@@ -4330,6 +4407,18 @@ class MuseumCheckApp {
                 this.shareChecklist(museum, checklistType);
             });
         });
+
+        // Setup museum-specific fireworks button
+        const fireworksButton = content.querySelector('.fireworks-museum-button');
+        if (fireworksButton) {
+            fireworksButton.addEventListener('click', () => {
+                const museumId = fireworksButton.dataset.museumId;
+                this.closeModal();
+                setTimeout(() => {
+                    this.showFireworksModal(museumId);
+                }, 300);
+            });
+        }
 
         modal.classList.remove('hidden');
         
@@ -4452,6 +4541,11 @@ class MuseumCheckApp {
                 const museum = MUSEUMS.find(m => m.id === museumId);
                 const itemText = museum && museum.checklists[checklistType] && museum.checklists[checklistType][fullAgeGroup] ? 
                                museum.checklists[checklistType][fullAgeGroup][index] : '';
+                
+                // Create firework for completed child tasks
+                if (e.target.checked && checklistType === 'child' && museum) {
+                    this.addFirework(museumId, museum.name, itemText, fullAgeGroup);
+                }
                 
                 this.trackEvent('checklist_item_toggled', {
                     'museum_id': museumId,
@@ -4596,6 +4690,103 @@ class MuseumCheckApp {
     renderSettingsInfo() {
         // Update museum count
         document.getElementById('museumCountSettings').textContent = MUSEUMS.length;
+    }
+
+    // Fireworks Modal Functions
+    showFireworksModal(museumId = null) {
+        this.renderFireworks(museumId);
+        this.modalManager.showModal('fireworksModal');
+        
+        // Track fireworks view
+        this.trackEvent('fireworks_viewed', {
+            'total_fireworks': this.fireworks.length,
+            'museum_filter': museumId || 'all'
+        });
+    }
+
+    closeFireworksModal() {
+        this.modalManager.closeModal('fireworksModal');
+    }
+
+    renderFireworks(museumId = null) {
+        const fireworks = museumId ? this.getFireworksByMuseum(museumId) : this.getAllFireworks();
+        
+        // Update statistics
+        document.getElementById('totalFireworks').textContent = fireworks.length;
+        const uniqueMuseums = new Set(fireworks.map(fw => fw.museumId));
+        document.getElementById('museumsWithFireworks').textContent = uniqueMuseums.size;
+        
+        // Update museum filter dropdown
+        const filterSelect = document.getElementById('fireworksMuseumFilter');
+        filterSelect.innerHTML = '<option value="">所有博物馆</option>';
+        
+        // Populate museum filter
+        const museumsWithFireworks = Array.from(uniqueMuseums).map(id => {
+            const museum = MUSEUMS.find(m => m.id === id);
+            return { id, name: museum ? museum.name : id };
+        }).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+        
+        museumsWithFireworks.forEach(museum => {
+            const option = document.createElement('option');
+            option.value = museum.id;
+            option.textContent = museum.name;
+            if (museumId === museum.id) {
+                option.selected = true;
+            }
+            filterSelect.appendChild(option);
+        });
+        
+        // Filter select event listener
+        filterSelect.onchange = (e) => {
+            const selectedMuseumId = e.target.value;
+            this.renderFireworks(selectedMuseumId || null);
+        };
+        
+        // Render fireworks list
+        const emptyState = document.getElementById('fireworksEmptyState');
+        const fireworksList = document.getElementById('fireworksList');
+        
+        if (fireworks.length === 0) {
+            emptyState.style.display = 'block';
+            fireworksList.style.display = 'none';
+        } else {
+            emptyState.style.display = 'none';
+            fireworksList.style.display = 'block';
+            
+            // Sort fireworks by timestamp (newest first)
+            const sortedFireworks = [...fireworks].sort((a, b) => b.timestamp - a.timestamp);
+            
+            // Render fireworks with animation
+            fireworksList.innerHTML = sortedFireworks.map((firework, index) => {
+                const date = new Date(firework.timestamp);
+                const dateStr = date.toLocaleDateString('zh-CN', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Extract task summary (first 50 chars without emoji)
+                const taskSummary = firework.taskContent.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim().substring(0, 50);
+                
+                return `
+                    <div class="firework-item" style="animation-delay: ${index * 0.1}s">
+                        <div class="firework-header">
+                            <div class="firework-icon">🎆</div>
+                            <div class="firework-info">
+                                <h4 class="firework-museum">${firework.museumName}</h4>
+                                <p class="firework-date">${dateStr}</p>
+                            </div>
+                            <div class="firework-age-badge">${firework.ageGroup}</div>
+                        </div>
+                        <div class="firework-content">
+                            <p class="firework-task">${firework.taskContent}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
     }
 
     renderAchievements() {
