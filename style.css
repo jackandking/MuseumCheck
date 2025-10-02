@@ -5044,6 +5044,20 @@ main[role="main"] {
     font-size: 1em;
 }
 
+/* Remote firework indicator */
+.remote-badge {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 0.85em;
+    opacity: 0.8;
+    cursor: help;
+}
+
+.remote-firework {
+    border-left: 3px solid #667eea;
+    background: linear-gradient(to right, rgba(102, 126, 234, 0.05), transparent);
+}
+
 /* Museum-specific fireworks button in modal */
 .fireworks-museum-button {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
