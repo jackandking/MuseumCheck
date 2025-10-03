@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
@@ -15,16 +15,18 @@
             s.parentNode.insertBefore(hm, s);
         })();
     </script>
-    <title>互联网烟花</title>
+    <title>互联网烟花 - MuseumCheck</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background: #000;
+            background: #0a0e27; /* Dark blue background */
         }
 
         canvas {
             display: block;
+            width: 100%;
+            height: 100vh;
         }
 
         .customize-btn {
@@ -39,18 +41,97 @@
             cursor: pointer;
             font-size: 16px;
             z-index: 1000;
-            
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
         }
 
         .customize-btn:hover {
             background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .info-text {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+            font-size: 18px;
+            z-index: 1000;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+            animation: fadeIn 2s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
         }
     </style>
-    <script src="../util.js?v=3"></script>
-    <script src="../firework.js?v=2"></script>
+    <script src="firework.js"></script>
 </head>
 <body>
+    <div class="info-text">🎆 MuseumCheck 烟花秀 🎆</div>
     <canvas id="canvas"></canvas>
     <button class="customize-btn" onclick="window.open('https://m.tb.cn/h.Ts7limb?tk=r3fLe8cp2T8', '_blank')">定制</button>
+    
+    <script>
+        // Initialize fireworks system when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size to match window
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Create and start fireworks system
+            const fireworksSystem = new FireworksCanvasSystem(canvas);
+            fireworksSystem.start();
+            
+            // Launch fireworks automatically at random intervals
+            function launchRandomFirework() {
+                const labels = ['博物馆探索', '亲子时光', '文化之旅', '成长记录', '快乐学习'];
+                const nicknames = ['小朋友', '探险家', '小学者', '小艺术家'];
+                
+                const randomLabel = labels[Math.floor(Math.random() * labels.length)];
+                const randomNickname = nicknames[Math.floor(Math.random() * nicknames.length)];
+                
+                fireworksSystem.launchFirework(randomLabel, randomNickname);
+                
+                // Schedule next firework with random delay (1-3 seconds)
+                const nextDelay = 1000 + Math.random() * 2000;
+                setTimeout(launchRandomFirework, nextDelay);
+            }
+            
+            // Start launching fireworks after a short delay
+            setTimeout(launchRandomFirework, 500);
+            
+            // Click to launch firework
+            canvas.addEventListener('click', function(e) {
+                // Launch firework at click position
+                const x = e.clientX;
+                const targetY = Math.random() * canvas.height * 0.4 + canvas.height * 0.1;
+                const colors = fireworksSystem.getRandomFireworkColors();
+                
+                const rocket = new Rocket(x, canvas.height, targetY, colors[0], '点击', '你');
+                fireworksSystem.rockets.push(rocket);
+            });
+        });
+    </script>
 </body>
 </html>
