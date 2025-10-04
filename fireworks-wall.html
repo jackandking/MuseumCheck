@@ -424,7 +424,10 @@
             const museumName = fireworkData.museumName || '博物馆';
             const displayText = `${childNickname}打卡${museumName}`;
             
-            const firework = new Firework(startX, targetX, targetY, displayText);
+            // Use the fireworkType from the data, or default to 'heart'
+            const fireworkType = fireworkData.fireworkType || 'heart';
+            
+            const firework = new Firework(startX, targetX, targetY, displayText, fireworkType);
             fireworks.push(firework);
 
             updateStats();

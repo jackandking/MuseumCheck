@@ -4309,6 +4309,7 @@ class MuseumCheckApp {
             taskContent: taskContent,
             ageGroup: ageGroup,
             childNickname: this.childNickname || '小淘气',
+            fireworkType: this.loadFireworkType(), // Save user's firework type preference
             timestamp: Date.now(),
             date: new Date().toISOString()
         };
