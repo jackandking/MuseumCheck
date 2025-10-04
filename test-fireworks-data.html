@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Fireworks Data</title>
+</head>
+<body>
+    <h1>Adding Test Fireworks Data</h1>
+    <div id="output"></div>
+    <script>
+        // Add some test fireworks data to localStorage
+        const testFireworks = [
+            {
+                id: 'test-fw-1',
+                museumId: 'forbidden-city',
+                museumName: '故宫博物院',
+                museumCity: '北京',
+                taskContent: '观察建筑上的龙纹装饰',
+                ageGroup: '7-12岁 (小学)',
+                childNickname: '小明',
+                timestamp: Date.now() - 5000,
+                date: new Date(Date.now() - 5000).toISOString()
+            },
+            {
+                id: 'test-fw-2',
+                museumId: 'national-museum',
+                museumName: '中国国家博物馆',
+                museumCity: '北京',
+                taskContent: '寻找青铜器展品',
+                ageGroup: '7-12岁 (小学)',
+                childNickname: '小红',
+                timestamp: Date.now() - 4000,
+                date: new Date(Date.now() - 4000).toISOString()
+            },
+            {
+                id: 'test-fw-3',
+                museumId: 'shanghai-museum',
+                museumName: '上海博物馆',
+                museumCity: '上海',
+                taskContent: '观察陶瓷器皿的纹样',
+                ageGroup: '7-12岁 (小学)',
+                childNickname: '小华',
+                timestamp: Date.now() - 3000,
+                date: new Date(Date.now() - 3000).toISOString()
+            }
+        ];
+        
+        localStorage.setItem('museumCheckFireworks', JSON.stringify(testFireworks));
+        
+        const output = document.getElementById('output');
+        output.innerHTML = '<p>✅ Added ' + testFireworks.length + ' test fireworks to localStorage</p>';
+        output.innerHTML += '<p>Data:</p><pre>' + JSON.stringify(testFireworks, null, 2) + '</pre>';
+        output.innerHTML += '<p><a href="http://localhost:8000/fireworks-wall.html" target="_blank">Open Fireworks Wall</a></p>';
+    </script>
+</body>
+</html>
