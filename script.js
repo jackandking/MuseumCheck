@@ -5195,7 +5195,6 @@ class MuseumCheckApp {
             <div class="checklist-tabs">
                 <button class="tab-button ${activeTab === 'parent' ? 'active' : ''}" data-target="parent">家长准备</button>
                 <button class="tab-button ${activeTab === 'child' ? 'active' : ''}" data-target="child">孩子任务</button>
-                <button class="tab-button ${activeTab === 'share' ? 'active' : ''}" data-target="share">生成海报</button>
             </div>
             ${museum.image ? `<div class="museum-image-section">
                 <img src="${museum.image}" alt="${museum.name}" class="museum-image" />
@@ -5229,16 +5228,6 @@ class MuseumCheckApp {
                 </div>
                 ${this.renderChecklist(museum.id, 'child', museum.checklists.child[this.currentAge])}
             </div>
-            <div id="shareChecklist" class="checklist-content" ${activeTab !== 'share' ? 'style="display: none;"' : ''}>
-                <h3>生成分享海报</h3>
-                <div class="share-poster-section">
-                    <p class="share-description">📸 将已完成的任务和照片生成精美海报，方便分享朋友圈留念！</p>
-                    <button id="generatePoster" class="poster-button">🎨 生成海报</button>
-                    <canvas id="posterCanvas" style="display: none; max-width: 100%;"></canvas>
-                    <div id="posterPreview" class="poster-preview"></div>
-                    <button id="downloadPoster" class="poster-button" style="display: none;">📱 下载海报</button>
-                </div>
-            </div>
         `;
 
         // Setup tab switching
@@ -5254,7 +5243,6 @@ class MuseumCheckApp {
                 // Show corresponding content
                 document.getElementById('parentChecklist').style.display = target === 'parent' ? 'block' : 'none';
                 document.getElementById('childChecklist').style.display = target === 'child' ? 'block' : 'none';
-                document.getElementById('shareChecklist').style.display = target === 'share' ? 'block' : 'none';
                 
                 // Enhanced UX: Smooth scroll to the content area after tab switch
                 setTimeout(() => {
@@ -5273,30 +5261,6 @@ class MuseumCheckApp {
         });
 
         modal.classList.remove('hidden');
-        
-        // Setup museum fireworks button
-        const fireworksButton = document.getElementById('museumFireworksButton');
-        if (fireworksButton) {
-            // Always show the button (even if no fireworks yet)
-            fireworksButton.style.display = 'flex';
-            
-            // Remove any existing click listeners
-            const newButton = fireworksButton.cloneNode(true);
-            fireworksButton.parentNode.replaceChild(newButton, fireworksButton);
-            
-            // Add click handler to open fireworks-wall.html with museum filter
-            newButton.addEventListener('click', () => {
-                // Open fireworks-wall.html in new tab with museum ID parameter
-                window.open(`fireworks-wall.html?museumId=${encodeURIComponent(museum.id)}`, '_blank');
-                
-                // Track event
-                this.trackEvent('museum_fireworks_wall_opened', {
-                    'museum_id': museum.id,
-                    'museum_name': museum.name,
-                    'museum_location': museum.location
-                });
-            });
-        }
         
         // Enhanced UX: Ensure modal content starts at the top
         setTimeout(() => {

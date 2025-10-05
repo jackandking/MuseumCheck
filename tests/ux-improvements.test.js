@@ -37,13 +37,8 @@ describe('Parent-Child Evaluation Experience UX Improvements', () => {
         tab2.className = 'tab-button';
         tab2.textContent = '孩子任务';
         
-        const tab3 = document.createElement('button');
-        tab3.className = 'tab-button';
-        tab3.textContent = '生成海报';
-        
         tabsContainer.appendChild(tab1);
         tabsContainer.appendChild(tab2);
-        tabsContainer.appendChild(tab3);
         
         const checklistContainer = document.createElement('div');
         checklistContainer.className = 'checklist';
