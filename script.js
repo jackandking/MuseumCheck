@@ -5191,17 +5191,8 @@ class MuseumCheckApp {
 
         title.textContent = `${museum.name} - 亲子参观指南`;
 
-        // Get expert guidance for current age group
-        const guidance = EXPERT_GUIDANCE[this.currentAge];
-        const ageLabels = {
-            '3-6': '3-6岁 (学龄前)',
-            '7-12': '7-12岁 (小学)',
-            '13-18': '13-18岁 (中学)'
-        };
-
         content.innerHTML = `
             <div class="checklist-tabs">
-                <button class="tab-button ${activeTab === 'expert' ? 'active' : ''}" data-target="expert">👨‍👩‍👧 专家指导</button>
                 <button class="tab-button ${activeTab === 'parent' ? 'active' : ''}" data-target="parent">家长准备</button>
                 <button class="tab-button ${activeTab === 'child' ? 'active' : ''}" data-target="child">孩子任务</button>
                 <button class="tab-button ${activeTab === 'share' ? 'active' : ''}" data-target="share">生成海报</button>
@@ -5209,147 +5200,6 @@ class MuseumCheckApp {
             ${museum.image ? `<div class="museum-image-section">
                 <img src="${museum.image}" alt="${museum.name}" class="museum-image" />
             </div>` : ''}
-            
-            <div id="expertGuidance" class="checklist-content expert-guidance" ${activeTab !== 'expert' ? 'style="display: none;"' : ''}>
-                <div class="expert-header">
-                    <h3>🎓 ${ageLabels[this.currentAge]} 专家指导</h3>
-                    <div class="age-stage-info">
-                        <span class="stage-label">${guidance.cognitiveStage}</span>
-                    </div>
-                </div>
-                
-                <div class="expert-section relationship-focus">
-                    <h4>💖 亲子关系提升核心目标</h4>
-                    <div class="core-goal">
-                        <p class="goal-statement">${guidance.relationshipFocus.coreGoal}</p>
-                    </div>
-                </div>
-                
-                <div class="expert-section">
-                    <h4>🧠 发展特点</h4>
-                    <p class="developmental-traits">${guidance.developmentalTraits}</p>
-                </div>
-                
-                <div class="expert-section">
-                    <h4>👥 亲子互动指导</h4>
-                    <ul class="expert-tips">
-                        ${guidance.parentingTips.slice(0, 5).map(tip => `<li>${tip}</li>`).join('')}
-                    </ul>
-                </div>
-                
-                <div class="expert-section">
-                    <h4>❤️ 情感支持要点</h4>
-                    <ul class="emotional-support">
-                        ${guidance.emotionalSupport.slice(0, 4).map(tip => `<li>${tip}</li>`).join('')}
-                    </ul>
-                </div>
-                
-                <div class="expert-section">
-                    <h4>💬 对话启发技巧</h4>
-                    <div class="dialogue-section">
-                        <div class="dialogue-starters">
-                            <strong>📝 推荐话题开场：</strong>
-                            <ul>
-                                ${guidance.dialogueStarters.slice(0, 4).map(starter => `<li>${starter}</li>`).join('')}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="expert-section">
-                    <h4>🧩 多元智能激发</h4>
-                    <div class="intelligence-grid">
-                        ${Object.entries(MULTIPLE_INTELLIGENCE_STRATEGIES).slice(0, 4).map(([key, value]) => `
-                            <div class="intelligence-item">
-                                <div class="intelligence-header">
-                                    <strong>${value.name}</strong>
-                                </div>
-                                <div class="intelligence-desc">${value.description}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-                
-                <div class="expert-section">
-                    <h4>🚨 常见挑战应对</h4>
-                    <div class="challenges-section">
-                        ${guidance.commonChallenges.slice(0, 3).map(challenge => `
-                            <div class="challenge-item">
-                                <div class="challenge-situation">
-                                    <strong>情况：</strong>${challenge.situation}
-                                </div>
-                                <div class="challenge-solution">
-                                    <strong>应对：</strong>${challenge.solution}
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-                
-                ${guidance.attachmentStrategies ? `
-                <div class="expert-section">
-                    <h4>💕 依恋关系建立</h4>
-                    <ul class="attachment-strategies">
-                        ${guidance.attachmentStrategies.map(strategy => `<li>${strategy}</li>`).join('')}
-                    </ul>
-                </div>
-                ` : ''}
-                
-                ${guidance.scaffoldingTechniques ? `
-                <div class="expert-section">
-                    <h4>🏗️ 学习支架技巧</h4>
-                    <ul class="scaffolding-techniques">
-                        ${guidance.scaffoldingTechniques.map(technique => `<li>${technique}</li>`).join('')}
-                    </ul>
-                </div>
-                ` : ''}
-                
-                ${guidance.autonomySupport ? `
-                <div class="expert-section">
-                    <h4>🎯 自主性支持</h4>
-                    <ul class="autonomy-support">
-                        ${guidance.autonomySupport.map(support => `<li>${support}</li>`).join('')}
-                    </ul>
-                </div>
-                ` : ''}
-                
-                ${guidance.inclusiveSupport ? `
-                <div class="expert-section">
-                    <h4>🌈 包容性支持</h4>
-                    <ul class="inclusive-support">
-                        ${guidance.inclusiveSupport.map(support => `<li>${support}</li>`).join('')}
-                    </ul>
-                </div>
-                ` : ''}
-                
-                <div class="expert-section">
-                    <h4>📊 参与度评估指标</h4>
-                    <div class="assessment-section">
-                        <p class="assessment-intro">观察这些积极信号，了解孩子的学习状态：</p>
-                        <ul class="engagement-indicators">
-                            ${ASSESSMENT_TOOLS.engagementIndicators[this.currentAge].slice(0, 4).map(indicator => `<li>${indicator}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="expert-section">
-                    <h4>📚 延伸学习建议</h4>
-                    <div class="extension-activities">
-                        <div class="activity-card">
-                            <strong>🏠 回家后</strong>
-                            <p>整理参观照片，制作家庭博物馆相册，分享今天的发现</p>
-                        </div>
-                        <div class="activity-card">
-                            <strong>📖 深入阅读</strong>
-                            <p>根据孩子兴趣，选择相关主题的绘本或科普读物</p>
-                        </div>
-                        <div class="activity-card">
-                            <strong>🎨 动手实践</strong>
-                            <p>制作小手工、画画或搭建模型，巩固博物馆体验</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
             
             <div id="parentChecklist" class="checklist-content" ${activeTab !== 'parent' ? 'style="display: none;"' : ''}>
                 <div class="checklist-header">
@@ -5402,7 +5252,6 @@ class MuseumCheckApp {
                 button.classList.add('active');
                 
                 // Show corresponding content
-                document.getElementById('expertGuidance').style.display = target === 'expert' ? 'block' : 'none';
                 document.getElementById('parentChecklist').style.display = target === 'parent' ? 'block' : 'none';
                 document.getElementById('childChecklist').style.display = target === 'child' ? 'block' : 'none';
                 document.getElementById('shareChecklist').style.display = target === 'share' ? 'block' : 'none';
@@ -9861,9 +9710,6 @@ class MuseumCheckApp {
         let targetElement;
         
         switch (targetTab) {
-            case 'expert':
-                targetElement = document.getElementById('expertGuidance');
-                break;
             case 'parent':
                 targetElement = document.getElementById('parentChecklist');
                 break;

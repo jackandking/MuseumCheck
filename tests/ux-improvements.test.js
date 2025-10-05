@@ -31,15 +31,15 @@ describe('Parent-Child Evaluation Experience UX Improvements', () => {
         
         const tab1 = document.createElement('button');
         tab1.className = 'tab-button active';
-        tab1.textContent = '👨‍👩‍👧 专家指导';
+        tab1.textContent = '家长准备';
         
         const tab2 = document.createElement('button');
         tab2.className = 'tab-button';
-        tab2.textContent = '家长准备';
+        tab2.textContent = '孩子任务';
         
         const tab3 = document.createElement('button');
         tab3.className = 'tab-button';
-        tab3.textContent = '孩子任务';
+        tab3.textContent = '生成海报';
         
         tabsContainer.appendChild(tab1);
         tabsContainer.appendChild(tab2);
@@ -242,9 +242,8 @@ describe('Parent-Child Evaluation Experience UX Improvements', () => {
             expect(tabs.length).toBeGreaterThanOrEqual(2);
             expect(tabs.length).toBeLessThanOrEqual(5);
             
-            // Check that essential tabs are present
+            // Check that essential tabs are present (removed expert guidance tab)
             const tabTexts = Array.from(tabs).map(tab => tab.textContent);
-            expect(tabTexts.some(text => text.includes('专家指导') || text.includes('指导'))).toBe(true);
             expect(tabTexts.some(text => text.includes('家长') || text.includes('准备'))).toBe(true);
         });
 
