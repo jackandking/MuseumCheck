@@ -5207,9 +5207,6 @@ class MuseumCheckApp {
                         <button class="share-button" data-type="parent" title="分享家长准备清单">
                             🔗
                         </button>
-                        <button class="clear-checklist-button clear-parent-button" data-museum="${museum.id}" data-type="parent" title="清空家长清单数据">
-                            🗑️
-                        </button>
                     </div>
                 </div>
                 ${this.renderChecklist(museum.id, 'parent', museum.checklists.parent[this.currentAge])}
@@ -5220,9 +5217,6 @@ class MuseumCheckApp {
                     <div class="checklist-actions">
                         <button class="share-button" data-type="child" title="分享孩子任务清单">
                             🔗
-                        </button>
-                        <button class="clear-checklist-button clear-child-button" data-museum="${museum.id}" data-type="child" title="清空孩子清单数据">
-                            🗑️
                         </button>
                     </div>
                 </div>
