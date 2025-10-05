@@ -965,6 +965,22 @@ header h1 {
     flex: 0 0 auto;
 }
 
+/* Fireworks Stats - positioned between achievement and assessment */
+.fireworks-stats {
+    margin-top: 15px;
+    padding: 12px 15px;
+    background: rgba(102, 126, 234, 0.08);
+    border-radius: 10px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.fireworks-inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
 .assessment-stats {
     margin-top: 15px;
     padding: 15px;
@@ -1453,6 +1469,24 @@ header h1 {
         flex: 0 0 auto;
         padding: 8px 12px;
         font-size: 11px;
+    }
+    
+    /* Mobile fireworks stats */
+    .fireworks-stats {
+        margin-top: 6px;
+        padding: 8px;
+        border-radius: 6px;
+    }
+    
+    .fireworks-inline {
+        justify-content: center;
+        gap: 6px;
+    }
+    
+    .fireworks-button-inline {
+        padding: 8px 12px;
+        font-size: 11px;
+        gap: 4px;
     }
     
     .assessment-stats {
@@ -5180,6 +5214,28 @@ main[role="main"] {
 
 .fireworks-button-inline {
     min-width: auto;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fireworks-button-inline:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.fireworks-button-inline .button-text {
+    display: inline;
 }
 
 /* Fireworks button icon style (for progress-display) */
