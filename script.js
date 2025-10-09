@@ -3398,6 +3398,9 @@ class MuseumCheckApp {
         this.renderMuseums();
         this.updateStats();
         
+        // Update fireworks button visibility based on available fireworks
+        this.updateFireworksButtonVisibility();
+        
         // Initialize remote fireworks system
         this.initRemoteFireworks();
         
@@ -3547,6 +3550,9 @@ class MuseumCheckApp {
             if (fireworksData && Array.isArray(fireworksData)) {
                 console.log(`Downloaded ${fireworksData.length} remote fireworks`);
                 this.remoteFireworks = fireworksData;
+                
+                // Update fireworks button visibility
+                this.updateFireworksButtonVisibility();
                 
                 // Update fireworks display if modal is open
                 const modal = document.getElementById('fireworksModal');
@@ -4371,6 +4377,9 @@ class MuseumCheckApp {
         this.fireworks.push(firework);
         this.saveFireworks();
         
+        // Update fireworks button visibility
+        this.updateFireworksButtonVisibility();
+        
         // Upload to remote storage for sharing with other users
         RemoteStorage.uploadFirework(fireworkId, firework).catch(error => {
             console.warn('Failed to upload firework to remote storage:', error);
@@ -4388,6 +4397,15 @@ class MuseumCheckApp {
         });
         
         return firework;
+    }
+
+    updateFireworksButtonVisibility() {
+        const fireworksButton = document.getElementById('fireworksButton');
+        if (fireworksButton) {
+            // Show button only when there are fireworks (local or remote)
+            const hasFireworks = this.fireworks.length > 0 || this.remoteFireworks.length > 0;
+            fireworksButton.style.display = hasFireworks ? '' : 'none';
+        }
     }
 
     getFireworksByMuseum(museumId) {
@@ -9718,6 +9736,8 @@ class MuseumCheckApp {
                 localStorage.removeItem('ageGroup');
                 localStorage.removeItem('assessmentResults');
                 localStorage.removeItem('assessmentProgress'); // Clear assessment progress
+                localStorage.removeItem('fireworks'); // Clear fireworks data
+                localStorage.removeItem('museumCheckFireworks'); // Clear shared fireworks data
                 
                 // Clear IndexedDB data if supported
                 if (this.indexedDBSupported) {
@@ -9729,11 +9749,14 @@ class MuseumCheckApp {
                 this.museumChecklists = {};
                 this.taskPhotos = {};
                 this.currentAgeGroup = '7-12';
+                this.fireworks = []; // Clear fireworks array
+                this.remoteFireworks = []; // Clear remote fireworks
                 
                 // Update UI
                 this.updateStats();
                 this.renderMuseums();
                 this.updateAgeGroupSelector();
+                this.updateFireworksButtonVisibility(); // Update fireworks button visibility
                 
                 // Show success message
                 alert('✅ 所有数据已成功清空！');

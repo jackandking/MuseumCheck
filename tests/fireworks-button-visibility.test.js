@@ -1,7 +1,7 @@
 /**
  * Fireworks Button Visibility Tests
  * 
- * Tests that the demo fireworks button is only shown when there are fireworks available
+ * Tests that the fireworks buttons are only shown when there are fireworks available
  * Issue: 当有对应烟花可以放时才显示烟花按钮
  */
 
@@ -11,6 +11,7 @@ describe('Fireworks Button Visibility', () => {
     beforeEach(() => {
         // Setup minimal DOM
         document.body.innerHTML = `
+            <button id="fireworksButton" class="fireworks-button" style="display: none;">🎆</button>
             <div id="fireworksModal" class="modal hidden">
                 <div id="fireworksEmptyState"></div>
                 <div id="fireworksCardsList" style="display: none;"></div>
@@ -23,11 +24,101 @@ describe('Fireworks Button Visibility', () => {
             </div>
         `;
         
+        // Clear localStorage
+        localStorage.clear();
+        
         // Initialize MuseumCheckApp if available
         if (typeof global.MuseumCheckApp !== 'undefined') {
             museumCheck = new global.MuseumCheckApp();
-            museumCheck.init();
+            museumCheck.fireworks = [];
+            museumCheck.remoteFireworks = [];
         }
+    });
+    
+    afterEach(() => {
+        localStorage.clear();
+    });
+
+    describe('Main Fireworks Button (on main page)', () => {
+        test('should be hidden when no fireworks exist', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            museumCheck.updateFireworksButtonVisibility();
+            
+            const button = document.getElementById('fireworksButton');
+            expect(button.style.display).toBe('none');
+        });
+
+        test('should be visible when local fireworks exist', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            museumCheck.fireworks = [{
+                id: 'test-1',
+                museumId: 'forbidden-city',
+                museumName: '故宫博物院',
+                taskContent: '观察建筑',
+                timestamp: Date.now()
+            }];
+            
+            museumCheck.updateFireworksButtonVisibility();
+            
+            const button = document.getElementById('fireworksButton');
+            expect(button.style.display).not.toBe('none');
+        });
+
+        test('should be visible when remote fireworks exist', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            museumCheck.remoteFireworks = [{
+                id: 'test-2',
+                museumId: 'shanghai-museum',
+                museumName: '上海博物馆',
+                taskContent: '欣赏艺术',
+                timestamp: Date.now(),
+                isRemote: true
+            }];
+            
+            museumCheck.updateFireworksButtonVisibility();
+            
+            const button = document.getElementById('fireworksButton');
+            expect(button.style.display).not.toBe('none');
+        });
+
+        test('should be hidden after clearing all fireworks', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            // Start with fireworks
+            museumCheck.fireworks = [{
+                id: 'test-1',
+                museumId: 'forbidden-city',
+                museumName: '故宫博物院',
+                taskContent: '观察建筑',
+                timestamp: Date.now()
+            }];
+            
+            museumCheck.updateFireworksButtonVisibility();
+            const button = document.getElementById('fireworksButton');
+            expect(button.style.display).not.toBe('none');
+            
+            // Clear fireworks
+            museumCheck.fireworks = [];
+            museumCheck.remoteFireworks = [];
+            museumCheck.updateFireworksButtonVisibility();
+            
+            expect(button.style.display).toBe('none');
+        });
     });
 
     describe('Button visibility with no fireworks', () => {
