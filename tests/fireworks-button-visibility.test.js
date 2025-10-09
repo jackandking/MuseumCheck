@@ -1,0 +1,243 @@
+/**
+ * Fireworks Button Visibility Tests
+ * 
+ * Tests that the demo fireworks button is only shown when there are fireworks available
+ * Issue: 当有对应烟花可以放时才显示烟花按钮
+ */
+
+describe('Fireworks Button Visibility', () => {
+    let museumCheck;
+    
+    beforeEach(() => {
+        // Setup minimal DOM
+        document.body.innerHTML = `
+            <div id="fireworksModal" class="modal hidden">
+                <div id="fireworksEmptyState"></div>
+                <div id="fireworksCardsList" style="display: none;"></div>
+                <button id="demoFireworkButton" class="demo-firework-button" style="display: none;">🎇 手动放烟花</button>
+                <div id="totalFireworks">0</div>
+                <div id="museumsWithFireworks">0</div>
+                <select id="fireworksMuseumFilter">
+                    <option value="">所有博物馆</option>
+                </select>
+            </div>
+        `;
+        
+        // Initialize MuseumCheckApp if available
+        if (typeof global.MuseumCheckApp !== 'undefined') {
+            museumCheck = new global.MuseumCheckApp();
+            museumCheck.init();
+        }
+    });
+
+    describe('Button visibility with no fireworks', () => {
+        test('should hide button when there are no fireworks', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            // Clear any existing fireworks
+            localStorage.setItem('museumCheckFireworks', JSON.stringify([]));
+            
+            // Render fireworks (should be empty)
+            museumCheck.renderFireworks();
+            
+            // Button should be hidden
+            const demoButton = document.getElementById('demoFireworkButton');
+            expect(demoButton.style.display).toBe('none');
+        });
+
+        test('should show empty state when there are no fireworks', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            // Clear any existing fireworks
+            localStorage.setItem('museumCheckFireworks', JSON.stringify([]));
+            
+            // Render fireworks
+            museumCheck.renderFireworks();
+            
+            // Empty state should be visible
+            const emptyState = document.getElementById('fireworksEmptyState');
+            expect(emptyState.style.display).not.toBe('none');
+            expect(emptyState.style.display).toBeTruthy();
+        });
+    });
+
+    describe('Button visibility with fireworks', () => {
+        test('should show button when there are fireworks', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            // Add some test fireworks
+            const testFireworks = [
+                {
+                    id: 'test-1',
+                    museumId: 'forbidden-city',
+                    museumName: '故宫博物院',
+                    taskContent: '观察建筑',
+                    childNickname: '小明',
+                    ageGroup: '7-12',
+                    timestamp: Date.now(),
+                    city: '北京'
+                },
+                {
+                    id: 'test-2',
+                    museumId: 'forbidden-city',
+                    museumName: '故宫博物院',
+                    taskContent: '学习历史',
+                    childNickname: '小红',
+                    ageGroup: '7-12',
+                    timestamp: Date.now(),
+                    city: '北京'
+                }
+            ];
+            
+            localStorage.setItem('museumCheckFireworks', JSON.stringify(testFireworks));
+            
+            // Render fireworks
+            museumCheck.renderFireworks();
+            
+            // Button should be visible
+            const demoButton = document.getElementById('demoFireworkButton');
+            expect(demoButton.style.display).toBe('block');
+        });
+
+        test('should hide empty state when there are fireworks', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            // Add test fireworks
+            const testFireworks = [
+                {
+                    id: 'test-1',
+                    museumId: 'forbidden-city',
+                    museumName: '故宫博物院',
+                    taskContent: '观察建筑',
+                    childNickname: '小明',
+                    ageGroup: '7-12',
+                    timestamp: Date.now(),
+                    city: '北京'
+                }
+            ];
+            
+            localStorage.setItem('museumCheckFireworks', JSON.stringify(testFireworks));
+            
+            // Render fireworks
+            museumCheck.renderFireworks();
+            
+            // Empty state should be hidden
+            const emptyState = document.getElementById('fireworksEmptyState');
+            expect(emptyState.style.display).toBe('none');
+        });
+
+        test('should show fireworks list when there are fireworks', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            // Add test fireworks
+            const testFireworks = [
+                {
+                    id: 'test-1',
+                    museumId: 'forbidden-city',
+                    museumName: '故宫博物院',
+                    taskContent: '观察建筑',
+                    childNickname: '小明',
+                    ageGroup: '7-12',
+                    timestamp: Date.now(),
+                    city: '北京'
+                }
+            ];
+            
+            localStorage.setItem('museumCheckFireworks', JSON.stringify(testFireworks));
+            
+            // Render fireworks
+            museumCheck.renderFireworks();
+            
+            // Fireworks list should be visible
+            const fireworksList = document.getElementById('fireworksCardsList');
+            expect(fireworksList.style.display).toBe('block');
+        });
+    });
+
+    describe('Button visibility toggling', () => {
+        test('should hide button when transitioning from fireworks to empty', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            // Start with fireworks
+            const testFireworks = [
+                {
+                    id: 'test-1',
+                    museumId: 'forbidden-city',
+                    museumName: '故宫博物院',
+                    taskContent: '观察建筑',
+                    childNickname: '小明',
+                    ageGroup: '7-12',
+                    timestamp: Date.now(),
+                    city: '北京'
+                }
+            ];
+            
+            localStorage.setItem('museumCheckFireworks', JSON.stringify(testFireworks));
+            museumCheck.renderFireworks();
+            
+            // Button should be visible
+            const demoButton = document.getElementById('demoFireworkButton');
+            expect(demoButton.style.display).toBe('block');
+            
+            // Clear fireworks
+            localStorage.setItem('museumCheckFireworks', JSON.stringify([]));
+            museumCheck.renderFireworks();
+            
+            // Button should now be hidden
+            expect(demoButton.style.display).toBe('none');
+        });
+
+        test('should show button when transitioning from empty to fireworks', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            // Start with no fireworks
+            localStorage.setItem('museumCheckFireworks', JSON.stringify([]));
+            museumCheck.renderFireworks();
+            
+            // Button should be hidden
+            const demoButton = document.getElementById('demoFireworkButton');
+            expect(demoButton.style.display).toBe('none');
+            
+            // Add fireworks
+            const testFireworks = [
+                {
+                    id: 'test-1',
+                    museumId: 'forbidden-city',
+                    museumName: '故宫博物院',
+                    taskContent: '观察建筑',
+                    childNickname: '小明',
+                    ageGroup: '7-12',
+                    timestamp: Date.now(),
+                    city: '北京'
+                }
+            ];
+            
+            localStorage.setItem('museumCheckFireworks', JSON.stringify(testFireworks));
+            museumCheck.renderFireworks();
+            
+            // Button should now be visible
+            expect(demoButton.style.display).toBe('block');
+        });
+    });
+});

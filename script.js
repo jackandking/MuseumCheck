@@ -5894,13 +5894,16 @@ class MuseumCheckApp {
         // Render fireworks list
         const emptyState = document.getElementById('fireworksEmptyState');
         const fireworksList = document.getElementById('fireworksCardsList');
+        const demoButton = document.getElementById('demoFireworkButton');
         
         if (fireworks.length === 0) {
             emptyState.style.display = 'block';
             fireworksList.style.display = 'none';
+            if (demoButton) demoButton.style.display = 'none';
         } else {
             emptyState.style.display = 'none';
             fireworksList.style.display = 'block';
+            if (demoButton) demoButton.style.display = 'block';
             
             // Sort fireworks by timestamp (newest first)
             const sortedFireworks = [...fireworks].sort((a, b) => b.timestamp - a.timestamp);
