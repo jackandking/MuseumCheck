@@ -20,6 +20,25 @@ body {
     background-color: var(--secondary-color);
 }
 
+/* Global Fireworks Overlay */
+.global-fireworks-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+    display: none; /* Hidden by default to avoid unnecessary resource usage */
+}
+
+.global-fireworks-overlay canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -82,6 +101,18 @@ header h1 {
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
+    transition: opacity 0.5s ease, max-height 0.5s ease, margin-bottom 0.5s ease, padding 0.5s ease;
+    opacity: 1;
+    max-height: 500px;
+    overflow: hidden;
+}
+
+.age-selector.hidden {
+    opacity: 0;
+    max-height: 0;
+    margin-bottom: 0;
+    padding: 0;
+    pointer-events: none;
 }
 
 .age-group-fieldset {
@@ -159,6 +190,30 @@ header h1 {
 .age-option.selected .age-option-text {
     color: white;
     font-weight: bold;
+}
+
+/* Age selector hint notification */
+.age-selector-hint {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary-color);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    font-size: 14px;
+    text-align: center;
+    max-width: 90%;
+}
+
+.age-selector-hint.show {
+    opacity: 1;
 }
 
 /* Mobile responsiveness */
@@ -329,6 +384,11 @@ header h1 {
     cursor: pointer;
 }
 
+.visit-checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
 .museum-info h3 {
     color: var(--primary-color);
     margin-bottom: 5px;
@@ -383,6 +443,76 @@ header h1 {
 
 .assessment-button:active {
     transform: translateY(0);
+}
+
+/* Museum fireworks button on home page cards */
+.museum-fireworks-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 0.75em;
+    cursor: pointer;
+    margin-left: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.museum-fireworks-button:hover {
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #5568d3 0%, #653a8e 100%);
+}
+
+.museum-fireworks-button:active {
+    transform: translateY(0);
+}
+
+/* Mobile responsive styles for museum fireworks button */
+@media (max-width: 768px) {
+    .museum-fireworks-button {
+        padding: 6px 10px;
+        font-size: 0.75em;
+        margin-left: 6px;
+        min-width: 40px;
+        min-height: 40px;
+    }
+    
+    .assessment-button {
+        padding: 6px 10px;
+        font-size: 0.75em;
+        margin-left: 6px;
+    }
+}
+
+/* Extra small screens - further optimize button sizes */
+@media (max-width: 480px) {
+    .museum-info h3 {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .museum-fireworks-button {
+        padding: 5px 8px;
+        font-size: 0.7em;
+        margin-left: 4px;
+        min-width: 36px;
+        min-height: 36px;
+    }
+    
+    .assessment-button {
+        padding: 5px 8px;
+        font-size: 0.7em;
+        margin-left: 4px;
+    }
 }
 
 /* Modal Styles */
@@ -496,6 +626,49 @@ header h1 {
     padding-right: 60px; /* Space for close button */
     border-bottom: 2px solid #f1f3f5;
     padding-bottom: 16px;
+}
+
+/* Modal header with action buttons */
+.modal-header-with-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+.modal-header-with-actions h2 {
+    flex: 1;
+    margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+    padding-right: 0;
+}
+
+/* Museum fireworks button in modal header */
+.museum-fireworks-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.museum-fireworks-button:hover {
+    transform: scale(1.1) rotate(15deg);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.museum-fireworks-button:active {
+    transform: scale(1.05) rotate(10deg);
 }
 
 /* Museum Image Styles */
@@ -1396,6 +1569,20 @@ header h1 {
         background-color: rgba(255, 0, 0, 0.1);
         transform: scale(1.1);
     }
+    
+    .progress-display .fireworks-button-icon {
+        width: 32px;  /* Match clear button size for consistency */
+        height: 32px;
+        min-width: 32px;
+        padding: 6px;
+        font-size: 16px;
+        flex: 0 0 auto;
+        margin-left: 8px;  /* Spacing from trash button */
+    }
+    
+    .progress-display .fireworks-button-icon:hover {
+        transform: scale(1.1);
+    }
     }
 
     .progress-display .assessment-history-button-inline {
@@ -2277,6 +2464,34 @@ main[role="main"] {
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+/* Fireworks wall launch text */
+.firework-launch-text {
+    position: absolute;
+    color: white;
+    font-size: 1.2em;
+    font-weight: 600;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 2;
+    animation: launchTextFade 3s ease-out forwards;
+}
+
+@keyframes launchTextFade {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-20px) scale(1.1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.8);
+    }
 }
 
 .rocket-body {
@@ -4062,6 +4277,125 @@ main[role="main"] {
     border: 1px solid #c3e6c3;
 }
 
+/* Settings Input Group */
+.settings-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex: 1;
+    max-width: 400px;
+}
+
+.settings-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s ease;
+    min-height: 44px; /* Touch-friendly */
+}
+
+.settings-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: #f8f9ff;
+}
+
+.settings-input::placeholder {
+    color: #999;
+}
+
+.settings-save-button {
+    padding: 8px 16px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-height: 44px; /* Touch-friendly */
+    min-width: 60px;
+}
+
+.settings-save-button:hover {
+    background: #1e3a6e;
+    transform: translateY(-1px);
+}
+
+.settings-save-button:active {
+    transform: translateY(0);
+}
+
+.settings-hint {
+    color: #6c757d;
+    font-size: 12px;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* Settings Slider */
+.settings-slider {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(to right, #007bff, #28a745);
+    outline: none;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+    cursor: pointer;
+    min-height: 44px; /* Touch-friendly height for mobile */
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.settings-slider:hover {
+    opacity: 1;
+}
+
+.settings-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid var(--primary-color);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+}
+
+.settings-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+.settings-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid var(--primary-color);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+}
+
+.settings-slider::-moz-range-thumb:hover {
+    transform: scale(1.1);
+}
+
+/* Settings item with vertical layout for inputs */
+.settings-item.vertical {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
 @media (max-width: 768px) {
     .settings-item {
         flex-direction: column;
@@ -4073,6 +4407,15 @@ main[role="main"] {
     .settings-value {
         align-self: flex-end;
         font-size: 12px;
+    }
+    
+    .settings-input-group {
+        width: 100%;
+        max-width: none;
+    }
+    
+    .settings-input {
+        font-size: 16px; /* Prevent iOS zoom */
     }
 }
 
@@ -4825,4 +5168,561 @@ main[role="main"] {
 .hide-assessments #assessmentModal,
 .hide-assessments #assessmentHistoryModal {
     display: none !important;
+}
+
+/* ===== Fireworks Feature Styles ===== */
+
+/* Fireworks Stats Section */
+.fireworks-stats {
+    margin-top: 15px;
+}
+
+.fireworks-inline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 15px 20px;
+    border-radius: 12px;
+    gap: 15px;
+}
+
+.fireworks-text {
+    color: white;
+    font-size: 1em;
+    font-weight: 500;
+}
+
+.fireworks-button {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.fireworks-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.fireworks-button-inline {
+    min-width: auto;
+}
+
+/* Fireworks button icon style (for progress-display) */
+.fireworks-button-icon {
+    min-width: auto;
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.progress-display .fireworks-button-icon {
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+    font-size: 16px;
+    margin-left: 8px;
+}
+
+.fireworks-button-icon:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Fireworks Modal - Full Screen Layout */
+.fireworks-modal .modal-content {
+    max-width: none;
+    max-height: none;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.fireworks-wall-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #0a0e27;
+}
+
+.fireworks-wall-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1001;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.fireworks-wall-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
+}
+
+.fireworks-wall-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+/* Left Panel: Fireworks Animation Area */
+.fireworks-wall-left {
+    flex: 1;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #2a2f4a 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.fireworks-canvas {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+/* Right Panel: Achievement Cards */
+.fireworks-wall-right {
+    width: 400px;
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.fireworks-wall-header {
+    padding: 30px 20px 20px;
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+}
+
+.fireworks-wall-header h2 {
+    color: white;
+    margin: 0 0 20px 0;
+    font-size: 1.8em;
+    text-align: center;
+}
+
+.fireworks-wall-stats {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.fireworks-wall-stat {
+    text-align: center;
+}
+
+.fireworks-wall-stat .stat-number {
+    display: block;
+    font-size: 2em;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 5px;
+}
+
+.fireworks-wall-stat .stat-label {
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.fireworks-filters {
+    display: flex;
+    justify-content: center;
+}
+
+.fireworks-cards-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
+    position: relative;
+}
+
+.fireworks-cards-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Fireworks Content (backward compatibility) */
+.fireworks-content {
+    padding: 20px;
+}
+
+.fireworks-summary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 25px;
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 25px;
+}
+
+.fireworks-overview {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.fireworks-stat {
+    text-align: center;
+}
+
+.fireworks-stat .stat-number {
+    display: block;
+    font-size: 2.5em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.fireworks-stat .stat-label {
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.fireworks-filters {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.filter-select {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.95em;
+    cursor: pointer;
+    min-width: 200px;
+}
+
+.filter-select option {
+    background: #764ba2;
+    color: white;
+}
+
+/* Fireworks List */
+.fireworks-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.fireworks-empty .empty-icon {
+    font-size: 4em;
+    margin-bottom: 20px;
+}
+
+.fireworks-empty p {
+    margin: 10px 0;
+    font-size: 1.1em;
+}
+
+.demo-firework-button {
+    margin-top: 20px;
+    padding: 12px 24px;
+    font-size: 1.1em;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.demo-firework-button:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.demo-firework-button:active {
+    transform: translateY(0) scale(1);
+}
+
+.fireworks-list {
+    display: grid;
+    gap: 20px;
+}
+
+.firework-item {
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    animation: fireworkCardSlideIn 0.5s ease-out;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+@keyframes fireworkCardSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fireworkFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.firework-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Firework item being pushed out */
+.firework-item.exiting {
+    animation: fireworkCardExit 0.8s ease-in forwards;
+}
+
+@keyframes fireworkCardExit {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: translateY(30px) scale(0.9);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(60px) scale(0.7);
+    }
+}
+
+.firework-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.firework-icon {
+    font-size: 2em;
+    animation: fireworkPulse 2s ease-in-out infinite;
+}
+
+@keyframes fireworkPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.firework-info {
+    flex: 1;
+}
+
+.firework-museum {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 5px 0;
+}
+
+.firework-date {
+    color: #666;
+    font-size: 0.9em;
+    margin: 0;
+}
+
+.firework-age-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.firework-content {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.firework-task {
+    margin: 0;
+    line-height: 1.6;
+    color: #444;
+    font-size: 1em;
+}
+
+/* Remote firework indicator */
+.remote-badge {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 0.85em;
+    opacity: 0.8;
+    cursor: help;
+}
+
+.remote-firework {
+    border-left: 3px solid #667eea;
+    background: linear-gradient(to right, rgba(102, 126, 234, 0.05), transparent);
+}
+
+/* Museum-specific fireworks button in modal */
+.fireworks-museum-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fireworks-museum-button:hover {
+    transform: scale(1.1) rotate(15deg);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Mobile responsive styles for fireworks */
+@media (max-width: 768px) {
+    .fireworks-inline {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .fireworks-button {
+        width: 100%;
+        padding: 12px 16px;
+    }
+    
+    .fireworks-overview {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    /* Fireworks wall mobile layout */
+    .fireworks-wall-container {
+        flex-direction: column;
+    }
+    
+    .fireworks-wall-left {
+        height: 40vh;
+        order: 2;
+    }
+    
+    .fireworks-wall-right {
+        width: 100%;
+        height: 60vh;
+        order: 1;
+    }
+    
+    .fireworks-wall-header {
+        padding: 20px 15px 15px;
+    }
+    
+    .fireworks-wall-header h2 {
+        font-size: 1.5em;
+        margin-bottom: 15px;
+    }
+    
+    .fireworks-wall-stats {
+        gap: 20px;
+    }
+    
+    .fireworks-wall-stat .stat-number {
+        font-size: 1.6em;
+    }
+    
+    .fireworks-cards-container {
+        padding: 15px;
+    }
+    
+    .firework-item {
+        padding: 15px;
+    }
+    
+    .firework-launch-text {
+        font-size: 1em;
+    }
+    
+    .fireworks-filters {
+        flex-direction: column;
+    }
+    
+    .filter-select {
+        width: 100%;
+    }
+    
+    .firework-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .firework-age-badge {
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .fireworks-stat .stat-number {
+        font-size: 2em;
+    }
+    
+    .firework-museum {
+        font-size: 1.1em;
+    }
+    
+    .firework-task {
+        font-size: 0.95em;
+    }
+}
 }

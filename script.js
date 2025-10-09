@@ -16,6 +16,15 @@ const UI_CONSTANTS = {
     }
 };
 
+// Remote Storage Configuration
+const REMOTE_STORAGE_CONFIG = {
+    API_ENDPOINT: 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore',
+    FIREWORK_KEY: 'museumcheck-firework',
+    DOWNLOAD_INTERVAL: 10000,  // 10 seconds
+    FIREWORK_EXPIRATION: 3600, // 1 hour in seconds
+    TIMESTAMP_2124: 4866674732  // Default expiration timestamp
+};
+
 // DOM Selector Constants for better maintainability
 const DOM_SELECTORS = {
     AGE_GROUP: {
@@ -150,6 +159,178 @@ const UtilityFunctions = {
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
+    },
+    
+    // UUID generation for unique identifiers
+    generateUUID: () => {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+};
+
+// ===== REMOTE STORAGE MODULE =====
+// Remote key-value storage for shared fireworks across all users
+const RemoteStorage = {
+    /**
+     * Updates a key-value pair in the remote storage
+     * @param {string} key - The storage key
+     * @param {any} value - The value to store
+     * @param {string} sortKey - Sort key for organization
+     * @param {number} expireAt - Expiration timestamp
+     * @returns {Promise<Object>} Promise that resolves with the response data
+     */
+    async updateKeyValueStore(key, value, sortKey = 'None', expireAt = REMOTE_STORAGE_CONFIG.TIMESTAMP_2124) {
+        if (!key || typeof key !== 'string') {
+            throw new Error('Key must be a non-empty string');
+        }
+
+        console.log(`RemoteStorage: updateKeyValueStore with key: ${key}`);
+
+        try {
+            const response = await fetch(REMOTE_STORAGE_CONFIG.API_ENDPOINT, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    key,
+                    sortKey,
+                    value,
+                    expireAt
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log(`RemoteStorage: updateKeyValueStore success for key: ${key}`);
+            return data;
+        } catch (error) {
+            console.error(`RemoteStorage: Error updating key-value store:`, error);
+            throw error;
+        }
+    },
+
+    /**
+     * Reads a value from the remote key-value storage
+     * @param {string} key - The storage key to read
+     * @param {Function} callback - Callback function to handle the result
+     * @param {string} sortKey - Sort key for organization
+     */
+    readKeyValueStore(key, callback, sortKey = 'None') {
+        if (!key || typeof key !== 'string') {
+            callback(null);
+            return;
+        }
+
+        if (typeof callback !== 'function') {
+            throw new Error('Callback must be a function');
+        }
+
+        console.log(`RemoteStorage: readKeyValueStore for key=${key} sortKey=${sortKey}`);
+
+        const url = `${REMOTE_STORAGE_CONFIG.API_ENDPOINT}?key=${encodeURIComponent(key)}&sortKey=${encodeURIComponent(sortKey)}`;
+
+        fetch(url, {
+            method: "GET"
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('RemoteStorage: Read data:', data);
+            callback(data.value);
+        })
+        .catch(error => {
+            console.error('RemoteStorage: Error in readKeyValueStore:', error);
+            callback(null);
+        });
+    },
+
+    /**
+     * Uploads firework data to the remote storage
+     * @param {string} fireworkId - Unique identifier for the firework
+     * @param {Object} fireworkData - Firework data object
+     */
+    async uploadFirework(fireworkId, fireworkData) {
+        if (!fireworkId || typeof fireworkId !== 'string') {
+            console.error('RemoteStorage: Firework ID must be a non-empty string');
+            return;
+        }
+
+        const dataToStore = {
+            ...fireworkData,
+            id: fireworkId,
+            timestamp: Date.now()
+        };
+        
+        // Set expiration to 1 hour from now
+        const oneHourLater = Math.floor(Date.now() / 1000) + REMOTE_STORAGE_CONFIG.FIREWORK_EXPIRATION;
+        
+        try {
+            await this.updateKeyValueStore(
+                REMOTE_STORAGE_CONFIG.FIREWORK_KEY, 
+                JSON.stringify(dataToStore), 
+                fireworkId, 
+                oneHourLater
+            );
+            console.log('RemoteStorage: Firework uploaded successfully:', fireworkId);
+        } catch (error) {
+            console.error('RemoteStorage: Error uploading firework:', error);
+        }
+    },
+
+    /**
+     * Downloads all firework data from remote storage
+     * @param {Function} callback - Callback function to handle the fireworks data array
+     */
+    downloadFireworks(callback) {
+        if (typeof callback !== 'function') {
+            console.error('RemoteStorage: Callback must be a function');
+            return;
+        }
+
+        this.readKeyValueStore(REMOTE_STORAGE_CONFIG.FIREWORK_KEY, (rawdata) => {
+            if (!rawdata) {
+                console.log('RemoteStorage: No fireworks data found');
+                callback([]);
+                return;
+            }
+
+            try {
+                const data = JSON.parse(rawdata);
+                
+                if (Array.isArray(data)) {
+                    // Handle array of fireworks
+                    const fireworksData = data.map(item => {
+                        try {
+                            return typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
+                        } catch (parseError) {
+                            console.warn('RemoteStorage: Error parsing individual firework item:', parseError);
+                            return null;
+                        }
+                    }).filter(item => item !== null);
+                    
+                    console.log('RemoteStorage: Downloaded fireworks:', fireworksData.length);
+                    callback(fireworksData);
+                } else {
+                    // Handle single firework data
+                    const fireworkData = typeof data === 'string' ? JSON.parse(data) : data;
+                    callback([fireworkData]);
+                }
+            } catch (err) {
+                console.error('RemoteStorage: Error parsing fireworks data:', err);
+                callback([]);
+            }
+        }, '*');
     }
 };
 
@@ -2786,18 +2967,367 @@ const EventHandlers = {
     }
 };
 
+/**
+ * GlobalFireworksWall Class
+ * Manages the global fireworks display on the main page
+ * Shows fireworks for all museum check-ins from remote storage
+ * Launches fireworks sequentially with looping behavior
+ */
+class GlobalFireworksWall {
+    constructor(canvas, app) {
+        this.canvas = canvas;
+        this.app = app;
+        this.ctx = canvas.getContext('2d');
+        this.fireworks = [];
+        this.particles = [];
+        this.animationId = null;
+        this.isRunning = false;
+        
+        // Queue system for sequential launching
+        this.launchQueue = [];
+        this.currentQueueIndex = 0;
+        this.lastLaunchTime = 0;
+        this.launchInterval = 1000; // 1 second between launches
+        
+        // Setup canvas size
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+    }
+    
+    resizeCanvas() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+    }
+    
+    /**
+     * Update the fireworks queue from app's fireworks data
+     */
+    updateFireworksQueue() {
+        // Get all fireworks (local + remote) sorted by timestamp
+        const allFireworks = this.app.getAllFireworks();
+        
+        // Convert to launch queue format with proper text
+        this.launchQueue = allFireworks.map(fw => ({
+            text: this.formatFireworkText(fw),
+            museumName: fw.museumName,
+            ageGroup: fw.ageGroup,
+            childNickname: fw.childNickname || '小朋友',
+            timestamp: fw.timestamp
+        }));
+        
+        // Reset queue index if needed
+        if (this.currentQueueIndex >= this.launchQueue.length) {
+            this.currentQueueIndex = 0;
+        }
+        
+        console.log(`Global fireworks queue updated: ${this.launchQueue.length} fireworks`);
+    }
+    
+    /**
+     * Format firework text as: 孩子昵称（年龄段）打卡xx博物馆
+     */
+    formatFireworkText(firework) {
+        const nickname = firework.childNickname || '小朋友';
+        const ageGroup = firework.ageGroup || '未知';
+        const museumName = firework.museumName || '博物馆';
+        
+        return `${nickname} (${ageGroup}) 打卡 ${museumName}`;
+    }
+    
+    /**
+     * Start the global fireworks wall
+     */
+    start() {
+        if (this.isRunning) return;
+        
+        this.isRunning = true;
+        this.updateFireworksQueue();
+        this.animate();
+        
+        console.log('Global fireworks wall started');
+    }
+    
+    /**
+     * Stop the global fireworks wall
+     */
+    stop() {
+        this.isRunning = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+        }
+    }
+    
+    /**
+     * Launch next firework from queue
+     */
+    launchNextFirework() {
+        if (this.launchQueue.length === 0) {
+            // No fireworks to launch, try updating queue
+            this.updateFireworksQueue();
+            return;
+        }
+        
+        // Get next firework from queue
+        const fireworkData = this.launchQueue[this.currentQueueIndex];
+        
+        // Random starting position
+        const startX = this.canvas.width * Math.random();
+        
+        // Random target position (center area, random height)
+        const targetX = this.canvas.width * 0.3 + Math.random() * this.canvas.width * 0.4;
+        const targetY = this.canvas.height * 0.1 + Math.random() * this.canvas.height * 0.5; // Random height
+        
+        // Create firework with the formatted text
+        const firework = new GlobalFirework(
+            startX, 
+            targetX, 
+            targetY, 
+            fireworkData.text,
+            this.ctx,
+            this.canvas
+        );
+        
+        this.fireworks.push(firework);
+        
+        // Play sound if available
+        if (typeof playFireworkSound === 'function') {
+            playFireworkSound();
+        }
+        
+        // Move to next in queue (loop back to start if at end)
+        this.currentQueueIndex = (this.currentQueueIndex + 1) % this.launchQueue.length;
+        
+        console.log(`Launched firework: ${fireworkData.text}`);
+    }
+    
+    /**
+     * Animation loop
+     */
+    animate() {
+        if (!this.isRunning) return;
+        
+        // Clear canvas with slight fade effect
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Update and draw fireworks
+        for (let i = this.fireworks.length - 1; i >= 0; i--) {
+            const firework = this.fireworks[i];
+            firework.update();
+            firework.draw();
+            
+            // Remove completed fireworks
+            if (firework.isComplete()) {
+                this.fireworks.splice(i, 1);
+            }
+        }
+        
+        // Update and draw particles
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const particle = this.particles[i];
+            particle.update();
+            particle.draw();
+            
+            // Remove faded particles
+            if (particle.alpha <= 0) {
+                this.particles.splice(i, 1);
+            }
+        }
+        
+        // Launch next firework at intervals
+        const now = Date.now();
+        if (now - this.lastLaunchTime >= this.launchInterval) {
+            this.launchNextFirework();
+            this.lastLaunchTime = now;
+        }
+        
+        this.animationId = requestAnimationFrame(() => this.animate());
+    }
+    
+    /**
+     * Add particles from firework explosion
+     */
+    addParticles(particles) {
+        this.particles.push(...particles);
+    }
+}
+
+/**
+ * GlobalFirework Class
+ * Firework for the global wall (similar to modal firework but optimized)
+ */
+class GlobalFirework {
+    constructor(startX, targetX, targetY, text, ctx, canvas) {
+        this.startX = startX;
+        this.x = startX;
+        this.y = canvas.height;
+        this.targetX = targetX;
+        this.targetY = targetY;
+        this.text = text;
+        this.ctx = ctx;
+        this.canvas = canvas;
+        
+        // Movement
+        this.speed = 2;
+        this.angle = Math.atan2(targetY - this.y, targetX - this.x);
+        this.velocity = {
+            x: Math.cos(this.angle) * this.speed,
+            y: Math.sin(this.angle) * this.speed
+        };
+        
+        // Visual
+        this.color = this.generateRandomColor();
+        this.hasExploded = false;
+        this.particles = [];
+    }
+    
+    generateRandomColor() {
+        const r = Math.floor(Math.random() * 255);
+        const g = Math.floor(Math.random() * 255);
+        const b = Math.floor(Math.random() * 255);
+        return `${r}, ${g}, ${b}`;
+    }
+    
+    update() {
+        if (!this.hasExploded) {
+            this.x += this.velocity.x;
+            this.y += this.velocity.y;
+            
+            // Check if reached target
+            const distance = Math.sqrt(
+                Math.pow(this.targetX - this.x, 2) + 
+                Math.pow(this.targetY - this.y, 2)
+            );
+            
+            if (distance < 5) {
+                this.explode();
+            }
+        } else {
+            // Update particles
+            for (let i = this.particles.length - 1; i >= 0; i--) {
+                const particle = this.particles[i];
+                particle.update();
+                
+                if (particle.alpha <= 0) {
+                    this.particles.splice(i, 1);
+                }
+            }
+        }
+    }
+    
+    draw() {
+        if (!this.hasExploded) {
+            // Draw ascending firework
+            this.ctx.beginPath();
+            this.ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+            this.ctx.fillStyle = `rgba(${this.color}, 1)`;
+            this.ctx.fill();
+        } else {
+            // Draw particles
+            this.particles.forEach(particle => particle.draw());
+        }
+    }
+    
+    explode() {
+        this.hasExploded = true;
+        
+        // Create particles in a circle
+        const particleCount = 50;
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (Math.PI * 2 * i) / particleCount;
+            const particle = new GlobalParticle(
+                this.targetX,
+                this.targetY,
+                this.color,
+                angle,
+                this.ctx
+            );
+            this.particles.push(particle);
+        }
+        
+        // Draw text
+        this.drawText();
+    }
+    
+    drawText() {
+        this.ctx.save();
+        this.ctx.font = 'bold 20px "PingFang SC", "Microsoft YaHei", sans-serif';
+        this.ctx.fillStyle = `rgba(${this.color}, 1)`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        
+        // Add shadow for better visibility
+        this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        this.ctx.shadowBlur = 10;
+        
+        this.ctx.fillText(this.text, this.targetX, this.targetY - 30);
+        this.ctx.restore();
+    }
+    
+    isComplete() {
+        return this.hasExploded && this.particles.length === 0;
+    }
+}
+
+/**
+ * GlobalParticle Class
+ * Particle for global firework explosions
+ */
+class GlobalParticle {
+    constructor(x, y, color, angle, ctx) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.ctx = ctx;
+        
+        // Movement
+        const speed = 2 + Math.random() * 2;
+        this.velocity = {
+            x: Math.cos(angle) * speed,
+            y: Math.sin(angle) * speed
+        };
+        
+        this.alpha = 1;
+        this.friction = 0.98;
+        this.gravity = 0.05;
+    }
+    
+    update() {
+        this.velocity.x *= this.friction;
+        this.velocity.y *= this.friction;
+        this.velocity.y += this.gravity;
+        
+        this.x += this.velocity.x;
+        this.y += this.velocity.y;
+        
+        this.alpha -= 0.01;
+    }
+    
+    draw() {
+        this.ctx.beginPath();
+        this.ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+        this.ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
+        this.ctx.fill();
+    }
+}
+
 class MuseumCheckApp {
     constructor() {
         this.currentAge = this.loadAgeGroup();
+        this.childNickname = this.loadChildNickname();
         this.visitedMuseums = this.loadVisitedMuseums();
         this.museumChecklists = this.loadMuseumChecklists();
         this.taskPhotos = this.loadTaskPhotos(); // Will fallback to localStorage initially
         this.customChecklists = this.loadCustomChecklists();
+        this.fireworks = this.loadFireworks(); // Load local fireworks data
+        this.remoteFireworks = []; // Remote fireworks from other users
+        this.downloadTimer = null; // Timer for periodic remote firework downloads
         this.indexedDBSupported = false;
         this.db = null;
         this.searchQuery = '';
         this.filteredMuseums = MUSEUMS;
         this.assessmentHidden = false; // Default to showing assessments
+        this.readonlyCheckboxes = false; // Default to interactive checkboxes
         
         // Initialize specialized modules
         this.modalManager = new ModalManager();
@@ -2858,9 +3388,159 @@ class MuseumCheckApp {
         }
         
         this.setupEventListeners();
+        this.handleURLParameters(); // Process URL parameters before rendering
         this.renderMuseums();
         this.updateStats();
-        this.handleURLParameters();
+        
+        // Initialize remote fireworks system
+        this.initRemoteFireworks();
+        
+        // Initialize global fireworks wall
+        this.initGlobalFireworksWall();
+        // Auto-hide age selector after 10 seconds
+        this.setupAgeSelectorAutoHide();
+    }
+    
+    /**
+     * Setup auto-hide functionality for age selector
+     * For first-time users: keeps selector visible until they make a selection
+     * For returning users: hides selector immediately (they've already chosen)
+     * 
+     * Bug fix: Removed 10-second auto-hide timer for first-time users
+     * Issue: 自动消失bug - Age selector should only hide after user makes a selection
+     */
+    setupAgeSelectorAutoHide() {
+        const ageSelector = document.querySelector('.age-selector');
+        const hint = document.getElementById('ageSelectorHint');
+        
+        if (!ageSelector || !hint) {
+            return;
+        }
+        
+        // Check if user has already saved their age preference
+        let hasSavedAge = null;
+        
+        try {
+            hasSavedAge = localStorage.getItem('ageGroup');
+        } catch (error) {
+            console.error('Failed to check localStorage:', error);
+            // Treat as first-time user if localStorage fails
+        }
+        
+        if (hasSavedAge) {
+            // Returning user - hide age selector immediately
+            ageSelector.classList.add('hidden');
+            return;
+        }
+        
+        // First-time user - keep selector visible until they make a selection
+        // The selector will be hidden when user selects an age (see age group change handler)
+    }
+    
+    /**
+     * Hide age selector and show hint notification
+     * Called after user selects an age for the first time
+     */
+    hideAgeSelectorAndShowHint() {
+        const ageSelector = document.querySelector('.age-selector');
+        const hint = document.getElementById('ageSelectorHint');
+        
+        if (!ageSelector || !hint) {
+            return;
+        }
+        
+        // Check if hint has already been shown
+        let hasSeenHint = null;
+        try {
+            hasSeenHint = localStorage.getItem('ageSelectorHintShown');
+        } catch (error) {
+            console.error('Failed to check hint status:', error);
+        }
+        
+        // Hide age selector
+        ageSelector.classList.add('hidden');
+        
+        // Only show hint if it hasn't been shown before
+        if (!hasSeenHint) {
+            // Show hint after age selector is hidden (wait for transition)
+            setTimeout(() => {
+                hint.classList.add('show');
+                
+                // Mark hint as shown
+                try {
+                    localStorage.setItem('ageSelectorHintShown', 'true');
+                } catch (error) {
+                    console.error('Failed to save hint status:', error);
+                }
+                
+                // Hide hint after 5 seconds
+                setTimeout(() => {
+                    hint.classList.remove('show');
+                }, 5000);
+            }, 500);
+        }
+    }
+    
+    /**
+     * Initialize remote fireworks downloading
+     */
+    initRemoteFireworks() {
+        console.log('Initializing remote fireworks system...');
+        
+        // Download initial fireworks
+        this.downloadRemoteFireworks();
+        
+        // Setup periodic downloads every 10 seconds
+        this.downloadTimer = setInterval(() => {
+            this.downloadRemoteFireworks();
+        }, REMOTE_STORAGE_CONFIG.DOWNLOAD_INTERVAL);
+        
+        console.log('Remote fireworks system initialized');
+    }
+    
+    /**
+     * Download remote fireworks from all users
+     */
+    downloadRemoteFireworks() {
+        RemoteStorage.downloadFireworks((fireworksData) => {
+            if (fireworksData && Array.isArray(fireworksData)) {
+                console.log(`Downloaded ${fireworksData.length} remote fireworks`);
+                this.remoteFireworks = fireworksData;
+                
+                // Update fireworks display if modal is open
+                const modal = document.getElementById('fireworksModal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    this.renderFireworks();
+                }
+                
+                // Update global fireworks wall queue with new data
+                if (this.globalFireworksWall) {
+                    this.globalFireworksWall.updateFireworksQueue();
+                }
+            }
+        });
+    }
+
+    /**
+     * Initialize the global fireworks wall on the main page
+     */
+    initGlobalFireworksWall() {
+        console.log('Initializing global fireworks wall...');
+        
+        const canvas = document.getElementById('globalFireworksCanvas');
+        const overlay = document.getElementById('globalFireworksOverlay');
+        
+        if (!canvas || !overlay) {
+            console.warn('Global fireworks canvas or overlay not found');
+            return;
+        }
+        
+        // Initialize the global fireworks wall manager but don't start it automatically
+        // The wall should only start when explicitly triggered by user action
+        this.globalFireworksWall = new GlobalFireworksWall(canvas, this);
+        // DO NOT auto-start: this.globalFireworksWall.start();
+        
+        console.log('Global fireworks wall initialized (not started)');
     }
 
 
@@ -2872,6 +3552,13 @@ class MuseumCheckApp {
         const checklistType = urlParams.get('type'); // 'parent' or 'child'
         const ageGroup = urlParams.get('age'); // '3-6', '7-12', '13-18'
         const hideAssessment = urlParams.get('hideAssessment'); // 'true' to hide assessment features
+        const affiliate = urlParams.get('affiliate'); // 'DY' for Douyin affiliate mode
+
+        // Handle affiliate parameter - when affiliate=DY, enable read-only mode and hide assessments
+        if (affiliate === 'DY') {
+            this.readonlyCheckboxes = true;
+            this.hideAssessmentFeatures();
+        }
 
         // Handle assessment hiding for Douyin mini-program compliance
         if (hideAssessment === 'true') {
@@ -3139,6 +3826,8 @@ class MuseumCheckApp {
             radio.addEventListener('change', (e) => {
                 if (e.target.checked) {
                     const oldAge = this.currentAge;
+                    const isFirstSelection = !localStorage.getItem('ageGroup');
+                    
                     this.currentAge = e.target.value;
                     this.saveAgeGroup(); // Save age group to localStorage
                     this.renderMuseums();
@@ -3148,6 +3837,11 @@ class MuseumCheckApp {
                         option.classList.remove('selected');
                     });
                     e.target.closest('.age-option').classList.add('selected');
+                    
+                    // If this is the first time user selects an age, hide selector and show hint
+                    if (isFirstSelection) {
+                        this.hideAgeSelectorAndShowHint();
+                    }
                     
                     // Track age group change
                     this.trackEvent('age_group_changed', {
@@ -3256,6 +3950,118 @@ class MuseumCheckApp {
             }
         });
 
+        // Auto-save nickname on blur (when user leaves the input field)
+        const nicknameInput = document.getElementById('childNicknameInput');
+        if (nicknameInput) {
+            nicknameInput.addEventListener('blur', () => {
+                const nickname = nicknameInput.value.trim();
+                
+                // Only save if there's a change
+                const savedNickname = localStorage.getItem('childNickname') || '';
+                if (nickname !== savedNickname) {
+                    const result = this.saveChildNickname(nickname);
+                    
+                    if (result.isValid) {
+                        // Track nickname saved event
+                        this.trackEvent('nickname_saved', {
+                            'nickname_length': nickname.length,
+                            'auto_saved': true
+                        });
+                    }
+                }
+            });
+        }
+
+        // Auto-save age group on change
+        const ageGroupSelector = document.getElementById('ageGroupSelector');
+        if (ageGroupSelector) {
+            ageGroupSelector.addEventListener('change', () => {
+                const newAgeGroup = ageGroupSelector.value;
+                
+                if (newAgeGroup !== this.currentAge) {
+                    this.currentAge = newAgeGroup;
+                    localStorage.setItem('ageGroup', newAgeGroup);
+                    
+                    // Update display
+                    const ageGroupNames = {
+                        '3-6': '3-6岁 (学龄前)',
+                        '7-12': '7-12岁 (小学)',
+                        '13-18': '13-18岁 (中学)'
+                    };
+                    const ageGroupDisplay = document.getElementById('currentAgeGroupDisplay');
+                    if (ageGroupDisplay) {
+                        ageGroupDisplay.textContent = ageGroupNames[newAgeGroup] || newAgeGroup;
+                    }
+                    
+                    // Update age selector on main page
+                    const savedAgeRadio = document.querySelector(`input[name="ageGroup"][value="${newAgeGroup}"]`);
+                    if (savedAgeRadio) {
+                        savedAgeRadio.checked = true;
+                        // Update selected state
+                        document.querySelectorAll('.age-option').forEach(option => {
+                            option.classList.remove('selected');
+                        });
+                        savedAgeRadio.closest('.age-option')?.classList.add('selected');
+                    }
+                    
+                    // Re-render museums with new age group
+                    this.renderMuseums();
+                    
+                    // Track age group changed event
+                    this.trackEvent('age_group_changed', {
+                        'new_age_group': newAgeGroup,
+                        'changed_from_settings': true,
+                        'auto_saved': true
+                    });
+                }
+            });
+        }
+
+        // Fireworks retention time slider
+        const retentionSlider = document.getElementById('fireworksRetentionInput');
+        if (retentionSlider) {
+            retentionSlider.addEventListener('input', (e) => {
+                const minutes = parseInt(e.target.value, 10);
+                this.updateFireworksRetentionDisplay(minutes);
+            });
+            
+            retentionSlider.addEventListener('change', (e) => {
+                const minutes = parseInt(e.target.value, 10);
+                const retentionMs = minutes * 60000;
+                
+                const result = this.saveFireworksRetentionTime(retentionMs);
+                
+                if (result.success) {
+                    // Track retention time change
+                    this.trackEvent('fireworks_retention_changed', {
+                        'retention_minutes': minutes,
+                        'retention_hours': minutes / 60
+                    });
+                    
+                    // Clean up expired fireworks immediately
+                    this.fireworks = this.cleanupExpiredFireworks(this.fireworks);
+                    this.updateStats();
+                }
+            });
+        }
+
+        // Auto-save firework type on change
+        const fireworkTypeSelector = document.getElementById('fireworkTypeSelector');
+        if (fireworkTypeSelector) {
+            fireworkTypeSelector.addEventListener('change', () => {
+                const selectedType = fireworkTypeSelector.value;
+                const result = this.saveFireworkType(selectedType);
+                
+                if (result.success) {
+                    // Track firework type change
+                    this.trackEvent('firework_type_changed', {
+                        'firework_type': selectedType,
+                        'auto_saved': true
+                    });
+                }
+            });
+        }
+
         // Clear all data button
         document.getElementById('clearAllDataButton').addEventListener('click', () => {
             this.clearAllData();
@@ -3264,6 +4070,33 @@ class MuseumCheckApp {
         // Achievement poster generation button
         document.getElementById('generateAchievementPoster').addEventListener('click', () => {
             this.generateAchievementPoster();
+        });
+
+        // Fireworks button - opens fireworks wall page showing all museum achievements
+        document.getElementById('fireworksButton').addEventListener('click', () => {
+            window.open('fireworks-wall.html', '_blank');
+        });
+
+        // Fireworks modal close
+        document.querySelector('#fireworksModal .close').addEventListener('click', () => {
+            this.closeFireworksModal();
+        });
+
+        // Click outside fireworks modal to close
+        document.getElementById('fireworksModal').addEventListener('click', (e) => {
+            if (e.target.id === 'fireworksModal') {
+                this.closeFireworksModal();
+            }
+        });
+        
+        // Demo firework button
+        document.getElementById('demoFireworkButton').addEventListener('click', () => {
+            if (this.fireworksCanvasSystem) {
+                // Launch a burst of multiple fireworks
+                this.fireworksCanvasSystem.launchFirework('演示', '预览');
+                setTimeout(() => this.fireworksCanvasSystem.launchFirework('演示', '预览'), 300);
+                setTimeout(() => this.fireworksCanvasSystem.launchFirework('演示', '预览'), 600);
+            }
         });
     }
 
@@ -3417,6 +4250,139 @@ class MuseumCheckApp {
         }
     }
 
+    loadFireworks() {
+        try {
+            const saved = localStorage.getItem('fireworks');
+            let fireworks = saved ? JSON.parse(saved) : [];
+            
+            // Clean up expired fireworks
+            fireworks = this.cleanupExpiredFireworks(fireworks);
+            
+            return fireworks;
+        } catch (error) {
+            console.error('Failed to load fireworks:', error);
+            return [];
+        }
+    }
+
+    cleanupExpiredFireworks(fireworks) {
+        const retentionTimeMs = this.loadFireworksRetentionTime();
+        const now = Date.now();
+        
+        // Filter out fireworks older than retention time
+        const validFireworks = fireworks.filter(firework => {
+            const age = now - firework.timestamp;
+            return age < retentionTimeMs;
+        });
+        
+        // Save cleaned fireworks if any were removed
+        if (validFireworks.length !== fireworks.length) {
+            console.log(`Cleaned up ${fireworks.length - validFireworks.length} expired fireworks`);
+            this.fireworks = validFireworks;
+            this.saveFireworks();
+        }
+        
+        return validFireworks;
+    }
+
+    saveFireworks() {
+        try {
+            localStorage.setItem('fireworks', JSON.stringify(this.fireworks));
+        } catch (error) {
+            console.error('Failed to save fireworks:', error);
+        }
+    }
+
+    addFirework(museumId, museumName, taskContent, ageGroup, museumCity = null) {
+        const fireworkId = UtilityFunctions.generateUUID();
+        
+        // Get museum city if not provided
+        if (!museumCity) {
+            const museum = MUSEUMS.find(m => m.id === museumId);
+            museumCity = museum ? museum.location : '';
+        }
+        
+        // Get current firework type from localStorage
+        let fireworkType = 'heart';
+        try {
+            const saved = localStorage.getItem('fireworkType');
+            if (saved) {
+                fireworkType = saved;
+            }
+        } catch (error) {
+            console.warn('Could not load firework type, using default:', error);
+        }
+        
+        const firework = {
+            id: fireworkId,
+            museumId: museumId,
+            museumName: museumName,
+            museumCity: museumCity,
+            taskContent: taskContent,
+            ageGroup: ageGroup,
+            childNickname: this.childNickname || '小淘气',
+            fireworkType: fireworkType,
+            timestamp: Date.now(),
+            date: new Date().toISOString()
+        };
+        
+        // Add to local fireworks
+        this.fireworks.push(firework);
+        this.saveFireworks();
+        
+        // Upload to remote storage for sharing with other users
+        RemoteStorage.uploadFirework(fireworkId, firework).catch(error => {
+            console.warn('Failed to upload firework to remote storage:', error);
+            // Continue even if remote upload fails - local storage still works
+        });
+        
+        // Track firework creation
+        this.trackEvent('firework_created', {
+            'museum_id': museumId,
+            'museum_city': museumCity,
+            'age_group': ageGroup,
+            'child_nickname': this.childNickname || '小淘气',
+            'timestamp': new Date().toISOString(),
+            'uploaded_to_remote': true
+        });
+        
+        return firework;
+    }
+
+    getFireworksByMuseum(museumId) {
+        // Merge local and remote fireworks, then filter by museum
+        const allFireworks = [...this.fireworks, ...this.remoteFireworks];
+        return allFireworks.filter(fw => fw.museumId === museumId);
+    }
+
+    getAllFireworks() {
+        // Merge local and remote fireworks
+        const allFireworks = [...this.fireworks, ...this.remoteFireworks];
+        
+        // Remove duplicates based on ID (prefer local versions)
+        const uniqueFireworks = [];
+        const seenIds = new Set();
+        
+        // Add local fireworks first (priority)
+        this.fireworks.forEach(fw => {
+            if (!seenIds.has(fw.id)) {
+                uniqueFireworks.push(fw);
+                seenIds.add(fw.id);
+            }
+        });
+        
+        // Add remote fireworks if not already present
+        this.remoteFireworks.forEach(fw => {
+            if (fw.id && !seenIds.has(fw.id)) {
+                uniqueFireworks.push({...fw, isRemote: true});
+                seenIds.add(fw.id);
+            }
+        });
+        
+        // Sort by timestamp (newest first)
+        return uniqueFireworks.sort((a, b) => b.timestamp - a.timestamp);
+    }
+
     saveMuseumChecklists() {
         try {
             localStorage.setItem('museumChecklists', JSON.stringify(this.museumChecklists));
@@ -3428,10 +4394,10 @@ class MuseumCheckApp {
     loadAgeGroup() {
         try {
             const saved = localStorage.getItem('ageGroup');
-            return saved || '3-6'; // Default to '3-6' if not saved
+            return saved || '7-12'; // Default to '7-12' (8 years old) if not saved
         } catch (error) {
             console.error('Failed to load age group:', error);
-            return '3-6';
+            return '7-12';
         }
     }
 
@@ -3441,6 +4407,117 @@ class MuseumCheckApp {
         } catch (error) {
             console.error('Failed to save age group:', error);
         }
+    }
+
+    loadChildNickname() {
+        try {
+            const saved = localStorage.getItem('childNickname');
+            return saved || '小淘气'; // Default to '小淘气' if not saved
+        } catch (error) {
+            console.error('Failed to load child nickname:', error);
+            return '小淘气';
+        }
+    }
+
+    loadFireworksRetentionTime() {
+        try {
+            const saved = localStorage.getItem('fireworksRetentionTime');
+            // Default to 1 minute (60000 ms)
+            return saved ? parseInt(saved, 10) : 60000;
+        } catch (error) {
+            console.error('Failed to load fireworks retention time:', error);
+            return 60000; // Default 1 minute
+        }
+    }
+
+    saveFireworksRetentionTime(retentionTimeMs) {
+        try {
+            // Validate retention time (1 minute to 1 day)
+            const minTime = 60000; // 1 minute
+            const maxTime = 86400000; // 1 day
+            
+            if (retentionTimeMs < minTime || retentionTimeMs > maxTime) {
+                console.warn('Invalid retention time, using default');
+                retentionTimeMs = 60000;
+            }
+            
+            localStorage.setItem('fireworksRetentionTime', retentionTimeMs.toString());
+            
+            return { success: true, message: '烟花留存时间已保存' };
+        } catch (error) {
+            console.error('Failed to save fireworks retention time:', error);
+            return { success: false, message: '保存失败，请重试' };
+        }
+    }
+
+    loadFireworkType() {
+        try {
+            const saved = localStorage.getItem('fireworkType');
+            // Default to 'heart' if not saved
+            return saved || 'heart';
+        } catch (error) {
+            console.error('Failed to load firework type:', error);
+            return 'heart'; // Default to heart shape
+        }
+    }
+
+    saveFireworkType(fireworkType) {
+        try {
+            // Validate firework type - includes all 11 types available in the UI
+            const validTypes = ['heart', 'circle', 'star', 'diamond', 'spiral', 'butterfly', 'rose', 'sunburst', 'cascade', 'ring', 'crosshatch'];
+            if (!validTypes.includes(fireworkType)) {
+                console.warn('Invalid firework type, using default');
+                fireworkType = 'heart';
+            }
+            
+            localStorage.setItem('fireworkType', fireworkType);
+            
+            return { success: true, message: '烟花类型已保存' };
+        } catch (error) {
+            console.error('Failed to save firework type:', error);
+            return { success: false, message: '保存失败，请重试' };
+        }
+    }
+
+    saveChildNickname(nickname) {
+        try {
+            // Validate nickname
+            const validation = this.validateNickname(nickname);
+            if (!validation.isValid) {
+                return validation;
+            }
+            
+            this.childNickname = nickname;
+            localStorage.setItem('childNickname', nickname);
+            
+            return { isValid: true, message: '昵称保存成功！' };
+        } catch (error) {
+            console.error('Failed to save child nickname:', error);
+            return { isValid: false, message: '保存失败，请重试' };
+        }
+    }
+
+    validateNickname(nickname) {
+        if (!nickname || nickname.trim() === '') {
+            return { isValid: false, message: '昵称不能为空' };
+        }
+
+        const trimmed = nickname.trim();
+        
+        // Count Chinese characters and English letters
+        const chineseChars = trimmed.match(/[\u4e00-\u9fa5]/g) || [];
+        const englishChars = trimmed.match(/[a-zA-Z]/g) || [];
+        const otherChars = trimmed.replace(/[\u4e00-\u9fa5a-zA-Z]/g, '');
+        
+        // Calculate length considering Chinese chars count as 2 and English as 1
+        const totalLength = chineseChars.length * 2 + englishChars.length + otherChars.length;
+        
+        // Max 5 Chinese chars (10 units) or 10 English chars (10 units)
+        if (totalLength > 10) {
+            return { isValid: false, message: '昵称过长（最多5个中文字或10个英文字母）' };
+        }
+        
+        return { isValid: true };
     }
 
     renderMuseums() {
@@ -3457,15 +4534,18 @@ class MuseumCheckApp {
 
             this.filteredMuseums.forEach(museum => {
                 const isVisited = this.visitedMuseums.includes(museum.id);
+                
                 const card = document.createElement('div');
                 card.className = `museum-card ${isVisited ? 'visited' : ''}`;
                 card.innerHTML = `
                     <div class="museum-header">
                         <input type="checkbox" class="visit-checkbox" ${isVisited ? 'checked' : ''} 
+                               ${this.readonlyCheckboxes ? 'disabled' : ''}
                                data-museum="${museum.id}">
                         <div class="museum-info">
                             <h3>
                                 ${museum.name}
+                                <button class="museum-fireworks-button" data-museum="${museum.id}" title="查看本馆烟花墙">🎆</button>
                                 ${isVisited && !this.assessmentHidden ? '<button class="assessment-button" data-museum="' + museum.id + '" title="亲子关系测评">🧡 亲子测评</button>' : ''}
                             </h3>
                             <div class="museum-location">📍 ${museum.location}</div>
@@ -3480,7 +4560,8 @@ class MuseumCheckApp {
                 // Add click event for the card (excluding checkbox and assessment button)
                 card.addEventListener('click', (e) => {
                     if (!e.target.classList.contains('visit-checkbox') && 
-                        !e.target.classList.contains('assessment-button')) {
+                        !e.target.classList.contains('assessment-button') &&
+                        !e.target.classList.contains('museum-fireworks-button')) {
                         this.openMuseumModal(museum);
                     }
                 });
@@ -3498,6 +4579,23 @@ class MuseumCheckApp {
                         checkbox.checked = !wasChecked;
                     }
                 });
+
+                // Add fireworks button event
+                const fireworksButton = card.querySelector('.museum-fireworks-button');
+                if (fireworksButton) {
+                    fireworksButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Open fireworks-wall.html in new tab with museum ID parameter
+                        window.open(`fireworks-wall.html?museumId=${encodeURIComponent(museum.id)}`, '_blank');
+                        
+                        // Track event
+                        this.trackEvent('museum_fireworks_wall_opened', {
+                            'museum_id': museum.id,
+                            'museum_name': museum.name,
+                            'museum_location': museum.location
+                        });
+                    });
+                }
 
                 // Add assessment button event
                 const assessmentButton = card.querySelector('.assessment-button');
@@ -3622,6 +4720,12 @@ class MuseumCheckApp {
         
         // Update achievements
         this.updateAchievements(visitedCount);
+        
+        // Update fireworks count
+        const fireworksCountElement = document.getElementById('fireworksCount');
+        if (fireworksCountElement) {
+            fireworksCountElement.textContent = this.fireworks.length;
+        }
         
         // 🐛 Fix: Update main page assessment scores on initialization
         this.updateMainPageAssessmentScores();
@@ -4453,6 +5557,11 @@ class MuseumCheckApp {
                 const itemText = museum && museum.checklists[checklistType] && museum.checklists[checklistType][fullAgeGroup] ? 
                                museum.checklists[checklistType][fullAgeGroup][index] : '';
                 
+                // Create firework for completed child tasks
+                if (e.target.checked && checklistType === 'child' && museum) {
+                    this.addFirework(museumId, museum.name, itemText, fullAgeGroup, museum.location);
+                }
+                
                 this.trackEvent('checklist_item_toggled', {
                     'museum_id': museumId,
                     'museum_name': museum ? museum.name : '',
@@ -4596,6 +5705,279 @@ class MuseumCheckApp {
     renderSettingsInfo() {
         // Update museum count
         document.getElementById('museumCountSettings').textContent = MUSEUMS.length;
+        
+        // Update child nickname input
+        const nicknameInput = document.getElementById('childNicknameInput');
+        if (nicknameInput) {
+            nicknameInput.value = this.childNickname;
+        }
+        
+        // Update current age group display
+        const ageGroupDisplay = document.getElementById('currentAgeGroupDisplay');
+        if (ageGroupDisplay) {
+            const ageGroupNames = {
+                '3-6': '3-6岁 (学龄前)',
+                '7-12': '7-12岁 (小学)',
+                '13-18': '13-18岁 (中学)'
+            };
+            ageGroupDisplay.textContent = ageGroupNames[this.currentAge] || this.currentAge;
+        }
+        
+        // Update age group selector to match current age
+        const ageGroupSelector = document.getElementById('ageGroupSelector');
+        if (ageGroupSelector) {
+            ageGroupSelector.value = this.currentAge;
+        }
+        
+        // Update fireworks retention time slider
+        const retentionSlider = document.getElementById('fireworksRetentionInput');
+        const retentionDisplay = document.getElementById('fireworksRetentionDisplay');
+        if (retentionSlider && retentionDisplay) {
+            const retentionMs = this.loadFireworksRetentionTime();
+            const retentionMinutes = Math.round(retentionMs / 60000);
+            retentionSlider.value = retentionMinutes;
+            this.updateFireworksRetentionDisplay(retentionMinutes);
+        }
+        
+        // Update firework type selector
+        const fireworkTypeSelector = document.getElementById('fireworkTypeSelector');
+        if (fireworkTypeSelector) {
+            const currentType = this.loadFireworkType();
+            fireworkTypeSelector.value = currentType;
+        }
+    }
+
+    updateFireworksRetentionDisplay(minutes) {
+        const display = document.getElementById('fireworksRetentionDisplay');
+        if (!display) return;
+        
+        if (minutes < 60) {
+            display.textContent = `${minutes} 分钟`;
+        } else if (minutes < 1440) {
+            const hours = Math.round(minutes / 60 * 10) / 10;
+            display.textContent = `${hours} 小时`;
+        } else {
+            display.textContent = '1 天';
+        }
+    }
+
+    // Fireworks Modal Functions
+    showFireworksModal(museumId = null) {
+        this.renderFireworks(museumId);
+        this.modalManager.showModal('fireworksModal');
+        
+        // Initialize canvas fireworks system and trigger demo if empty
+        const fireworksCanvas = document.getElementById('fireworksCanvas');
+        if (fireworksCanvas && !this.fireworksCanvasSystem) {
+            this.initFireworksCanvasSystem(fireworksCanvas);
+        }
+        
+        // Auto-play demo fireworks if no fireworks exist
+        const fireworks = museumId ? this.getFireworksByMuseum(museumId) : this.getAllFireworks();
+        if (fireworks.length === 0) {
+            this.startDemoFireworks();
+        }
+        
+        // Track fireworks view
+        this.trackEvent('fireworks_viewed', {
+            'total_fireworks': this.fireworks.length,
+            'museum_filter': museumId || 'all'
+        });
+    }
+
+    closeFireworksModal() {
+        this.stopDemoFireworks();
+        this.modalManager.closeModal('fireworksModal');
+    }
+    
+    startDemoFireworks() {
+        // Launch demo fireworks at intervals to showcase the effect
+        if (this.demoFireworksInterval) {
+            clearInterval(this.demoFireworksInterval);
+        }
+        
+        // Launch first demo firework immediately
+        if (this.fireworksCanvasSystem) {
+            this.fireworksCanvasSystem.launchFirework('演示', '预览');
+        }
+        
+        // Continue launching demo fireworks every 2-4 seconds
+        this.demoFireworksInterval = setInterval(() => {
+            if (this.fireworksCanvasSystem) {
+                this.fireworksCanvasSystem.launchFirework('演示', '预览');
+            }
+        }, 2000 + Math.random() * 2000); // Random interval between 2-4 seconds
+    }
+    
+    stopDemoFireworks() {
+        if (this.demoFireworksInterval) {
+            clearInterval(this.demoFireworksInterval);
+            this.demoFireworksInterval = null;
+        }
+    }
+
+    renderFireworks(museumId = null) {
+        const fireworks = museumId ? this.getFireworksByMuseum(museumId) : this.getAllFireworks();
+        
+        // Update statistics
+        document.getElementById('totalFireworks').textContent = fireworks.length;
+        const uniqueMuseums = new Set(fireworks.map(fw => fw.museumId));
+        document.getElementById('museumsWithFireworks').textContent = uniqueMuseums.size;
+        
+        // Update museum filter dropdown
+        const filterSelect = document.getElementById('fireworksMuseumFilter');
+        filterSelect.innerHTML = '<option value="">所有博物馆</option>';
+        
+        // Populate museum filter
+        const museumsWithFireworks = Array.from(uniqueMuseums).map(id => {
+            const museum = MUSEUMS.find(m => m.id === id);
+            return { id, name: museum ? museum.name : id };
+        }).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+        
+        museumsWithFireworks.forEach(museum => {
+            const option = document.createElement('option');
+            option.value = museum.id;
+            option.textContent = museum.name;
+            if (museumId === museum.id) {
+                option.selected = true;
+            }
+            filterSelect.appendChild(option);
+        });
+        
+        // Filter select event listener
+        filterSelect.onchange = (e) => {
+            const selectedMuseumId = e.target.value;
+            this.renderFireworks(selectedMuseumId || null);
+        };
+        
+        // Render fireworks list
+        const emptyState = document.getElementById('fireworksEmptyState');
+        const fireworksList = document.getElementById('fireworksCardsList');
+        
+        if (fireworks.length === 0) {
+            emptyState.style.display = 'block';
+            fireworksList.style.display = 'none';
+        } else {
+            emptyState.style.display = 'none';
+            fireworksList.style.display = 'block';
+            
+            // Sort fireworks by timestamp (newest first)
+            const sortedFireworks = [...fireworks].sort((a, b) => b.timestamp - a.timestamp);
+            
+            // Render fireworks with animation
+            fireworksList.innerHTML = sortedFireworks.map((firework, index) => {
+                const date = new Date(firework.timestamp);
+                const dateStr = date.toLocaleDateString('zh-CN', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Extract task summary (first 50 chars without emoji)
+                const taskSummary = firework.taskContent.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim().substring(0, 50);
+                
+                // Check if this is a remote firework (from other users)
+                const isRemote = firework.isRemote === true;
+                const remoteIndicator = isRemote ? '<span class="remote-badge" title="来自其他小朋友">🌐</span>' : '';
+                
+                // Handle backward compatibility for old fireworks without new fields
+                const childNickname = firework.childNickname || '小朋友';
+                const museumCity = firework.museumCity || '';
+                const cityDisplay = museumCity ? ` · ${museumCity}` : '';
+                
+                // Get age group text for display
+                const ageGroupText = firework.ageGroup || '小朋友';
+                
+                return `
+                    <div class="firework-item ${isRemote ? 'remote-firework' : ''}" 
+                         style="animation-delay: ${index * 0.1}s"
+                         data-firework-id="${firework.id}"
+                         data-age-group="${ageGroupText}"
+                         data-child-nickname="${childNickname}">
+                        <div class="firework-header">
+                            <div class="firework-icon">🎆</div>
+                            <div class="firework-info">
+                                <h4 class="firework-museum">${firework.museumName}${cityDisplay}${remoteIndicator}</h4>
+                                <p class="firework-date">${childNickname} · ${dateStr}</p>
+                            </div>
+                            <div class="firework-age-badge">${ageGroupText}</div>
+                        </div>
+                        <div class="firework-content">
+                            <p class="firework-task">${firework.taskContent}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Setup scroll observer for card-to-firework animation
+            this.setupFireworksWallAnimations();
+        }
+    }
+    
+    // New method: Setup fireworks wall animations
+    setupFireworksWallAnimations() {
+        const cardsContainer = document.getElementById('fireworksCardsContainer');
+        const fireworksCanvas = document.getElementById('fireworksCanvas');
+        
+        if (!cardsContainer || !fireworksCanvas) return;
+        
+        // Use IntersectionObserver to detect when cards scroll out of view
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                // When a card exits the viewport (scrolls off bottom)
+                if (!entry.isIntersecting && entry.boundingClientRect.top > 0) {
+                    const card = entry.target;
+                    const ageGroup = card.dataset.ageGroup || '小朋友';
+                    const childNickname = card.dataset.childNickname || '小朋友';
+                    
+                    // Launch firework animation
+                    this.launchFireworkFromCard(ageGroup, childNickname);
+                    
+                    // Mark card as exiting
+                    card.classList.add('exiting');
+                    
+                    // Stop observing this card
+                    observer.unobserve(card);
+                }
+            });
+        }, {
+            root: cardsContainer,
+            threshold: 0,
+            rootMargin: '0px 0px -100% 0px' // Trigger when card leaves bottom
+        });
+        
+        // Observe all firework cards
+        const cards = document.querySelectorAll('.firework-item');
+        cards.forEach(card => observer.observe(card));
+    }
+    
+    // New method: Launch firework animation with enhanced canvas-based effects
+    launchFireworkFromCard(ageGroup, childNickname) {
+        const fireworksCanvasContainer = document.getElementById('fireworksCanvas');
+        if (!fireworksCanvasContainer) return;
+        
+        // Initialize canvas-based fireworks system if not already initialized
+        if (!this.fireworksCanvasSystem) {
+            this.initFireworksCanvasSystem(fireworksCanvasContainer);
+        }
+        
+        // Launch canvas-based firework
+        if (this.fireworksCanvasSystem) {
+            this.fireworksCanvasSystem.launchFirework(ageGroup, childNickname);
+        }
+    }
+    
+    // Initialize canvas-based fireworks animation system
+    initFireworksCanvasSystem(container) {
+        // Use firework.js createFireworksSystem function
+        if (typeof createFireworksSystem === 'function') {
+            this.fireworksCanvasSystem = createFireworksSystem(container);
+            this.fireworksCanvasSystem.start();
+        } else {
+            console.error('firework.js not loaded - createFireworksSystem function not available');
+        }
     }
 
     renderAchievements() {

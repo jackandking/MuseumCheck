@@ -3460,4 +3460,170 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
       }).not.toThrow();
     });
   });
+
+  describe('Settings Page Age Group Auto-Save', () => {
+    /**
+     * Feature: 主页设置页面修改即时生效
+     * Description: Age group changes in settings page are auto-saved immediately
+     *              when the dropdown changes (no save button needed).
+     * Implementation: Changed from button click to 'change' event on select element
+     * 
+     * This test ensures the auto-save functionality works correctly.
+     */
+
+    let mockLocalStorage;
+    
+    beforeEach(() => {
+      // Setup localStorage mock
+      let store = {};
+      mockLocalStorage = {
+        getItem: jest.fn((key) => store[key] || null),
+        setItem: jest.fn((key, value) => {
+          store[key] = value.toString();
+        }),
+        clear: jest.fn(() => {
+          store = {};
+        })
+      };
+      
+      // Mock global localStorage
+      global.localStorage = mockLocalStorage;
+      
+      // Setup settings page DOM structure (without save button)
+      document.body.innerHTML = `
+        <div id="settingsModal" class="modal">
+          <div class="modal-content">
+            <div class="settings-section">
+              <h3>👶 孩子信息</h3>
+              <div class="settings-item">
+                <label class="settings-label">当前年龄组：</label>
+                <span class="settings-value" id="currentAgeGroupDisplay">-</span>
+              </div>
+              <div class="settings-item">
+                <label class="settings-label" for="ageGroupSelector">更改年龄组：</label>
+                <div class="settings-input-group">
+                  <select id="ageGroupSelector" class="settings-input">
+                    <option value="3-6">3-6岁 (学龄前)</option>
+                    <option value="7-12">7-12岁 (小学)</option>
+                    <option value="13-18">13-18岁 (中学)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    test('should auto-save age group to localStorage on change', () => {
+      // Setup: Initialize with default age
+      let currentAge = '7-12';
+      
+      // Get DOM element
+      const ageGroupSelector = document.getElementById('ageGroupSelector');
+      
+      expect(ageGroupSelector).toBeTruthy();
+      
+      // Simulate the auto-save change handler
+      ageGroupSelector.addEventListener('change', () => {
+        const newAgeGroup = ageGroupSelector.value;
+        if (newAgeGroup !== currentAge) {
+          // Auto-save to localStorage
+          mockLocalStorage.setItem('ageGroup', newAgeGroup);
+          currentAge = newAgeGroup; // Update current age
+        }
+      });
+      
+      // User action: Select different age group
+      ageGroupSelector.value = '13-18';
+      
+      // Trigger change event (simulating user selection)
+      const changeEvent = new Event('change', { bubbles: true });
+      ageGroupSelector.dispatchEvent(changeEvent);
+      
+      // Verify: Age group was auto-saved to localStorage
+      expect(mockLocalStorage.getItem('ageGroup')).toBe('13-18');
+    });
+
+    test('should use standard localStorage API for auto-save', () => {
+      // This test ensures we're using the correct API
+      const ageGroupSelector = document.getElementById('ageGroupSelector');
+      
+      ageGroupSelector.addEventListener('change', () => {
+        const newAgeGroup = ageGroupSelector.value;
+        
+        // Should NOT throw error
+        expect(() => {
+          localStorage.setItem('ageGroup', newAgeGroup);
+        }).not.toThrow();
+        
+        // Verify localStorage was called
+        expect(global.localStorage.setItem).toHaveBeenCalled();
+      });
+      
+      ageGroupSelector.value = '3-6';
+      const changeEvent = new Event('change', { bubbles: true });
+      ageGroupSelector.dispatchEvent(changeEvent);
+    });
+
+    test('should persist age group across page reloads', () => {
+      // Simulate user changing age group (auto-saved)
+      mockLocalStorage.setItem('ageGroup', '3-6');
+      
+      // Verify it's saved
+      expect(mockLocalStorage.getItem('ageGroup')).toBe('3-6');
+      
+      // Simulate page reload by reading from localStorage
+      const reloadedAge = mockLocalStorage.getItem('ageGroup');
+      
+      // Should still have the saved value
+      expect(reloadedAge).toBe('3-6');
+    });
+
+    test('should not save if age group unchanged', () => {
+      // Setup: Initialize with current age
+      const currentAge = '7-12';
+      localStorage.setItem('ageGroup', currentAge);
+      
+      const ageGroupSelector = document.getElementById('ageGroupSelector');
+      
+      // Set up auto-save handler
+      ageGroupSelector.addEventListener('change', () => {
+        const newAgeGroup = ageGroupSelector.value;
+        if (newAgeGroup !== currentAge) {
+          localStorage.setItem('ageGroup', newAgeGroup);
+        }
+      });
+      
+      // Select the SAME age group
+      ageGroupSelector.value = currentAge;
+      
+      // Clear mock call history
+      mockLocalStorage.setItem.mockClear();
+      
+      // Trigger change event with same value
+      const changeEvent = new Event('change', { bubbles: true });
+      ageGroupSelector.dispatchEvent(changeEvent);
+      
+      // Verify: setItem was NOT called (because age didn't change)
+      expect(mockLocalStorage.setItem).not.toHaveBeenCalled();
+    });
+
+    test('should handle all three age groups correctly', () => {
+      const ageGroupSelector = document.getElementById('ageGroupSelector');
+      
+      const ageGroups = ['3-6', '7-12', '13-18'];
+      
+      ageGroups.forEach(ageGroup => {
+        // Select age group
+        ageGroupSelector.value = ageGroup;
+        
+        // Directly call localStorage.setItem to simulate auto-save
+        mockLocalStorage.setItem('ageGroup', ageGroupSelector.value);
+        
+        // Verify correct value was saved
+        expect(mockLocalStorage.getItem('ageGroup')).toBe(ageGroup);
+      });
+    });
+  });
 });

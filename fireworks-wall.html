@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>烟花墙 - 博物馆打卡成就</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .close-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: background 0.3s ease;
+        }
+
+        .close-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .settings-button {
+            position: fixed;
+            top: 20px;
+            right: 74px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .settings-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(45deg);
+        }
+
+        .stats-overlay {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            font-size: 14px;
+        }
+
+        .stats-overlay .stat-item {
+            margin: 5px 0;
+        }
+
+        .stats-overlay .stat-label {
+            opacity: 0.8;
+        }
+
+        .stats-overlay .stat-value {
+            font-weight: bold;
+            font-size: 18px;
+            margin-left: 8px;
+        }
+
+        .museum-filter-indicator {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 20px;
+            z-index: 1000;
+            font-size: 16px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+            display: none;
+        }
+
+        .museum-name-header {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 18px;
+            font-weight: 600;
+            z-index: 999;
+            pointer-events: none;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-modal.show {
+            display: flex;
+        }
+
+        .settings-modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .settings-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .settings-modal-header h2 {
+            margin: 0;
+            color: #333;
+            font-size: 1.5em;
+        }
+
+        .settings-modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #666;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s ease;
+        }
+
+        .settings-modal-close:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .settings-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .settings-section h3 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .settings-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .settings-option:last-child {
+            border-bottom: none;
+        }
+
+        .settings-option-label {
+            color: #495057;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .settings-toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: #ccc;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .settings-toggle.active {
+            background: #667eea;
+        }
+
+        .settings-toggle-knob {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .settings-toggle.active .settings-toggle-knob {
+            transform: translateX(24px);
+        }
+
+        @media (max-width: 768px) {
+            .close-button {
+                top: 10px;
+                right: 10px;
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+                border-width: 1px;
+            }
+
+            .settings-button {
+                top: 10px;
+                right: 52px;
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+                border-width: 1px;
+            }
+
+            .stats-overlay {
+                top: 10px;
+                left: 10px;
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+
+            .stats-overlay .stat-value {
+                font-size: 14px;
+            }
+
+            .museum-name-header {
+                top: 10px;
+                left: 10px;
+                font-size: 14px;
+            }
+
+            .settings-modal-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="stats-overlay" id="statsOverlay">
+        <div class="stat-item">
+            <span class="stat-label">🎆 总烟花:</span>
+            <span class="stat-value" id="totalFireworks">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">🏛️ 博物馆:</span>
+            <span class="stat-value" id="uniqueMuseums">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">🎯 当前队列:</span>
+            <span class="stat-value" id="queueSize">0</span>
+        </div>
+    </div>
+
+    <div class="museum-name-header" id="museumNameHeader"></div>
+    <div class="museum-filter-indicator" id="museumFilterIndicator"></div>
+
+    <button class="settings-button" id="settingsButton" title="设置">⚙️</button>
+    <button class="close-button" id="closeButton" title="关闭烟花墙">×</button>
+
+    <!-- Settings Modal -->
+    <div class="settings-modal" id="settingsModal">
+        <div class="settings-modal-content">
+            <div class="settings-modal-header">
+                <h2>⚙️ 烟花墙设置</h2>
+                <button class="settings-modal-close" id="settingsModalClose">×</button>
+            </div>
+            
+            <div class="settings-section">
+                <h3>📝 文字显示</h3>
+                <div class="settings-option">
+                    <span class="settings-option-label">统计信息</span>
+                    <div class="settings-toggle active" id="toggleStats">
+                        <div class="settings-toggle-knob"></div>
+                    </div>
+                </div>
+                <div class="settings-option">
+                    <span class="settings-option-label">博物馆名称</span>
+                    <div class="settings-toggle active" id="toggleFilter">
+                        <div class="settings-toggle-knob"></div>
+                    </div>
+                </div>
+                <div class="settings-option">
+                    <span class="settings-option-label">烟花文字</span>
+                    <div class="settings-toggle active" id="toggleFireworkText">
+                        <div class="settings-toggle-knob"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="museums-data.js"></script>
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let animationId = null;
+
+        // Fireworks configuration
+        const LAUNCH_INTERVAL = 2500; // 2.5 seconds between launches
+        const TEXT_DISPLAY_DURATION = 3000; // 3 seconds
+        const MIN_FIREWORKS_FOR_LOOP = 5; // Minimum fireworks before looping
+
+        // Global state
+        let fireworks = [];
+        let particles = [];
+        let fireworksQueue = [];
+        let allFireworksData = [];
+        let localFireworks = [];
+        let remoteFireworks = [];
+        let launchTimer = null;
+        let downloadTimer = null;
+        let seenFireworkIds = new Set();
+
+        // Get museum ID from URL parameter for filtering
+        const urlParams = new URLSearchParams(window.location.search);
+        const filterMuseumId = urlParams.get('museumId');
+        const filterMuseumName = filterMuseumId ? getMuseumNameById(filterMuseumId) : null;
+
+        // Helper function to get museum name by ID
+        function getMuseumNameById(museumId) {
+            if (typeof MUSEUMS !== 'undefined') {
+                const museum = MUSEUMS.find(m => m.id === museumId);
+                return museum ? museum.name : null;
+            }
+            return null;
+        }
+
+        // Update page title if filtering by museum
+        if (filterMuseumName) {
+            document.title = `${filterMuseumName} - 烟花墙`;
+        }
+
+        // Set canvas size
+        function setCanvasSize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        setCanvasSize();
+        window.addEventListener('resize', setCanvasSize);
+
+        // Particle class
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 2,
+                    y: (Math.random() - 0.5) * 2
+                };
+                this.alpha = 1;
+                this.friction = 0.98;
+                this.gravity = 0.01;
+                this.size = 2; // Default size, can be overridden
+            }
+
+            draw() {
+                const baseSize = this.size || 2;
+                
+                // Add glow effect for more visual impact
+                ctx.save();
+                
+                // Outer glow (larger, more transparent)
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, baseSize * 2, 0, Math.PI * 2);
+                const glowAlpha = this.alpha * 0.3;
+                ctx.fillStyle = `rgba(${this.color}, ${glowAlpha})`;
+                ctx.fill();
+                
+                // Middle glow
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, baseSize * 1.5, 0, Math.PI * 2);
+                const midGlowAlpha = this.alpha * 0.5;
+                ctx.fillStyle = `rgba(${this.color}, ${midGlowAlpha})`;
+                ctx.fill();
+                
+                // Core particle (bright)
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, baseSize, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
+                ctx.fill();
+                
+                // Add white sparkle in center for twinkle effect
+                if (this.alpha > 0.7) {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, baseSize * 0.5, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+
+            update() {
+                this.velocity.x *= this.friction;
+                this.velocity.y *= this.friction;
+                this.velocity.y += this.gravity;
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.alpha -= 0.005;
+            }
+        }
+
+        // Firework class
+        class Firework {
+            constructor(startX, targetX, targetY, displayText = 'test', fireworkType = 'heart') {
+                this.x = startX;
+                this.y = canvas.height;
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.displayText = displayText;
+                this.textAlpha = 1;
+                this.showText = true;
+                this.explosionX = targetX;
+                this.explosionY = targetY;
+                this.speed = 2;
+                this.angle = Math.atan2(targetY - this.y, targetX - startX);
+                this.velocity = {
+                    x: Math.cos(this.angle) * this.speed,
+                    y: Math.sin(this.angle) * this.speed
+                };
+                this.particles = [];
+                this.color = this._generateRandomColor();
+                this.textStartTime = null;
+                this.fireworkType = fireworkType || 'heart';
+            }
+
+            _generateRandomColor() {
+                // Child-friendly vibrant colors - brighter and more saturated
+                const brightColors = [
+                    '255, 50, 100',   // Hot Pink
+                    '255, 100, 50',   // Orange Red
+                    '255, 200, 0',    // Golden Yellow
+                    '100, 255, 100',  // Bright Green
+                    '50, 200, 255',   // Sky Blue
+                    '150, 100, 255',  // Purple
+                    '255, 50, 200',   // Magenta
+                    '50, 255, 200',   // Turquoise
+                    '255, 150, 50',   // Orange
+                    '200, 50, 255'    // Violet
+                ];
+                return brightColors[Math.floor(Math.random() * brightColors.length)];
+            }
+
+            draw() {
+                // Draw firework trail with glow effect
+                ctx.save();
+                
+                // Outer glow trail
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x - this.velocity.x * 2, this.y - this.velocity.y * 2);
+                ctx.strokeStyle = `rgba(${this.color}, 0.3)`;
+                ctx.lineWidth = 12;
+                ctx.stroke();
+                
+                // Middle glow trail
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x - this.velocity.x * 1.5, this.y - this.velocity.y * 1.5);
+                ctx.strokeStyle = `rgba(${this.color}, 0.6)`;
+                ctx.lineWidth = 10;
+                ctx.stroke();
+                
+                // Main trail (bright)
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = `rgb(${this.color})`;
+                ctx.fill();
+                
+                ctx.restore();
+
+                if (this.showText && this.textAlpha > 0) {
+                    this._drawText();
+                }
+            }
+
+            _drawText() {
+                // Check global setting for firework text visibility
+                if (window.showFireworkText === false) {
+                    return;
+                }
+                
+                ctx.save();
+                
+                // Add pulsing effect for first 2 seconds
+                const timeSinceExplosion = Date.now() - (this.explosionTime || Date.now());
+                let scale = 1;
+                if (timeSinceExplosion < 2000) {
+                    scale = 1 + Math.sin(timeSinceExplosion / 200) * 0.1; // Pulsing effect
+                }
+                
+                // Add colorful outline/shadow for better visibility
+                ctx.shadowColor = `rgba(${this.color}, ${this.textAlpha * 0.8})`;
+                ctx.shadowBlur = 15;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+                
+                // Draw text with scale
+                ctx.translate(this.explosionX, this.explosionY);
+                ctx.scale(scale, scale);
+                
+                // Outline for better readability
+                ctx.strokeStyle = `rgba(0, 0, 0, ${this.textAlpha * 0.8})`;
+                ctx.lineWidth = 4;
+                ctx.font = 'bold 28px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.strokeText(this.displayText, 0, 0);
+                
+                // Main text with gradient-like effect
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.textAlpha})`;
+                ctx.fillText(this.displayText, 0, 0);
+                
+                // Start fading after TEXT_DISPLAY_DURATION
+                if (this.textStartTime && Date.now() - this.textStartTime > TEXT_DISPLAY_DURATION) {
+                    this.textAlpha -= 0.02;
+                }
+                ctx.restore();
+            }
+
+            update() {
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+            }
+
+            /**
+             * Generates points along a heart shape
+             * @private
+             * @param {number} pointCount - Number of points to generate
+             * @returns {Array<{x: number, y: number}>} Array of heart shape points
+             */
+            _generateHeartShape(pointCount) {
+                const heartPoints = [];
+                
+                for (let i = 0; i < pointCount; i++) {
+                    const t = (i / pointCount) * Math.PI * 2;
+                    // Heart shape parametric equations
+                    const x = 8 * Math.pow(Math.sin(t), 3);
+                    const y = 6.5 * Math.cos(t) - 2.5 * Math.cos(2*t) - 1 * Math.cos(3*t) - 0.5 * Math.cos(4*t);
+                    heartPoints.push({x: x, y: y});
+                }
+                
+                return heartPoints;
+            }
+
+            /**
+             * Generates points in a circular/burst pattern
+             * @private
+             * @param {number} pointCount - Number of points to generate
+             * @returns {Array<{x: number, y: number}>} Array of circle shape points
+             */
+            _generateCircleShape(pointCount) {
+                const circlePoints = [];
+                
+                for (let i = 0; i < pointCount; i++) {
+                    const angle = (i / pointCount) * Math.PI * 2;
+                    const radius = 8; // Consistent with heart shape scale
+                    const x = radius * Math.cos(angle);
+                    const y = radius * Math.sin(angle);
+                    circlePoints.push({x: x, y: y});
+                }
+                
+                return circlePoints;
+            }
+
+            /**
+             * Generates points in a star pattern
+             * @private
+             * @param {number} pointCount - Number of points to generate
+             * @returns {Array<{x: number, y: number}>} Array of star shape points
+             */
+            _generateStarShape(pointCount) {
+                const starPoints = [];
+                const spikes = 5; // Five-pointed star
+                
+                for (let i = 0; i < pointCount; i++) {
+                    const angle = (i / pointCount) * Math.PI * 2;
+                    // Alternate between outer and inner radius for star effect
+                    const cycle = (i / pointCount) * spikes;
+                    const isOuter = Math.sin(cycle * Math.PI * 2) > 0;
+                    const radius = isOuter ? 8 : 4; // Outer and inner radius
+                    
+                    const x = radius * Math.cos(angle);
+                    const y = radius * Math.sin(angle);
+                    starPoints.push({x: x, y: y});
+                }
+                
+                return starPoints;
+            }
+
+            /**
+             * Generates points in a diamond/rhombus pattern
+             * @private
+             * @param {number} pointCount - Number of points to generate
+             * @returns {Array<{x: number, y: number}>} Array of diamond shape points
+             */
+            _generateDiamondShape(pointCount) {
+                const diamondPoints = [];
+                
+                for (let i = 0; i < pointCount; i++) {
+                    const t = (i / pointCount) * Math.PI * 2;
+                    // Diamond/rhombus shape using absolute value of sine/cosine
+                    const radius = 8 / (Math.abs(Math.cos(t)) + Math.abs(Math.sin(t)));
+                    const x = radius * Math.cos(t);
+                    const y = radius * Math.sin(t);
+                    diamondPoints.push({x: x, y: y});
+                }
+                
+                return diamondPoints;
+            }
+
+            /**
+             * Generates points in a spiral/galaxy pattern
+             * @private
+             * @param {number} pointCount - Number of points to generate
+             * @returns {Array<{x: number, y: number}>} Array of spiral shape points
+             */
+            _generateSpiralShape(pointCount) {
+                const spiralPoints = [];
+                const arms = 3; // Three spiral arms
+                
+                for (let i = 0; i < pointCount; i++) {
+                    const progress = i / pointCount;
+                    const angle = progress * Math.PI * 4; // Two full rotations
+                    const radius = 8 * progress; // Expanding radius
+                    
+                    // Create multiple spiral arms
+                    for (let arm = 0; arm < arms; arm++) {
+                        const armAngle = angle + (arm * Math.PI * 2 / arms);
+                        const x = radius * Math.cos(armAngle);
+                        const y = radius * Math.sin(armAngle);
+                        spiralPoints.push({x: x, y: y});
+                    }
+                }
+                
+                return spiralPoints;
+            }
+
+            /**
+             * Generates points in a butterfly pattern
+             * @private
+             * @param {number} pointCount - Number of points to generate
+             * @returns {Array<{x: number, y: number}>} Array of butterfly shape points
+             */
+            _generateButterflyShape(pointCount) {
+                const butterflyPoints = [];
+                
+                for (let i = 0; i < pointCount; i++) {
+                    const t = (i / pointCount) * Math.PI * 2;
+                    // Butterfly curve (polar rose variant)
+                    const r = Math.exp(Math.sin(t)) - 2 * Math.cos(4 * t) + Math.pow(Math.sin((2 * t - Math.PI) / 24), 5);
+                    const scale = 2.5; // Scale to match other shapes
+                    const x = scale * r * Math.sin(t);
+                    const y = scale * r * Math.cos(t);
+                    butterflyPoints.push({x: x, y: y});
+                }
+                
+                return butterflyPoints;
+            }
+
+            /**
+             * Generates points in a rose pattern
+             * @private
+             * @param {number} pointCount - Number of points to generate
+             * @returns {Array<{x: number, y: number}>} Array of rose shape points
+             */
+            _generateRoseShape(pointCount) {
+                const rosePoints = [];
+                const petals = 5; // Five petals for the rose
+                
+                for (let i = 0; i < pointCount; i++) {
+                    const t = (i / pointCount) * Math.PI * 2;
+                    // Rose curve using polar equation: r = cos(k*theta)
+                    const r = 8 * Math.cos(petals * t);
+                    const x = Math.abs(r) * Math.cos(t);
+                    const y = Math.abs(r) * Math.sin(t);
+                    rosePoints.push({x: x, y: y});
+                }
+                
+                return rosePoints;
+            }
+
+            /**
+             * Generates points in a sunburst pattern
+             * @private
+             * @param {number} pointCount - Number of points to generate
+             * @returns {Array<{x: number, y: number}>} Array of sunburst shape points
+             */
+            _generateSunburstShape(pointCount) {
+                const sunburstPoints = [];
+                const rays = 12; // Number of rays
+                
+                for (let i = 0; i < pointCount; i++) {
+                    const angle = (i / pointCount) * Math.PI * 2;
+                    // Varying ray lengths create sunburst effect
+                    const rayIndex = Math.floor((i / pointCount) * rays);
+                    const rayProgress = ((i / pointCount) * rays) - rayIndex;
+                    // Alternate between long and short rays with smooth transitions
+                    const radiusMultiplier = 0.5 + 0.5 * (1 - Math.abs(Math.sin(rayIndex * Math.PI)));
+                    const radius = 4 + 4 * radiusMultiplier * (1 - rayProgress);
+                    
+                    const x = radius * Math.cos(angle);
+                    const y = radius * Math.sin(angle);
+                    sunburstPoints.push({x: x, y: y});
+                }
+                
+                return sunburstPoints;
+            }
+
+            /**
+             * Generates points in a cascade/willow pattern
+             * @private
+             * @param {number} pointCount - Number of points to generate
+             * @returns {Array<{x: number, y: number}>} Array of cascade shape points
+             */
+            _generateCascadeShape(pointCount) {
+                const cascadePoints = [];
+                const streamCount = 8; // Number of cascading streams
+                
+                for (let i = 0; i < pointCount; i++) {
+                    const streamIndex = i % streamCount;
+                    const streamProgress = Math.floor(i / streamCount) / Math.floor(pointCount / streamCount);
+                    const angle = (streamIndex / streamCount) * Math.PI * 2;
+                    
+                    // Start wide at top, curve downward like a willow
+                    const radius = 8 * (1 - streamProgress * 0.5);
+                    const dropFactor = streamProgress * 10;
+                    
+                    const x = radius * Math.cos(angle) * (1 - streamProgress * 0.3);
+                    const y = radius * Math.sin(angle) * (1 - streamProgress * 0.3) - dropFactor;
+                    cascadePoints.push({x: x, y: y});
+                }
+                
+                return cascadePoints;
+            }
+
+            /**
+             * Generates points in a ring pattern
+             * @private
+             * @param {number} pointCount - Number of points to generate
+             * @returns {Array<{x: number, y: number}>} Array of ring shape points
+             */
+            _generateRingShape(pointCount) {
+                const ringPoints = [];
+                const rings = 3; // Number of concentric rings
+                
+                for (let i = 0; i < pointCount; i++) {
+                    const ringIndex = i % rings;
+                    const angleProgress = Math.floor(i / rings) / Math.floor(pointCount / rings);
+                    const angle = angleProgress * Math.PI * 2;
+                    const radius = 3 + (ringIndex + 1) * 2; // Expanding rings
+                    
+                    const x = radius * Math.cos(angle);
+                    const y = radius * Math.sin(angle);
+                    ringPoints.push({x: x, y: y});
+                }
+                
+                return ringPoints;
+            }
+
+            /**
+             * Generates points in a crosshatch/grid pattern
+             * @private
+             * @param {number} pointCount - Number of points to generate
+             * @returns {Array<{x: number, y: number}>} Array of crosshatch shape points
+             */
+            _generateCrosshatchShape(pointCount) {
+                const crosshatchPoints = [];
+                const lines = 6; // Number of lines in each direction
+                
+                for (let i = 0; i < pointCount; i++) {
+                    const progress = i / pointCount;
+                    const isVertical = Math.floor(progress * lines * 2) % 2 === 0;
+                    const lineIndex = Math.floor(progress * lines * 2);
+                    const lineProgress = (progress * lines * 2) - lineIndex;
+                    
+                    if (isVertical) {
+                        // Vertical lines
+                        const x = -8 + (lineIndex / 2) * (16 / lines);
+                        const y = -8 + lineProgress * 16;
+                        crosshatchPoints.push({x: x, y: y});
+                    } else {
+                        // Horizontal lines
+                        const x = -8 + lineProgress * 16;
+                        const y = -8 + ((lineIndex - 1) / 2) * (16 / lines);
+                        crosshatchPoints.push({x: x, y: y});
+                    }
+                }
+                
+                return crosshatchPoints;
+            }
+
+            /**
+             * Gets the shape points based on the selected firework type
+             * @private
+             * @param {number} pointCount - Number of points to generate
+             * @returns {Array<{x: number, y: number}>} Array of shape points
+             */
+            _getShapePoints(pointCount) {
+                // Use instance firework type instead of localStorage
+                const fireworkType = this.fireworkType || 'heart';
+
+                // Generate points based on type
+                switch (fireworkType) {
+                    case 'circle':
+                        return this._generateCircleShape(pointCount);
+                    case 'star':
+                        return this._generateStarShape(pointCount);
+                    case 'diamond':
+                        return this._generateDiamondShape(pointCount);
+                    case 'spiral':
+                        return this._generateSpiralShape(pointCount);
+                    case 'butterfly':
+                        return this._generateButterflyShape(pointCount);
+                    case 'rose':
+                        return this._generateRoseShape(pointCount);
+                    case 'sunburst':
+                        return this._generateSunburstShape(pointCount);
+                    case 'cascade':
+                        return this._generateCascadeShape(pointCount);
+                    case 'ring':
+                        return this._generateRingShape(pointCount);
+                    case 'crosshatch':
+                        return this._generateCrosshatchShape(pointCount);
+                    case 'heart':
+                    default:
+                        return this._generateHeartShape(pointCount);
+                }
+            }
+
+            explode() {
+                // Store explosion time for pulsing text effect
+                this.explosionTime = Date.now();
+                
+                // Determine effect tier based on firework type
+                const isBasicTier = this._isBasicTierFirework();
+                
+                // Tier-based particle count: basic tier gets simpler effects
+                const particleCount = isBasicTier ? 100 : 150;
+                const shapePoints = this._getShapePoints(particleCount);
+
+                // Premium tier gets initial flash effect particles (bright white burst)
+                if (!isBasicTier) {
+                    this._addFlashEffect();
+                }
+
+                // Create particles along shape with size variation
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = new Particle(this.targetX, this.targetY, this.color);
+                    const point = shapePoints[i];
+                    const scale = 0.1 + Math.random() * 0.2;
+                    
+                    // Scale and randomize the velocity based on shape
+                    particle.velocity.x = point.x * scale;
+                    particle.velocity.y = -point.y * scale;  // Negative to flip shape right side up
+                    
+                    // Add some randomness to make it more natural
+                    particle.velocity.x += (Math.random() - 0.5) * 0.5;
+                    particle.velocity.y += (Math.random() - 0.5) * 0.5;
+                    
+                    // Add size property for varied particle sizes
+                    particle.size = 1.5 + Math.random() * 1.5;
+                    
+                    particles.push(particle);
+                }
+                this.textStartTime = Date.now();
+                
+                // Premium tier gets multiple layers of sparkle effects
+                if (!isBasicTier) {
+                    this._addSparkleEffect();
+                    
+                    // Add trailing sparkles with delay
+                    setTimeout(() => {
+                        this._addTrailingSparkles();
+                    }, 200);
+                }
+            }
+
+            /**
+             * Determines if this firework is basic tier (simple effects)
+             * @private
+             * @returns {boolean} True if basic tier (heart, circle, star), false if premium tier
+             */
+            _isBasicTierFirework() {
+                const basicTierTypes = ['heart', 'circle', 'star'];
+                return basicTierTypes.includes(this.fireworkType);
+            }
+
+            _addFlashEffect() {
+                // Create bright white flash particles for initial burst
+                for (let i = 0; i < 20; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 2 + Math.random() * 2;
+                    const particle = new Particle(this.targetX, this.targetY, '255, 255, 255');
+                    
+                    particle.velocity.x = Math.cos(angle) * speed;
+                    particle.velocity.y = Math.sin(angle) * speed;
+                    particle.gravity = 0.02;
+                    particle.friction = 0.95;
+                    particle.alpha = 1;
+                    particle.size = 2 + Math.random() * 2;
+                    
+                    particles.push(particle);
+                }
+            }
+
+            _addSparkleEffect() {
+                // More sparkles for magical effect
+                for (let i = 0; i < 50; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 0.5 + Math.random() * 1.5;
+                    
+                    // Mix of colored sparkles and white sparkles
+                    const isWhiteSparkle = Math.random() > 0.5;
+                    const sparkleColor = isWhiteSparkle ? '255, 255, 255' : this.color;
+                    const particle = new Particle(this.targetX, this.targetY, sparkleColor);
+                    
+                    particle.velocity.x = Math.cos(angle) * speed;
+                    particle.velocity.y = Math.sin(angle) * speed;
+                    particle.gravity = 0.005;
+                    particle.friction = 0.995;
+                    particle.alpha = 0.8;
+                    particle.size = 1 + Math.random();
+                    
+                    particles.push(particle);
+                }
+            }
+
+            _addTrailingSparkles() {
+                // Add secondary wave of sparkles for cascading magical effect
+                for (let i = 0; i < 30; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 0.3 + Math.random() * 0.8;
+                    const particle = new Particle(this.explosionX, this.explosionY, '255, 255, 200');
+                    
+                    particle.velocity.x = Math.cos(angle) * speed;
+                    particle.velocity.y = Math.sin(angle) * speed;
+                    particle.gravity = 0.003;
+                    particle.friction = 0.997;
+                    particle.alpha = 0.6;
+                    particle.size = 0.5 + Math.random() * 0.5;
+                    
+                    particles.push(particle);
+                }
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw fireworks
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                const firework = fireworks[i];
+                firework.draw();
+                firework.update();
+
+                const distance = Math.hypot(
+                    firework.x - firework.targetX,
+                    firework.y - firework.targetY
+                );
+
+                if (distance < 5) {
+                    firework.explode();
+                    fireworks.splice(i, 1);
+                }
+            }
+            
+            // Update and draw particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const particle = particles[i];
+                particle.draw();
+                particle.update();
+                
+                if (particle.alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Launch a firework from queue
+        function launchNextFirework() {
+            if (fireworksQueue.length === 0) {
+                // If queue is empty but we have fireworks data, rebuild queue
+                if (allFireworksData.length > 0) {
+                    rebuildQueue();
+                }
+                return;
+            }
+
+            const fireworkData = fireworksQueue.shift();
+            const startX = canvas.width * Math.random();
+            const targetX = canvas.width * 0.3 + Math.random() * canvas.width * 0.4;
+            const targetY = canvas.height * 0.1 + Math.random() * canvas.height * 0.4;
+            
+            const childNickname = fireworkData.childNickname || '小淘气';
+            const taskContent = fireworkData.taskContent || '';
+            const museumName = fireworkData.museumName || '博物馆';
+            
+            // Determine display text based on viewing context
+            let displayText;
+            
+            if (filterMuseumId) {
+                // Museum-specific fireworks wall: show task-based format
+                // Format: "{昵称}完成任务{任务名}"
+                let taskName = '';
+                if (taskContent) {
+                    const colonIndex = taskContent.indexOf('：');
+                    if (colonIndex > 0) {
+                        // Use the part before the colon as task name
+                        taskName = taskContent.substring(0, colonIndex);
+                    } else {
+                        // If no colon, use first 5-7 characters as task name
+                        taskName = taskContent.substring(0, Math.min(7, taskContent.length));
+                    }
+                }
+                displayText = taskName ? `${childNickname}完成任务${taskName}` : `${childNickname}打卡${museumName}`;
+            } else {
+                // Total fireworks wall: show museum check-in format
+                // Format: "{昵称}打卡{博物馆名}"
+                displayText = `${childNickname}打卡${museumName}`;
+            }
+            
+            // Get firework type from stored data, default to 'heart' for backward compatibility
+            const fireworkType = fireworkData.fireworkType || 'heart';
+            
+            const firework = new Firework(startX, targetX, targetY, displayText, fireworkType);
+            fireworks.push(firework);
+
+            updateStats();
+        }
+
+        // Rebuild queue from all fireworks data
+        function rebuildQueue() {
+            // Check if we should loop (when fireworks count is low)
+            if (allFireworksData.length > 0 && allFireworksData.length < MIN_FIREWORKS_FOR_LOOP) {
+                // Loop: repeat the fireworks
+                fireworksQueue = [...allFireworksData];
+            } else if (allFireworksData.length >= MIN_FIREWORKS_FOR_LOOP) {
+                // Normal: just play once
+                fireworksQueue = [...allFireworksData];
+            }
+        }
+
+        // Load fireworks from localStorage
+        function loadLocalFireworks() {
+            try {
+                const stored = localStorage.getItem('museumCheckFireworks');
+                if (stored) {
+                    localFireworks = JSON.parse(stored);
+                    console.log(`Loaded ${localFireworks.length} local fireworks`);
+                    mergeFireworks();
+                }
+            } catch (error) {
+                console.error('Error loading local fireworks:', error);
+            }
+        }
+
+        // Download remote fireworks
+        function downloadRemoteFireworks() {
+            const API_ENDPOINT = 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore';
+            const FIREWORK_KEY = 'museumcheck-firework';
+            
+            const url = `${API_ENDPOINT}?key=${encodeURIComponent(FIREWORK_KEY)}&sortKey=*`;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.value) {
+                        console.log('No remote fireworks data');
+                        return;
+                    }
+                    
+                    const parsed = JSON.parse(data.value);
+                    let newRemoteFireworks = [];
+                    
+                    if (Array.isArray(parsed)) {
+                        newRemoteFireworks = parsed.map(item => {
+                            try {
+                                return typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
+                            } catch (e) {
+                                return null;
+                            }
+                        }).filter(item => item !== null);
+                    } else {
+                        const fireworkData = typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
+                        newRemoteFireworks = [fireworkData];
+                    }
+                    
+                    console.log(`Downloaded ${newRemoteFireworks.length} remote fireworks`);
+                    remoteFireworks = newRemoteFireworks;
+                    mergeFireworks();
+                })
+                .catch(error => {
+                    console.error('Error downloading remote fireworks:', error);
+                });
+        }
+
+        // Merge local and remote fireworks with deduplication
+        function mergeFireworks() {
+            const merged = [];
+            const newSeenIds = new Set();
+            
+            // Add local fireworks first (priority)
+            localFireworks.forEach(fw => {
+                if (fw.id && !newSeenIds.has(fw.id)) {
+                    // Apply museum filter if set
+                    if (!filterMuseumId || fw.museumId === filterMuseumId) {
+                        merged.push(fw);
+                        newSeenIds.add(fw.id);
+                    }
+                }
+            });
+            
+            // Add remote fireworks if not already present
+            remoteFireworks.forEach(fw => {
+                if (fw.id && !newSeenIds.has(fw.id)) {
+                    // Apply museum filter if set
+                    if (!filterMuseumId || fw.museumId === filterMuseumId) {
+                        merged.push({...fw, isRemote: true});
+                        newSeenIds.add(fw.id);
+                    }
+                }
+            });
+            
+            // Sort by timestamp (newest first for display, but launch oldest first)
+            allFireworksData = merged.sort((a, b) => a.timestamp - b.timestamp);
+            
+            // Check for new fireworks
+            const hasNewFireworks = allFireworksData.some(fw => !seenFireworkIds.has(fw.id));
+            if (hasNewFireworks) {
+                console.log('New fireworks detected, rebuilding queue');
+                allFireworksData.forEach(fw => seenFireworkIds.add(fw.id));
+                rebuildQueue();
+            }
+            
+            updateStats();
+        }
+
+        // Update statistics display
+        function updateStats() {
+            document.getElementById('totalFireworks').textContent = allFireworksData.length;
+            
+            // Count unique museums
+            const uniqueMuseums = new Set(allFireworksData.map(fw => fw.museumId)).size;
+            document.getElementById('uniqueMuseums').textContent = uniqueMuseums;
+            
+            document.getElementById('queueSize').textContent = fireworksQueue.length;
+        }
+
+        // Start automatic launching
+        function startLaunching() {
+            if (launchTimer) {
+                clearInterval(launchTimer);
+            }
+            
+            // Launch first firework immediately
+            launchNextFirework();
+            
+            // Then launch at intervals
+            launchTimer = setInterval(() => {
+                launchNextFirework();
+            }, LAUNCH_INTERVAL);
+        }
+
+        // Start periodic downloads
+        function startPeriodicDownloads() {
+            if (downloadTimer) {
+                clearInterval(downloadTimer);
+            }
+            
+            // Download immediately
+            downloadRemoteFireworks();
+            
+            // Then download periodically
+            downloadTimer = setInterval(() => {
+                downloadRemoteFireworks();
+            }, 10000); // Every 10 seconds
+        }
+
+        // Initialize
+        function init() {
+            console.log('Initializing fireworks wall...');
+            
+            // Show museum name in header if filtering
+            if (filterMuseumName) {
+                const museumNameHeader = document.getElementById('museumNameHeader');
+                museumNameHeader.textContent = filterMuseumName;
+                museumNameHeader.style.display = 'block';
+                console.log(`Filtering fireworks for museum: ${filterMuseumName} (${filterMuseumId})`);
+            }
+            
+            // Load data
+            loadLocalFireworks();
+            startPeriodicDownloads();
+            
+            // Start animation
+            animate();
+            
+            // Start launching fireworks
+            setTimeout(() => {
+                startLaunching();
+            }, 1000);
+        }
+
+        // Close button
+        document.getElementById('closeButton').addEventListener('click', () => {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            if (launchTimer) {
+                clearInterval(launchTimer);
+            }
+            if (downloadTimer) {
+                clearInterval(downloadTimer);
+            }
+            window.close();
+            // If window.close() doesn't work (popup blocker), go back
+            setTimeout(() => {
+                window.history.back();
+            }, 100);
+        });
+
+        // Settings functionality
+        const settingsButton = document.getElementById('settingsButton');
+        const settingsModal = document.getElementById('settingsModal');
+        const settingsModalClose = document.getElementById('settingsModalClose');
+        const statsOverlay = document.getElementById('statsOverlay');
+        const museumNameHeader = document.getElementById('museumNameHeader');
+        
+        // Settings toggles
+        const toggleStats = document.getElementById('toggleStats');
+        const toggleFilter = document.getElementById('toggleFilter');
+        const toggleFireworkText = document.getElementById('toggleFireworkText');
+        
+        // Load settings from localStorage
+        const SETTINGS_KEY = 'fireworksWallSettings';
+        let settings = {
+            showStats: true,
+            showFilter: true,
+            showFireworkText: true
+        };
+        
+        function loadSettings() {
+            try {
+                const stored = localStorage.getItem(SETTINGS_KEY);
+                if (stored) {
+                    settings = {...settings, ...JSON.parse(stored)};
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+            applySettings();
+        }
+        
+        function saveSettings() {
+            try {
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            } catch (error) {
+                console.error('Error saving settings:', error);
+            }
+        }
+        
+        function applySettings() {
+            // Apply stats visibility
+            statsOverlay.style.display = settings.showStats ? 'block' : 'none';
+            toggleStats.classList.toggle('active', settings.showStats);
+            
+            // Apply museum name header visibility
+            if (filterMuseumName) {
+                museumNameHeader.style.display = settings.showFilter ? 'block' : 'none';
+            }
+            toggleFilter.classList.toggle('active', settings.showFilter);
+            
+            // Apply firework text visibility (will be applied in Firework class)
+            toggleFireworkText.classList.toggle('active', settings.showFireworkText);
+            
+            // Update global flag for firework text
+            window.showFireworkText = settings.showFireworkText;
+        }
+        
+        // Settings modal handlers
+        settingsButton.addEventListener('click', () => {
+            settingsModal.classList.add('show');
+        });
+        
+        settingsModalClose.addEventListener('click', () => {
+            settingsModal.classList.remove('show');
+        });
+        
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                settingsModal.classList.remove('show');
+            }
+        });
+        
+        // Toggle handlers
+        toggleStats.addEventListener('click', () => {
+            settings.showStats = !settings.showStats;
+            saveSettings();
+            applySettings();
+        });
+        
+        toggleFilter.addEventListener('click', () => {
+            settings.showFilter = !settings.showFilter;
+            saveSettings();
+            applySettings();
+        });
+        
+        toggleFireworkText.addEventListener('click', () => {
+            settings.showFireworkText = !settings.showFireworkText;
+            saveSettings();
+            applySettings();
+        });
+        
+        // Initialize settings on load
+        loadSettings();
+
+        // Start when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
