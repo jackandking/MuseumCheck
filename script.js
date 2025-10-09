@@ -4400,12 +4400,24 @@ class MuseumCheckApp {
     }
 
     updateFireworksButtonVisibility() {
+        // Update main fireworks button
         const fireworksButton = document.getElementById('fireworksButton');
         if (fireworksButton) {
             // Show button only when there are fireworks (local or remote)
             const hasFireworks = this.fireworks.length > 0 || this.remoteFireworks.length > 0;
             fireworksButton.style.display = hasFireworks ? '' : 'none';
         }
+        
+        // Update museum-level fireworks buttons
+        const museumFireworksButtons = document.querySelectorAll('.museum-fireworks-button');
+        museumFireworksButtons.forEach(button => {
+            const museumId = button.getAttribute('data-museum');
+            if (museumId) {
+                const museumFireworks = this.getFireworksByMuseum(museumId);
+                // Show button only if this museum has fireworks
+                button.style.display = museumFireworks.length > 0 ? '' : 'none';
+            }
+        });
     }
 
     getFireworksByMuseum(museumId) {
@@ -4604,7 +4616,7 @@ class MuseumCheckApp {
                         <div class="museum-info">
                             <h3>
                                 ${museum.name}
-                                <button class="museum-fireworks-button" data-museum="${museum.id}" title="查看本馆烟花墙">🎆</button>
+                                <button class="museum-fireworks-button" data-museum="${museum.id}" title="查看本馆烟花墙" style="display: none;">🎆</button>
                                 ${isVisited && !this.assessmentHidden ? '<button class="assessment-button" data-museum="' + museum.id + '" title="亲子关系测评">🧡 亲子测评</button>' : ''}
                             </h3>
                             <div class="museum-location">📍 ${museum.location}</div>
@@ -4669,6 +4681,9 @@ class MuseumCheckApp {
             });
 
             this.updateStats();
+            
+            // Update fireworks button visibility for all museum cards
+            this.updateFireworksButtonVisibility();
             
             // If no museums were rendered, show error message
             if (grid.children.length === 0) {

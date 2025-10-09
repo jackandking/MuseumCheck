@@ -331,4 +331,158 @@ describe('Fireworks Button Visibility', () => {
             expect(demoButton.style.display).toBe('block');
         });
     });
+
+    describe('Museum-Level Fireworks Button', () => {
+        beforeEach(() => {
+            // Add museum cards to DOM
+            document.body.innerHTML += `
+                <div id="museumGrid">
+                    <div class="museum-card">
+                        <button class="museum-fireworks-button" data-museum="forbidden-city" style="display: none;">🎆</button>
+                    </div>
+                    <div class="museum-card">
+                        <button class="museum-fireworks-button" data-museum="shanghai-museum" style="display: none;">🎆</button>
+                    </div>
+                    <div class="museum-card">
+                        <button class="museum-fireworks-button" data-museum="national-museum" style="display: none;">🎆</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        test('should hide all museum buttons when no fireworks exist', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            museumCheck.fireworks = [];
+            museumCheck.remoteFireworks = [];
+            museumCheck.updateFireworksButtonVisibility();
+            
+            const buttons = document.querySelectorAll('.museum-fireworks-button');
+            buttons.forEach(button => {
+                expect(button.style.display).toBe('none');
+            });
+        });
+
+        test('should show button only for museums with fireworks', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            // Add fireworks for forbidden-city only
+            museumCheck.fireworks = [{
+                id: 'test-1',
+                museumId: 'forbidden-city',
+                museumName: '故宫博物院',
+                taskContent: '观察建筑',
+                timestamp: Date.now()
+            }];
+            museumCheck.remoteFireworks = [];
+            
+            museumCheck.updateFireworksButtonVisibility();
+            
+            const forbiddenCityButton = document.querySelector('[data-museum="forbidden-city"]');
+            const shanghaiButton = document.querySelector('[data-museum="shanghai-museum"]');
+            const nationalButton = document.querySelector('[data-museum="national-museum"]');
+            
+            expect(forbiddenCityButton.style.display).not.toBe('none');
+            expect(shanghaiButton.style.display).toBe('none');
+            expect(nationalButton.style.display).toBe('none');
+        });
+
+        test('should show buttons for multiple museums with fireworks', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            // Add fireworks for multiple museums
+            museumCheck.fireworks = [{
+                id: 'test-1',
+                museumId: 'forbidden-city',
+                museumName: '故宫博物院',
+                taskContent: '观察建筑',
+                timestamp: Date.now()
+            }];
+            museumCheck.remoteFireworks = [{
+                id: 'test-2',
+                museumId: 'shanghai-museum',
+                museumName: '上海博物馆',
+                taskContent: '欣赏艺术',
+                timestamp: Date.now(),
+                isRemote: true
+            }];
+            
+            museumCheck.updateFireworksButtonVisibility();
+            
+            const forbiddenCityButton = document.querySelector('[data-museum="forbidden-city"]');
+            const shanghaiButton = document.querySelector('[data-museum="shanghai-museum"]');
+            const nationalButton = document.querySelector('[data-museum="national-museum"]');
+            
+            expect(forbiddenCityButton.style.display).not.toBe('none');
+            expect(shanghaiButton.style.display).not.toBe('none');
+            expect(nationalButton.style.display).toBe('none');
+        });
+
+        test('should hide museum button when fireworks are cleared', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            // Start with fireworks
+            museumCheck.fireworks = [{
+                id: 'test-1',
+                museumId: 'forbidden-city',
+                museumName: '故宫博物院',
+                taskContent: '观察建筑',
+                timestamp: Date.now()
+            }];
+            
+            museumCheck.updateFireworksButtonVisibility();
+            const button = document.querySelector('[data-museum="forbidden-city"]');
+            expect(button.style.display).not.toBe('none');
+            
+            // Clear fireworks
+            museumCheck.fireworks = [];
+            museumCheck.remoteFireworks = [];
+            museumCheck.updateFireworksButtonVisibility();
+            
+            expect(button.style.display).toBe('none');
+        });
+
+        test('should handle mixed local and remote fireworks correctly', () => {
+            if (!museumCheck) {
+                console.log('MuseumCheckApp not available, skipping test');
+                return;
+            }
+
+            // Add local firework for forbidden-city
+            museumCheck.fireworks = [{
+                id: 'test-1',
+                museumId: 'forbidden-city',
+                museumName: '故宫博物院',
+                taskContent: '观察建筑',
+                timestamp: Date.now()
+            }];
+            
+            // Add remote firework for forbidden-city (should still show only one button)
+            museumCheck.remoteFireworks = [{
+                id: 'test-2',
+                museumId: 'forbidden-city',
+                museumName: '故宫博物院',
+                taskContent: '学习历史',
+                timestamp: Date.now(),
+                isRemote: true
+            }];
+            
+            museumCheck.updateFireworksButtonVisibility();
+            
+            const forbiddenCityButton = document.querySelector('[data-museum="forbidden-city"]');
+            expect(forbiddenCityButton.style.display).not.toBe('none');
+        });
+    });
 });
