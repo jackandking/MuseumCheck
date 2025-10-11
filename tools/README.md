@@ -25,6 +25,27 @@ npm run validate-data
 - ✅ Success: Exits with code 0 if data is valid
 - ❌ Issues: Exits with code 1 and detailed error report if problems found
 
+### generate-qr-codes.js
+
+QR code generator for museum quick access. Generates QR codes for the first 3 museums that link directly to their detail pages on the website.
+
+**Usage:**
+```bash
+# From repository root
+node tools/generate-qr-codes.js
+
+# Or using npm script
+npm run generate-qr
+```
+
+**Output:**
+- Generates 3 PNG files in the repository root:
+  - `qr-forbidden-city.png` - 故宫博物院
+  - `qr-national-museum.png` - 中国国家博物馆
+  - `qr-shanghai-museum.png` - 上海博物馆
+- Each QR code links to: `https://museumcheck.cn/?museum={museum-id}`
+- QR codes are displayed in README.md for quick mobile access
+
 ## Integration with Development Workflow
 
 ### For Copilot

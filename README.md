@@ -17,6 +17,38 @@ https://museumcheck.cn/
 
 📚 **完整文档：** [Wiki文档中心](wiki/Home.md) - 详细使用指南、开发文档和项目信息
 
+## 📱 热门博物馆快速访问
+
+扫描下方二维码，直接访问对应博物馆的详细参观指南：
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="33%">
+        <img src="qr-forbidden-city.png" alt="故宫博物院二维码" width="200" height="200">
+        <br>
+        <b>故宫博物院</b>
+        <br>
+        <small>北京 · 明清皇宫建筑群</small>
+      </td>
+      <td align="center" width="33%">
+        <img src="qr-national-museum.png" alt="中国国家博物馆二维码" width="200" height="200">
+        <br>
+        <b>中国国家博物馆</b>
+        <br>
+        <small>北京 · 中华文明历史</small>
+      </td>
+      <td align="center" width="33%">
+        <img src="qr-shanghai-museum.png" alt="上海博物馆二维码" width="200" height="200">
+        <br>
+        <b>上海博物馆</b>
+        <br>
+        <small>上海 · 古代艺术珍品</small>
+      </td>
+    </tr>
+  </table>
+</div>
+
 ## 功能特色
 
 ### 🏛️ 全国主要博物馆清单
