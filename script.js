@@ -3408,6 +3408,8 @@ class MuseumCheckApp {
         this.initGlobalFireworksWall();
         // Auto-hide age selector after 10 seconds
         this.setupAgeSelectorAutoHide();
+        // Show settings hint for new users
+        this.setupSettingsHint();
     }
     
     /**
@@ -3523,6 +3525,58 @@ class MuseumCheckApp {
                 }, 5000);
             }, 500);
         }
+    }
+    
+    /**
+     * Show settings hint for new users
+     * Displays a notification telling users they can modify nickname and age group in settings
+     * Only shown once for first-time users who haven't configured settings yet
+     */
+    setupSettingsHint() {
+        const settingsHint = document.getElementById('settingsHint');
+        
+        if (!settingsHint) {
+            return;
+        }
+        
+        // Check if user is a new user (no settings configured)
+        let hasConfiguredSettings = false;
+        let hasSeenHint = false;
+        
+        try {
+            // User is considered "configured" if they have set a nickname or age group
+            const hasNickname = localStorage.getItem('childNickname');
+            const hasAgeGroup = localStorage.getItem('ageGroup');
+            hasConfiguredSettings = hasNickname || hasAgeGroup;
+            
+            // Check if hint was already shown
+            hasSeenHint = localStorage.getItem('settingsHintShown') === 'true';
+        } catch (error) {
+            console.error('Failed to check settings hint status:', error);
+            return;
+        }
+        
+        // Only show hint for new users who haven't seen it
+        if (hasConfiguredSettings || hasSeenHint) {
+            return;
+        }
+        
+        // Show hint after a short delay (2 seconds) to let user orient
+        setTimeout(() => {
+            settingsHint.classList.add('show');
+            
+            // Mark hint as shown
+            try {
+                localStorage.setItem('settingsHintShown', 'true');
+            } catch (error) {
+                console.error('Failed to save settings hint status:', error);
+            }
+            
+            // Auto-hide hint after 8 seconds
+            setTimeout(() => {
+                settingsHint.classList.remove('show');
+            }, 8000);
+        }, 2000);
     }
     
     /**
@@ -4109,6 +4163,29 @@ class MuseumCheckApp {
             });
         }
 
+        // Firework launch interval slider
+        const launchIntervalSlider = document.getElementById('fireworkLaunchIntervalInput');
+        if (launchIntervalSlider) {
+            launchIntervalSlider.addEventListener('input', (e) => {
+                const intervalMs = parseInt(e.target.value, 10);
+                this.updateFireworkLaunchIntervalDisplay(intervalMs);
+            });
+            
+            launchIntervalSlider.addEventListener('change', (e) => {
+                const intervalMs = parseInt(e.target.value, 10);
+                
+                const result = this.saveFireworkLaunchInterval(intervalMs);
+                
+                if (result.success) {
+                    // Track launch interval change
+                    this.trackEvent('firework_launch_interval_changed', {
+                        'interval_ms': intervalMs,
+                        'interval_seconds': intervalMs / 1000
+                    });
+                }
+            });
+        }
+
         // Clear all data button
         document.getElementById('clearAllDataButton').addEventListener('click', () => {
             this.clearAllData();
@@ -4546,6 +4623,37 @@ class MuseumCheckApp {
             return { success: true, message: '烟花类型已保存' };
         } catch (error) {
             console.error('Failed to save firework type:', error);
+            return { success: false, message: '保存失败，请重试' };
+        }
+    }
+
+    loadFireworkLaunchInterval() {
+        try {
+            const saved = localStorage.getItem('fireworkLaunchInterval');
+            // Default to 1000ms (1 second)
+            return saved ? parseInt(saved, 10) : 1000;
+        } catch (error) {
+            console.error('Failed to load firework launch interval:', error);
+            return 1000; // Default 1 second
+        }
+    }
+
+    saveFireworkLaunchInterval(intervalMs) {
+        try {
+            // Validate interval (0.5 seconds to 5 seconds)
+            const minInterval = 500;  // 0.5 seconds
+            const maxInterval = 5000; // 5 seconds
+            
+            if (intervalMs < minInterval || intervalMs > maxInterval) {
+                console.warn('Invalid launch interval, using default');
+                intervalMs = 1000;
+            }
+            
+            localStorage.setItem('fireworkLaunchInterval', intervalMs.toString());
+            
+            return { success: true, message: '烟花发射间隔已保存' };
+        } catch (error) {
+            console.error('Failed to save firework launch interval:', error);
             return { success: false, message: '保存失败，请重试' };
         }
     }
@@ -5820,6 +5928,15 @@ class MuseumCheckApp {
             const currentType = this.loadFireworkType();
             fireworkTypeSelector.value = currentType;
         }
+        
+        // Update firework launch interval slider
+        const launchIntervalSlider = document.getElementById('fireworkLaunchIntervalInput');
+        const launchIntervalDisplay = document.getElementById('fireworkLaunchIntervalDisplay');
+        if (launchIntervalSlider && launchIntervalDisplay) {
+            const intervalMs = this.loadFireworkLaunchInterval();
+            launchIntervalSlider.value = intervalMs;
+            this.updateFireworkLaunchIntervalDisplay(intervalMs);
+        }
     }
 
     updateFireworksRetentionDisplay(minutes) {
@@ -5834,6 +5951,14 @@ class MuseumCheckApp {
         } else {
             display.textContent = '1 天';
         }
+    }
+
+    updateFireworkLaunchIntervalDisplay(intervalMs) {
+        const display = document.getElementById('fireworkLaunchIntervalDisplay');
+        if (!display) return;
+        
+        const seconds = intervalMs / 1000;
+        display.textContent = `${seconds.toFixed(1)} 秒`;
     }
 
     // Fireworks Modal Functions

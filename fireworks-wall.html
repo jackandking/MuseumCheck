@@ -249,6 +249,100 @@
             transform: translateX(24px);
         }
 
+        .settings-item {
+            margin-bottom: 15px;
+        }
+
+        .settings-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .settings-label {
+            display: block;
+            color: #495057;
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .settings-value {
+            color: #28a745;
+            font-weight: 600;
+            font-size: 14px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #e8f5e8;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #c3e6c3;
+        }
+
+        .settings-input-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .settings-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s ease;
+            min-height: 38px;
+        }
+
+        .settings-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .settings-input::placeholder {
+            color: #999;
+        }
+
+        .settings-hint {
+            font-size: 12px;
+            color: #868e96;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        .wechat-qr-code {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 150px;
+            background: white;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+
+        .wechat-qr-code img {
+            width: 100%;
+            height: auto;
+            border-radius: 6px;
+        }
+
+        .wechat-qr-code .qr-label {
+            font-size: 11px;
+            color: #333;
+            margin-top: 6px;
+            text-align: center;
+            font-weight: 500;
+        }
+
         @media (max-width: 768px) {
             .close-button {
                 top: 10px;
@@ -288,6 +382,19 @@
             .settings-modal-content {
                 padding: 20px;
             }
+
+            .wechat-qr-code {
+                bottom: 10px;
+                right: 10px;
+                width: 120px;
+                height: 120px;
+                padding: 8px;
+            }
+
+            .wechat-qr-code .qr-label {
+                font-size: 10px;
+                margin-top: 4px;
+            }
         }
     </style>
 </head>
@@ -315,12 +422,52 @@
     <button class="settings-button" id="settingsButton" title="设置">⚙️</button>
     <button class="close-button" id="closeButton" title="关闭烟花墙">×</button>
 
+    <!-- WeChat QR Code -->
+    <div class="wechat-qr-code" id="wechatQrCode">
+        <img src="MuseumCheck_QRCode_WX.jpg" alt="微信小程序二维码">
+        <div class="qr-label">扫码放烟花</div>
+    </div>
+
     <!-- Settings Modal -->
     <div class="settings-modal" id="settingsModal">
         <div class="settings-modal-content">
             <div class="settings-modal-header">
                 <h2>⚙️ 烟花墙设置</h2>
                 <button class="settings-modal-close" id="settingsModalClose">×</button>
+            </div>
+            
+            <div class="settings-section">
+                <h3>👶 孩子信息</h3>
+                <div class="settings-item">
+                    <label class="settings-label" for="childNicknameInput">孩子昵称：</label>
+                    <div class="settings-input-group">
+                        <input type="text" id="childNicknameInput" class="settings-input" maxlength="10" placeholder="小淘气">
+                    </div>
+                    <div class="settings-hint">最多5个中文字或10个英文字母，输入后自动保存</div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>🎆 烟花设置</h3>
+                <div class="settings-item">
+                    <label class="settings-label" for="fireworkTypeSelector">烟花类型：</label>
+                    <div class="settings-input-group">
+                        <select id="fireworkTypeSelector" class="settings-input">
+                            <option value="heart">❤️ 爱心</option>
+                            <option value="circle">⭕ 圆形</option>
+                            <option value="star">⭐ 星形</option>
+                            <option value="diamond">💎 菱形</option>
+                            <option value="spiral">🌀 螺旋</option>
+                            <option value="butterfly">🦋 蝴蝶</option>
+                            <option value="rose">🌹 玫瑰</option>
+                            <option value="sunburst">☀️ 太阳爆发</option>
+                            <option value="cascade">💧 瀑布</option>
+                            <option value="ring">⭕ 光环</option>
+                            <option value="crosshatch">🔲 网格</option>
+                        </select>
+                    </div>
+                    <div class="settings-hint">选择烟花绽放的形状，更改后立即生效</div>
+                </div>
             </div>
             
             <div class="settings-section">
@@ -343,6 +490,22 @@
                         <div class="settings-toggle-knob"></div>
                     </div>
                 </div>
+                <div class="settings-option">
+                    <span class="settings-option-label">微信二维码</span>
+                    <div class="settings-toggle active" id="toggleQrCode">
+                        <div class="settings-toggle-knob"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3>🔊 音效控制</h3>
+                <div class="settings-option">
+                    <span class="settings-option-label">音效</span>
+                    <div class="settings-toggle active" id="toggleSound">
+                        <div class="settings-toggle-knob"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -353,6 +516,49 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         let animationId = null;
+
+        // Audio setup
+        let launchSound = null;
+        let explosionSound = null;
+        
+        function initializeAudio() {
+            try {
+                launchSound = new Audio('launch.wav');
+                explosionSound = new Audio('explode.wav');
+                
+                // Set audio properties
+                launchSound.volume = 0.3;
+                explosionSound.volume = 0.5;
+            } catch (error) {
+                console.warn('Error initializing audio:', error);
+            }
+        }
+        
+        function playLaunchSound() {
+            try {
+                if (launchSound && window.soundEnabled !== false) {
+                    launchSound.currentTime = 0;
+                    launchSound.play().catch(error => {
+                        console.warn('Could not play launch sound:', error);
+                    });
+                }
+            } catch (error) {
+                console.warn('Error playing launch sound:', error);
+            }
+        }
+        
+        function playExplosionSound() {
+            try {
+                if (explosionSound && window.soundEnabled !== false) {
+                    explosionSound.currentTime = 0;
+                    explosionSound.play().catch(error => {
+                        console.warn('Could not play explosion sound:', error);
+                    });
+                }
+            } catch (error) {
+                console.warn('Error playing explosion sound:', error);
+            }
+        }
 
         // Fireworks configuration
         const LAUNCH_INTERVAL = 2500; // 2.5 seconds between launches
@@ -388,6 +594,28 @@
         if (filterMuseumName) {
             document.title = `${filterMuseumName} - 烟花墙`;
         }
+
+        // Function to update QR code based on museum filter
+        function updateQrCode() {
+            const wechatQrCodeImg = document.querySelector('#wechatQrCode img');
+            const qrLabel = document.querySelector('#wechatQrCode .qr-label');
+            
+            if (filterMuseumId && wechatQrCodeImg && qrLabel) {
+                // Use museum-specific QR code for specific museums
+                const museumQrCodes = {
+                    'forbidden-city': 'MuseumCheck_QRCode_ForbiddenCity.png'
+                };
+                
+                if (museumQrCodes[filterMuseumId]) {
+                    wechatQrCodeImg.src = museumQrCodes[filterMuseumId];
+                    wechatQrCodeImg.alt = `${filterMuseumName}打卡二维码`;
+                    qrLabel.textContent = '扫码打卡';
+                }
+            }
+        }
+
+        // Update QR code on page load
+        window.addEventListener('DOMContentLoaded', updateQrCode);
 
         // Set canvas size
         function setCanvasSize() {
@@ -893,6 +1121,9 @@
                 // Store explosion time for pulsing text effect
                 this.explosionTime = Date.now();
                 
+                // Play explosion sound
+                playExplosionSound();
+                
                 // Determine effect tier based on firework type
                 const isBasicTier = this._isBasicTierFirework();
                 
@@ -1090,6 +1321,9 @@
             
             const firework = new Firework(startX, targetX, targetY, displayText, fireworkType);
             fireworks.push(firework);
+            
+            // Play launch sound
+            playLaunchSound();
 
             updateStats();
         }
@@ -1246,6 +1480,9 @@
         function init() {
             console.log('Initializing fireworks wall...');
             
+            // Initialize audio
+            initializeAudio();
+            
             // Show museum name in header if filtering
             if (filterMuseumName) {
                 const museumNameHeader = document.getElementById('museumNameHeader');
@@ -1285,24 +1522,83 @@
             }, 100);
         });
 
+        // Canvas click handler - allow users to launch fireworks by clicking
+        let lastClickTime = 0;
+        canvas.addEventListener('click', (e) => {
+            // Throttle clicks based on launch interval to prevent rapid clicking
+            const currentTime = Date.now();
+            if (currentTime - lastClickTime < LAUNCH_INTERVAL) {
+                return; // Too soon, ignore this click
+            }
+            lastClickTime = currentTime;
+            
+            // Get child nickname from localStorage
+            let childNickname = '小淘气'; // Default nickname
+            try {
+                const savedNickname = localStorage.getItem('childNickname');
+                if (savedNickname && savedNickname.trim()) {
+                    childNickname = savedNickname.trim();
+                }
+            } catch (error) {
+                console.error('Error loading child nickname:', error);
+            }
+            
+            // Determine display text based on viewing context
+            let displayText;
+            if (filterMuseumId) {
+                // Museum-specific fireworks wall: "{nickname}打卡{museum name}"
+                displayText = `${childNickname}打卡${filterMuseumName || '博物馆'}`;
+            } else {
+                // Total fireworks wall: "大家好，我是{nickname}"
+                displayText = `大家好，我是${childNickname}`;
+            }
+            
+            // Get firework type from localStorage
+            let fireworkType = 'heart'; // Default type
+            try {
+                const savedType = localStorage.getItem('fireworkType');
+                if (savedType) {
+                    fireworkType = savedType;
+                }
+            } catch (error) {
+                console.error('Error loading firework type:', error);
+            }
+            
+            // Launch firework at click position
+            const startX = canvas.width * Math.random();
+            const targetX = e.clientX;
+            const targetY = e.clientY;
+            
+            const firework = new Firework(startX, targetX, targetY, displayText, fireworkType);
+            fireworks.push(firework);
+            
+            // Play launch sound
+            playLaunchSound();
+        });
+
         // Settings functionality
         const settingsButton = document.getElementById('settingsButton');
         const settingsModal = document.getElementById('settingsModal');
         const settingsModalClose = document.getElementById('settingsModalClose');
         const statsOverlay = document.getElementById('statsOverlay');
         const museumNameHeader = document.getElementById('museumNameHeader');
+        const wechatQrCode = document.getElementById('wechatQrCode');
         
         // Settings toggles
         const toggleStats = document.getElementById('toggleStats');
         const toggleFilter = document.getElementById('toggleFilter');
         const toggleFireworkText = document.getElementById('toggleFireworkText');
+        const toggleSound = document.getElementById('toggleSound');
+        const toggleQrCode = document.getElementById('toggleQrCode');
         
         // Load settings from localStorage
         const SETTINGS_KEY = 'fireworksWallSettings';
         let settings = {
             showStats: true,
             showFilter: true,
-            showFireworkText: true
+            showFireworkText: true,
+            soundEnabled: true,
+            showQrCode: true
         };
         
         function loadSettings() {
@@ -1341,6 +1637,16 @@
             
             // Update global flag for firework text
             window.showFireworkText = settings.showFireworkText;
+            
+            // Apply sound setting
+            toggleSound.classList.toggle('active', settings.soundEnabled);
+            
+            // Update global flag for sound
+            window.soundEnabled = settings.soundEnabled;
+            
+            // Apply QR code visibility
+            wechatQrCode.style.display = settings.showQrCode ? 'flex' : 'none';
+            toggleQrCode.classList.toggle('active', settings.showQrCode);
         }
         
         // Settings modal handlers
@@ -1376,6 +1682,70 @@
             saveSettings();
             applySettings();
         });
+        
+        toggleSound.addEventListener('click', () => {
+            settings.soundEnabled = !settings.soundEnabled;
+            saveSettings();
+            applySettings();
+        });
+        
+        toggleQrCode.addEventListener('click', () => {
+            settings.showQrCode = !settings.showQrCode;
+            saveSettings();
+            applySettings();
+        });
+        
+        // Child nickname input handler
+        const childNicknameInput = document.getElementById('childNicknameInput');
+        if (childNicknameInput) {
+            // Load saved nickname
+            try {
+                const savedNickname = localStorage.getItem('childNickname') || '';
+                childNicknameInput.value = savedNickname;
+            } catch (error) {
+                console.error('Error loading child nickname:', error);
+            }
+            
+            // Auto-save on input with debounce
+            let nicknameTimeout;
+            childNicknameInput.addEventListener('input', () => {
+                clearTimeout(nicknameTimeout);
+                nicknameTimeout = setTimeout(() => {
+                    try {
+                        const nickname = childNicknameInput.value.trim();
+                        if (nickname.length <= 10) {
+                            localStorage.setItem('childNickname', nickname);
+                            console.log('Child nickname saved:', nickname);
+                        }
+                    } catch (error) {
+                        console.error('Error saving child nickname:', error);
+                    }
+                }, 500); // 500ms debounce
+            });
+        }
+        
+        // Firework type selector handler
+        const fireworkTypeSelector = document.getElementById('fireworkTypeSelector');
+        if (fireworkTypeSelector) {
+            // Load saved firework type
+            try {
+                const savedType = localStorage.getItem('fireworkType') || 'heart';
+                fireworkTypeSelector.value = savedType;
+            } catch (error) {
+                console.error('Error loading firework type:', error);
+            }
+            
+            // Save on change
+            fireworkTypeSelector.addEventListener('change', () => {
+                try {
+                    const selectedType = fireworkTypeSelector.value;
+                    localStorage.setItem('fireworkType', selectedType);
+                    console.log('Firework type saved:', selectedType);
+                } catch (error) {
+                    console.error('Error saving firework type:', error);
+                }
+            });
+        }
         
         // Initialize settings on load
         loadSettings();

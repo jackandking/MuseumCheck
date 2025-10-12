@@ -190,6 +190,11 @@
             💡 提示：您可以点击左上角 🏛️ 设置按钮来更改年龄选择
         </div>
 
+        <!-- Settings hint notification for new users -->
+        <div id="settingsHint" class="settings-hint-notification">
+            💡 提示：点击左上角 🏛️ 设置按钮，可以修改孩子昵称、选择年龄段等
+        </div>
+
         <main role="main">
             <section class="museum-list" id="museums">
                 <h2>全国主要博物馆清单</h2>
@@ -409,6 +414,14 @@
                         </select>
                     </div>
                     <div class="settings-hint">选择烟花绽放的形状，更改后立即生效</div>
+                </div>
+                <div class="settings-item">
+                    <label class="settings-label" for="fireworkLaunchIntervalInput">烟花发射间隔：</label>
+                    <div class="settings-input-group">
+                        <input type="range" id="fireworkLaunchIntervalInput" class="settings-slider" min="500" max="5000" value="1000" step="100">
+                        <span class="settings-value" id="fireworkLaunchIntervalDisplay">1.0 秒</span>
+                    </div>
+                    <div class="settings-hint">点击屏幕发射烟花的最小间隔（0.5秒 - 5秒）</div>
                 </div>
             </div>
             <div class="settings-section">
