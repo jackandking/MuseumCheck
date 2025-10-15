@@ -4711,7 +4711,7 @@ class MuseumCheckApp {
                 const isVisited = this.visitedMuseums.includes(museum.id);
                 
                 const card = document.createElement('div');
-                card.className = `museum-card ${isVisited ? 'visited' : ''}`;
+                card.className = `museum-card ${isVisited ? 'visited' : ''} ${this.isDouyinAffiliate ? 'douyin-readonly' : ''}`;
                 card.innerHTML = `
                     <div class="museum-header">
                         <input type="checkbox" class="visit-checkbox" ${isVisited ? 'checked' : ''} 
@@ -4733,13 +4733,16 @@ class MuseumCheckApp {
                 `;
 
                 // Add click event for the card (excluding checkbox and assessment button)
-                card.addEventListener('click', (e) => {
-                    if (!e.target.classList.contains('visit-checkbox') && 
-                        !e.target.classList.contains('assessment-button') &&
-                        !e.target.classList.contains('museum-fireworks-button')) {
-                        this.openMuseumModal(museum);
-                    }
-                });
+                // Skip adding click event if in Douyin affiliate mode
+                if (!this.isDouyinAffiliate) {
+                    card.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('visit-checkbox') && 
+                            !e.target.classList.contains('assessment-button') &&
+                            !e.target.classList.contains('museum-fireworks-button')) {
+                            this.openMuseumModal(museum);
+                        }
+                    });
+                }
 
                 // Add checkbox event
                 const checkbox = card.querySelector('.visit-checkbox');

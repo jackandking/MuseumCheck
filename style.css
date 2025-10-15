@@ -389,6 +389,16 @@ header h1 {
     box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
+/* Douyin affiliate mode: disable click affordances */
+.museum-card.douyin-readonly {
+    cursor: default;
+}
+
+.museum-card.douyin-readonly:hover {
+    transform: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
 .museum-card.visited {
     border-color: var(--accent-color);
     background-color: #f8fff9;
