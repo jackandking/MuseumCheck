@@ -58,6 +58,20 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
+        .qr-button {
+            width: 44px;
+            height: 44px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
         .title {
             font-size: 32px;
             font-weight: bold;
@@ -458,6 +472,45 @@
         .settings-content {
             max-width: 600px;
         }
+
+        /* QR Code Modal Styles */
+        .qr-content {
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .qr-section {
+            padding: 20px;
+        }
+
+        .qr-image-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-code-image {
+            max-width: 256px;
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .qr-museum-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .qr-hint {
+            font-size: 14px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -467,6 +520,7 @@
 
     <div class="header">
         <button class="menu-button" id="menuButton" title="菜单">☰</button>
+        <button class="qr-button" id="qrButton" title="查看打卡二维码">🔗</button>
         <button class="settings-button" id="settingsButton" title="设置">⚙️</button>
     </div>
 
@@ -558,6 +612,25 @@
                         </select>
                     </div>
                     <div class="settings-hint">更改后将重新加载页面以应用新的年龄组设置</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code modal -->
+    <div class="modal qr-modal" id="qrModal">
+        <div class="modal-content qr-content">
+            <div class="modal-header">
+                <h2 class="modal-title">🔗 扫码打卡</h2>
+                <button class="close-button" id="closeQr">&times;</button>
+            </div>
+            <div class="qr-section">
+                <div class="qr-image-container">
+                    <img id="qrCodeImage" src="" alt="打卡二维码" class="qr-code-image">
+                </div>
+                <div class="qr-description">
+                    <p class="qr-museum-name" id="qrMuseumName"></p>
+                    <p class="qr-hint">扫描二维码进入打卡页面</p>
                 </div>
             </div>
         </div>
@@ -920,10 +993,25 @@
                 document.getElementById('settingsModal').classList.remove('show');
             };
 
+            // QR button
+            document.getElementById('qrButton').onclick = () => {
+                openQrCode();
+            };
+
+            document.getElementById('closeQr').onclick = () => {
+                document.getElementById('qrModal').classList.remove('show');
+            };
+
             // Click outside modal to close
             document.getElementById('settingsModal').onclick = (e) => {
                 if (e.target.id === 'settingsModal') {
                     document.getElementById('settingsModal').classList.remove('show');
+                }
+            };
+
+            document.getElementById('qrModal').onclick = (e) => {
+                if (e.target.id === 'qrModal') {
+                    document.getElementById('qrModal').classList.remove('show');
                 }
             };
 
@@ -1076,6 +1164,36 @@
 
             // Show modal
             document.getElementById('settingsModal').classList.add('show');
+        }
+
+        function openQrCode() {
+            // Set QR code image based on museum
+            const qrCodeImage = document.getElementById('qrCodeImage');
+            const qrMuseumName = document.getElementById('qrMuseumName');
+            
+            // Map of museum IDs to QR code images
+            const museumQrCodes = {
+                'forbidden-city': 'MuseumCheck_QRCode_ForbiddenCity.png'
+            };
+            
+            // Set QR code image
+            if (museumQrCodes[museumId]) {
+                qrCodeImage.src = museumQrCodes[museumId];
+                qrCodeImage.alt = `${currentMuseum ? currentMuseum.name : '博物馆'}打卡二维码`;
+            } else {
+                // Fallback: generate QR code URL dynamically
+                const checkinUrl = `${window.location.origin}/museum-checkin.html?museum=${museumId}`;
+                qrCodeImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(checkinUrl)}`;
+                qrCodeImage.alt = '打卡二维码';
+            }
+            
+            // Set museum name
+            if (currentMuseum) {
+                qrMuseumName.textContent = currentMuseum.name;
+            }
+            
+            // Show modal
+            document.getElementById('qrModal').classList.add('show');
         }
 
         // Initialize on page load
