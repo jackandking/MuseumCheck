@@ -665,7 +665,7 @@ class Firework {
         for (let i = 0; i < particleCount; i++) {
             const scale = 0.1 + Math.random() * 0.25;
             const particle = new Particle(this.x, this.y, this.color);
-            const point = shapePoints[i];
+            const point = shapePoints[i % shapePoints.length]; // Use modulo to wrap around if needed
             
             // Scale and randomize the velocity based on shape
             particle.velocity.x = point.x * scale;
