@@ -13,27 +13,27 @@ describe('Museum Favorite Functionality', () => {
 
     describe('Favorite Data Storage', () => {
         test('should initialize with empty favorites array', () => {
-            const favoriteMuseums = JSON.parse(localStorage.getItem('museumcheck-favorites') || '[]');
+            const favoriteMuseums = JSON.parse(localStorage.getItem('favoriteMuseums') || '[]');
             expect(favoriteMuseums).toEqual([]);
         });
 
         test('should save favorites to localStorage', () => {
             const favoritesData = ['forbidden-city', 'shanghai-museum'];
-            localStorage.setItem('museumcheck-favorites', JSON.stringify(favoritesData));
+            localStorage.setItem('favoriteMuseums', JSON.stringify(favoritesData));
             
-            const loaded = JSON.parse(localStorage.getItem('museumcheck-favorites') || '[]');
+            const loaded = JSON.parse(localStorage.getItem('favoriteMuseums') || '[]');
             expect(loaded).toEqual(favoritesData);
         });
 
         test('should load favorites from localStorage', () => {
-            localStorage.setItem('museumcheck-favorites', JSON.stringify(['forbidden-city', 'shanghai-museum']));
+            localStorage.setItem('favoriteMuseums', JSON.stringify(['forbidden-city', 'shanghai-museum']));
             
-            const loaded = JSON.parse(localStorage.getItem('museumcheck-favorites') || '[]');
+            const loaded = JSON.parse(localStorage.getItem('favoriteMuseums') || '[]');
             expect(loaded).toEqual(['forbidden-city', 'shanghai-museum']);
         });
 
         test('should handle empty favorites list', () => {
-            const loaded = JSON.parse(localStorage.getItem('museumcheck-favorites') || '[]');
+            const loaded = JSON.parse(localStorage.getItem('favoriteMuseums') || '[]');
             expect(loaded).toEqual([]);
             expect(loaded).toHaveLength(0);
         });
@@ -41,32 +41,32 @@ describe('Museum Favorite Functionality', () => {
 
     describe('Toggle Favorite Logic', () => {
         test('should add museum to favorites when not favorited', () => {
-            const favorites = JSON.parse(localStorage.getItem('museumcheck-favorites') || '[]');
+            const favorites = JSON.parse(localStorage.getItem('favoriteMuseums') || '[]');
             const museumId = 'forbidden-city';
             
             if (!favorites.includes(museumId)) {
                 favorites.push(museumId);
-                localStorage.setItem('museumcheck-favorites', JSON.stringify(favorites));
+                localStorage.setItem('favoriteMuseums', JSON.stringify(favorites));
             }
             
-            const loaded = JSON.parse(localStorage.getItem('museumcheck-favorites') || '[]');
+            const loaded = JSON.parse(localStorage.getItem('favoriteMuseums') || '[]');
             expect(loaded).toContain(museumId);
         });
 
         test('should remove museum from favorites when already favorited', () => {
             let favorites = ['forbidden-city', 'shanghai-museum'];
-            localStorage.setItem('museumcheck-favorites', JSON.stringify(favorites));
+            localStorage.setItem('favoriteMuseums', JSON.stringify(favorites));
             
             const museumId = 'forbidden-city';
-            favorites = JSON.parse(localStorage.getItem('museumcheck-favorites') || '[]');
+            favorites = JSON.parse(localStorage.getItem('favoriteMuseums') || '[]');
             const index = favorites.indexOf(museumId);
             
             if (index > -1) {
                 favorites.splice(index, 1);
-                localStorage.setItem('museumcheck-favorites', JSON.stringify(favorites));
+                localStorage.setItem('favoriteMuseums', JSON.stringify(favorites));
             }
             
-            const loaded = JSON.parse(localStorage.getItem('museumcheck-favorites') || '[]');
+            const loaded = JSON.parse(localStorage.getItem('favoriteMuseums') || '[]');
             expect(loaded).not.toContain('forbidden-city');
             expect(loaded).toContain('shanghai-museum');
         });
@@ -80,8 +80,8 @@ describe('Museum Favorite Functionality', () => {
                 }
             });
             
-            localStorage.setItem('museumcheck-favorites', JSON.stringify(favorites));
-            const loaded = JSON.parse(localStorage.getItem('museumcheck-favorites') || '[]');
+            localStorage.setItem('favoriteMuseums', JSON.stringify(favorites));
+            const loaded = JSON.parse(localStorage.getItem('favoriteMuseums') || '[]');
             
             expect(loaded).toHaveLength(3);
             expect(loaded).toEqual(['forbidden-city', 'shanghai-museum', 'nanjing-museum']);
@@ -138,27 +138,27 @@ describe('Museum Favorite Functionality', () => {
 
     describe('Favorite Persistence', () => {
         test('should persist favorites across operations', () => {
-            localStorage.setItem('museumcheck-favorites', JSON.stringify(['forbidden-city', 'shanghai-museum']));
+            localStorage.setItem('favoriteMuseums', JSON.stringify(['forbidden-city', 'shanghai-museum']));
             
             // Simulate page interaction
-            let favorites = JSON.parse(localStorage.getItem('museumcheck-favorites') || '[]');
+            let favorites = JSON.parse(localStorage.getItem('favoriteMuseums') || '[]');
             expect(favorites).toHaveLength(2);
             
             // Add another
             favorites.push('nanjing-museum');
-            localStorage.setItem('museumcheck-favorites', JSON.stringify(favorites));
+            localStorage.setItem('favoriteMuseums', JSON.stringify(favorites));
             
             // Verify persistence
-            favorites = JSON.parse(localStorage.getItem('museumcheck-favorites') || '[]');
+            favorites = JSON.parse(localStorage.getItem('favoriteMuseums') || '[]');
             expect(favorites).toEqual(['forbidden-city', 'shanghai-museum', 'nanjing-museum']);
         });
 
         test('should handle corrupted localStorage data gracefully', () => {
-            localStorage.setItem('museumcheck-favorites', 'invalid json data');
+            localStorage.setItem('favoriteMuseums', 'invalid json data');
             
             let loaded;
             try {
-                loaded = JSON.parse(localStorage.getItem('museumcheck-favorites') || '[]');
+                loaded = JSON.parse(localStorage.getItem('favoriteMuseums') || '[]');
             } catch (e) {
                 loaded = [];
             }
@@ -170,9 +170,9 @@ describe('Museum Favorite Functionality', () => {
     describe('Favorite Button State', () => {
         test('should check if museum is favorited', () => {
             const favorites = ['forbidden-city'];
-            localStorage.setItem('museumcheck-favorites', JSON.stringify(favorites));
+            localStorage.setItem('favoriteMuseums', JSON.stringify(favorites));
             
-            const loaded = JSON.parse(localStorage.getItem('museumcheck-favorites') || '[]');
+            const loaded = JSON.parse(localStorage.getItem('favoriteMuseums') || '[]');
             const isFavorited = loaded.includes('forbidden-city');
             expect(isFavorited).toBe(true);
             
