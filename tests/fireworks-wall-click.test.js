@@ -304,16 +304,21 @@ describe('Fireworks Wall Click-to-Launch', () => {
                 isClickLaunched: true
             };
             
+            // Simulate user's retention setting (e.g., 2 hours)
+            localStorage.setItem('fireworksRetentionTime', '7200000'); // 2 hours in ms
+            const retentionMs = parseInt(localStorage.getItem('fireworksRetentionTime'), 10);
+            const ttl = Math.round(retentionMs / 1000);
+            
             const apiPayload = {
                 key: 'museumcheck-firework',
                 sortKey: fireworkData.id,
                 value: JSON.stringify(fireworkData),
-                ttl: 86400  // 24 hours
+                ttl: ttl  // Uses user's retention setting
             };
             
             expect(apiPayload.key).toBe('museumcheck-firework');
             expect(apiPayload.sortKey).toBe('click-789-xyz');
-            expect(apiPayload.ttl).toBe(86400);  // 24 hours for same-day visibility
+            expect(apiPayload.ttl).toBe(7200);  // 2 hours based on user setting
             
             const parsedValue = JSON.parse(apiPayload.value);
             expect(parsedValue.id).toBe(fireworkData.id);
