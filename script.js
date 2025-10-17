@@ -21,7 +21,7 @@ const REMOTE_STORAGE_CONFIG = {
     API_ENDPOINT: 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore',
     FIREWORK_KEY: 'museumcheck-firework',
     DOWNLOAD_INTERVAL: 10000,  // 10 seconds
-    FIREWORK_EXPIRATION: 3600, // 1 hour in seconds
+    FIREWORK_EXPIRATION: 86400, // 24 hours in seconds - long enough for same-day visibility across devices
     TIMESTAMP_2124: 4866674732  // Default expiration timestamp
 };
 

@@ -894,7 +894,7 @@
                     key: key,
                     sortKey: fireworkData.id,
                     value: JSON.stringify(fireworkData),
-                    ttl: 3600
+                    ttl: 86400  // 24 hours - long enough for same-day visibility across devices
                 })
             })
             .then(response => response.json())

@@ -308,12 +308,12 @@ describe('Fireworks Wall Click-to-Launch', () => {
                 key: 'museumcheck-firework',
                 sortKey: fireworkData.id,
                 value: JSON.stringify(fireworkData),
-                ttl: 3600
+                ttl: 86400  // 24 hours
             };
             
             expect(apiPayload.key).toBe('museumcheck-firework');
             expect(apiPayload.sortKey).toBe('click-789-xyz');
-            expect(apiPayload.ttl).toBe(3600);
+            expect(apiPayload.ttl).toBe(86400);  // 24 hours for same-day visibility
             
             const parsedValue = JSON.parse(apiPayload.value);
             expect(parsedValue.id).toBe(fireworkData.id);
