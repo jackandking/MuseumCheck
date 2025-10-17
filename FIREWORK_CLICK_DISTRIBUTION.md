@@ -29,7 +29,7 @@ function uploadClickFireworkToRemote(fireworkData) {
             key: FIREWORK_KEY,
             sortKey: fireworkData.id,
             value: JSON.stringify(fireworkData),
-            ttl: 3600
+            ttl: 86400  // 24 hours - long enough for same-day visibility across devices
         })
     })
     .then(response => response.json())
@@ -155,8 +155,10 @@ museumcheck-firework
 ```
 
 **TTL:**
-- 3600 seconds (1 hour)
-- Fireworks expire after 1 hour to prevent storage bloat
+- 86400 seconds (24 hours)
+- Fireworks expire after 24 hours to balance persistence with storage efficiency
+- Long enough for same-day visibility across all devices
+- Ensures families visiting museums can see each other's achievements throughout the day
 
 **Download Interval:**
 - 10 seconds (fireworks-wall.html)
