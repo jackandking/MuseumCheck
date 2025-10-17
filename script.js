@@ -3385,6 +3385,9 @@ class MuseumCheckApp {
         // Initialize age selector visual state
         this.initAgeSelector();
         
+        // Update header title with child nickname
+        this.updateHeaderTitle();
+        
         // Update dynamic museum count displays
         this.updateDynamicMuseumCounts();
         
@@ -4670,6 +4673,14 @@ class MuseumCheckApp {
         }
     }
 
+    updateHeaderTitle() {
+        const headerTitle = document.getElementById('headerTitle');
+        if (headerTitle) {
+            const nickname = this.childNickname || '小淘气';
+            headerTitle.textContent = `${nickname}的博物馆之旅`;
+        }
+    }
+
     loadFireworksRetentionTime() {
         try {
             const saved = localStorage.getItem('fireworksRetentionTime');
@@ -4771,6 +4782,9 @@ class MuseumCheckApp {
             
             this.childNickname = nickname;
             localStorage.setItem('childNickname', nickname);
+            
+            // Update header title
+            this.updateHeaderTitle();
             
             return { isValid: true, message: '昵称保存成功！' };
         } catch (error) {
