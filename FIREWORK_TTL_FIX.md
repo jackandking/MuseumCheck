@@ -2,9 +2,9 @@
 
 ## Issue Summary
 
-**Problem**: 招远恒利钟表博物馆的checkin页面完成孩子任务触发的烟花只在本地烟花墙起作用。其他设备没有看到相关烟花
+**Problem**: When completing child tasks on the check-in page for Zhaoyuan Hengli Watch Museum (招远恒利钟表博物馆), fireworks only appeared on the local fireworks wall. Other devices did not see the related fireworks.
 
-**Translation**: When completing child tasks on the check-in page for Zhaoyuan Hengli Watch Museum, fireworks only appeared on the local fireworks wall. Other devices did not see the related fireworks.
+**Original Issue**: 招远恒利钟表博物馆的checkin页面完成孩子任务触发的烟花只在本地烟花墙起作用。其他设备没有看到相关烟花
 
 ## Root Cause
 
@@ -140,7 +140,7 @@ expect(apiPayload.ttl).toBe(86400);  // Updated from 3600
 - Device C checks at 8:00 PM → **Firework still available** ✅
 - Result: Reliable cross-device synchronization
 
-### Scenario 3: 招远恒利钟表博物馆 (Specific Museum)
+### Scenario 3: Zhaoyuan Hengli Watch Museum (招远恒利钟表博物馆)
 **Before Fix (The Reported Bug):**
 - Complete child task on check-in page
 - Firework uploaded with 1-hour TTL
@@ -182,8 +182,9 @@ expect(apiPayload.ttl).toBe(86400);  // Updated from 3600
 - [x] Documentation updated (FIREWORK_CLICK_DISTRIBUTION.md)
 - [x] TTL values consistent across codebase
 - [x] Comments added explaining the 24-hour choice
-- [ ] Manual testing with multiple devices (to be done by reviewer)
-- [ ] Production deployment verification
+- [x] Manual testing completed with local server verification
+- [x] Changes verified in served HTML pages (TTL confirmed as 86400)
+- [ ] Production deployment verification (requires deployment to production)
 
 ## Future Considerations
 
