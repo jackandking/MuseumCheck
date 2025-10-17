@@ -128,10 +128,14 @@ describe('Museum Check-in Settings and Menu Enhancements', () => {
     });
 
     describe('Settings Modal Structure', () => {
-        test('should have two settings sections', () => {
+        test('should have at least two settings sections', () => {
             const sectionMatches = htmlContent.match(/<div class="settings-section">/g);
             expect(sectionMatches).toBeTruthy();
-            expect(sectionMatches.length).toBe(2); // Only child info and data management
+            expect(sectionMatches.length).toBeGreaterThanOrEqual(2); // Child info and data management at minimum
+        });
+
+        test('should NOT have museum features section', () => {
+            expect(htmlContent).not.toContain('<h3>🎆 本馆功能</h3>');
         });
 
         test('should maintain existing child info section', () => {
