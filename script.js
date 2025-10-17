@@ -66,7 +66,8 @@ const APP_CONFIG = {
         MUSEUM_CHECKLISTS: 'museumChecklists',
         CURRENT_AGE: 'currentAge',
         ASSESSMENT_HISTORY: 'museumCheckAssessmentHistory',
-        SHARING_STATE: 'museumCheckSharingState'
+        SHARING_STATE: 'museumCheckSharingState',
+        SORT_PREFERENCE: 'museumSortPreference'
     },
     
     AGE_GROUPS: ['3-6', '7-12', '13-18'],   // Supported age groups
@@ -3326,6 +3327,8 @@ class MuseumCheckApp {
         this.db = null;
         this.searchQuery = '';
         this.filteredMuseums = MUSEUMS;
+        this.sortBy = this.loadSortPreference(); // Load sorting preference
+        this.userLocation = null; // Will be set if user grants location permission
         this.assessmentHidden = false; // Default to showing assessments
         this.readonlyCheckboxes = false; // Default to interactive checkboxes
         this.isDouyinAffiliate = false; // Flag to track Douyin affiliate mode
@@ -3390,6 +3393,10 @@ class MuseumCheckApp {
         
         this.setupEventListeners();
         this.handleURLParameters(); // Process URL parameters before rendering
+        
+        // Request user location for better sorting (optional, non-blocking)
+        this.requestUserLocation();
+        
         this.renderMuseums();
         this.updateStats();
         
@@ -4182,6 +4189,25 @@ class MuseumCheckApp {
             });
         }
 
+        // Sort by selector
+        const sortBySelector = document.getElementById('sortBySelector');
+        if (sortBySelector) {
+            sortBySelector.addEventListener('change', () => {
+                const selectedSort = sortBySelector.value;
+                this.sortBy = selectedSort;
+                this.saveSortPreference();
+                
+                // Re-render museums with new sorting
+                this.renderMuseums();
+                
+                // Track sort preference change
+                this.trackEvent('sort_preference_changed', {
+                    'sort_by': selectedSort,
+                    'auto_saved': true
+                });
+            });
+        }
+
         // Clear all data button
         document.getElementById('clearAllDataButton').addEventListener('click', () => {
             this.clearAllData();
@@ -4218,6 +4244,44 @@ class MuseumCheckApp {
                 setTimeout(() => this.fireworksCanvasSystem.launchFirework('演示', '预览'), 600);
             }
         });
+        
+        // Scroll event listener - toggle compact mode for stats section
+        this.setupScrollCompactMode();
+    }
+    
+    /**
+     * Setup scroll event listener to toggle compact mode for stats section
+     * When user scrolls down, hide progress bar and detailed stats to save space
+     * When user scrolls back to top, show full stats again
+     */
+    setupScrollCompactMode() {
+        const statsElement = document.querySelector('.stats');
+        if (!statsElement) return;
+        
+        let scrollThreshold = 100; // Scroll threshold in pixels
+        let ticking = false; // Throttle scroll events using requestAnimationFrame
+        
+        const handleScroll = () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            if (scrollTop > scrollThreshold) {
+                statsElement.classList.add('scrolled');
+            } else {
+                statsElement.classList.remove('scrolled');
+            }
+            
+            ticking = false;
+        };
+        
+        // Use requestAnimationFrame to throttle scroll events for better performance
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    handleScroll();
+                });
+                ticking = true;
+            }
+        }, { passive: true });
     }
 
     // Search functionality methods
@@ -4553,6 +4617,24 @@ class MuseumCheckApp {
         }
     }
 
+    loadSortPreference() {
+        try {
+            const saved = localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.SORT_PREFERENCE);
+            return saved || 'default'; // Default to comprehensive sorting
+        } catch (error) {
+            console.error('Failed to load sort preference:', error);
+            return 'default';
+        }
+    }
+
+    saveSortPreference() {
+        try {
+            localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.SORT_PREFERENCE, this.sortBy);
+        } catch (error) {
+            console.error('Failed to save sort preference:', error);
+        }
+    }
+
     loadChildNickname() {
         try {
             const saved = localStorage.getItem('childNickname');
@@ -4695,6 +4777,196 @@ class MuseumCheckApp {
         return { isValid: true };
     }
 
+    // Calculate distance between two coordinates using Haversine formula
+    calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Radius of Earth in kilometers
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c; // Distance in km
+    }
+
+    // Get approximate coordinates for major Chinese cities
+    getCityCoordinates(cityName) {
+        const cityCoords = {
+            '北京': { lat: 39.9042, lon: 116.4074 },
+            '上海': { lat: 31.2304, lon: 121.4737 },
+            '广州': { lat: 23.1291, lon: 113.2644 },
+            '深圳': { lat: 22.5431, lon: 114.0579 },
+            '成都': { lat: 30.5728, lon: 104.0668 },
+            '杭州': { lat: 30.2741, lon: 120.1551 },
+            '重庆': { lat: 29.4316, lon: 106.9123 },
+            '武汉': { lat: 30.5928, lon: 114.3055 },
+            '西安': { lat: 34.3416, lon: 108.9398 },
+            '天津': { lat: 39.3434, lon: 117.3616 },
+            '南京': { lat: 32.0603, lon: 118.7969 },
+            '苏州': { lat: 31.2989, lon: 120.5853 },
+            '长沙': { lat: 28.2282, lon: 112.9388 },
+            '郑州': { lat: 34.7466, lon: 113.6253 },
+            '沈阳': { lat: 41.8057, lon: 123.4328 },
+            '大连': { lat: 38.9140, lon: 121.6147 },
+            '济南': { lat: 36.6512, lon: 117.1209 },
+            '青岛': { lat: 36.0671, lon: 120.3826 },
+            '厦门': { lat: 24.4798, lon: 118.0894 },
+            '福州': { lat: 26.0745, lon: 119.2965 },
+            '昆明': { lat: 25.0406, lon: 102.7123 },
+            '兰州': { lat: 36.0611, lon: 103.8343 },
+            '乌鲁木齐': { lat: 43.8256, lon: 87.6168 },
+            '拉萨': { lat: 29.6520, lon: 91.1722 },
+            '哈尔滨': { lat: 45.8038, lon: 126.5340 },
+            '长春': { lat: 43.8171, lon: 125.3235 },
+            '石家庄': { lat: 38.0428, lon: 114.5149 },
+            '太原': { lat: 37.8706, lon: 112.5489 },
+            '合肥': { lat: 31.8206, lon: 117.2272 },
+            '南昌': { lat: 28.6829, lon: 115.8579 },
+            '贵阳': { lat: 26.6470, lon: 106.6302 },
+            '海口': { lat: 20.0458, lon: 110.1991 },
+            '三亚': { lat: 18.2528, lon: 109.5117 },
+            '银川': { lat: 38.4872, lon: 106.2309 },
+            '西宁': { lat: 36.6171, lon: 101.7782 },
+            '呼和浩特': { lat: 40.8414, lon: 111.7519 }
+        };
+        return cityCoords[cityName] || null;
+    }
+
+    // Get museum distance from user
+    getMuseumDistance(museum) {
+        if (!this.userLocation) {
+            return Infinity; // No user location, place at end
+        }
+        
+        const museumCoords = this.getCityCoordinates(museum.location);
+        if (!museumCoords) {
+            return Infinity; // Unknown city, place at end
+        }
+        
+        return this.calculateDistance(
+            this.userLocation.lat,
+            this.userLocation.lon,
+            museumCoords.lat,
+            museumCoords.lon
+        );
+    }
+
+    // Request user location (optional, non-blocking)
+    requestUserLocation() {
+        // Only request if default sorting is enabled
+        if (this.sortBy !== 'default') {
+            return;
+        }
+        
+        // Check if geolocation is supported
+        if (!navigator.geolocation) {
+            console.log('Geolocation is not supported by this browser.');
+            return;
+        }
+        
+        // Request location silently without blocking UI
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                this.userLocation = {
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude
+                };
+                console.log('User location obtained:', this.userLocation);
+                
+                // Re-render museums with location-based sorting if in default mode
+                if (this.sortBy === 'default') {
+                    this.renderMuseums();
+                }
+                
+                // Track location permission granted
+                this.trackEvent('location_permission_granted', {
+                    'latitude': position.coords.latitude,
+                    'longitude': position.coords.longitude
+                });
+            },
+            (error) => {
+                console.log('Location permission denied or unavailable:', error.message);
+                // Don't show any error to user, just continue without location
+                
+                // Track location permission denied
+                this.trackEvent('location_permission_denied', {
+                    'error_code': error.code,
+                    'error_message': error.message
+                });
+            },
+            {
+                enableHighAccuracy: false, // Use coarse location for better performance
+                timeout: 5000, // 5 second timeout
+                maximumAge: 600000 // Accept cached location up to 10 minutes old
+            }
+        );
+    }
+
+    // Check if museum has fireworks
+    hasFireworks(museumId) {
+        const museumFireworks = this.getFireworksByMuseum(museumId);
+        return museumFireworks && museumFireworks.length > 0;
+    }
+
+    // Sort museums based on current sort preference
+    sortMuseums(museums) {
+        const sorted = [...museums]; // Create a copy to avoid mutating original
+        
+        if (this.sortBy === 'default') {
+            // Comprehensive sorting: fireworks > unvisited > distance
+            sorted.sort((a, b) => {
+                // Priority 1: Museums with fireworks first
+                const aHasFireworks = this.hasFireworks(a.id);
+                const bHasFireworks = this.hasFireworks(b.id);
+                if (aHasFireworks !== bHasFireworks) {
+                    return bHasFireworks ? 1 : -1;
+                }
+                
+                // Priority 2: Unvisited museums first
+                const aVisited = this.visitedMuseums.includes(a.id);
+                const bVisited = this.visitedMuseums.includes(b.id);
+                if (aVisited !== bVisited) {
+                    return aVisited ? 1 : -1;
+                }
+                
+                // Priority 3: Closer museums first (if location available)
+                if (this.userLocation) {
+                    const aDist = this.getMuseumDistance(a);
+                    const bDist = this.getMuseumDistance(b);
+                    if (aDist !== bDist) {
+                        return aDist - bDist;
+                    }
+                }
+                
+                // Fallback: alphabetical by name
+                return a.name.localeCompare(b.name, 'zh-CN');
+            });
+        } else if (this.sortBy === 'name') {
+            // Sort by name alphabetically
+            sorted.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+        } else if (this.sortBy === 'location') {
+            // Sort by location, then by name
+            sorted.sort((a, b) => {
+                const locCompare = a.location.localeCompare(b.location, 'zh-CN');
+                if (locCompare !== 0) return locCompare;
+                return a.name.localeCompare(b.name, 'zh-CN');
+            });
+        } else if (this.sortBy === 'visited') {
+            // Sort by visit status (unvisited first), then by name
+            sorted.sort((a, b) => {
+                const aVisited = this.visitedMuseums.includes(a.id);
+                const bVisited = this.visitedMuseums.includes(b.id);
+                if (aVisited !== bVisited) {
+                    return aVisited ? 1 : -1;
+                }
+                return a.name.localeCompare(b.name, 'zh-CN');
+            });
+        }
+        
+        return sorted;
+    }
+
     renderMuseums() {
         try {
             const grid = document.getElementById('museumGrid');
@@ -4707,7 +4979,10 @@ class MuseumCheckApp {
             
             grid.innerHTML = '';
 
-            this.filteredMuseums.forEach(museum => {
+            // Sort museums before rendering
+            const sortedMuseums = this.sortMuseums(this.filteredMuseums);
+
+            sortedMuseums.forEach(museum => {
                 const isVisited = this.visitedMuseums.includes(museum.id);
                 
                 const card = document.createElement('div');
@@ -4721,6 +4996,7 @@ class MuseumCheckApp {
                             <h3>
                                 ${museum.name}
                                 <button class="museum-fireworks-button" data-museum="${museum.id}" title="查看本馆烟花墙" style="display: none;">🎆</button>
+                                ${(museum.id === 'forbidden-city' || museum.id === 'zhaoyuan-hengli-watch-museum') ? '<button class="museum-checkin-button" data-museum="' + museum.id + '" title="进入打卡页面">🔗 打卡</button>' : ''}
                                 ${isVisited && !this.assessmentHidden ? '<button class="assessment-button" data-museum="' + museum.id + '" title="亲子关系测评">🧡 亲子测评</button>' : ''}
                             </h3>
                             <div class="museum-location">📍 ${museum.location}</div>
@@ -4736,7 +5012,8 @@ class MuseumCheckApp {
                 card.addEventListener('click', (e) => {
                     if (!e.target.classList.contains('visit-checkbox') && 
                         !e.target.classList.contains('assessment-button') &&
-                        !e.target.classList.contains('museum-fireworks-button')) {
+                        !e.target.classList.contains('museum-fireworks-button') &&
+                        !e.target.classList.contains('museum-checkin-button')) {
                         this.openMuseumModal(museum);
                     }
                 });
@@ -4778,6 +5055,25 @@ class MuseumCheckApp {
                     assessmentButton.addEventListener('click', (e) => {
                         e.stopPropagation();
                         this.openAssessmentModal(museum.id);
+                    });
+                }
+
+                // Add check-in button event
+                const checkinButton = card.querySelector('.museum-checkin-button');
+                if (checkinButton) {
+                    checkinButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Navigate to museum-checkin.html with museum ID and age group
+                        const checkedRadio = document.querySelector('input[name="ageGroup"]:checked');
+                        const ageGroup = checkedRadio ? checkedRadio.value : this.currentAge;
+                        window.location.href = `museum-checkin.html?museum=${museum.id}&age=${ageGroup}`;
+                        
+                        // Track event
+                        this.trackEvent('museum_checkin_opened', {
+                            'museum_id': museum.id,
+                            'museum_name': museum.name,
+                            'age_group': ageGroup
+                        });
                     });
                 }
 
@@ -4894,7 +5190,13 @@ class MuseumCheckApp {
 
         document.getElementById('visitedCount').textContent = visitedCount;
         document.getElementById('totalCount').textContent = totalCount;
-        document.getElementById('visitedPercentage').textContent = percentage;
+        const percentageElement = document.getElementById('visitedPercentage');
+        if (percentageElement) {
+            percentageElement.textContent = percentage;
+        }
+        
+        // Update Minecraft-style progress bar
+        this.updateMinecraftProgressBar(percentage);
         
         // Update achievements
         this.updateAchievements(visitedCount);
@@ -5061,18 +5363,18 @@ class MuseumCheckApp {
     calculateAchievements(visitedCount) {
         const achievements = [];
         
-        // 🥉 基础层：单馆打卡成就 - 鼓励开始和坚持
+        // 🥉 基础层：单馆打卡成就 - 鼓励开始和坚持 (Minecraft themed)
         const milestones = [
-            { visits: 1, name: '博物馆初心者', emoji: '🌱', description: '踏出博物馆之旅的第一步，开启文化探索之门', level: 'basic' },
-            { visits: 3, name: '文化体验者', emoji: '🌟', description: '连续体验3家博物馆，展现对文化的热爱', level: 'basic' },
-            { visits: 5, name: '探索新手', emoji: '🎯', description: '稳步前进，已探索5家不同的博物馆', level: 'basic' },
-            { visits: 10, name: '文化爱好者', emoji: '📖', description: '深度参与，成为真正的文化爱好者', level: 'basic' },
-            { visits: 15, name: '博物馆达人', emoji: '🎪', description: '持续探索15家博物馆，实现质的飞跃', level: 'intermediate' },
-            { visits: 25, name: '文化探索家', emoji: '🧭', description: '广泛涉猎25家博物馆，视野更加开阔', level: 'intermediate' },
-            { visits: 50, name: '博物馆专家', emoji: '🎓', description: '深度探索50家博物馆，成为行家里手', level: 'intermediate' },
-            { visits: 75, name: '文化大师', emoji: '👑', description: '参观75家博物馆，达到大师级水平', level: 'advanced' },
-            { visits: 100, name: '文化学者', emoji: '📚', description: '百家博物馆巡礼，成为真正的文化学者', level: 'advanced' },
-            { visits: MUSEUM_COUNT, name: '博物馆收藏家', emoji: '💎', description: `完成全部${MUSEUM_COUNT}家博物馆，成就文化收藏家传奇`, level: 'master' }
+            { visits: 1, name: '新手矿工', emoji: '⛏️', description: '挖到第一个博物馆方块！开启文化探索之旅', level: 'basic' },
+            { visits: 3, name: '采集者', emoji: '🪵', description: '收集3个文化方块，开始建造知识基地', level: 'basic' },
+            { visits: 5, name: '建筑学徒', emoji: '🧱', description: '稳步积累5个文化方块，知识之塔初具规模', level: 'basic' },
+            { visits: 10, name: '工匠', emoji: '🔨', description: '收集10个文化方块，成为真正的文化工匠', level: 'basic' },
+            { visits: 15, name: '红石工程师', emoji: '🔴', description: '15个文化方块连接，创造出知识的红石电路', level: 'intermediate' },
+            { visits: 25, name: '探险家', emoji: '🗺️', description: '探索25个文化遗迹，地图越来越完整', level: 'intermediate' },
+            { visits: 50, name: '钻石矿工', emoji: '💎', description: '挖掘50个珍贵的文化钻石，闪耀夺目', level: 'intermediate' },
+            { visits: 75, name: '绿宝石大师', emoji: '💚', description: '收集75颗文化绿宝石，富甲一方', level: 'advanced' },
+            { visits: 100, name: '末影龙挑战者', emoji: '🐉', description: '百馆巡礼，如同击败末影龙般的壮举', level: 'advanced' },
+            { visits: MUSEUM_COUNT, name: '世界建造者', emoji: '🌍', description: `完成全部${MUSEUM_COUNT}个文化方块，建造出完整的知识世界`, level: 'master' }
         ];
         
         // Add achieved milestones
@@ -5108,12 +5410,12 @@ class MuseumCheckApp {
             const visitedMuseums = this.visitedMuseums.map(id => MUSEUMS.find(m => m.id === id)).filter(Boolean);
             const visitedIds = visitedMuseums.map(m => m.id);
             
-            // Famous museum achievements - immediate rewards for visiting top destinations
+            // Famous museum achievements - immediate rewards for visiting top destinations (Minecraft themed)
             const famousMuseums = [
-                { id: 'forbidden-city', name: '紫禁城守护者', emoji: '🏯', description: '深度探索世界文化遗产故宫博物院', level: 'advanced' },
-                { id: 'terracotta-warriors', name: '兵马俑见证者', emoji: '⚔️', description: '亲临世界第八大奇迹秦始皇帝陵博物院', level: 'advanced' },
-                { id: 'national-museum', name: '国家记忆传承者', emoji: '🏛️', description: '在中国国家博物馆感受民族记忆', level: 'advanced' },
-                { id: 'shanghai-museum', name: '艺术品鉴大师', emoji: '🎨', description: '在上海博物馆这座中华艺术宫提升艺术修养', level: 'advanced' }
+                { id: 'forbidden-city', name: '紫禁城要塞守护者', emoji: '🏰', description: '探索故宫这座华丽的要塞，发现皇家宝藏', level: 'advanced' },
+                { id: 'terracotta-warriors', name: '兵马俑军团召唤师', emoji: '⚔️', description: '在秦始皇陵召唤古代战士，见证世界奇迹', level: 'advanced' },
+                { id: 'national-museum', name: '国家图书馆管理员', emoji: '📚', description: '在国家博物馆收集最珍贵的历史卷轴', level: 'advanced' },
+                { id: 'shanghai-museum', name: '艺术品交易大师', emoji: '🎨', description: '在上海博物馆交易稀有的艺术品', level: 'advanced' }
             ];
             
             famousMuseums.forEach(famous => {
@@ -5130,11 +5432,11 @@ class MuseumCheckApp {
                 }
             });
             
-            // City achievements - early rewards for exploring major cities
+            // City achievements - early rewards for exploring major cities (Minecraft themed)
             const cityGroups = {
-                '北京': { name: '首都文化大使', emoji: '🇨🇳', description: '深度体验首都北京的博物馆文化群落', level: 'intermediate' },
-                '上海': { name: '海派文化达人', emoji: '🌃', description: '全方位感受上海海派文化的独特魅力', level: 'intermediate' },
-                '西安': { name: '古都文明探秘者', emoji: '🏺', description: '在十三朝古都探寻中华文明的深厚根基', level: 'intermediate' }
+                '北京': { name: '首都生物群系大师', emoji: '🗼', description: '在北京生物群系中建立多个文化前哨站', level: 'intermediate' },
+                '上海': { name: '海派村落领主', emoji: '🌃', description: '在上海建造繁华的文化交易村落', level: 'intermediate' },
+                '西安': { name: '古都遗迹猎人', emoji: '🏺', description: '在十三朝古都发掘珍贵的历史遗迹', level: 'intermediate' }
             };
             
             Object.entries(cityGroups).forEach(([city, achievement]) => {
@@ -5358,6 +5660,26 @@ class MuseumCheckApp {
         }
         
         return achievements;
+    }
+    
+    updateMinecraftProgressBar(percentage) {
+        // Update the Minecraft-styled progress bar
+        const progressFill = document.getElementById('minecraftProgressFill');
+        const progressBlocks = document.getElementById('minecraftProgressBlocks');
+        
+        if (progressFill) {
+            progressFill.style.width = percentage + '%';
+        }
+        
+        // Add pixel blocks based on percentage
+        if (progressBlocks) {
+            const blockCount = Math.floor(percentage / 5); // One block every 5%
+            let blocksHTML = '';
+            for (let i = 0; i < blockCount; i++) {
+                blocksHTML += '<span class="pixel-block"></span>';
+            }
+            progressBlocks.innerHTML = blocksHTML;
+        }
     }
     
     updateAchievements(visitedCount) {
@@ -5937,6 +6259,12 @@ class MuseumCheckApp {
             const intervalMs = this.loadFireworkLaunchInterval();
             launchIntervalSlider.value = intervalMs;
             this.updateFireworkLaunchIntervalDisplay(intervalMs);
+        }
+        
+        // Update sort by selector
+        const sortBySelector = document.getElementById('sortBySelector');
+        if (sortBySelector) {
+            sortBySelector.value = this.sortBy;
         }
     }
 
@@ -9881,6 +10209,16 @@ class MuseumCheckApp {
                 localStorage.removeItem('fireworks'); // Clear fireworks data
                 localStorage.removeItem('museumCheckFireworks'); // Clear shared fireworks data
                 
+                // Clear museum checkin page data (museumCheckin_* keys)
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('museumCheckin_')) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+                
                 // Clear IndexedDB data if supported
                 if (this.indexedDBSupported) {
                     this.clearIndexedDBData();
@@ -9956,6 +10294,10 @@ class MuseumCheckApp {
         if (confirmed) {
             const childKey = `${museumId}-child-${ageGroup}`;
             delete this.museumChecklists[childKey];
+            
+            // Also clear the checkin page data for this museum/age group
+            const checkinKey = `museumCheckin_${museumId}_${ageGroup}`;
+            localStorage.removeItem(checkinKey);
             
             // Save updated data
             this.saveMuseumChecklists();
