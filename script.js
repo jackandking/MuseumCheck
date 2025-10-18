@@ -21,7 +21,7 @@ const REMOTE_STORAGE_CONFIG = {
     API_ENDPOINT: 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore',
     FIREWORK_KEY: 'museumcheck-firework',
     DOWNLOAD_INTERVAL: 10000,  // 10 seconds
-    FIREWORK_EXPIRATION: 3600, // 1 hour in seconds
+    DEFAULT_FIREWORK_EXPIRATION: 60, // Default: 1 minute in seconds (used if user setting not found)
     TIMESTAMP_2124: 4866674732  // Default expiration timestamp
 };
 
@@ -67,7 +67,8 @@ const APP_CONFIG = {
         CURRENT_AGE: 'currentAge',
         ASSESSMENT_HISTORY: 'museumCheckAssessmentHistory',
         SHARING_STATE: 'museumCheckSharingState',
-        SORT_PREFERENCE: 'museumSortPreference'
+        SORT_PREFERENCE: 'museumSortPreference',
+        FAVORITE_MUSEUMS: 'favoriteMuseums'
     },
     
     AGE_GROUPS: ['3-6', '7-12', '13-18'],   // Supported age groups
@@ -273,15 +274,27 @@ const RemoteStorage = {
             timestamp: Date.now()
         };
         
-        // Set expiration to 1 hour from now
-        const oneHourLater = Math.floor(Date.now() / 1000) + REMOTE_STORAGE_CONFIG.FIREWORK_EXPIRATION;
+        // Load fireworks retention time from localStorage (in milliseconds)
+        let retentionTimeMs = 60000; // Default: 1 minute
+        try {
+            const saved = localStorage.getItem('fireworksRetentionTime');
+            if (saved) {
+                retentionTimeMs = parseInt(saved, 10);
+            }
+        } catch (error) {
+            console.error('Error loading fireworks retention time:', error);
+        }
+        
+        // Convert milliseconds to seconds for expiration timestamp
+        const retentionSeconds = Math.round(retentionTimeMs / 1000);
+        const expirationTime = Math.floor(Date.now() / 1000) + retentionSeconds;
         
         try {
             await this.updateKeyValueStore(
                 REMOTE_STORAGE_CONFIG.FIREWORK_KEY, 
                 JSON.stringify(dataToStore), 
                 fireworkId, 
-                oneHourLater
+                expirationTime
             );
             console.log('RemoteStorage: Firework uploaded successfully:', fireworkId);
         } catch (error) {
@@ -3332,6 +3345,7 @@ class MuseumCheckApp {
         this.assessmentHidden = false; // Default to showing assessments
         this.readonlyCheckboxes = false; // Default to interactive checkboxes
         this.isDouyinAffiliate = false; // Flag to track Douyin affiliate mode
+        this.favoriteMuseums = this.loadFavoriteMuseums(); // Load favorite museums
         
         // Initialize specialized modules
         this.modalManager = new ModalManager();
@@ -3382,6 +3396,9 @@ class MuseumCheckApp {
         
         // Initialize age selector visual state
         this.initAgeSelector();
+        
+        // Update header title with child nickname
+        this.updateHeaderTitle();
         
         // Update dynamic museum count displays
         this.updateDynamicMuseumCounts();
@@ -4013,6 +4030,11 @@ class MuseumCheckApp {
             this.showAssessmentHistoryModal();
         });
 
+        // Settings button
+        document.getElementById('settingsButton').addEventListener('click', () => {
+            this.showSettingsModal();
+        });
+
         // Achievement modal close
         document.querySelector('#achievementModal .close').addEventListener('click', () => {
             this.closeAchievementModal();
@@ -4197,6 +4219,11 @@ class MuseumCheckApp {
                 this.sortBy = selectedSort;
                 this.saveSortPreference();
                 
+                // Request user location if distance sorting is selected
+                if (selectedSort === 'distance' || selectedSort === 'default') {
+                    this.requestUserLocation();
+                }
+                
                 // Re-render museums with new sorting
                 this.renderMuseums();
                 
@@ -4343,6 +4370,24 @@ class MuseumCheckApp {
             localStorage.setItem('visitedMuseums', JSON.stringify(this.visitedMuseums));
         } catch (error) {
             console.error('Failed to save visited museums:', error);
+        }
+    }
+
+    loadFavoriteMuseums() {
+        try {
+            const saved = localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.FAVORITE_MUSEUMS);
+            return saved ? JSON.parse(saved) : [];
+        } catch (error) {
+            console.error('Failed to load favorite museums:', error);
+            return [];
+        }
+    }
+
+    saveFavoriteMuseums() {
+        try {
+            localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.FAVORITE_MUSEUMS, JSON.stringify(this.favoriteMuseums));
+        } catch (error) {
+            console.error('Failed to save favorite museums:', error);
         }
     }
 
@@ -4645,6 +4690,14 @@ class MuseumCheckApp {
         }
     }
 
+    updateHeaderTitle() {
+        const headerTitle = document.getElementById('headerTitle');
+        if (headerTitle) {
+            const nickname = this.childNickname || '小淘气';
+            headerTitle.textContent = `${nickname}的博物馆之旅`;
+        }
+    }
+
     loadFireworksRetentionTime() {
         try {
             const saved = localStorage.getItem('fireworksRetentionTime');
@@ -4746,6 +4799,9 @@ class MuseumCheckApp {
             
             this.childNickname = nickname;
             localStorage.setItem('childNickname', nickname);
+            
+            // Update header title
+            this.updateHeaderTitle();
             
             return { isValid: true, message: '昵称保存成功！' };
         } catch (error) {
@@ -4854,8 +4910,8 @@ class MuseumCheckApp {
 
     // Request user location (optional, non-blocking)
     requestUserLocation() {
-        // Only request if default sorting is enabled
-        if (this.sortBy !== 'default') {
+        // Only request if default or distance sorting is enabled
+        if (this.sortBy !== 'default' && this.sortBy !== 'distance') {
             return;
         }
         
@@ -4874,8 +4930,8 @@ class MuseumCheckApp {
                 };
                 console.log('User location obtained:', this.userLocation);
                 
-                // Re-render museums with location-based sorting if in default mode
-                if (this.sortBy === 'default') {
+                // Re-render museums with location-based sorting if in default or distance mode
+                if (this.sortBy === 'default' || this.sortBy === 'distance') {
                     this.renderMuseums();
                 }
                 
@@ -4914,8 +4970,15 @@ class MuseumCheckApp {
         const sorted = [...museums]; // Create a copy to avoid mutating original
         
         if (this.sortBy === 'default') {
-            // Comprehensive sorting: fireworks > unvisited > distance
+            // Comprehensive sorting: favorites > fireworks > unvisited > distance
             sorted.sort((a, b) => {
+                // Priority 0: Favorite museums first (NEW)
+                const aFavorite = this.favoriteMuseums.includes(a.id);
+                const bFavorite = this.favoriteMuseums.includes(b.id);
+                if (aFavorite !== bFavorite) {
+                    return bFavorite ? 1 : -1;
+                }
+                
                 // Priority 1: Museums with fireworks first
                 const aHasFireworks = this.hasFireworks(a.id);
                 const bHasFireworks = this.hasFireworks(b.id);
@@ -4962,6 +5025,16 @@ class MuseumCheckApp {
                 }
                 return a.name.localeCompare(b.name, 'zh-CN');
             });
+        } else if (this.sortBy === 'distance') {
+            // Sort by distance (closest first), then by name
+            sorted.sort((a, b) => {
+                const aDist = this.getMuseumDistance(a);
+                const bDist = this.getMuseumDistance(b);
+                if (aDist !== bDist) {
+                    return aDist - bDist;
+                }
+                return a.name.localeCompare(b.name, 'zh-CN');
+            });
         }
         
         return sorted;
@@ -4984,9 +5057,10 @@ class MuseumCheckApp {
 
             sortedMuseums.forEach(museum => {
                 const isVisited = this.visitedMuseums.includes(museum.id);
+                const isFavorite = this.favoriteMuseums.includes(museum.id);
                 
                 const card = document.createElement('div');
-                card.className = `museum-card ${isVisited ? 'visited' : ''}`;
+                card.className = `museum-card ${isVisited ? 'visited' : ''} ${isFavorite ? 'favorite' : ''}`;
                 card.innerHTML = `
                     <div class="museum-header">
                         <input type="checkbox" class="visit-checkbox" ${isVisited ? 'checked' : ''} 
@@ -4994,6 +5068,7 @@ class MuseumCheckApp {
                                data-museum="${museum.id}">
                         <div class="museum-info">
                             <h3>
+                                <button class="favorite-button" data-museum="${museum.id}" title="${isFavorite ? '取消收藏' : '收藏博物馆'}">${isFavorite ? '⭐' : '☆'}</button>
                                 ${museum.name}
                                 <button class="museum-fireworks-button" data-museum="${museum.id}" title="查看本馆烟花墙" style="display: none;">🎆</button>
                                 ${(museum.id === 'forbidden-city' || museum.id === 'zhaoyuan-hengli-watch-museum') ? '<button class="museum-checkin-button" data-museum="' + museum.id + '" title="进入打卡页面">🔗 打卡</button>' : ''}
@@ -5008,15 +5083,25 @@ class MuseumCheckApp {
                     </div>
                 `;
 
-                // Add click event for the card (excluding checkbox and assessment button)
+                // Add click event for the card (excluding checkbox, buttons)
                 card.addEventListener('click', (e) => {
                     if (!e.target.classList.contains('visit-checkbox') && 
                         !e.target.classList.contains('assessment-button') &&
                         !e.target.classList.contains('museum-fireworks-button') &&
-                        !e.target.classList.contains('museum-checkin-button')) {
+                        !e.target.classList.contains('museum-checkin-button') &&
+                        !e.target.classList.contains('favorite-button')) {
                         this.openMuseumModal(museum);
                     }
                 });
+
+                // Add favorite button event
+                const favoriteButton = card.querySelector('.favorite-button');
+                if (favoriteButton) {
+                    favoriteButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggleFavorite(museum.id);
+                    });
+                }
 
                 // Add checkbox event
                 const checkbox = card.querySelector('.visit-checkbox');
@@ -5038,7 +5123,7 @@ class MuseumCheckApp {
                     fireworksButton.addEventListener('click', (e) => {
                         e.stopPropagation();
                         // Open fireworks-wall.html in new tab with museum ID parameter
-                        window.open(`fireworks-wall.html?museumId=${encodeURIComponent(museum.id)}`, '_blank');
+                        window.open(`fireworks-wall.html?museum=${encodeURIComponent(museum.id)}`, '_blank');
                         
                         // Track event
                         this.trackEvent('museum_fireworks_wall_opened', {
@@ -5178,6 +5263,37 @@ class MuseumCheckApp {
         }
         
         return 'no_action';
+    }
+
+    toggleFavorite(museumId) {
+        const index = this.favoriteMuseums.indexOf(museumId);
+        const museum = MUSEUMS.find(m => m.id === museumId);
+        
+        if (index > -1) {
+            // Remove from favorites
+            this.favoriteMuseums.splice(index, 1);
+            this.saveFavoriteMuseums();
+            this.renderMuseums();
+            
+            // Track favorite toggle
+            this.trackEvent('museum_favorite_toggled', {
+                'museum_id': museumId,
+                'museum_name': museum ? museum.name : '',
+                'favorited': false
+            });
+        } else {
+            // Add to favorites
+            this.favoriteMuseums.push(museumId);
+            this.saveFavoriteMuseums();
+            this.renderMuseums();
+            
+            // Track favorite toggle
+            this.trackEvent('museum_favorite_toggled', {
+                'museum_id': museumId,
+                'museum_name': museum ? museum.name : '',
+                'favorited': true
+            });
+        }
     }
 
     updateStats() {

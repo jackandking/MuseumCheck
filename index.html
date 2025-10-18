@@ -156,10 +156,8 @@
     <div class="container">
         <header>
             <h1>
-                <span id="settingsIcon" class="settings-icon" title="点击打开设置">🏛️</span> 博物馆亲子游
+                <span id="settingsIcon" class="settings-icon" title="点击打开设置">🏛️</span> <span id="headerTitle">博物馆之旅</span>
             </h1>
-            <p class="subtitle">通过博物馆亲子游增进亲子关系</p>
-
         </header>
 
 
@@ -198,7 +196,6 @@
         <main role="main">
             <section class="museum-list" id="museums">
                 <h2>全国主要博物馆清单</h2>
-                <p class="section-description">精选全国<span id="sectionMuseumCount">主要</span>博物馆，通过专业的亲子互动指导，让每次参观都成为增进亲子关系的宝贵机会</p>
                 
                 <div class="stats" role="status" aria-live="polite">
                     <div class="progress-display">
@@ -210,7 +207,7 @@
                             <button id="achievementButton" class="achievement-button-icon" title="我的成就">🏆</button>
                             <button id="assessmentHistoryButton" class="assessment-history-button assessment-history-button-icon" title="测评历史">📊</button>
                             <button id="fireworksButton" class="fireworks-button fireworks-button-icon" title="查看烟花记录" style="display: none;">🎆</button>
-                            <button id="clearAllDataButton" class="clear-data-button clear-all-button clear-data-button-icon" title="清空所有数据">🗑️</button>
+                            <button id="settingsButton" class="settings-button-icon" title="设置">⚙️</button>
                         </div>
                     </div>
                     <div class="minecraft-progress-bar">
@@ -440,6 +437,7 @@
                             <option value="name">名称</option>
                             <option value="location">地区</option>
                             <option value="visited">参观状态</option>
+                            <option value="distance">距离</option>
                         </select>
                     </div>
                     <div class="settings-hint">选择博物馆列表的排序方式，更改后立即生效</div>
@@ -448,7 +446,7 @@
                     <label class="settings-label">综合排序规则：</label>
                     <div class="settings-hint" style="margin-top: 0;">
                         默认排序优先级：<br>
-                        1️⃣ 有烟花的博物馆 → 2️⃣ 未参观的博物馆 → 3️⃣ 离你较近的博物馆
+                        1️⃣ 收藏的博物馆 → 2️⃣ 有烟花的博物馆 → 3️⃣ 未参观的博物馆 → 4️⃣ 离你较近的博物馆
                     </div>
                 </div>
             </div>
@@ -457,6 +455,36 @@
                 <div class="settings-item">
                     <label class="settings-label">博物馆数量：</label>
                     <span class="settings-value" id="museumCountSettings">0</span>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>ℹ️ 关于我们</h3>
+                <div class="settings-item">
+                    <div class="about-content">
+                        <p class="about-title">博物馆打卡 - 中国博物馆亲子参观指南</p>
+                        <p class="about-description">通过博物馆亲子游增进亲子关系</p>
+                        <p class="about-features">精选全国260家知名博物馆，通过专业的亲子互动指导，让每次参观都成为增进亲子关系的宝贵机会</p>
+                        <ul class="about-features-list">
+                            <li>📍 收录全国主要博物馆</li>
+                            <li>👶 3-18岁分龄参观指南</li>
+                            <li>👪 家长准备清单</li>
+                            <li>🎯 孩子探索任务</li>
+                            <li>📈 参观进度追踪</li>
+                            <li>💾 本地数据存储</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>🗑️ 数据管理</h3>
+                <div class="settings-item">
+                    <label class="settings-label">清空所有数据：</label>
+                    <div class="settings-input-group">
+                        <button id="clearAllDataButton" class="clear-data-button clear-all-button">
+                            🗑️ 清空所有数据
+                        </button>
+                    </div>
+                    <div class="settings-hint">此操作将删除所有参观记录、清单完成记录、任务照片、成就进度和测评记录，操作不可撤销</div>
                 </div>
             </div>
         </div>

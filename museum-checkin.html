@@ -470,7 +470,7 @@
         <button class="settings-button" id="settingsButton" title="设置">⚙️</button>
     </div>
 
-    <h1 class="title">孩子任务</h1>
+    <h1 class="title" id="pageTitle">孩子任务</h1>
     <div class="museum-name" id="museumName">加载中...</div>
 
     <div class="progress-container">
@@ -522,7 +522,8 @@
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <button class="button button-primary" id="viewParentTasks">查看家长任务</button>
                 <button class="button button-primary" id="viewAssessment">亲子关系测评</button>
-                <button class="button button-secondary" id="viewFireworks">查看烟花墙</button>
+                <button class="button button-secondary" id="viewMuseumFireworks">🎆 查看本馆烟花墙</button>
+                <button class="button button-secondary" id="viewFireworks">查看总烟花墙</button>
                 <button class="button button-secondary" id="backToHome">返回主页</button>
             </div>
         </div>
@@ -560,6 +561,17 @@
                     <div class="settings-hint">更改后将重新加载页面以应用新的年龄组设置</div>
                 </div>
             </div>
+
+            <div class="settings-section">
+                <h3>🗑️ 数据管理</h3>
+                <div class="settings-item">
+                    <label class="settings-label">清空打卡数据：</label>
+                    <button class="button button-secondary" id="clearCheckinData" style="width: 100%; margin-top: 8px; background: #f8d7da; color: #721c24; font-weight: 600;">
+                        🗑️ 清空本馆打卡数据
+                    </button>
+                    <div class="settings-hint">清空后可以重新完成所有任务，此操作不可撤销</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -580,7 +592,9 @@
         // Get museum ID from URL parameter
         const urlParams = new URLSearchParams(window.location.search);
         const museumId = urlParams.get('museum') || 'forbidden-city';
-        const ageGroup = urlParams.get('age') || '7-12';
+        // Use saved age group from localStorage first, then URL parameter as fallback
+        const savedAgeGroup = localStorage.getItem('ageGroup');
+        const ageGroup = savedAgeGroup || urlParams.get('age') || '7-12';
         const editMode = urlParams.get('edit') === 'true';
 
         // State management
@@ -595,6 +609,7 @@
                 document.getElementById('editModeIndicator').classList.add('show');
             }
 
+            updatePageTitle();
             loadMuseumData();
             setupEventListeners();
             loadCompletedTasks();
@@ -865,6 +880,20 @@
             const url = REMOTE_STORAGE_CONFIG.API_ENDPOINT;
             const key = REMOTE_STORAGE_CONFIG.FIREWORK_KEY;
             
+            // Load fireworks retention time from localStorage (in milliseconds)
+            let retentionTimeMs = 60000; // Default: 1 minute
+            try {
+                const saved = localStorage.getItem('fireworksRetentionTime');
+                if (saved) {
+                    retentionTimeMs = parseInt(saved, 10);
+                }
+            } catch (error) {
+                console.error('Error loading fireworks retention time:', error);
+            }
+            
+            // Convert milliseconds to seconds for TTL
+            const ttlSeconds = Math.round(retentionTimeMs / 1000);
+            
             fetch(url, {
                 method: 'POST',
                 headers: {
@@ -874,7 +903,7 @@
                     key: key,
                     sortKey: fireworkData.id,
                     value: JSON.stringify(fireworkData),
-                    ttl: 3600
+                    ttl: ttlSeconds  // Use user's fireworks retention setting
                 })
             })
             .then(response => response.json())
@@ -986,9 +1015,9 @@
                 ageGroupSelector.addEventListener('change', (e) => {
                     const newAgeGroup = e.target.value;
                     saveAgeGroup(newAgeGroup);
-                    // Reload page with new age group
+                    // Reload page without age parameter (will use localStorage)
                     const url = new URL(window.location);
-                    url.searchParams.set('age', newAgeGroup);
+                    url.searchParams.delete('age');
                     window.location.href = url.toString();
                 });
             }
@@ -1002,8 +1031,12 @@
                 window.location.href = `index.html?assessment=true`;
             };
 
-            document.getElementById('viewFireworks').onclick = () => {
+            document.getElementById('viewMuseumFireworks').onclick = () => {
                 window.location.href = `fireworks-wall.html?museum=${museumId}`;
+            };
+
+            document.getElementById('viewFireworks').onclick = () => {
+                window.location.href = `fireworks-wall.html`;
             };
 
             document.getElementById('backToHome').onclick = () => {
@@ -1013,6 +1046,11 @@
             document.getElementById('parentTasksLink').onclick = (e) => {
                 e.preventDefault();
                 window.location.href = `index.html?museum=${museumId}&focus=parent`;
+            };
+
+            // Settings actions
+            document.getElementById('clearCheckinData').onclick = () => {
+                clearCheckinData();
             };
 
             // Close modals on background click
@@ -1059,6 +1097,21 @@
             });
         }
 
+        // Update page title with child nickname
+        function updatePageTitle() {
+            const nickname = loadChildNickname();
+            const title = `${nickname}的任务`;
+            
+            // Update h1 title
+            const pageTitleElement = document.getElementById('pageTitle');
+            if (pageTitleElement) {
+                pageTitleElement.textContent = title;
+            }
+            
+            // Update page title tag
+            document.title = `${title} - 博物馆打卡`;
+        }
+
         // Settings management functions
         function loadChildNickname() {
             try {
@@ -1077,6 +1130,10 @@
                 }
                 
                 localStorage.setItem('childNickname', nickname.trim());
+                
+                // Update page title after saving nickname
+                updatePageTitle();
+                
                 return { success: true, message: '昵称保存成功！' };
             } catch (error) {
                 console.error('Failed to save child nickname:', error);
@@ -1086,11 +1143,60 @@
 
         function saveAgeGroup(ageGroup) {
             try {
-                localStorage.setItem('selectedAgeGroup', ageGroup);
+                localStorage.setItem('ageGroup', ageGroup);
                 return { success: true };
             } catch (error) {
                 console.error('Failed to save age group:', error);
                 return { success: false };
+            }
+        }
+
+        function clearCheckinData() {
+            // Get current museum name for confirmation message
+            const museumName = currentMuseum ? currentMuseum.name : '本博物馆';
+            
+            // Show confirmation dialog
+            const confirmMessage = 
+                `⚠️ 清空打卡数据 ⚠️\n\n` +
+                `您即将清空「${museumName}」的所有打卡数据。\n\n` +
+                `清空后：\n` +
+                `✓ 可以重新完成所有任务\n` +
+                `✓ 所有任务将回到未完成状态\n` +
+                `✗ 此操作不可撤销\n\n` +
+                `确定要清空吗？`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            try {
+                // Clear from main app's structure
+                const checklistKey = `${museumId}-child-${ageGroup}`;
+                const checklistsData = JSON.parse(localStorage.getItem('museumChecklists') || '{}');
+                delete checklistsData[checklistKey];
+                localStorage.setItem('museumChecklists', JSON.stringify(checklistsData));
+                
+                // Also clear from legacy format for backward compatibility
+                const legacyKey = `museumCheckin_${museumId}_${ageGroup}`;
+                localStorage.removeItem(legacyKey);
+                
+                // Clear in-memory state
+                completedTasks.clear();
+                
+                // Re-render UI
+                renderTasks();
+                updateProgress();
+                
+                // Close settings modal
+                document.getElementById('settingsModal').classList.remove('show');
+                
+                // Show success message
+                alert('✅ 打卡数据已成功清空！\n\n您现在可以重新完成所有任务了。');
+                
+                console.log('Check-in data cleared successfully for:', museumName);
+            } catch (error) {
+                console.error('Failed to clear check-in data:', error);
+                alert('❌ 清空数据失败，请重试');
             }
         }
 
