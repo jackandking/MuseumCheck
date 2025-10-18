@@ -136,11 +136,10 @@ describe('Museum Check-in Page', () => {
 
         test('should update title when nickname is saved', () => {
             expect(htmlContent).toContain('updatePageTitle()');
-            // Check that updatePageTitle is called in saveChildNickname
-            const saveNicknameStart = htmlContent.indexOf('function saveChildNickname(');
-            const saveNicknameEnd = htmlContent.indexOf('function saveAgeGroup(');
-            const saveNicknameFn = htmlContent.substring(saveNicknameStart, saveNicknameEnd);
-            expect(saveNicknameFn).toContain('updatePageTitle()');
+            // Check that saveChildNickname function exists and contains updatePageTitle call
+            expect(htmlContent).toContain('function saveChildNickname');
+            const saveNicknameFnMatch = htmlContent.match(/function saveChildNickname[\s\S]{0,500}updatePageTitle\(\)/);
+            expect(saveNicknameFnMatch).toBeTruthy();
         });
     });
 
@@ -288,11 +287,10 @@ describe('Museum Check-in Page', () => {
         });
 
         test('should update page title on initialization', () => {
-            // Check that updatePageTitle is called in init function
-            const initStart = htmlContent.indexOf('function init()');
-            const initEnd = htmlContent.indexOf('function loadMuseumData()');
-            const initFn = htmlContent.substring(initStart, initEnd);
-            expect(initFn).toContain('updatePageTitle()');
+            // Check that init function exists and contains updatePageTitle call
+            expect(htmlContent).toContain('function init()');
+            const initFnMatch = htmlContent.match(/function init\(\)[\s\S]{0,300}updatePageTitle\(\)/);
+            expect(initFnMatch).toBeTruthy();
         });
     });
 });
