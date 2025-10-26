@@ -3432,8 +3432,17 @@ class MuseumCheckApp {
         // Update fireworks button visibility based on available fireworks
         this.updateFireworksButtonVisibility();
         
-        // Initialize remote fireworks system
-        this.initRemoteFireworks();
+        // Initialize remote fireworks system only on fireworks wall page
+        // This prevents homepage from polling remote fireworks API
+        try {
+            const path = (window.location && window.location.pathname) || '';
+            if (typeof path === 'string' && /\/fireworks-wall\.html$/.test(path)) {
+                this.initRemoteFireworks();
+            } else {
+                // On non-wall pages, do a one-time remote fetch to decide button visibility
+                this.fetchRemoteFireworksOnceForButton();
+            }
+        } catch (_) {}
         
         // Initialize global fireworks wall
         this.initGlobalFireworksWall();
@@ -3616,40 +3625,138 @@ class MuseumCheckApp {
     initRemoteFireworks() {
         console.log('Initializing remote fireworks system...');
         
-        // Download initial fireworks
-        this.downloadRemoteFireworks();
-        
-        // Setup periodic downloads every 10 seconds
-        this.downloadTimer = setInterval(() => {
-            this.downloadRemoteFireworks();
-        }, REMOTE_STORAGE_CONFIG.DOWNLOAD_INTERVAL);
-        
+        // Start adaptive downloads (will respect visibility)
+        this.startRemoteFireworksPolling(true);
+
+        // Attach visibility change handler once
+        if (!this._visibilityListenerAttached) {
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    this.stopRemoteFireworksPolling();
+                } else {
+                    this.startRemoteFireworksPolling();
+                }
+            });
+            // Stop on unload to save bandwidth
+            window.addEventListener('beforeunload', () => {
+                this.stopRemoteFireworksPolling();
+            });
+            this._visibilityListenerAttached = true;
+        }
+
         console.log('Remote fireworks system initialized');
+    }
+
+    /**
+     * Start periodic remote fireworks downloads (no-op if already running)
+     */
+    startRemoteFireworksPolling(reset = false) {
+        if (this.downloadTimer && !reset) return;
+        // Clear any existing timer when resetting
+        if (this.downloadTimer) {
+            clearTimeout(this.downloadTimer);
+            this.downloadTimer = null;
+        }
+        // Avoid polling when tab is hidden
+        if (typeof document !== 'undefined' && document.hidden) return;
+        // Initialize adaptive interval state
+        this._pollMinMs = 2000;    // fast path for fresh updates
+        this._pollMaxMs = 60000;   // user requested upper bound: 1 minute
+        if (reset || !this._pollIntervalMs) this._pollIntervalMs = this._pollMinMs;
+        // Ensure we always fetch once immediately on entering the wall
+        this._scheduleNextDownload(0, true);
+    }
+
+    /**
+     * Stop periodic remote fireworks downloads if running
+     */
+    stopRemoteFireworksPolling() {
+        if (this.downloadTimer) {
+            clearTimeout(this.downloadTimer);
+            this.downloadTimer = null;
+        }
+    }
+
+    _scheduleNextDownload(delayMs, immediate = false) {
+        // Guard hidden state
+        if (typeof document !== 'undefined' && document.hidden && !immediate) return;
+        this.downloadTimer = setTimeout(async () => {
+            // Skip if hidden
+            if (typeof document !== 'undefined' && document.hidden) return;
+            try {
+                const hadNew = await this.downloadRemoteFireworks();
+                // Adaptive interval: reset on new data; otherwise exponential backoff to max
+                if (hadNew) {
+                    this._pollIntervalMs = this._pollMinMs;
+                } else {
+                    this._pollIntervalMs = Math.min(this._pollMaxMs, Math.max(this._pollMinMs, Math.floor(this._pollIntervalMs * 2)));
+                }
+            } catch (_e) {
+                // On error, backoff a bit to avoid hammering
+                this._pollIntervalMs = Math.min(this._pollMaxMs, Math.max(this._pollMinMs, Math.floor((this._pollIntervalMs || this._pollMinMs) * 2)));
+            }
+            // Jitter ±15% to avoid synchronization bursts
+            const jitter = 0.85 + Math.random() * 0.30;
+            const nextDelay = Math.floor(this._pollIntervalMs * jitter);
+            this._scheduleNextDownload(nextDelay, false);
+        }, Math.max(0, delayMs|0));
+    }
+    
+    /**
+     * One-time remote fetch to update fireworks button visibility on non-wall pages
+     */
+    fetchRemoteFireworksOnceForButton() {
+        // Avoid network if tab hidden to save bandwidth
+        if (typeof document !== 'undefined' && document.hidden) {
+            const onceVisible = () => {
+                document.removeEventListener('visibilitychange', onceVisible);
+                if (!document.hidden) this.fetchRemoteFireworksOnceForButton();
+            };
+            document.addEventListener('visibilitychange', onceVisible);
+            return;
+        }
+        try {
+            RemoteStorage.downloadFireworks((fireworksData) => {
+                if (Array.isArray(fireworksData)) {
+                    this.remoteFireworks = fireworksData;
+                    this.updateFireworksButtonVisibility();
+                }
+            });
+        } catch (e) {}
     }
     
     /**
      * Download remote fireworks from all users
      */
     downloadRemoteFireworks() {
-        RemoteStorage.downloadFireworks((fireworksData) => {
-            if (fireworksData && Array.isArray(fireworksData)) {
-                console.log(`Downloaded ${fireworksData.length} remote fireworks`);
-                this.remoteFireworks = fireworksData;
-                
-                // Update fireworks button visibility
-                this.updateFireworksButtonVisibility();
-                
-                // Update fireworks display if modal is open
-                const modal = document.getElementById('fireworksModal');
-                if (modal && !modal.classList.contains('hidden')) {
-                    this.renderFireworks();
+        return new Promise((resolve) => {
+            RemoteStorage.downloadFireworks((fireworksData) => {
+                let hadNew = false;
+                if (fireworksData && Array.isArray(fireworksData)) {
+                    // Detect newest timestamp to judge if there are new items
+                    const maxTs = fireworksData.reduce((m, x) => Math.max(m, typeof x?.timestamp === 'number' ? x.timestamp : 0), 0);
+                    if (!this._lastRemoteMaxTs || maxTs > this._lastRemoteMaxTs) {
+                        hadNew = true;
+                        this._lastRemoteMaxTs = maxTs;
+                    }
+                    this.remoteFireworks = fireworksData;
+                    
+                    // Update fireworks button visibility
+                    this.updateFireworksButtonVisibility();
+                    
+                    // Update fireworks display if modal is open
+                    const modal = document.getElementById('fireworksModal');
+                    if (modal && !modal.classList.contains('hidden')) {
+                        this.renderFireworks();
+                    }
+                    
+                    // Update global fireworks wall queue with new data
+                    if (this.globalFireworksWall) {
+                        this.globalFireworksWall.updateFireworksQueue();
+                    }
                 }
-                
-                // Update global fireworks wall queue with new data
-                if (this.globalFireworksWall) {
-                    this.globalFireworksWall.updateFireworksQueue();
-                }
-            }
+                resolve(hadNew);
+            });
         });
     }
 
