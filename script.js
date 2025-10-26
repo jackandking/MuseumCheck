@@ -5218,6 +5218,8 @@ class MuseumCheckApp {
         try {
             const grid = document.getElementById('museumGrid');
             const loadingIndicator = document.getElementById('loadingIndicator');
+            // v3 support whitelist (single-museum workflow)
+            const V3_SUPPORTED = ['forbidden-city'];
             
             // Hide loading indicator
             if (loadingIndicator) {
@@ -5258,6 +5260,7 @@ class MuseumCheckApp {
                                 ${museum.name}
                                 <button class="museum-fireworks-button" data-museum="${museum.id}" title="查看本馆烟花墙" style="display: none;">🎆</button>
                                 <button class="museum-checkin-button" data-museum="${museum.id}" title="进入打卡页面">🔗 打卡</button>
+                                ${V3_SUPPORTED.includes(museum.id) ? `<button class="museum-v3-button" title="进入导览模式">🧭 导览模式</button>` : ''}
                                 ${isVisited && !this.assessmentHidden 
                                     ? (hasAssessment 
                                         ? '<span class="assessment-label" aria-disabled="true" title="已完成亲子测评">🧡 已完成</span>'
@@ -5347,6 +5350,14 @@ class MuseumCheckApp {
                             'museum_name': museum.name,
                             'age_group': ageGroup
                         });
+                    });
+                }
+                // Bind v3 single-museum button if present (rendered inline for supported museums)
+                const v3Btn = card.querySelector('.museum-v3-button');
+                if (v3Btn) {
+                    v3Btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        window.location.href = `single-museum.html?museum=${museum.id}`;
                     });
                 }
 
