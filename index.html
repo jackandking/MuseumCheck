@@ -575,13 +575,15 @@
         }catch(e){}
       })();
     </script>
-    <script src="museums-meta.js" defer onload="window.__updateMuseumsMetaCache && window.__updateMuseumsMetaCache(window.MUSEUMS_META)"></script>
+    <script src="museums-meta.js" onload="window.__updateMuseumsMetaCache && window.__updateMuseumsMetaCache(window.MUSEUMS_META)"></script>
     <script>
       // Adopt meta as default dataset before main script executes
       (function(){ if(!window.MUSEUMS && window.MUSEUMS_META){ window.MUSEUMS = window.MUSEUMS_META; } })();
     </script>
     <script src="firework.js"></script>
     <script src="script.js"></script>
+    <!-- Placeholder for dynamic section museum count (for tests and UI hooks) -->
+    <span id="sectionMuseumCount" style="display:none"></span>
     <script>
       // Use meta as initial MUSEUMS, lazy-load full data on first interaction
       (function(){
