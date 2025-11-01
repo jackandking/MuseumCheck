@@ -7,6 +7,9 @@ import { test, expect } from '@playwright/test';
  * works correctly across all age groups.
  * 
  * Issue: Checkin平湖 - 测试平湖博物馆的checkin页面支持
+ * 
+ * Note: For comprehensive workflow-based experience, use single-museum.html
+ * museum-checkin.html is optimized for quick task-focused check-ins (child-focused)
  */
 
 const BASE_URL = 'http://localhost:8000';
@@ -14,6 +17,16 @@ const MUSEUM_ID = 'pinghu-museum';
 const MUSEUM_NAME = '平湖博物馆';
 
 test.describe('Pinghu Museum Checkin Page', () => {
+  
+  test('should not display JavaScript code as text on page', async ({ page }) => {
+    await page.goto(`${BASE_URL}/museum-checkin.html?museum=${MUSEUM_ID}`);
+    
+    // Verify no JavaScript code is visible as text
+    const bodyText = await page.locator('body').textContent();
+    expect(bodyText).not.toContain('buildParentTasksURL');
+    expect(bodyText).not.toContain('addEventListener');
+    expect(bodyText).not.toContain('// Build parent tasks URL');
+  });
   
   test('should load checkin page for Pinghu Museum with default age group', async ({ page }) => {
     await page.goto(`${BASE_URL}/museum-checkin.html?museum=${MUSEUM_ID}`);
