@@ -1046,6 +1046,41 @@
     });
   }
 
+  // Helper function to create photo preview element
+  function createPhotoPreview(url) {
+    const imgContainer = document.createElement('div');
+    imgContainer.style.position = 'relative';
+    imgContainer.style.marginBottom = '12px';
+    
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = 'photo';
+    img.style.width = '100%';
+    img.style.maxWidth = '400px';
+    img.style.height = 'auto';
+    img.style.borderRadius = '12px';
+    img.style.border = '3px solid #22c55e';
+    img.style.boxShadow = '0 4px 12px rgba(34, 197, 94, 0.2)';
+    
+    // Add success badge
+    const badge = document.createElement('div');
+    badge.textContent = '✅ 拍照成功';
+    badge.style.position = 'absolute';
+    badge.style.top = '10px';
+    badge.style.right = '10px';
+    badge.style.background = '#22c55e';
+    badge.style.color = 'white';
+    badge.style.padding = '6px 12px';
+    badge.style.borderRadius = '20px';
+    badge.style.fontSize = '14px';
+    badge.style.fontWeight = '700';
+    badge.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+    
+    imgContainer.appendChild(img);
+    imgContainer.appendChild(badge);
+    return imgContainer;
+  }
+
   async function handlePhotoInput(evt, key, previewSel){
     try {
       const files = Array.from(evt.target.files || []);
@@ -1065,76 +1100,16 @@
           compressedFiles.push(compressed);
           
           // Show prominent preview with success indicator
-          const imgContainer = document.createElement('div');
-          imgContainer.style.position = 'relative';
-          imgContainer.style.marginBottom = '12px';
-          
           const url = URL.createObjectURL(compressed);
-          const img = document.createElement('img');
-          img.src = url;
-          img.alt = 'photo';
-          img.style.width = '100%';
-          img.style.maxWidth = '400px';
-          img.style.height = 'auto';
-          img.style.borderRadius = '12px';
-          img.style.border = '3px solid #22c55e';
-          img.style.boxShadow = '0 4px 12px rgba(34, 197, 94, 0.2)';
-          
-          // Add success badge
-          const badge = document.createElement('div');
-          badge.textContent = '✅ 拍照成功';
-          badge.style.position = 'absolute';
-          badge.style.top = '10px';
-          badge.style.right = '10px';
-          badge.style.background = '#22c55e';
-          badge.style.color = 'white';
-          badge.style.padding = '6px 12px';
-          badge.style.borderRadius = '20px';
-          badge.style.fontSize = '14px';
-          badge.style.fontWeight = '700';
-          badge.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-          
-          imgContainer.appendChild(img);
-          imgContainer.appendChild(badge);
-          preview.appendChild(imgContainer);
+          preview.appendChild(createPhotoPreview(url));
         } catch(compressErr) {
           const fileSizeKB = (f.size / 1024).toFixed(2);
           console.warn(`Photo compression failed for ${f.name} (${fileSizeKB}KB), using original:`, compressErr.message || compressErr);
           compressedFiles.push(f);
           
           // Show preview with original
-          const imgContainer = document.createElement('div');
-          imgContainer.style.position = 'relative';
-          imgContainer.style.marginBottom = '12px';
-          
           const url = URL.createObjectURL(f);
-          const img = document.createElement('img');
-          img.src = url;
-          img.alt = 'photo';
-          img.style.width = '100%';
-          img.style.maxWidth = '400px';
-          img.style.height = 'auto';
-          img.style.borderRadius = '12px';
-          img.style.border = '3px solid #22c55e';
-          img.style.boxShadow = '0 4px 12px rgba(34, 197, 94, 0.2)';
-          
-          // Add success badge
-          const badge = document.createElement('div');
-          badge.textContent = '✅ 拍照成功';
-          badge.style.position = 'absolute';
-          badge.style.top = '10px';
-          badge.style.right = '10px';
-          badge.style.background = '#22c55e';
-          badge.style.color = 'white';
-          badge.style.padding = '6px 12px';
-          badge.style.borderRadius = '20px';
-          badge.style.fontSize = '14px';
-          badge.style.fontWeight = '700';
-          badge.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-          
-          imgContainer.appendChild(img);
-          imgContainer.appendChild(badge);
-          preview.appendChild(imgContainer);
+          preview.appendChild(createPhotoPreview(url));
         }
       }
       
