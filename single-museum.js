@@ -416,7 +416,7 @@
       if(pickerSection) pickerSection.style.display = 'none';
       
       const wf = list[0];
-      const totalTasks = (wf.tasks.enroute || []).length + (wf.tasks.visit || []).length;
+      const totalTasks = ((wf.tasks?.enroute || []).length + (wf.tasks?.visit || []).length);
       const cardName = $('#sgWorkflowCardName');
       const cardDesc = $('#sgWorkflowCardDesc');
       const cardTasks = $('#sgWorkflowCardTasks');
@@ -447,7 +447,7 @@
           const descDiv = $('#sgWorkflowPickerDesc');
           
           if(wf && descDiv){
-            const totalTasks = (wf.tasks.enroute || []).length + (wf.tasks.visit || []).length;
+            const totalTasks = ((wf.tasks?.enroute || []).length + (wf.tasks?.visit || []).length);
             descDiv.innerHTML = `<strong>${wf.description}</strong><br><span style="font-size: 13px; color: #6c757d;">📋 包含 ${totalTasks} 个任务</span>`;
             descDiv.style.display = 'block';
             

@@ -22,8 +22,8 @@ test.describe('Workflow Display UX', () => {
     const url = fileUrl(htmlPath) + '?museum=pinghu-museum';
     await page.goto(url);
 
-    // Wait for page to load
-    await page.waitForTimeout(1000);
+    // Wait for workflow display to be ready
+    await page.waitForSelector('#sgWorkflowDisplayWrap', { state: 'visible' });
 
     // Workflow display should be visible
     const workflowDisplay = page.locator('#sgWorkflowDisplayWrap');
@@ -55,8 +55,8 @@ test.describe('Workflow Display UX', () => {
     const url = fileUrl(htmlPath) + '?museum=forbidden-city';
     await page.goto(url);
 
-    // Wait for page to load
-    await page.waitForTimeout(1000);
+    // Wait for workflow display to be ready
+    await page.waitForSelector('#sgWorkflowDisplayWrap', { state: 'visible' });
 
     // Workflow display should be visible
     const workflowDisplay = page.locator('#sgWorkflowDisplayWrap');
