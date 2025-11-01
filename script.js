@@ -1907,12 +1907,25 @@ class ChecklistManager {
             return [];
         }
         
+        // Pinghu-specific: child checklist reduced to 3 tasks
+        if (museum.id === 'pinghu-museum' && checklistType === 'child') {
+            const colls = Array.isArray(museum.collections) ? museum.collections : [];
+            const start = '📸 门口打卡：家长给孩子在博物馆门口拍一张照片';
+            const collTasks = colls.map(c => `🏺 镇馆之宝：找到「${c && c.name ? c.name : '镇馆之宝'}」并合影`);
+            const end = '📸 亲子合影：和家长比心/拥抱/击掌等动作合影';
+            return [start].concat(collTasks, [end]);
+        }
+
         const typeChecklists = museum.checklists[checklistType];
         if (!typeChecklists) {
             return [];
         }
-        
-        return typeChecklists[ageGroup] || [];
+        const base = typeChecklists[ageGroup] || [];
+        if (checklistType === 'child' && Array.isArray(museum.collections) && museum.collections.length) {
+            const extras = museum.collections.slice(0, 3).map(c => `🏺 镇馆之宝：找到「${c.name}」并合影`);
+            return [].concat(base, extras);
+        }
+        return base;
     }
     
     loadChecklistProgress(museumId, checklistType, ageGroup) {
@@ -5219,7 +5232,7 @@ class MuseumCheckApp {
             const grid = document.getElementById('museumGrid');
             const loadingIndicator = document.getElementById('loadingIndicator');
             // v3 support whitelist (single-museum workflow)
-            const V3_SUPPORTED = ['forbidden-city'];
+            const V3_SUPPORTED = ['forbidden-city', 'pinghu-museum'];
             
             // Hide loading indicator
             if (loadingIndicator) {

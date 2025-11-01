@@ -154,11 +154,35 @@
         id: `cl:${museum.id}:child:${age}:${i}`,
         role: 'child', type: 'confirm', title: normalizeTitle(text), subtitle: text, ages: [age], source:{from:'checklist', museumId: museum.id, role:'child', age, index:i}
       }));
+      const collAdds = Array.isArray(museum.collections)
+        ? museum.collections.slice(0,3).map((c, i)=>({
+            id: `coll:${museum.id}:${i}`,
+            role: 'child', type: 'confirm',
+            title: normalizeTitle(c.name || '镇馆之宝'),
+            subtitle: `镇馆之宝：找到「${c.name||''}」并合影`,
+            ages: [age],
+            source: { from: 'collections', museumId: museum.id, index: i, name: c && c.name }
+          }))
+        : [];
       const base = wf || buildDefaultWorkflow(museum);
       const merged = JSON.parse(JSON.stringify(base||{}));
       if(!merged.tasks) merged.tasks = { enroute: [], visit: [] };
       merged.tasks.enroute = dedupeTasks([].concat(merged.tasks.enroute||[], enrouteAdds));
-      merged.tasks.visit = dedupeTasks([].concat(merged.tasks.visit||[], visitAdds));
+      merged.tasks.visit = dedupeTasks([].concat(merged.tasks.visit||{}, visitAdds, collAdds));
+      // Pinghu-specific: gate photo + all collection tasks + victory photo with pose suggestions
+      if(museum && museum.id === 'pinghu-museum'){
+        const colls = Array.isArray(museum.collections) ? museum.collections : [];
+        const start = { id: 'act:pinghu:gate-photo', role: 'parent', type: 'photo', title: '门口打卡', subtitle: '家长给孩子在博物馆门口拍一张照片' };
+        const mid = colls.map((c, i)=>({
+          id: `coll:pinghu-museum:${i}`,
+          role: 'child', type: 'confirm',
+          title: normalizeTitle(c && c.name ? c.name : '镇馆之宝'),
+          subtitle: `镇馆之宝：找到「${(c && c.name) ? c.name : '镇馆之宝'}」并合影`,
+          imageUrl: c && c.url ? c.url : ''
+        }));
+        const end = { id: 'act:pinghu:victory-photo', role: 'parent', type: 'photo', title: '亲子合影', subtitle: '和家长比心/拥抱/击掌等动作合影' };
+        merged.tasks.visit = [start].concat(mid, [end]);
+      }
       return merged;
     }catch(e){ return wf; }
   }
@@ -507,6 +531,21 @@
       section.appendChild(ttl);
       if(badge.textContent) section.appendChild(badge);
       section.appendChild(sub);
+      // Optional image preview for collection tasks
+      try{
+        if(t.imageUrl){
+          const img = document.createElement('img');
+          img.src = t.imageUrl;
+          img.alt = '镇馆之宝图片';
+          img.style.width = '100%';
+          img.style.maxHeight = '220px';
+          img.style.objectFit = 'cover';
+          img.style.borderRadius = '8px';
+          img.style.border = '1px solid #e9ecef';
+          img.style.marginTop = '8px';
+          section.appendChild(img);
+        }
+      }catch(e){}
 
       if(t.type === 'photo'){
         const input = document.createElement('input');
