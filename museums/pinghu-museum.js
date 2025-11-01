@@ -19,9 +19,9 @@ window.MUSEUM_PINGHU = {
         enroute: [],
         visit: [
           { id: 'gate-photo', role: 'parent', type: 'photo', title: '门口打卡', subtitle: '博物馆门口合影', ages: ['3-6','7-12','13-18'] },
-          { id: 'find-buddha', role: 'child', type: 'photo', title: '镇馆之宝', subtitle: '找到「唐铸铁佛头」并合影', ages: ['3-6','7-12','13-18'] },
-          { id: 'find-ding', role: 'child', type: 'photo', title: '镇馆之宝', subtitle: '找到「新石器时代崧泽文化夹砂红陶鼎」并合影', ages: ['3-6','7-12','13-18'] },
-          { id: 'find-he', role: 'child', type: 'photo', title: '镇馆之宝', subtitle: '找到「新石器时代良渚文化黑皮陶盉」并合影', ages: ['3-6','7-12','13-18'] },
+          { id: 'find-buddha', role: 'child', type: 'photo', title: '镇馆之宝：佛头', subtitle: '找到「唐铸铁佛头」并合影', ages: ['3-6','7-12','13-18'] },
+          { id: 'find-ding', role: 'child', type: 'photo', title: '镇馆之宝：陶鼎', subtitle: '找到「新石器时代崧泽文化夹砂红陶鼎」并合影', ages: ['3-6','7-12','13-18'] },
+          { id: 'find-he', role: 'child', type: 'photo', title: '镇馆之宝：陶盉', subtitle: '找到「新石器时代良渚文化黑皮陶盉」并合影', ages: ['3-6','7-12','13-18'] },
           { id: 'victory-photo', role: 'parent', type: 'photo', title: '亲子合影', subtitle: '和家长比心/拥抱/击掌等动作合影', ages: ['3-6','7-12','13-18'] }
         ]
       }
