@@ -654,7 +654,8 @@
         cameraHint.style.color = '#2e7cf6';
         cameraHint.style.marginBottom = '12px';
         cameraHint.style.fontWeight = '600';
-        cameraHint.textContent = '📷 请拍照完成任务';
+        // Use subtitle text if available to provide specific guidance
+        cameraHint.textContent = t.subtitle ? `📷 ${t.subtitle}` : '📷 请拍照完成任务';
         section.appendChild(cameraHint);
         
         const input = document.createElement('input');
