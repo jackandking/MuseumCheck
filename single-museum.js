@@ -1012,7 +1012,8 @@
           img.alt = 'photo';
           preview.appendChild(img);
         } catch(compressErr) {
-          console.warn('Photo compression failed, using original:', compressErr);
+          const fileSizeKB = (f.size / 1024).toFixed(2);
+          console.warn(`Photo compression failed for ${f.name} (${fileSizeKB}KB), using original:`, compressErr.message || compressErr);
           compressedFiles.push(f);
           
           // Show preview with original
