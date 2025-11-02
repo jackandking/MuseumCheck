@@ -1772,11 +1772,9 @@
     const btn = $('#sgSettingsBtn');
     const closeBtn = $('#sgSettingsClose');
     const closeXBtn = $('#sgSettingsCloseX');
-    const saveBtn = $('#sgSettingsSave');
     if(btn) btn.addEventListener('click', showSettings);
     if(closeBtn) closeBtn.addEventListener('click', hideSettings);
     if(closeXBtn) closeXBtn.addEventListener('click', hideSettings);
-    if(saveBtn) saveBtn.addEventListener('click', saveSettings);
     // click backdrop to close
     const modal = $('#sgSettingsModal');
     if(modal){
