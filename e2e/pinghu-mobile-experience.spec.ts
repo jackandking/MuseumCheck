@@ -44,7 +44,10 @@ test.describe('Pinghu Museum Mobile Experience', () => {
     const photoButton = page.locator('#takePhotoButton');
     await expect(photoButton).toBeVisible();
     const buttonBox = await photoButton.boundingBox();
-    expect(buttonBox.height).toBeGreaterThanOrEqual(44); // Touch target minimum
+    expect(buttonBox).toBeTruthy();
+    if (buttonBox) {
+      expect(buttonBox.height).toBeGreaterThanOrEqual(44); // Touch target minimum
+    }
     
     // Close modal
     await page.locator('#closeModal').click();
@@ -88,7 +91,10 @@ test.describe('Pinghu Museum Mobile Experience', () => {
     // Check button sizes (touch-friendly)
     const completeButton = page.locator('#completeButton');
     const buttonBox = await completeButton.boundingBox();
-    expect(buttonBox.height).toBeGreaterThanOrEqual(44);
+    expect(buttonBox).toBeTruthy();
+    if (buttonBox) {
+      expect(buttonBox.height).toBeGreaterThanOrEqual(44);
+    }
     
     // Verify photo button is accessible
     const photoButton = page.locator('#takePhotoButton');

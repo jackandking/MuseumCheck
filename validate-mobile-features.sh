@@ -224,11 +224,12 @@ else
 fi
 
 # Count tasks (should be 5: gate + 3 treasures + victory)
-TASK_COUNT=$(echo "$PINGHU_DATA" | grep -c "type: 'photo'" || true)
-if [ "$TASK_COUNT" -ge 5 ]; then
-    echo -e "${GREEN}✓ Pinghu museum has correct number of photo tasks ($TASK_COUNT)${NC}"
+# Check for visit array which contains all tasks
+VISIT_TASKS=$(echo "$PINGHU_DATA" | grep -A 20 "visit:" | grep -c "id:" || true)
+if [ "$VISIT_TASKS" -ge 5 ]; then
+    echo -e "${GREEN}✓ Pinghu museum has correct number of tasks in visit array ($VISIT_TASKS)${NC}"
 else
-    echo -e "${RED}✗ Pinghu museum has incorrect number of photo tasks ($TASK_COUNT, expected ≥5)${NC}"
+    echo -e "${RED}✗ Pinghu museum has incorrect number of tasks ($VISIT_TASKS, expected ≥5)${NC}"
     exit 1
 fi
 

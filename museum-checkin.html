@@ -1237,6 +1237,12 @@
 
         // Photo storage
         let taskPhotos = {}; // Store photos by task index
+        
+        // Photo compression configuration
+        const PHOTO_CONFIG = {
+            MAX_WIDTH: 800,
+            QUALITY: 0.65
+        };
 
         // Load photos from localStorage
         function loadPhotos() {
@@ -1270,7 +1276,7 @@
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const maxWidth = 800;
+                        const maxWidth = PHOTO_CONFIG.MAX_WIDTH;
                         const scale = Math.min(1, maxWidth / img.width);
                         canvas.width = img.width * scale;
                         canvas.height = img.height * scale;
@@ -1280,7 +1286,7 @@
                         
                         canvas.toBlob((blob) => {
                             resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-                        }, 'image/jpeg', 0.65);
+                        }, 'image/jpeg', PHOTO_CONFIG.QUALITY);
                     };
                     img.src = e.target.result;
                 };
@@ -1505,7 +1511,7 @@
 
         // Check if all tasks are complete and show poster
         function checkCompletion() {
-            if (completedTasks.size === childTasks.length && childTasks.length > 0) {
+            if (childTasks && childTasks.length > 0 && completedTasks.size === childTasks.length) {
                 // Generate and show poster
                 setTimeout(() => {
                     generatePoster();
