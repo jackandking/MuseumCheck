@@ -19,7 +19,7 @@ describe('Photo Retry Functionality', () => {
 
   test('handlePhotoInput detects memory errors and shows retryable error', () => {
     // Verify the code contains memory error detection
-    expect(scriptContent).toContain('isMemoryError');
+    expect(scriptContent).toContain('isMemoryRelatedError');
     expect(scriptContent).toContain('QuotaExceededError');
     expect(scriptContent).toContain('NS_ERROR_OUT_OF_MEMORY');
   });
@@ -72,7 +72,7 @@ describe('Photo Retry Functionality', () => {
   test('compression errors are caught and handled gracefully', () => {
     // Verify compression errors are caught within the loop
     expect(scriptContent).toMatch(/catch\s*\(\s*compressErr\s*\)/);
-    // Verify memory errors within compression are detected
-    expect(scriptContent).toMatch(/catch\s*\(\s*compressErr\s*\)[\s\S]*?isMemoryError/);
+    // Verify memory errors within compression are detected using helper function
+    expect(scriptContent).toMatch(/catch\s*\(\s*compressErr\s*\)[\s\S]*?isMemoryRelatedError/);
   });
 });

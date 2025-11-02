@@ -1119,9 +1119,20 @@
     return imgContainer;
   }
 
+  // Helper function to check if an error is memory-related
+  function isMemoryRelatedError(error) {
+    if (!error) return false;
+    return (error.message && error.message.toLowerCase().includes('memory')) ||
+           error.name === 'QuotaExceededError' ||
+           error.name === 'NS_ERROR_OUT_OF_MEMORY';
+  }
+
   // Helper function to show retryable error with clear guidance
   function showRetryableError(previewEl, message) {
     if (!previewEl) return;
+    
+    // Clear existing content to avoid accumulating error messages
+    previewEl.innerHTML = '';
     
     const errorBox = document.createElement('div');
     errorBox.style.padding = '20px';
@@ -1184,13 +1195,7 @@
           console.warn(`Photo compression failed for ${f.name} (${fileSizeKB}KB), using original:`, compressErr.message || compressErr);
           
           // Check if it's a memory-related error
-          const isMemoryError = compressErr && (
-            compressErr.message && compressErr.message.toLowerCase().includes('memory') ||
-            compressErr.name === 'QuotaExceededError' ||
-            compressErr.name === 'NS_ERROR_OUT_OF_MEMORY'
-          );
-          
-          if (isMemoryError) {
+          if (isMemoryRelatedError(compressErr)) {
             // Memory error - don't try to use original file, show specific error
             console.error('Memory error during photo processing:', compressErr);
             showRetryableError(preview, '内存不足 😅 请重新拍照试试');
@@ -1212,13 +1217,7 @@
       console.error('Photo handling error:', e);
       
       // Check if it's a memory-related error
-      const isMemoryError = e && (
-        (e.message && e.message.toLowerCase().includes('memory')) ||
-        e.name === 'QuotaExceededError' ||
-        e.name === 'NS_ERROR_OUT_OF_MEMORY'
-      );
-      
-      if (isMemoryError) {
+      if (isMemoryRelatedError(e)) {
         const preview = document.querySelector(previewSel);
         showRetryableError(preview, '内存不足 😅 请重新拍照试试');
       } else {
