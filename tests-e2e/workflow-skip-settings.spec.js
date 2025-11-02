@@ -23,8 +23,8 @@ test.describe('Workflow settings optimization', () => {
     const settingsModal = page.locator('#sgSettingsModal');
     const introOverlay = page.locator('#sgFullscreenIntro');
     
-    // Wait a moment for initialization
-    await page.waitForTimeout(500);
+    // Wait for page to initialize and check modal state
+    await page.waitForLoadState('networkidle');
     
     // Settings modal should be hidden
     const settingsVisible = await settingsModal.isVisible().catch(() => false);

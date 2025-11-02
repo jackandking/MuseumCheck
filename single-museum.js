@@ -59,8 +59,8 @@
       const nickname = localStorage.getItem('childNickname');
       const age = localStorage.getItem('ageGroup');
       const role = localStorage.getItem('caregiverRole');
-      // All three should exist and have non-empty values
-      return !!(nickname && nickname.trim() && age && role);
+      // All three should exist and have non-empty values after trimming
+      return !!(nickname && nickname.trim() && age && age.trim() && role && role.trim());
     } catch(e) { 
       return false; 
     }
