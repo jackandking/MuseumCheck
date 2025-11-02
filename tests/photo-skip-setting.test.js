@@ -96,15 +96,16 @@ describe('Photo Skip Setting', () => {
     });
 
     test('skip button advances to next task', () => {
-      // Find the skip button section and verify it advances innerTaskIndex
-      const skipSectionMatch = scriptContent.match(/完成（跳过拍照）[\s\S]{0,1000}state\.innerTaskIndex\+\+/);
+      // The skip button now calls completeWorkflowTask which handles advancing
+      const skipSectionMatch = scriptContent.match(/完成（跳过拍照）[\s\S]{0,800}completeWorkflowTask/);
       expect(skipSectionMatch).toBeTruthy();
     });
 
     test('skip button marks task as completed', () => {
-      // Find the skip button section and verify it marks task complete
-      const skipSectionMatch = scriptContent.match(/完成（跳过拍照）[\s\S]{0,800}state\.completedVisit\[idx\]\s*=\s*true/);
-      expect(skipSectionMatch).toBeTruthy();
+      // The skip button now calls completeWorkflowTask which marks tasks complete
+      // Verify completeWorkflowTask function exists and marks tasks complete
+      expect(scriptContent).toContain('function completeWorkflowTask');
+      expect(scriptContent).toMatch(/function completeWorkflowTask[\s\S]{0,400}state\.completedVisit\[idx\]\s*=\s*true/);
     });
 
     test('skip button shows success toast', () => {

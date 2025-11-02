@@ -591,6 +591,23 @@
     box.style.display = '';
   }
 
+  // Helper function to complete a workflow visit task
+  function completeWorkflowTask(idx, taskId) {
+    state.completedVisit[idx] = true;
+    try{ 
+      if(state.selectedMuseum && taskId){ 
+        __markDone(state.selectedMuseum.id, taskId, true); 
+      } 
+    }catch(err){}
+    
+    const last = Math.max(0, state.wfVisitCount - 1);
+    if(state.innerTaskIndex < last){
+      state.prevInnerTaskIndex = state.innerTaskIndex;
+      state.innerTaskIndex++;
+    }
+    updateInnerTaskVisibility();
+  }
+
   function renderWorkflowVisit(){
     const box = $('#sgWorkflowVisit');
     const staticBox = $('#sgVisitTasks');
@@ -757,14 +774,7 @@
             showToast('📸 照片已保存！');
           }
           
-          state.completedVisit[idx] = true;
-          try{ if(state.selectedMuseum && t && t.id){ __markDone(state.selectedMuseum.id, t.id, true); } }catch(err){}
-          const last = Math.max(0, state.wfVisitCount - 1);
-          if(state.innerTaskIndex < last){
-            state.prevInnerTaskIndex = state.innerTaskIndex;
-            state.innerTaskIndex++;
-          }
-          updateInnerTaskVisibility();
+          completeWorkflowTask(idx, t.id);
         });
         
         photoWrapper.appendChild(input);
@@ -785,18 +795,8 @@
           skipBtn.style.fontWeight = '700';
           skipBtn.style.padding = '14px';
           skipBtn.onclick = () => {
-            // Mark task as completed without photo
-            state.completedVisit[idx] = true;
-            try{ if(state.selectedMuseum && t && t.id){ __markDone(state.selectedMuseum.id, t.id, true); } }catch(err){}
-            
             showToast('✅ 已完成，进入下一步！');
-            
-            const last = Math.max(0, state.wfVisitCount - 1);
-            if(state.innerTaskIndex < last){
-              state.prevInnerTaskIndex = state.innerTaskIndex;
-              state.innerTaskIndex++;
-            }
-            updateInnerTaskVisibility();
+            completeWorkflowTask(idx, t.id);
           };
           
           skipActions.appendChild(skipBtn);
@@ -809,14 +809,7 @@
         done.className = 'sg-btn sg-btn-primary';
         done.textContent = '我完成了';
         done.onclick = () => {
-          state.completedVisit[idx] = true;
-          try{ if(state.selectedMuseum && t && t.id){ __markDone(state.selectedMuseum.id, t.id, true); } }catch(err){}
-          const last = Math.max(0, state.wfVisitCount - 1);
-          if(state.innerTaskIndex < last){
-            state.prevInnerTaskIndex = state.innerTaskIndex;
-            state.innerTaskIndex++;
-            updateInnerTaskVisibility();
-          }
+          completeWorkflowTask(idx, t.id);
         };
         actions.appendChild(done);
         section.appendChild(actions);
