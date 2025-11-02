@@ -1238,10 +1238,14 @@
         // Photo storage
         let taskPhotos = {}; // Store photos by task index
         
-        // Photo compression configuration
+        /**
+         * Photo compression configuration
+         * @property {number} MAX_WIDTH - Maximum photo width in pixels (800px reduces ~2MB photos to ~100-200KB)
+         * @property {number} QUALITY - JPEG compression quality (0.0-1.0, where 1.0 is highest quality)
+         */
         const PHOTO_CONFIG = {
-            MAX_WIDTH: 800,
-            QUALITY: 0.65
+            MAX_WIDTH: 800,    // Maximum width in pixels for compressed photos
+            QUALITY: 0.65      // JPEG quality (0.65 provides good balance of quality vs size)
         };
 
         // Load photos from localStorage
@@ -1511,7 +1515,7 @@
 
         // Check if all tasks are complete and show poster
         function checkCompletion() {
-            if (childTasks && childTasks.length > 0 && completedTasks.size === childTasks.length) {
+            if (childTasks && childTasks.length > 0 && completedTasks && completedTasks.size === childTasks.length) {
                 // Generate and show poster
                 setTimeout(() => {
                     generatePoster();

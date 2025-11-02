@@ -199,6 +199,9 @@ echo "--------------------------------"
 
 PINGHU_DATA=$(curl -s "http://localhost:8000/museums/pinghu-museum.js")
 
+# Expected number of tasks for Pinghu Museum
+EXPECTED_TASK_COUNT=5
+
 # Check museum ID
 if echo "$PINGHU_DATA" | grep -q "id: 'pinghu-museum'"; then
     echo -e "${GREEN}✓ Pinghu museum ID correct${NC}"
@@ -225,11 +228,12 @@ fi
 
 # Count tasks (should be 5: gate + 3 treasures + victory)
 # Check for visit array which contains all tasks
-VISIT_TASKS=$(echo "$PINGHU_DATA" | grep -A 20 "visit:" | grep -c "id:" || true)
-if [ "$VISIT_TASKS" -ge 5 ]; then
+# Use -A 50 to accommodate larger task arrays in the future
+VISIT_TASKS=$(echo "$PINGHU_DATA" | grep -A 50 "visit:" | grep -c "id:" || true)
+if [ "$VISIT_TASKS" -ge "$EXPECTED_TASK_COUNT" ]; then
     echo -e "${GREEN}✓ Pinghu museum has correct number of tasks in visit array ($VISIT_TASKS)${NC}"
 else
-    echo -e "${RED}✗ Pinghu museum has incorrect number of tasks ($VISIT_TASKS, expected ≥5)${NC}"
+    echo -e "${RED}✗ Pinghu museum has incorrect number of tasks ($VISIT_TASKS, expected ≥$EXPECTED_TASK_COUNT)${NC}"
     exit 1
 fi
 
