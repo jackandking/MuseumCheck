@@ -1312,7 +1312,15 @@
       if(museum && museum.image){
         // Load museum image as fallback
         const museumImg = new Image();
-        museumImg.crossOrigin = 'anonymous';
+        // Only set crossOrigin for external domains (CDN images)
+        try {
+          const imgUrl = new URL(museum.image, window.location.origin);
+          if (imgUrl.origin !== window.location.origin) {
+            museumImg.crossOrigin = 'anonymous';
+          }
+        } catch(e) {
+          // Invalid URL, continue without crossOrigin
+        }
         museumImg.onload = function(){
           // Draw museum image
           const imgWidth = 640;
@@ -1321,9 +1329,19 @@
           const imgY = 260;
           
           ctx.save();
-          // Rounded corners
+          // Rounded corners - use compatible path approach
           ctx.beginPath();
-          ctx.roundRect(imgX, imgY, imgWidth, imgHeight, 12);
+          const radius = 12;
+          ctx.moveTo(imgX + radius, imgY);
+          ctx.lineTo(imgX + imgWidth - radius, imgY);
+          ctx.arcTo(imgX + imgWidth, imgY, imgX + imgWidth, imgY + radius, radius);
+          ctx.lineTo(imgX + imgWidth, imgY + imgHeight - radius);
+          ctx.arcTo(imgX + imgWidth, imgY + imgHeight, imgX + imgWidth - radius, imgY + imgHeight, radius);
+          ctx.lineTo(imgX + radius, imgY + imgHeight);
+          ctx.arcTo(imgX, imgY + imgHeight, imgX, imgY + imgHeight - radius, radius);
+          ctx.lineTo(imgX, imgY + radius);
+          ctx.arcTo(imgX, imgY, imgX + radius, imgY, radius);
+          ctx.closePath();
           ctx.clip();
           ctx.drawImage(museumImg, imgX, imgY, imgWidth, imgHeight);
           ctx.restore();
