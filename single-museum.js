@@ -704,6 +704,8 @@
           state.completedVisit[idx] = false;
           // Clear stored photos for this task
           delete state.photos[`wf-${idx}`];
+          // Update UI to reflect state changes
+          updateInnerTaskVisibility();
         };
         
         input.addEventListener('change', async (e)=> {
@@ -859,18 +861,17 @@
         // Show current task and all previously completed tasks
         if(idx <= state.innerTaskIndex){
           el.style.display = 'block';
-          // Add completed styling to previous tasks
+          // Use CSS classes for completed vs current tasks
           if(idx < state.innerTaskIndex){
-            el.style.opacity = '0.7';
-            el.style.pointerEvents = 'none';
-            el.style.marginBottom = '12px';
+            el.classList.add('sg-task-completed');
+            el.classList.remove('sg-task-current');
           } else {
-            el.style.opacity = '1';
-            el.style.pointerEvents = 'auto';
-            el.style.marginBottom = '24px';
+            el.classList.add('sg-task-current');
+            el.classList.remove('sg-task-completed');
           }
         } else {
           el.style.display = 'none';
+          el.classList.remove('sg-task-completed', 'sg-task-current');
         }
       });
       
@@ -897,9 +898,12 @@
         playMicroCelebrate();
         // Auto-scroll to current task after a short delay
         setTimeout(()=>{
-          const currentTask = document.querySelector(`#wtask-${state.innerTaskIndex}`);
-          if(currentTask){
-            currentTask.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Bounds check to ensure valid task index
+          if(state.innerTaskIndex >= 0 && state.innerTaskIndex < state.wfVisitCount){
+            const currentTask = document.querySelector(`#wtask-${state.innerTaskIndex}`);
+            if(currentTask){
+              currentTask.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
           }
         }, 300);
       }
