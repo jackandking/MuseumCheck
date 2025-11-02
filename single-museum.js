@@ -604,8 +604,11 @@
     if(state.innerTaskIndex < last){
       state.prevInnerTaskIndex = state.innerTaskIndex;
       state.innerTaskIndex++;
+      updateInnerTaskVisibility();
+    } else if(idx === last) {
+      // All workflow tasks completed, advance to share step
+      setStep('share');
     }
-    updateInnerTaskVisibility();
   }
 
   function renderWorkflowVisit(){
