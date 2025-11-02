@@ -1615,21 +1615,24 @@ header h1 {
     line-height: 1.6;
 }
 
+/* Poster Button - Primary button for poster generation */
 .poster-button {
+    /* Similar to .btn-primary but with squared corners */
     background-color: var(--primary-color);
     color: white;
     border: none;
-    padding: 12px 24px;
+    padding: var(--btn-padding);
     border-radius: 8px;
     font-size: 16px;
-    cursor: pointer;
     margin: 10px;
-    transition: all 0.3s ease;
+    min-height: var(--btn-min-height-touch);
+    cursor: pointer;
+    transition: var(--btn-transition);
 }
 
-.poster-button:hover {
+.poster-button:hover:not(:disabled) {
     background-color: #1e4085;
-    transform: translateY(-2px);
+    transform: var(--btn-hover-transform);
 }
 
 .poster-preview {
@@ -1842,6 +1845,7 @@ header h1 {
     flex: 0 0 auto;
 }
 
+/* Achievement Buttons Container */
 .achievement-buttons {
     display: flex;
     gap: 15px;
@@ -1849,61 +1853,64 @@ header h1 {
     justify-content: center;
 }
 
+/* Achievement Button - Feature button with orange gradient */
 .achievement-button {
-    background: linear-gradient(135deg, #ff9800, #f57c00);
+    background: var(--btn-feature-achievement-bg);
     color: white;
     border: none;
     padding: 12px 20px;
-    border-radius: 25px;
-    cursor: pointer;
+    border-radius: var(--btn-border-radius);
     font-size: 14px;
     font-family: inherit;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    box-shadow: 0 3px 10px rgba(255, 152, 0, 0.3);
     font-weight: 500;
     min-width: 130px;
+    min-height: var(--btn-min-height-touch);
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: var(--btn-transition);
+    box-shadow: 0 3px 10px rgba(255, 152, 0, 0.3);
 }
 
-.achievement-button:hover {
-    transform: translateY(-2px);
+.achievement-button:hover:not(:disabled) {
+    transform: var(--btn-hover-transform);
     box-shadow: 0 5px 15px rgba(255, 152, 0, 0.4);
     background: linear-gradient(135deg, #f57c00, #ef6c00);
 }
 
-/* Assessment History Button in Progress Display */
+/* Assessment History Button - Feature button in progress display */
 .assessment-history-button {
     background: linear-gradient(135deg, #6c5ce7, #a29bfe);
     color: white;
     border: none;
-    padding: 8px 16px;
+    padding: var(--btn-padding-small);
     border-radius: 20px;
-    cursor: pointer;
     font-size: 13px;
     font-family: inherit;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3);
     font-weight: 500;
     min-width: auto;
+    min-height: var(--btn-min-height-touch);
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
+    gap: 6px;
     flex: 0 0 auto;
     white-space: nowrap;
+    cursor: pointer;
+    transition: var(--btn-transition);
+    box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3);
 }
 
-.assessment-history-button:hover {
-    transform: translateY(-2px);
+.assessment-history-button:hover:not(:disabled) {
+    transform: var(--btn-hover-transform);
     box-shadow: 0 4px 12px rgba(108, 92, 231, 0.4);
     background: linear-gradient(135deg, #5f3dc4, #6c5ce7);
 }
 
-.assessment-history-button:active {
-    transform: translateY(0);
+.assessment-history-button:active:not(:disabled) {
+    transform: var(--btn-active-transform);
 }
 
 .assessment-history-button-inline {
@@ -1947,24 +1954,26 @@ header h1 {
     opacity: 0.9;
 }
 
+/* Achievement Poster Button - Special feature button */
 .achievement-poster-button {
     background: linear-gradient(135deg, #4CAF50, #45a049);
     color: white;
     border: none;
-    padding: 12px 24px;
-    border-radius: 25px;
-    cursor: pointer;
+    padding: var(--btn-padding);
+    border-radius: var(--btn-border-radius);
     font-size: 16px;
     font-family: inherit;
+    min-height: var(--btn-min-height-touch);
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    transition: all 0.3s ease;
+    cursor: pointer;
+    transition: var(--btn-transition);
     box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
 }
 
-.achievement-poster-button:hover {
-    transform: translateY(-2px);
+.achievement-poster-button:hover:not(:disabled) {
+    transform: var(--btn-hover-transform);
     box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
 }
 
@@ -2673,74 +2682,77 @@ main[role="main"] {
     min-width: 0;
 }
 
-/* Share Button Styles */
+/* Share Button Styles - Success/positive action button */
 .share-button {
     background: linear-gradient(135deg, #28a745, #20c997);
     color: white;
     border: none;
-    padding: 8px 16px;
+    padding: var(--btn-padding-small);
     border-radius: 20px;
-    cursor: pointer;
     font-size: 13px;
     font-family: inherit;
+    min-height: var(--btn-min-height-touch);
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
     white-space: nowrap;
+    cursor: pointer;
+    transition: var(--btn-transition);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
 }
 
-.share-button:hover {
-    transform: translateY(-2px);
+.share-button:hover:not(:disabled) {
+    transform: var(--btn-hover-transform);
     box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
     background: linear-gradient(135deg, #218838, #1bb394);
 }
 
-.share-button:active {
-    transform: translateY(0);
+.share-button:active:not(:disabled) {
+    transform: var(--btn-active-transform);
 }
 
-/* Clear Data Button Styles */
+/* Clear Data Button Styles - Dangerous action button */
 .clear-data-button {
     background: linear-gradient(135deg, #dc3545, #c82333);
     color: white;
     border: none;
     padding: 12px 20px;
-    border-radius: 25px;
-    cursor: pointer;
+    border-radius: var(--btn-border-radius);
     font-size: 13px;
     font-family: inherit;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
-    white-space: nowrap;
     font-weight: 500;
     min-width: 130px;
+    min-height: var(--btn-min-height-touch);
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: var(--btn-transition);
+    box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
 }
 
-.clear-data-button:hover {
-    transform: translateY(-2px);
+.clear-data-button:hover:not(:disabled) {
+    transform: var(--btn-hover-transform);
     box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
     background: linear-gradient(135deg, #c82333, #bd2130);
 }
 
-.clear-data-button:active {
-    transform: translateY(0);
+.clear-data-button:active:not(:disabled) {
+    transform: var(--btn-active-transform);
 }
 
 .clear-all-button {
     background: linear-gradient(135deg, #e74c3c, #c0392b);
 }
 
-.clear-all-button:hover {
+.clear-all-button:hover:not(:disabled) {
     background: linear-gradient(135deg, #c0392b, #a93226);
 }
 
 .clear-data-button-icon {
+    /* Icon variant of clear data button */
     min-width: auto;
     width: 40px;
     height: 40px;
@@ -2757,11 +2769,11 @@ main[role="main"] {
     font-size: 16px;
 }
 
-.clear-data-button-icon:hover {
-    transform: translateY(-2px);
+.clear-data-button-icon:hover:not(:disabled) {
+    transform: var(--btn-hover-transform);
 }
 
-/* Settings button icon - same style as other icon buttons */
+/* Settings button icon - Extends .btn-icon base styles */
 .settings-button-icon {
     min-width: auto;
     width: 40px;
@@ -4864,19 +4876,21 @@ main[role="main"] {
     color: white;
 }
 
+/* Export Button - Secondary button with transparent background */
 .export-button {
     background: rgba(255, 255, 255, 0.2);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 20px;
-    padding: 8px 16px;
-    cursor: pointer;
+    padding: var(--btn-padding-small);
     font-size: 14px;
-    transition: all 0.3s ease;
+    min-height: var(--btn-min-height-touch);
+    cursor: pointer;
+    transition: var(--btn-transition);
     backdrop-filter: blur(10px);
 }
 
-.export-button:hover {
+.export-button:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.3);
     transform: translateY(-1px);
 }
@@ -6035,55 +6049,31 @@ main[role="main"] {
     font-weight: 500;
 }
 
+/* Fireworks Button - Secondary button with transparent background */
 .fireworks-button {
     background: rgba(255, 255, 255, 0.2);
     color: white;
     border: 2px solid rgba(255, 255, 255, 0.4);
-    padding: 8px 16px;
+    padding: var(--btn-padding-small);
     border-radius: 8px;
-    cursor: pointer;
     font-size: 0.95em;
-    transition: all 0.3s ease;
+    min-height: var(--btn-min-height-touch);
     white-space: nowrap;
+    cursor: pointer;
+    transition: var(--btn-transition);
 }
 
-.fireworks-button:hover {
+.fireworks-button:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
+    transform: var(--btn-hover-transform);
 }
 
 .fireworks-button-inline {
     min-width: auto;
 }
 
-/* Fireworks button icon style (for progress-display) */
-.fireworks-button-icon {
-    min-width: auto;
-    width: 40px;
-    height: 40px;
-    padding: 8px;
-    border-radius: 50%;
-    flex: 0 0 auto;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.progress-display .fireworks-button-icon {
-    width: 36px;
-    height: 36px;
-    padding: 6px;
-    font-size: 16px;
-    margin-left: 8px;
-}
-
-.fireworks-button-icon:hover {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
+/* Fireworks Button Icon - Already defined above with other icon buttons */
+/* See .fireworks-button-icon in Icon Buttons section */
 
 /* Fireworks Modal - Full Screen Layout */
 .fireworks-modal .modal-content {
@@ -6289,23 +6279,25 @@ main[role="main"] {
     font-size: 1.1em;
 }
 
+/* Demo Firework Button - Large feature button */
 .demo-firework-button {
     margin: 20px auto;
-    padding: 12px 24px;
+    padding: var(--btn-padding);
     font-size: 1.1em;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--btn-feature-fireworks-bg);
     color: white;
     border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 25px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    display: block;
-    width: fit-content;
+    border-radius: var(--btn-border-radius);
     min-width: 200px;
+    min-height: var(--btn-min-height-touch);
+    width: fit-content;
+    display: block;
+    cursor: pointer;
+    transition: var(--btn-transition);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
-.demo-firework-button:hover {
+.demo-firework-button:hover:not(:disabled) {
     transform: translateY(-2px) scale(1.05);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
     background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
