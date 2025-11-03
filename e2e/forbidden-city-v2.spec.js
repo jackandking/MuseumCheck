@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 // E2E: Verify v2 (museum-checkin.html) renders Forbidden City tasks and shows collection info
-// Run: npx playwright test tests-e2e/forbidden-city-v2.spec.js
+// Run: npx playwright test e2e/forbidden-city-v2.spec.js
 
 /**
  * @param {string} p

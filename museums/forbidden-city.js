@@ -14,7 +14,7 @@ window.MUSEUM_FORBIDDEN_CITY = {
     { 
       name: '太和殿金漆雕龙宝座', 
       url: 'https://www.dpm.org.cn/Home.html',
-      description: '九龙环绕象征九五之尊，采用失蜡法铸造，体现古代青铜工艺巅峰'
+      description: '九龙环绕象征九五之尊，采用木制髹金漆工艺，雕刻精美，气势恢宏'
     },
     { 
       name: '翠玉白菜', 

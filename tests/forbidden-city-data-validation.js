@@ -15,6 +15,8 @@ const forbiddenCityPath = path.join(__dirname, '..', 'museums/forbidden-city.js'
 const forbiddenCityContent = fs.readFileSync(forbiddenCityPath, 'utf8');
 
 // Simulate browser environment
+// Note: eval() is used here safely in test context to execute data files
+// These are trusted internal data files, not user input
 const window = {};
 eval(museumsDataContent);
 eval(forbiddenCityContent);
