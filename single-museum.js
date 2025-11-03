@@ -483,8 +483,9 @@
   }
 
   function renderWorkflowDisplay(){
-    // Ensure workflow display is shown/hidden correctly
-    // This function is called after setupWorkflowPicker to ensure the workflow display section is visible
+    // Final step to ensure workflow display is properly visible after setup
+    // Called after setupWorkflowPicker() to guarantee display state is correct
+    // This is a safety check in case setupWorkflowPicker() is skipped or incomplete
     const displayWrap = $('#sgWorkflowDisplayWrap');
     if(!displayWrap) return;
     
@@ -1876,16 +1877,10 @@
       }
       
       // Update dropdown
-      if(opts.length === 1){
-        // Only "auto recommend" option available
-        wfSel.innerHTML = '<option value="">无可选路线</option>';
-        wfSel.disabled = true;
-      } else {
-        wfSel.disabled = false;
-        wfSel.innerHTML = opts.map(o=> `<option value="${o.value}">${o.label}</option>`).join('');
-        // prefer stored if exists
-        if(stored){ wfSel.value = stored; }
-      }
+      wfSel.disabled = false;
+      wfSel.innerHTML = opts.map(o=> `<option value="${o.value}">${o.label}</option>`).join('');
+      // prefer stored if exists
+      if(stored){ wfSel.value = stored; }
     }
     if(ageSel) ageSel.addEventListener('change', ()=> { refreshWorkflowOptions(); saveSettingsImmediate(false); });
     if(roleSel) roleSel.addEventListener('change', ()=> { refreshWorkflowOptions(); saveSettingsImmediate(false); });
