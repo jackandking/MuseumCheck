@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V2 Poster - Before & After Comparison</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 { text-align: center; }
+        .comparison {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .poster-container {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .poster-container h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .poster-container canvas {
+            display: block;
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .badge.old { background: #ffebee; color: #c62828; }
+        .badge.new { background: #e8f5e9; color: #2e7d32; }
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>V2 Poster Format Comparison</h1>
+    <p style="text-align: center; color: #666;">
+        Issue Fix: Remove duplicate <span class="highlight">平湖博物馆</span> below the title
+    </p>
+    
+    <div class="comparison">
+        <div class="poster-container">
+            <h2>Before <span class="badge old">❌ Duplicate</span></h2>
+            <canvas id="posterBefore" width="720" height="1280"></canvas>
+        </div>
+        
+        <div class="poster-container">
+            <h2>After <span class="badge new">✅ Fixed</span></h2>
+            <canvas id="posterAfter" width="720" height="1280"></canvas>
+        </div>
+    </div>
+
+    <script>
+        function generateBeforePoster() {
+            const canvas = document.getElementById('posterBefore');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+            
+            const currentMuseum = { name: '平湖博物馆' };
+            
+            // Background
+            const grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, '#a8d8ea');
+            grad.addColorStop(1, '#5ab4d1');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            
+            // OLD FORMAT - Generic title
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 44px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+            ctx.fillText('今天的博物馆小探险', 40, 100);
+            
+            // OLD FORMAT - Museum name (DUPLICATE!)
+            ctx.font = 'bold 36px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+            ctx.fillText(currentMuseum.name, 40, 160);
+            
+            // Nickname
+            ctx.font = '28px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+            ctx.fillText('eD5 今天完成了所有挑战！', 40, 210);
+            
+            // Tasks
+            let y = 260;
+            ctx.font = 'bold 24px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+            ctx.fillText('✅ 完成的任务：', 40, y);
+            y += 35;
+            
+            const tasks = [
+                '门口打卡',
+                '镇馆之宝：找到「唐铸铁佛头」',
+                '镇馆之宝：找到「新石器时代崧泽文化夹砂红...',
+                '镇馆之宝：找到「新石器时代良渚文化黑皮陶...',
+                '亲子合影'
+            ];
+            
+            ctx.font = '20px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+            tasks.forEach((task, idx) => {
+                ctx.fillText(`${idx + 1}. ${task}`, 50, y);
+                y += 28;
+            });
+            
+            // Footer
+            y += 40;
+            ctx.font = '18px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+            ctx.fillText('MuseumCheck • 2025/11/3', 40, y);
+        }
+        
+        function generateAfterPoster() {
+            const canvas = document.getElementById('posterAfter');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+            
+            const currentMuseum = { name: '平湖博物馆' };
+            
+            // Background
+            const grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, '#a8d8ea');
+            grad.addColorStop(1, '#5ab4d1');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            
+            // NEW FORMAT - Museum name + 探索
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 44px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+            const museumTitle = `${currentMuseum.name}探索`;
+            ctx.fillText(museumTitle, 40, 100);
+            
+            // NO DUPLICATE MUSEUM NAME - nickname moved up
+            ctx.font = '28px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+            ctx.fillText('eD5 今天完成了所有挑战！', 40, 160);
+            
+            // Tasks (adjusted Y position)
+            let y = 210;
+            ctx.font = 'bold 24px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+            ctx.fillText('✅ 完成的任务：', 40, y);
+            y += 35;
+            
+            const tasks = [
+                '门口打卡',
+                '镇馆之宝：找到「唐铸铁佛头」',
+                '镇馆之宝：找到「新石器时代崧泽文化夹砂红...',
+                '镇馆之宝：找到「新石器时代良渚文化黑皮陶...',
+                '亲子合影'
+            ];
+            
+            ctx.font = '20px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+            tasks.forEach((task, idx) => {
+                ctx.fillText(`${idx + 1}. ${task}`, 50, y);
+                y += 28;
+            });
+            
+            // Footer
+            y += 40;
+            ctx.font = '18px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+            ctx.fillText('MuseumCheck • 2025/11/3', 40, y);
+        }
+        
+        // Generate both posters on load
+        window.onload = function() {
+            generateBeforePoster();
+            generateAfterPoster();
+        };
+    </script>
+</body>
+</html>
