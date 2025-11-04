@@ -43,31 +43,28 @@ describe('Forbidden City Museum collections URLs', () => {
     const museum = window && window.MUSEUM_FORBIDDEN_CITY;
     const urls = (museum.collections || []).map(i => i.url).filter(Boolean);
 
-    const headOrGet = (url) => new Promise((resolve) => {
-      // Try HEAD first, fallback to GET
-      const doReq = (method) => {
-        const req = https.request(url, { method, timeout: 8000 }, (res) => {
-          const status = res.statusCode || 0;
-          const type = String(res.headers['content-type'] || '');
-          res.resume(); // discard body
-          resolve({ ok: status >= 200 && status < 400, status, type, url });
-        });
-        req.on('timeout', () => { req.destroy(new Error('timeout')); });
-        req.on('error', (err) => resolve({ ok: false, status: 0, type: '', url, error: err.message }));
-        req.end();
-      };
-      doReq('HEAD');
-    }).then(r => r.ok ? r : new Promise((resolve) => {
-      const req = https.request(url, { method: 'GET', timeout: 8000 }, (res) => {
+    // Helper function to make HTTP request
+    const makeRequest = (url, method) => new Promise((resolve) => {
+      const req = https.request(url, { method, timeout: 8000 }, (res) => {
         const status = res.statusCode || 0;
         const type = String(res.headers['content-type'] || '');
-        res.resume();
+        res.resume(); // discard body
         resolve({ ok: status >= 200 && status < 400, status, type, url });
       });
       req.on('timeout', () => { req.destroy(new Error('timeout')); });
       req.on('error', (err) => resolve({ ok: false, status: 0, type: '', url, error: err.message }));
       req.end();
-    }));
+    });
+
+    // Try HEAD first, fallback to GET on any failure
+    const headOrGet = async (url) => {
+      const headResult = await makeRequest(url, 'HEAD');
+      if (headResult.ok) {
+        return headResult;
+      }
+      // If HEAD fails for any reason, try GET
+      return makeRequest(url, 'GET');
+    };
 
     const results = await Promise.all(urls.map(headOrGet));
 
