@@ -1,14 +1,27 @@
-// @ts-check
-const { test, expect } = require('@playwright/test');
+import { test, expect, devices } from '@playwright/test';
 
-// E2E: Verify workflow state persists across navigation
-// Tests for issue: "v3存在一个问题，如果在workflow第一步拍照留念后退出到主页，再进入是需要从头再来，数据丢失"
-// Run: npx playwright test tests-e2e/workflow-state-persistence.spec.js
+/**
+ * E2E Test for Workflow State Persistence
+ * 
+ * Issue: v3存在一个问题，如果在workflow第一步拍照留念后退出到主页，再进入是需要从头再来，数据丢失
+ * 
+ * This test verifies that workflow state (current task, progress) is persisted
+ * across navigation away from the workflow page and restored when returning.
+ * 
+ * Tests cover:
+ * - State persistence across full navigation (not just page reload)
+ * - State clearing when workflow is complete
+ * - State expiry after 24 hours
+ * - State isolation between different museums
+ */
+
+const BASE_URL = 'http://localhost:8000';
+const MUSEUM_ID = 'pinghu-museum';
 
 test.describe('Workflow state persistence', () => {
   test('persists workflow progress when navigating away and back', async ({ page, context }) => {
     // Setup: Pre-configure all required settings in localStorage
-    await page.goto('/single-museum.html');
+    await page.goto(`${BASE_URL}/single-museum.html`);
     
     await page.evaluate(() => {
       localStorage.clear();
@@ -19,7 +32,7 @@ test.describe('Workflow state persistence', () => {
     });
 
     // Step 1: Navigate to Pinghu Museum
-    await page.goto('/single-museum.html?museum=pinghu-museum');
+    await page.goto(`${BASE_URL}/single-museum.html?museum=${MUSEUM_ID}`);
     
     // Wait for page to load and initialize
     await page.waitForLoadState('networkidle');
@@ -45,21 +58,21 @@ test.describe('Workflow state persistence', () => {
     // (In a real scenario, user would take a photo, but we'll simulate state change)
     await page.evaluate(() => {
       // Access the internal state management functions
-      if (window.__workflowState && window.__workflowState.__saveWorkflowState) {
+      if ((window as any).__workflowState && (window as any).__workflowState.__saveWorkflowState) {
         // Manually trigger state save
-        window.__workflowState.__saveWorkflowState();
+        (window as any).__workflowState.__saveWorkflowState();
       }
     });
     
     // Step 3: Navigate away (simulate clicking menu and going home)
-    await page.goto('/index.html');
+    await page.goto(`${BASE_URL}/index.html`);
     await page.waitForLoadState('networkidle');
     
     // Verify we're on the home page
     await expect(page.locator('body')).toBeVisible();
     
     // Step 4: Navigate back to the workflow
-    await page.goto('/single-museum.html?museum=pinghu-museum');
+    await page.goto(`${BASE_URL}/single-museum.html?museum=${MUSEUM_ID}`);
     await page.waitForLoadState('networkidle');
     
     // Step 5: Verify workflow state is restored
@@ -70,8 +83,7 @@ test.describe('Workflow state persistence', () => {
     const visitStep = page.locator('#step-visit');
     await expect(visitStep).not.toHaveAttribute('hidden');
     
-    // Verify restoration toast appears
-    const toastPattern = /已恢复之前的进度|恢复/;
+    // Verify restoration toast appears (may be brief)
     // Note: Toast may have already disappeared, so we check if visit step is active instead
     
     // Verify the workflow is rendered
@@ -81,11 +93,13 @@ test.describe('Workflow state persistence', () => {
     // Verify task cards are rendered
     const firstTaskRestored = page.locator('#wtask-0');
     await expect(firstTaskRestored).toBeVisible();
+    
+    console.log('✅ Workflow state persisted and restored successfully!');
   });
 
   test('clears workflow state when reaching share (poster) step', async ({ page, context }) => {
     // Setup: Pre-configure all required settings
-    await page.goto('/single-museum.html');
+    await page.goto(`${BASE_URL}/single-museum.html`);
     
     await page.evaluate(() => {
       localStorage.clear();
@@ -96,7 +110,7 @@ test.describe('Workflow state persistence', () => {
     });
 
     // Navigate to Pinghu Museum
-    await page.goto('/single-museum.html?museum=pinghu-museum');
+    await page.goto(`${BASE_URL}/single-museum.html?museum=${MUSEUM_ID}`);
     await page.waitForLoadState('networkidle');
     
     // Start the workflow
@@ -111,12 +125,12 @@ test.describe('Workflow state persistence', () => {
     // Simulate completing all tasks and advancing to share step
     await page.evaluate(() => {
       // Manually set step to share (which triggers poster generation and state clearing)
-      if (window.__workflowState && window.__workflowState.__saveWorkflowState) {
-        window.__workflowState.__saveWorkflowState();
+      if ((window as any).__workflowState && (window as any).__workflowState.__saveWorkflowState) {
+        (window as any).__workflowState.__saveWorkflowState();
       }
       
       // Advance to share step (this should clear workflow state)
-      const state = window.state || {};
+      const state = (window as any).state || {};
       state.step = 'share';
       
       // Simulate setStep('share') which clears workflow state
@@ -130,8 +144,8 @@ test.describe('Workflow state persistence', () => {
       }
       
       // Clear workflow state as setStep('share') would do
-      if (window.__workflowState && window.__workflowState.__clearWorkflowState) {
-        window.__workflowState.__clearWorkflowState();
+      if ((window as any).__workflowState && (window as any).__workflowState.__clearWorkflowState) {
+        (window as any).__workflowState.__clearWorkflowState();
       }
     });
     
@@ -142,11 +156,12 @@ test.describe('Workflow state persistence', () => {
     });
     
     expect(workflowStateCleared).toBe(true);
+    console.log('✅ Workflow state cleared on completion!');
   });
 
   test('workflow state expires after 24 hours', async ({ page }) => {
     // Setup: Create an old workflow state
-    await page.goto('/single-museum.html');
+    await page.goto(`${BASE_URL}/single-museum.html`);
     
     await page.evaluate(() => {
       localStorage.clear();
@@ -167,7 +182,7 @@ test.describe('Workflow state persistence', () => {
     });
 
     // Navigate to museum page
-    await page.goto('/single-museum.html?museum=pinghu-museum');
+    await page.goto(`${BASE_URL}/single-museum.html?museum=${MUSEUM_ID}`);
     await page.waitForLoadState('networkidle');
     
     // Old state should be ignored and intro overlay should show (indicating fresh start)
@@ -181,11 +196,12 @@ test.describe('Workflow state persistence', () => {
     });
     
     expect(stateCleared).toBe(true);
+    console.log('✅ Old workflow state properly expired and cleared!');
   });
 
   test('does not restore state for different museum', async ({ page }) => {
     // Setup: Create workflow state for Forbidden City
-    await page.goto('/single-museum.html');
+    await page.goto(`${BASE_URL}/single-museum.html`);
     
     await page.evaluate(() => {
       localStorage.clear();
@@ -205,11 +221,13 @@ test.describe('Workflow state persistence', () => {
     });
 
     // Navigate to Pinghu Museum (different museum)
-    await page.goto('/single-museum.html?museum=pinghu-museum');
+    await page.goto(`${BASE_URL}/single-museum.html?museum=${MUSEUM_ID}`);
     await page.waitForLoadState('networkidle');
     
     // Should show intro overlay (fresh start) not restore Forbidden City state
     const introOverlay = page.locator('#sgFullscreenIntro');
     await expect(introOverlay).toBeVisible({ timeout: 5000 });
+    
+    console.log('✅ Different museum state properly isolated!');
   });
 });
