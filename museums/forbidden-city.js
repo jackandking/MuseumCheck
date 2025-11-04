@@ -8,12 +8,12 @@ window.MUSEUM_FORBIDDEN_CITY = {
   collections: [
     { 
       name: '《清明上河图》', 
-      url: 'https://www.dpm.org.cn/Uploads/Picture/2017-09-27/59cb6c9ab3c5f.jpg',
+      url: 'https://img.dpm.org.cn/Uploads/Picture/2017/05/12/s591529137db2e.jpg',
       description: '北宋画家张择端作品，全长528厘米，画了814个人物，运用散点透视法，是中国绘画史上的里程碑'
     },
     { 
       name: '太和殿金漆雕龙宝座', 
-      url: 'https://www.dpm.org.cn/Uploads/Picture/2018-11-08/5be3cd12a95a9.jpg',
+      url: 'https://img.dpm.org.cn/Uploads/Picture/2018/11/08/s5be3cd12a95a9.jpg',
       description: '九龙环绕象征九五之尊，采用木制髹金漆工艺，雕刻精美，气势恢宏'
     },
     { 
