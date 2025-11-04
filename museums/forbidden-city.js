@@ -8,17 +8,17 @@ window.MUSEUM_FORBIDDEN_CITY = {
   collections: [
     { 
       name: '《清明上河图》', 
-      url: 'https://www.dpm.org.cn/collection/paint/231971.html',
+      url: 'https://www.dpm.org.cn/Uploads/Picture/2017-09-27/59cb6c9ab3c5f.jpg',
       description: '北宋画家张择端作品，全长528厘米，画了814个人物，运用散点透视法，是中国绘画史上的里程碑'
     },
     { 
       name: '太和殿金漆雕龙宝座', 
-      url: 'https://www.dpm.org.cn/Home.html',
+      url: 'https://www.dpm.org.cn/Uploads/Picture/2018-11-08/5be3cd12a95a9.jpg',
       description: '九龙环绕象征九五之尊，采用木制髹金漆工艺，雕刻精美，气势恢宏'
     },
     { 
       name: '翠玉白菜', 
-      url: 'https://www.dpm.org.cn/Home.html',
+      url: 'https://www.npm.gov.tw/upload/objects/0A/0A000028_E_001.jpg',
       description: '光绪皇帝瑾妃的嫁妆，白菜寓意清白，螽斯寓意多子，运用巧雕技法，将玉石天然纹理完美利用'
     }
   ],
