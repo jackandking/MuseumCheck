@@ -235,12 +235,9 @@ describe('Single Museum Page - Intro Modal Auto-Skip', () => {
       // The fix works by checking: if (state.selectedMuseum && hasMuseumParam)
       // This condition should remain stable
       
-      const urlWithParam = 'single-museum.html?museum=forbidden-city';
-      const urlWithoutParam = 'single-museum.html';
-      
-      // Parse URL params
-      const withParam = new URL('http://localhost' + urlWithParam.replace('single-museum.html', '/single-museum.html')).searchParams;
-      const withoutParam = new URL('http://localhost' + urlWithoutParam.replace('single-museum.html', '/single-museum.html')).searchParams;
+      // Parse URL params using URLSearchParams directly
+      const withParam = new URLSearchParams('?museum=forbidden-city');
+      const withoutParam = new URLSearchParams('');
       
       expect(withParam.has('museum')).toBe(true);
       expect(withoutParam.has('museum')).toBe(false);
