@@ -60,7 +60,7 @@ window.MUSEUM_FORBIDDEN_CITY = {
         { id: 'taihe-photo', role: 'parent', type: 'photo', title: '太和殿', subtitle: '门前合影', ages: ['7-12','13-18'] },
         { id: 'throne-confirm', role: 'child', type: 'confirm', title: '龙椅观察', subtitle: '说出龙椅上看到的两处细节', ages: ['7-12','13-18'] },
         { id: 'zhonghe-ritual', role: 'child', type: 'confirm', title: '中和殿用途', subtitle: '中和殿在典礼流程中起到什么作用？用一句话描述', ages: ['13-18'] },
-        { id: 'baohe-photo', role: 'parent', type: 'photo', title: '保和殿', subtitle: '台阅留影', ages: ['7-12','13-18'] },
+        { id: 'baohe-photo', role: 'parent', type: 'photo', title: '保和殿', subtitle: '台阶留影', ages: ['7-12','13-18'] },
         { id: 'poster', role: 'parent', type: 'poster', title: '成就海报', subtitle: '生成专属成就海报', ages: ['3-6','7-12','13-18'] }
       ]
     }
