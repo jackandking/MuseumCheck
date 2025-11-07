@@ -36,6 +36,10 @@
     <meta name="msvalidate.01" content="bing-verification-museum-check">
     
     <link rel="stylesheet" href="style.css">
+    <!-- Performance: preconnect/dns-prefetch to CDN hosting images -->
+    <link rel="preconnect" href="https://eb118-file.cdn.bcebos.com" crossorigin>
+    <link rel="dns-prefetch" href="//eb118-file.cdn.bcebos.com">
+    <script>window.performance && performance.mark && performance.mark('mc_head_loaded');</script>
     
     <!-- Cache busting meta tags -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -159,9 +163,7 @@
                 <span id="settingsIcon" class="settings-icon" title="点击打开设置">🏛️</span> <span id="headerTitle">博物馆之旅</span>
             </h1>
         </header>
-
-
-
+        
         <nav class="age-selector" aria-label="年龄组选择">
             <fieldset class="age-group-fieldset">
                 <legend class="age-group-legend">孩子年龄：</legend>
@@ -206,6 +208,7 @@
                         <div class="icon-buttons-row">
                             <button id="achievementButton" class="achievement-button-icon" title="我的成就">🏆</button>
                             <button id="assessmentHistoryButton" class="assessment-history-button assessment-history-button-icon" title="测评历史">📊</button>
+                            <button id="treasuresButton" class="treasures-button-icon" title="镇馆之宝" onclick="window.location.href='treasures.html'">🏺</button>
                             <button id="fireworksButton" class="fireworks-button fireworks-button-icon" title="查看烟花记录" style="display: none;">🎆</button>
                             <button id="settingsButton" class="settings-button-icon" title="设置">⚙️</button>
                         </div>
@@ -541,8 +544,80 @@
         </div>
     </div>
 
-    <script src="museums-data.js"></script>
+    <script>
+      // Meta cache shim (versioned)
+      (function(){
+        try{
+          const V='v1';
+          const KEY='museumsMeta:'+V;
+          const cached=localStorage.getItem(KEY);
+          if(cached){
+            window.MUSEUMS_META = JSON.parse(cached);
+          }
+          window.__updateMuseumsMetaCache = function(meta){
+            try{ localStorage.setItem(KEY, JSON.stringify(meta||[])); }catch(e){}
+          };
+        }catch(e){}
+      })();
+    </script>
+    <script src="museums-meta.js" onload="window.__updateMuseumsMetaCache && window.__updateMuseumsMetaCache(window.MUSEUMS_META)"></script>
+    <script>
+      // Adopt meta as default dataset before main script executes
+      (function(){ if(!window.MUSEUMS && window.MUSEUMS_META){ window.MUSEUMS = window.MUSEUMS_META; } })();
+    </script>
+    <!-- Per-museum data files (override) -->
+    <script src="museums/pinghu-museum.js"></script>
+    <script src="museums/capital-museum.js"></script>
+    <script>
+      // Merge per-museum overrides into MUSEUMS (priority to per-museum file)
+      (function(){
+        try{
+          if(Array.isArray(window.MUSEUMS)){
+            var overrides = [];
+            if(window.MUSEUM_PINGHU) overrides.push(window.MUSEUM_PINGHU);
+            if(window.MUSEUM_CAPITAL) overrides.push(window.MUSEUM_CAPITAL);
+            overrides.forEach(function(m){
+              if(!m || !m.id) return;
+              var idx = window.MUSEUMS.findIndex(function(x){ return x && x.id===m.id; });
+              if(idx>=0) window.MUSEUMS[idx] = Object.assign({}, window.MUSEUMS[idx], m);
+              else window.MUSEUMS.push(m);
+            });
+          }
+        }catch(e){}
+      })();
+    </script>
     <script src="firework.js"></script>
     <script src="script.js"></script>
+    <!-- Placeholder for dynamic section museum count (for tests and UI hooks) -->
+    <span id="sectionMuseumCount" style="display:none"></span>
+    <script>
+      // Use meta as initial MUSEUMS, lazy-load full data on first interaction
+      (function(){
+        function adoptMeta(){
+          if(!window.MUSEUMS && window.MUSEUMS_META){ window.MUSEUMS = window.MUSEUMS_META; }
+        }
+        adoptMeta();
+        let loaded=false; let loading=false;
+        async function ensureFull(){
+          if(loaded||loading) return; loading=true;
+          await new Promise((res,rej)=>{
+            const s=document.createElement('script');
+            s.src='museums-data.js'; s.defer=true; s.onload=()=>{ loaded=true; res(); };
+            s.onerror=()=>{ loading=false; rej(new Error('load museums-data.js failed')); };
+            document.head.appendChild(s);
+          }).catch(()=>{});
+        }
+        const once = (type)=>{
+          const fn = async ()=>{ window.removeEventListener(type, fn, {capture:true}); await ensureFull(); };
+          window.addEventListener(type, fn, { once:true, capture:true });
+        };
+        once('pointerdown'); once('keydown'); once('touchstart');
+        // Fallback: after modal is opened attempt ensure (script.js opens quickly after click)
+        document.addEventListener('click', (e)=>{
+          const card = e.target && (e.target.closest && e.target.closest('.museum-card, .sg-card'));
+          if(card) ensureFull();
+        }, true);
+      })();
+    </script>
 </body>
 </html>

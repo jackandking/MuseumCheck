@@ -15,7 +15,9 @@ MuseumCheck is a fully functional web application designed to help parents and c
 - `.github/copilot-instructions.md` - This file
 - `.github/FUNDING.yml` - GitHub sponsorship configuration
 
-**Live Application**: https://jackandking.github.io/MuseumCheck/ and https://museumcheck.cn
+**Live Application**: 
+- **Production**: https://jackandking.github.io/MuseumCheck/ and https://museumcheck.cn
+- **Development**: https://jackandking.github.io/MuseumCheckDev/ (check this during development for current state)
 
 ## Development Environment Setup
 
@@ -579,7 +581,8 @@ localStorage.setItem('museumChecklists', JSON.stringify(checklistData));
 ## Deployment and Live Environment
 
 ### GitHub Pages (ACTIVE)
-- **Primary URL**: https://jackandking.github.io/MuseumCheck/
+- **Production URL**: https://jackandking.github.io/MuseumCheck/
+- **Development URL**: https://jackandking.github.io/MuseumCheckDev/ (view current development state here)
 - **Custom Domain**: https://museumcheck.cn (configured via CNAME file)  
 - **Auto-deployment**: Pushes to main branch auto-deploy to GitHub Pages
 - **No build step**: Direct deployment of static files
