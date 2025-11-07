@@ -488,6 +488,10 @@
                 <li>或点击下方按钮尝试重新加载图片</li>
             </ul>
             <button onclick="retryLoadImages()">🔄 重新加载图片</button>
+            <button onclick="enableProxyMode()" style="margin-left: 10px;">🌐 尝试代理模式加载</button>
+            <p style="margin-top: 10px; font-size: 0.9em; color: #856404;">
+                <em>💡 提示: 代理模式会通过第三方图片服务加载图片,可能绕过某些访问限制</em>
+            </p>
         </div>
         
         <div class="treasures-header">
@@ -547,11 +551,13 @@
     </div>
     
     <script src="museums-data.js"></script>
+    <script src="image-proxy-helper.js"></script>
     <script>
         // Image loading tracking
         let imageLoadFailureCount = 0;
         let totalImageAttempts = 0;
         const failedImages = new Set();
+        let proxyModeEnabled = false;
         
         // Track image loading to detect widespread failures
         function trackImageLoad(success, imageUrl) {
@@ -592,10 +598,36 @@
             location.reload();
         }
         
+        function enableProxyMode() {
+            // Set proxy mode flag
+            proxyModeEnabled = true;
+            localStorage.setItem('museumcheck_proxy_mode', 'true');
+            
+            // Reload page to use proxied images
+            location.reload();
+        }
+        
+        function getImageUrl(url) {
+            // Check if proxy mode is enabled
+            if (proxyModeEnabled || localStorage.getItem('museumcheck_proxy_mode') === 'true') {
+                // Use weserv.nl proxy for images
+                if (url && !url.startsWith('data:') && !url.startsWith('/')) {
+                    return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=800&q=85`;
+                }
+            }
+            return url;
+        }
+        
+        // Check if proxy mode was enabled in previous session
+        if (localStorage.getItem('museumcheck_proxy_mode') === 'true') {
+            proxyModeEnabled = true;
+            console.log('📡 Proxy mode enabled - using image proxy service');
+        }
+        
         // Helper function to create image with better error handling
         function createImageWithFallback(imageUrl, alt, className, onClickHandler) {
             const img = document.createElement('img');
-            img.src = imageUrl;
+            img.src = getImageUrl(imageUrl);  // Use proxy if enabled
             img.alt = alt;
             img.className = className;
             img.loading = 'lazy';  // Enable lazy loading
@@ -745,9 +777,10 @@
                 if (museum.collections && museum.collections.length > 0) {
                     photoGalleryHTML = '<div class="treasure-photos-gallery">';
                     museum.collections.slice(0, 3).forEach(collection => {
+                        const imgUrl = getImageUrl(collection.imageUrl);
                         photoGalleryHTML += `
                             <div class="treasure-photo-item">
-                                <img src="${collection.imageUrl}" 
+                                <img src="${imgUrl}" 
                                      alt="${collection.name}"
                                      onload="trackImageLoad(true, '${collection.imageUrl}')"
                                      onerror="trackImageLoad(false, '${collection.imageUrl}'); this.parentElement.innerHTML='<div class=\\'no-photo-placeholder\\'>🏺</div>'">
@@ -763,7 +796,7 @@
                 
                 card.innerHTML = `
                     ${museum.image ? `
-                        <img src="${museum.image}" 
+                        <img src="${getImageUrl(museum.image)}" 
                              alt="${museum.name}" 
                              class="treasure-card-image"
                              onload="trackImageLoad(true, '${museum.image}')"
@@ -812,12 +845,13 @@
                         <h3>📸 镇馆之宝珍品</h3>
                 `;
                 museum.collections.forEach(collection => {
+                    const imgUrl = getImageUrl(collection.imageUrl);
                     content += `
                         <div class="treasure-detail-item">
-                            <img src="${collection.imageUrl}" 
+                            <img src="${imgUrl}" 
                                  alt="${collection.name}"
                                  class="treasure-detail-photo"
-                                 onclick="window.open('${collection.imageUrl}', '_blank')"
+                                 onclick="window.open('${imgUrl}', '_blank')"
                                  onload="trackImageLoad(true, '${collection.imageUrl}')"
                                  onerror="trackImageLoad(false, '${collection.imageUrl}'); this.style.display='none'">
                             <h4 style="margin: 10px 0; color: #667eea;">${collection.name}</h4>
