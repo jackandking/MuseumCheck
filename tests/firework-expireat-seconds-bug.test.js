@@ -47,7 +47,7 @@ describe('Firework expireAt Seconds Calculation - Regression Test', () => {
         const incorrectExpireAt = currentTimestamp + (ttlSeconds * 1000);
         
         // Verify correct calculation is in seconds (reasonable Unix timestamp)
-        // Current Unix timestamp is around 1.7 billion seconds (Nov 2023)
+        // Current Unix timestamp is around 1.76 billion seconds (Nov 2025)
         expect(correctExpireAt).toBeLessThan(2000000000); // Less than 2 billion seconds
         expect(correctExpireAt).toBeGreaterThan(1600000000); // Greater than 1.6 billion seconds
         
@@ -154,8 +154,8 @@ describe('Firework expireAt Seconds Calculation - Regression Test', () => {
         const interpretedAsSeconds = buggyExpireAt;
         
         // This would be an invalid Unix timestamp (too far in the future for reasonable use)
-        // Current time is around 1.7 trillion milliseconds, so buggy value is much larger than 2 billion seconds
-        expect(interpretedAsSeconds).toBeGreaterThan(1000000000000); // Over 1 trillion (milliseconds range)
+        // The buggy value is around 1.76 trillion, which is in the milliseconds magnitude range
+        expect(interpretedAsSeconds).toBeGreaterThan(1000000000000); // Over 1 trillion
         
         // A reasonable expireAt in seconds should be much smaller
         const correctExpireAt = Math.floor(currentTimestamp / 1000) + ttlSeconds;
