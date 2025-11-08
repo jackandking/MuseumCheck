@@ -208,6 +208,7 @@
                         <div class="icon-buttons-row">
                             <button id="achievementButton" class="achievement-button-icon" title="我的成就">🏆</button>
                             <button id="assessmentHistoryButton" class="assessment-history-button assessment-history-button-icon" title="测评历史">📊</button>
+                            <button id="leaderboardButton" class="leaderboard-button-icon" title="排行榜">🏅</button>
                             <button id="treasuresButton" class="treasures-button-icon" title="镇馆之宝" onclick="window.location.href='treasures.html'">🏺</button>
                             <button id="fireworksButton" class="fireworks-button fireworks-button-icon" title="查看烟花记录" style="display: none;">🎆</button>
                             <button id="settingsButton" class="settings-button-icon" title="设置">⚙️</button>
@@ -544,6 +545,41 @@
         </div>
     </div>
 
+    <!-- Leaderboard Modal -->
+    <div id="leaderboardModal" class="modal leaderboard-modal hidden">
+        <div class="modal-content leaderboard-content">
+            <span class="close">&times;</span>
+            <h2>🏅 全网排行榜</h2>
+            <div class="leaderboard-intro">
+                <p>看看谁的博物馆之旅最精彩！参观越多，排名越高！</p>
+            </div>
+            <div class="leaderboard-my-rank" id="leaderboardMyRank">
+                <div class="my-rank-card">
+                    <div class="rank-badge">我的排名</div>
+                    <div class="rank-info">
+                        <div class="rank-position" id="myRankPosition">-</div>
+                        <div class="rank-details">
+                            <div class="rank-nickname" id="myRankNickname">-</div>
+                            <div class="rank-count" id="myRankCount">0个博物馆</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="leaderboard-list" id="leaderboardList">
+                <div class="leaderboard-loading">
+                    <div class="loading-spinner"></div>
+                    <p>正在加载排行榜...</p>
+                </div>
+            </div>
+            <div class="leaderboard-footer">
+                <button id="refreshLeaderboard" class="btn-secondary">🔄 刷新排行榜</button>
+                <div class="leaderboard-update-time">
+                    更新时间: <span id="leaderboardUpdateTime">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
       // Meta cache shim (versioned)
       (function(){
@@ -627,5 +663,20 @@
         }, true);
       })();
     </script>
+
+    <!-- Footer with ICP Registration Information -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <p class="footer-text">
+                <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" class="footer-link">京ICP备2024092319号-6</a>
+            </p>
+            <p class="footer-text">
+                <a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=11010802046500" target="_blank" rel="noopener noreferrer" class="footer-link">
+                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAACXBIWXMAAAsTAAALEwEAmpwYAAABMElEQVQokY2SPUvDUBSGn3NvUhNpC0VwcCu4OYiDg5M4+Qf8A/4BwcHRzU1w6ODo6OQguFkHQRDB0UUEwUGxQ0vrV5Jzj0MaLf5ALpd7Off93vOeI8YYVqWUiKpyNBikv79PKIKqksvnCSKGYJUCgKpSLBZZWCgQhks+RERwXZfJiQlarRYiQhAEPD8/45QnJ6nV6rRaLRKJBNlsFtd1SSZTXF9f0ev1mJ2d5fHhgZPLKyYnp0in03Q6HRqNBo1mk0wmi+M4lEol6vU6vV6P+/t7zs7PGRsbp1atoaq0220cx8F1XQYHB8lkMpTLZQYGBnjrdNiam/M9T1V1ZnpGs/8RdV0dlZFRzefz6nkz+vQ0vSwichSGIZ7nEQQB/X6fxcVFPM/j9fWVIPj/W19fX1n++QRxu4HWiVDDaAAAAABJRU5ErkJggg==" alt="公安备案图标" class="footer-icon">
+                    京公网安备11010802046500号
+                </a>
+            </p>
+        </div>
+    </footer>
 </body>
 </html>
