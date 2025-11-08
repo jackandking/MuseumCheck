@@ -7247,9 +7247,6 @@ class MuseumCheckApp {
         this.trackEvent('leaderboard_viewed', {
             'visited_count': this.visitedMuseums.length
         });
-        
-        // Auto-submit score if needed
-        await this.leaderboardManager.autoSubmitScore();
     }
 
     closeLeaderboardModal() {
