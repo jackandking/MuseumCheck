@@ -66,7 +66,7 @@
           key: CONFIG.LEADERBOARD_KEY,
           sortKey: sortKey,
           value: JSON.stringify(data),
-          ttl: CONFIG.TIMESTAMP_2124
+          expireAt: CONFIG.TIMESTAMP_2124
         })
       });
       if (!res.ok) throw new Error('Failed to update entry: ' + res.status);

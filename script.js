@@ -3444,7 +3444,7 @@ class LeaderboardManager {
                     key: this.leaderboardKey,
                     sortKey: sortKey,
                     value: JSON.stringify(payload),
-                    ttl: REMOTE_STORAGE_CONFIG.TIMESTAMP_2124 // Far future expiration
+                    expireAt: REMOTE_STORAGE_CONFIG.TIMESTAMP_2124 // Far future expiration
                 })
             });
 
