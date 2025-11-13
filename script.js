@@ -22,7 +22,7 @@ const REMOTE_STORAGE_CONFIG = {
     FIREWORK_KEY: 'museumcheck-firework',
     DOWNLOAD_INTERVAL: 10000,  // 10 seconds
     DEFAULT_FIREWORK_EXPIRATION: 60, // Default: 1 minute in seconds (used if user setting not found)
-    TIMESTAMP_2124: 4866674732  // Default expiration timestamp
+    TIMESTAMP_2124: 4866674732  // Default expiration timestamp (Unix timestamp in SECONDS - year 2124)
 };
 
 // DOM Selector Constants for better maintainability
@@ -181,7 +181,7 @@ const RemoteStorage = {
      * @param {string} key - The storage key
      * @param {any} value - The value to store
      * @param {string} sortKey - Sort key for organization
-     * @param {number} expireAt - Expiration timestamp
+     * @param {number} expireAt - Expiration timestamp in SECONDS (Unix timestamp). Note: Must be in seconds, not milliseconds!
      * @returns {Promise<Object>} Promise that resolves with the response data
      */
     async updateKeyValueStore(key, value, sortKey = 'None', expireAt = REMOTE_STORAGE_CONFIG.TIMESTAMP_2124) {
@@ -201,7 +201,7 @@ const RemoteStorage = {
                     key,
                     sortKey,
                     value,
-                    expireAt
+                    expireAt  // IMPORTANT: API expects 'expireAt' (not 'ttl') in seconds
                 })
             });
 
@@ -3444,7 +3444,7 @@ class LeaderboardManager {
                     key: this.leaderboardKey,
                     sortKey: sortKey,
                     value: JSON.stringify(payload),
-                    ttl: REMOTE_STORAGE_CONFIG.TIMESTAMP_2124 // Far future expiration
+                    expireAt: REMOTE_STORAGE_CONFIG.TIMESTAMP_2124 // IMPORTANT: API requires 'expireAt' in seconds (not 'ttl')
                 })
             });
 
@@ -3482,7 +3482,9 @@ class LeaderboardManager {
             }
 
             // Fetch from server
-            const url = `${this.apiEndpoint}?key=${encodeURIComponent(this.leaderboardKey)}`;
+            // Use sortKey=* to fetch all items, following the pattern from admin-fireworks.js
+            // Then filter for user records client-side
+            const url = `${this.apiEndpoint}?key=${encodeURIComponent(this.leaderboardKey)}&sortKey=*`;
             const response = await fetch(url);
 
             if (!response.ok) {
@@ -3493,8 +3495,28 @@ class LeaderboardManager {
             
             // Parse and sort the leaderboard entries
             const entries = [];
-            if (result.items && Array.isArray(result.items)) {
-                for (const item of result.items) {
+            
+            // Support multiple response formats for AWS DynamoDB compatibility:
+            // 1. { items: [...] } or { Items: [...] } - DynamoDB direct format
+            // 2. { value: '[{...}]' } - JSON string in value field
+            let itemsArray = result.items || result.Items;
+            
+            if (!itemsArray && result.value && typeof result.value === 'string') {
+                try {
+                    itemsArray = JSON.parse(result.value);
+                } catch (e) {
+                    console.error('Failed to parse value field:', e);
+                }
+            }
+            
+            if (itemsArray && Array.isArray(itemsArray)) {
+                for (const item of itemsArray) {
+                    // Only include user records (sortKey starts with 'user-')
+                    const sortKey = item.sortKey || item.sk || '';
+                    if (!sortKey.startsWith('user-')) {
+                        continue; // Skip non-user records
+                    }
+                    
                     try {
                         const data = JSON.parse(item.value);
                         entries.push(data);
@@ -7299,7 +7321,24 @@ class MuseumCheckApp {
             // Fetch leaderboard data
             const result = await this.leaderboardManager.fetchLeaderboard(forceRefresh);
             
-            if (!result.success || !result.data || result.data.length === 0) {
+            // Handle fetch failure (network error, etc.)
+            if (!result.success) {
+                listContainer.innerHTML = `
+                    <div class="leaderboard-empty">
+                        <div class="empty-icon">⚠️</div>
+                        <p>加载失败</p>
+                        <p>请稍后重试</p>
+                    </div>
+                `;
+                
+                // Still render user's local stats even on error
+                const userId = this.leaderboardManager.getUserId();
+                this.renderMyRank(null, [], userId);
+                return;
+            }
+            
+            // Handle empty leaderboard (no users have submitted scores yet)
+            if (!result.data || result.data.length === 0) {
                 // Show empty state
                 listContainer.innerHTML = `
                     <div class="leaderboard-empty">
@@ -7393,6 +7432,7 @@ class MuseumCheckApp {
         if (!rank || !entries || entries.length === 0) {
             // Not ranked yet
             if (positionElem) positionElem.textContent = '-';
+            if (nicknameElem) positionElem.textContent = '-';
             if (nicknameElem) nicknameElem.textContent = this.childNickname || '小朋友';
             if (countElem) countElem.textContent = `${this.visitedMuseums.length}个博物馆`;
             return;
@@ -7412,6 +7452,17 @@ class MuseumCheckApp {
             const count = myEntry ? myEntry.visitedCount : this.visitedMuseums.length;
             countElem.textContent = `${count}个博物馆`;
         }
+    }
+
+    escapeHtml(str) {
+        if (str == null) return '';
+        return String(str).replace(/[&<>"']/g, s => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[s]);
     }
 
     renderSettingsInfo() {
