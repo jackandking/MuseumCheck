@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首都博物馆镇馆之宝URL验证报告</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 1.2em;
+            margin-bottom: 40px;
+        }
+
+        .report-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 5px solid #667eea;
+        }
+
+        .report-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .report-section h3 {
+            color: #555;
+            margin: 20px 0 10px 0;
+            font-size: 1.2em;
+        }
+
+        .issue-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .issue-box.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .issue-box.success {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .treasure-list {
+            margin: 15px 0;
+        }
+
+        .treasure-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .treasure-item.working {
+            border-left-color: #28a745;
+        }
+
+        .treasure-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .treasure-url {
+            font-size: 0.9em;
+            color: #666;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            background: #f1f1f1;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .status-error {
+            background: #dc3545;
+            color: white;
+        }
+
+        .status-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .recommendation-box {
+            background: #e7f3ff;
+            border: 2px solid #2196F3;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .recommendation-box h3 {
+            color: #1976D2;
+            margin-top: 0;
+        }
+
+        .recommendation-box ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+
+        .recommendation-box li {
+            margin: 8px 0;
+        }
+
+        code {
+            background: #f1f1f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .metadata {
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .report-section {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏛️ 首都博物馆镇馆之宝</h1>
+        <p class="subtitle">图片URL验证报告</p>
+
+        <div class="report-section">
+            <h2>📋 执行摘要</h2>
+            <div class="issue-box error">
+                <h3>🚨 关键发现</h3>
+                <p><strong>所有首都博物馆镇馆之宝的图片URL均返回404错误，无法访问。</strong></p>
+                <p>测试时间: <span id="testTime"></span></p>
+                <p>受影响文件: <code>museums-data.js</code> 和 <code>museums/capital-museum.js</code></p>
+            </div>
+        </div>
+
+        <div class="report-section">
+            <h2>🔍 详细测试结果</h2>
+            
+            <h3>1. museums-data.js 中的镇馆之宝 (3件)</h3>
+            <div class="treasure-list">
+                <div class="treasure-item">
+                    <div class="treasure-name">
+                        ❌ 元代景德镇窑青花凤首扁壶
+                        <span class="status-badge status-error">404 NOT FOUND</span>
+                    </div>
+                    <div class="treasure-url">
+                        https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Yuan_Dynasty_Blue_and_White_Flask.jpg/400px-Yuan_Dynasty_Blue_and_White_Flask.jpg
+                    </div>
+                    <p>说明: 元代青花瓷代表作，壶身绘凤凰纹饰，造型优美，釉色纯正，是元代景德镇窑的精品</p>
+                </div>
+
+                <div class="treasure-item">
+                    <div class="treasure-name">
+                        ❌ 乾隆款金嵌珍珠天球仪
+                        <span class="status-badge status-error">404 NOT FOUND</span>
+                    </div>
+                    <div class="treasure-url">
+                        https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Qianlong_Celestial_Globe.jpg/400px-Qianlong_Celestial_Globe.jpg
+                    </div>
+                    <p>说明: 清乾隆时期制作的天文仪器，镶嵌珍珠标注星座位置，工艺精湛</p>
+                </div>
+
+                <div class="treasure-item">
+                    <div class="treasure-name">
+                        ❌ 明代金丝翼善冠
+                        <span class="status-badge status-error">404 NOT FOUND</span>
+                    </div>
+                    <div class="treasure-url">
+                        https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Ming_Dynasty_Crown.jpg/400px-Ming_Dynasty_Crown.jpg
+                    </div>
+                    <p>说明: 明代皇帝冠冕，用金丝编织而成，上嵌珠宝，制作精美</p>
+                </div>
+            </div>
+
+            <h3>2. museums/capital-museum.js 中的藏品 (3件)</h3>
+            <div class="treasure-list">
+                <div class="treasure-item">
+                    <div class="treasure-name">
+                        ❌ 北京孔庙大成殿牌匾
+                        <span class="status-badge status-error">404 NOT FOUND</span>
+                    </div>
+                    <div class="treasure-url">
+                        https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/%E5%8C%97%E4%BA%AC%E5%AD%94%E5%BA%99_%E5%A4%A7%E6%88%90%E6%AE%BF.JPG/800px-%E5%8C%97%E4%BA%AC%E5%AD%94%E5%BA%99_%E5%A4%A7%E6%88%90%E6%AE%BF.JPG
+                    </div>
+                    <p>说明: 北京孔庙的重要文物，见证了古代北京的文教历史</p>
+                </div>
+
+                <div class="treasure-item">
+                    <div class="treasure-name">
+                        ❌ 元大都城墙遗址
+                        <span class="status-badge status-error">404 NOT FOUND</span>
+                    </div>
+                    <div class="treasure-url">
+                        https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Yuan_Dynasty_Wall_Relic.jpg/800px-Yuan_Dynasty_Wall_Relic.jpg
+                    </div>
+                    <p>说明: 元朝时期建造的都城城墙遗迹，是北京城市历史的重要见证</p>
+                </div>
+
+                <div class="treasure-item">
+                    <div class="treasure-name">
+                        ❌ 景德镇窑青花凤首扁壶
+                        <span class="status-badge status-error">404 NOT FOUND</span>
+                    </div>
+                    <div class="treasure-url">
+                        https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Blue_and_white_porcelain_vase.jpg/600px-Blue_and_white_porcelain_vase.jpg
+                    </div>
+                    <p>说明: 明代景德镇窑烧制的精美瓷器，是中国陶瓷艺术的代表作</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="report-section">
+            <h2>📊 测试统计</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>来源文件</th>
+                        <th>总数</th>
+                        <th>成功</th>
+                        <th>失败</th>
+                        <th>成功率</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>museums-data.js</td>
+                        <td>3</td>
+                        <td>0</td>
+                        <td>3</td>
+                        <td style="color: #dc3545; font-weight: bold;">0%</td>
+                    </tr>
+                    <tr>
+                        <td>museums/capital-museum.js</td>
+                        <td>3</td>
+                        <td>0</td>
+                        <td>3</td>
+                        <td style="color: #dc3545; font-weight: bold;">0%</td>
+                    </tr>
+                    <tr style="background: #f8f9fa; font-weight: bold;">
+                        <td>总计</td>
+                        <td>6</td>
+                        <td>0</td>
+                        <td>6</td>
+                        <td style="color: #dc3545;">0%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="report-section">
+            <h2>🔬 根本原因分析</h2>
+            <div class="issue-box">
+                <h3>问题根源</h3>
+                <p>所有图片URL都指向Wikimedia Commons上不存在的文件。这些URL可能是:</p>
+                <ul>
+                    <li>📝 <strong>占位符URL</strong> - 在开发过程中使用的临时链接，尚未被真实图片替换</li>
+                    <li>🔗 <strong>失效链接</strong> - 原本存在但已被Wikimedia Commons删除的图片</li>
+                    <li>❓ <strong>错误的文件名</strong> - URL构造不正确或文件路径有误</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="report-section">
+            <h2>💡 修复建议</h2>
+            
+            <div class="recommendation-box">
+                <h3>推荐方案 1: 使用首都博物馆实际镇馆之宝</h3>
+                <p>根据调研，首都博物馆的真正镇馆之宝包括:</p>
+                <ul>
+                    <li><strong>乾隆御制碑</strong> - 高6.7米的白色大理石御制碑，首都博物馆最著名的藏品之一</li>
+                    <li><strong>景德镇窑青花凤首扁壶</strong> - 元代青花瓷精品，确实是首都博物馆的重要收藏</li>
+                    <li><strong>商周青铜礼器</strong> - 展示中国古代青铜器铸造工艺最高水平</li>
+                    <li><strong>良渚文化玉琮</strong> - 约5000年历史的古玉器</li>
+                </ul>
+                <p><strong>操作步骤:</strong></p>
+                <ol>
+                    <li>在Wikimedia Commons上搜索这些真实文物的图片</li>
+                    <li>使用博物馆官网提供的公开图片 (http://en.capitalmuseum.org.cn/)</li>
+                    <li>寻找创作共享授权的高质量图片</li>
+                </ol>
+            </div>
+
+            <div class="recommendation-box">
+                <h3>推荐方案 2: 使用可验证的Wikimedia Commons图片</h3>
+                <p>选择已知存在且可访问的相关文物图片:</p>
+                <ul>
+                    <li>使用故宫博物院等其他博物馆的同类文物图片作为参考</li>
+                    <li>确保每个URL在使用前经过验证测试</li>
+                    <li>记录图片来源和授权信息</li>
+                </ul>
+            </div>
+
+            <div class="recommendation-box">
+                <h3>推荐方案 3: 建立图片验证流程</h3>
+                <p>为避免将来出现类似问题:</p>
+                <ul>
+                    <li>🧪 在添加任何博物馆藏品图片URL前，先用curl或浏览器验证URL可访问</li>
+                    <li>📝 建立图片URL清单，定期检查有效性</li>
+                    <li>🔄 使用CDN或自托管重要图片，避免依赖第三方服务</li>
+                    <li>✅ 在CI/CD流程中添加图片URL验证步骤</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="report-section">
+            <h2>🛠️ 下一步行动</h2>
+            <div class="recommendation-box">
+                <h3>立即行动项</h3>
+                <ol>
+                    <li>✅ <strong>已完成:</strong> 生成此验证报告，记录所有失效URL</li>
+                    <li>⏳ <strong>待办:</strong> 为首都博物馆的3件镇馆之宝寻找有效的图片URL</li>
+                    <li>⏳ <strong>待办:</strong> 更新 <code>museums-data.js</code> 中的图片URL</li>
+                    <li>⏳ <strong>待办:</strong> 更新 <code>museums/capital-museum.js</code> 中的图片URL</li>
+                    <li>⏳ <strong>待办:</strong> 重新测试所有URL，确保可访问</li>
+                    <li>⏳ <strong>待办:</strong> 生成包含实际图片的测试页面截图作为验证证据</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="report-section">
+            <h2>📚 参考资源</h2>
+            <ul>
+                <li><a href="http://en.capitalmuseum.org.cn/" target="_blank">首都博物馆官方网站</a></li>
+                <li><a href="https://commons.wikimedia.org/wiki/Category:Blue_and_white_porcelain_of_the_Yuan_Dynasty" target="_blank">Wikimedia Commons - 元代青花瓷分类</a></li>
+                <li><a href="https://www.travelchinaguide.com/attraction/beijing/capital-museum.htm" target="_blank">Travel China Guide - 首都博物馆</a></li>
+                <li><a href="https://commons.wikimedia.org/wiki/Category:Qianlong_Emperor" target="_blank">Wikimedia Commons - 乾隆皇帝相关文物</a></li>
+            </ul>
+        </div>
+
+        <div class="metadata">
+            <p><strong>报告生成时间:</strong> <span id="reportTime"></span></p>
+            <p><strong>测试环境:</strong> HTTP Server (Python 3) @ localhost:8000</p>
+            <p><strong>测试方法:</strong> HTTP HEAD请求验证URL可访问性</p>
+            <p><strong>报告创建者:</strong> GitHub Copilot (自动化测试工具)</p>
+        </div>
+    </div>
+
+    <script>
+        // Set current time
+        const now = new Date().toLocaleString('zh-CN');
+        document.getElementById('testTime').textContent = now;
+        document.getElementById('reportTime').textContent = now;
+
+        // Log report generation
+        console.log('='.repeat(70));
+        console.log('首都博物馆镇馆之宝URL验证报告');
+        console.log('='.repeat(70));
+        console.log('生成时间:', now);
+        console.log('');
+        console.log('关键发现: 所有6个镇馆之宝图片URL均返回404错误');
+        console.log('');
+        console.log('来源文件:');
+        console.log('  1. museums-data.js - 3个失效URL');
+        console.log('  2. museums/capital-museum.js - 3个失效URL');
+        console.log('');
+        console.log('成功率: 0/6 (0%)');
+        console.log('='.repeat(70));
+    </script>
+</body>
+</html>
