@@ -497,7 +497,8 @@ describe('Museum Data Quality', () => {
 
 
 ### Working with Museum Data
-The museums are defined in `script.js` in the `MUSEUMS` array:
+
+The museums are defined in `museums-data.js` in the `MUSEUMS` array:
 
 ```javascript
 // Example museum structure (DO NOT modify lightly - contains extensive Chinese content)
@@ -507,6 +508,14 @@ The museums are defined in `script.js` in the `MUSEUMS` array:
     location: '北京',
     description: '世界上现存规模最大、保存最为完整的木质结构古建筑群',
     tags: ['历史', '建筑', '文物'],
+    image: 'https://example.com/museum-photo.jpg',  // Museum building photo URL
+    collections: [  // Treasures/collections with photos
+        {
+            name: '《清明上河图》',
+            imageUrl: 'https://example.com/treasure-photo.jpg',
+            description: 'Description of the treasure'
+        }
+    ],
     checklists: {
         parent: {
             '3-6': [/* age-appropriate parent preparation tasks */],
@@ -521,6 +530,103 @@ The museums are defined in `script.js` in the `MUSEUMS` array:
     }
 }
 ```
+
+### Finding Museum and Treasure Photos (NEW TOOL)
+
+**IMPORTANT**: When adding or updating museum data, use the Bing Image Search tool to find high-quality photos.
+
+#### Using the Museum Image Search Tool
+
+**Tool Location**: `tools/search-museum-images.js`
+
+**Prerequisites**:
+- Bing Search API key from Azure Cognitive Services
+- Set environment variable: `export BING_SEARCH_API_KEY=your_api_key`
+
+**Getting a Bing API Key**:
+1. Go to https://azure.microsoft.com/en-us/services/cognitive-services/bing-web-search-api/
+2. Sign up for a free Azure account
+3. Create a Bing Search resource
+4. Copy your API key
+5. Set it: `export BING_SEARCH_API_KEY=your_key_here`
+
+**Usage Examples**:
+
+```bash
+# Search for museum building photos only
+node tools/search-museum-images.js "故宫博物院"
+
+# Search for both museum and treasure photos
+node tools/search-museum-images.js "故宫博物院" "清明上河图"
+
+# More examples
+node tools/search-museum-images.js "中国国家博物馆" "后母戊鼎"
+node tools/search-museum-images.js "上海博物馆" "大克鼎"
+```
+
+**Demo Version (No API Key Required)**:
+```bash
+# Test the tool without an API key using mock data
+node tools/search-museum-images-demo.js "故宫博物院" "清明上河图"
+```
+
+**Workflow for Adding Museum Photos**:
+
+1. **Search for Images**:
+   ```bash
+   node tools/search-museum-images.js "博物馆名称" "镇馆之宝名称"
+   ```
+
+2. **Review Results**: The tool returns multiple image URLs with metadata:
+   - Full image URL (for museum data)
+   - Thumbnail URL
+   - Image dimensions and file size
+   - Source page URL
+
+3. **Select Appropriate Images**: Choose images that are:
+   - High quality and clear
+   - Properly licensed (public domain, Wikimedia Commons, etc.)
+   - Representative of the museum/treasure
+   - Appropriate resolution (typically 800x600 or higher)
+
+4. **Verify Image URLs**: Before adding to museum data:
+   ```bash
+   node tools/verify-treasure-images.js <image-url>
+   ```
+
+5. **Add to Museum Data**: Copy the selected URLs to the museum structure:
+   ```javascript
+   {
+       id: 'museum-id',
+       name: '博物馆名称',
+       image: 'URL_FROM_SEARCH_TOOL',  // Museum building photo
+       collections: [
+           {
+               name: '镇馆之宝名称',
+               imageUrl: 'URL_FROM_SEARCH_TOOL',  // Treasure photo
+               description: '...'
+           }
+       ]
+   }
+   ```
+
+6. **Validate Data Quality**:
+   ```bash
+   npm run validate-data
+   ```
+
+**Best Practices**:
+- Always verify image licenses and permissions
+- Prefer Wikimedia Commons and public domain images
+- Use high-resolution images (minimum 800x600)
+- Verify URLs are accessible before committing
+- Test images load correctly in the application
+
+**Image Search Tips**:
+- For museum buildings: Search includes "博物馆外观 建筑" keywords
+- For treasures: Search includes "文物 高清" keywords
+- Results are filtered for photos only with safe search enabled
+- Returns top 5 results by default
 
 ### Local Storage Patterns (VALIDATED WORKING)
 ```javascript
