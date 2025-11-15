@@ -643,6 +643,117 @@ const checklists = JSON.parse(localStorage.getItem('museumChecklists') || '{}');
 localStorage.setItem('museumChecklists', JSON.stringify(checklistData));
 ```
 
+### KV Store API Best Practices (CRITICAL)
+
+The application uses a **3-Tier Museum Data Management System**:
+- **Tier 1**: Individual museum static JSON files (`/museums/{museum-id}.json`)
+- **Tier 2**: KV store dynamic data (remote storage for dev/debug)
+- **Tier 3**: Consolidated `museums-data.js` (fallback)
+
+**CRITICAL KNOWLEDGE**: The KV store API uses **composite keys** (partition key + sort key). This has been a source of bugs multiple times.
+
+#### KV Store Composite Key Structure
+
+**All KV store operations MUST include BOTH `key` AND `sortKey` parameters:**
+
+```javascript
+// ✅ CORRECT - Save operation (POST)
+const response = await fetch(kvStoreEndpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        key: 'museum-data-forbidden-city',      // Partition key
+        sortKey: 'museum',                       // Sort key (REQUIRED!)
+        value: JSON.stringify(museumData),
+        expireAt: 4866674732
+    })
+});
+
+// ✅ CORRECT - Load operation (GET)
+const key = 'museum-data-forbidden-city';
+const sortKey = 'museum';
+const url = `${endpoint}?key=${encodeURIComponent(key)}&sortKey=${encodeURIComponent(sortKey)}`;
+const response = await fetch(url, { method: 'GET' });
+
+// ❌ INCORRECT - Missing sortKey parameter
+const url = `${endpoint}?key=${encodeURIComponent(key)}`;  // WILL FAIL!
+```
+
+#### Common KV Store Patterns
+
+**Museum Data (sortKey: 'museum')**:
+```javascript
+// Save museum data
+await fetch(kvStoreEndpoint, {
+    method: 'POST',
+    body: JSON.stringify({
+        key: `museum-data-${museumId}`,
+        sortKey: 'museum',  // Always use 'museum' for museum data
+        value: JSON.stringify(data),
+        expireAt: timestamp
+    })
+});
+
+// Load museum data
+const url = `${kvStoreEndpoint}?key=museum-data-${museumId}&sortKey=museum`;
+const response = await fetch(url);
+```
+
+**Leaderboard Data (sortKey: 'user-{userId}')**:
+```javascript
+// Query all leaderboard entries with wildcard
+const url = `${endpoint}?key=museumcheck-leaderboard&sortKey=*`;
+
+// Query specific user entry
+const url = `${endpoint}?key=museumcheck-leaderboard&sortKey=user-${userId}`;
+```
+
+#### KV Store Checklist for Development
+
+**When writing ANY code that interacts with the KV store API:**
+
+1. ✅ **Always include sortKey in GET requests**: `?key=...&sortKey=...`
+2. ✅ **Always include sortKey in POST body**: `{ key: '...', sortKey: '...', ... }`
+3. ✅ **Use URL encoding**: `encodeURIComponent()` for both key and sortKey
+4. ✅ **Match save/load sortKey values**: Use the same sortKey for saving and loading
+5. ✅ **Test with actual data**: Verify the full save → load cycle works
+6. ✅ **Add regression tests**: Prevent future sortKey omission bugs
+
+#### Historical Issues (Learn from These)
+
+**Issue #1**: Museum data upload succeeded but reload failed
+- **Cause**: `loadFromTier2()` missing `&sortKey=museum` in GET URL
+- **Fix**: Added sortKey parameter to match save operation (PR #719)
+- **Lesson**: ALWAYS check that GET queries include sortKey
+
+**Issue #2**: Leaderboard showing only local user
+- **Cause**: GET request missing sortKey parameter
+- **Fix**: Added `&sortKey=*` to query all user records
+- **Lesson**: Use sortKey wildcards for range queries
+
+#### Testing KV Store Code
+
+**Required tests for any KV store interaction:**
+
+```javascript
+test('should include sortKey parameter in query', async () => {
+    await loader.loadFromTier2('forbidden-city');
+    
+    const fetchCall = fetch.mock.calls[0];
+    const url = fetchCall[0];
+    
+    // Verify both parameters present
+    expect(url).toContain('key=museum-data-forbidden-city');
+    expect(url).toContain('sortKey=museum');
+});
+```
+
+**Manual verification steps:**
+1. Save data via POST with key + sortKey
+2. Immediately try to load via GET with same key + sortKey  
+3. Verify 200 response (not 404)
+4. Verify returned data matches saved data
+
 ## Troubleshooting
 
 ### Common Issues (VALIDATED SOLUTIONS)
