@@ -531,102 +531,180 @@ The museums are defined in `museums-data.js` in the `MUSEUMS` array:
 }
 ```
 
-### Finding Museum and Treasure Photos (NEW TOOL)
+### Finding Museum and Treasure Photos
 
-**IMPORTANT**: When adding or updating museum data, use the Bing Image Search tool to find high-quality photos.
+**IMPORTANT**: When adding or updating museum data, use the image search tools to find high-quality photos. Two tools are available:
 
-#### Using the Museum Image Search Tool
+1. **Wikimedia Commons Search** (Recommended first) - Free, no API key required, all images under free licenses
+2. **Bing Website Search** (Backup option) - Free browser-based search, use when Wikimedia doesn't have ideal images
 
-**Tool Location**: `tools/search-museum-images.js`
+#### Tool Selection Strategy
 
-**Prerequisites**:
-- Bing Search API key from Azure Cognitive Services
-- Set environment variable: `export BING_SEARCH_API_KEY=your_api_key`
+**ALWAYS try Wikimedia Commons first** because:
+- ✅ No API key required - works immediately
+- ✅ All images are under free licenses (Public Domain, CC0, CC BY-SA)
+- ✅ High-quality curated images from cultural institutions
+- ✅ No usage restrictions or copyright concerns
 
-**Getting a Bing API Key**:
-1. Go to https://azure.microsoft.com/en-us/services/cognitive-services/bing-web-search-api/
-2. Sign up for a free Azure account
-3. Create a Bing Search resource
-4. Copy your API key
-5. Set it: `export BING_SEARCH_API_KEY=your_key_here`
+**Use Bing Website Search as backup** when:
+- ❌ Wikimedia doesn't have images for the specific museum
+- ❌ Wikimedia images are low quality or not representative
+- ❌ You need more variety or specific angles
+- ⚠️  Remember to verify image licenses before using Bing results
+
+#### Option 1: Wikimedia Commons Search (Recommended First)
+
+**Tool Location**: `tools/search-museum-images-wikimedia.js`
+
+**Prerequisites**: None - works immediately, no API key required
 
 **Usage Examples**:
 
 ```bash
 # Search for museum building photos only
-node tools/search-museum-images.js "故宫博物院"
+node tools/search-museum-images-wikimedia.js "故宫博物院"
 
 # Search for both museum and treasure photos
-node tools/search-museum-images.js "故宫博物院" "清明上河图"
+node tools/search-museum-images-wikimedia.js "故宫博物院" "清明上河图"
 
 # More examples
-node tools/search-museum-images.js "中国国家博物馆" "后母戊鼎"
-node tools/search-museum-images.js "上海博物馆" "大克鼎"
+node tools/search-museum-images-wikimedia.js "中国国家博物馆" "后母戊鼎"
+node tools/search-museum-images-wikimedia.js "上海博物馆" "大克鼎"
 ```
 
-**Demo Version (No API Key Required)**:
+**Features**:
+- Searches multiple query variations for better results
+- Returns up to 10 unique images per search
+- Includes both Chinese and English search terms
+- All results are automatically under free licenses
+- Provides image metadata (dimensions, MIME type, source page)
+
+#### Option 2: Bing Website Search (Backup - Free Browser Tool)
+
+**Tool Location**: `tools/bing-image-search-helper.html`
+
+**Prerequisites**: None - completely free, no API key required
+
+**Features**:
+- ✅ Completely free - no API key or subscription needed
+- ✅ Easy to use - graphical web interface
+- ✅ Smart search - automatically optimizes search keywords
+- ✅ Opens Bing website with optimized search terms
+- ⚠️  Manual selection - browse images and copy URLs manually
+
+**Usage**:
+
 ```bash
-# Test the tool without an API key using mock data
-node tools/search-museum-images-demo.js "故宫博物院" "清明上河图"
+# Open in browser directly
+open tools/bing-image-search-helper.html
+
+# Or through HTTP server
+python3 -m http.server 8000
+# Then visit: http://localhost:8000/tools/bing-image-search-helper.html
 ```
 
-**Workflow for Adding Museum Photos**:
+**Workflow**:
+1. Enter museum and treasure names in the web form
+2. Click search button to open Bing with optimized search
+3. Browse images, right-click and "Copy Image Address"
+4. Paste URL into museum data structure
+5. Verify image license on source page
 
-1. **Search for Images**:
-   ```bash
-   node tools/search-museum-images.js "博物馆名称" "镇馆之宝名称"
-   ```
+#### Advanced Option: Bing API (For Automation)
 
-2. **Review Results**: The tool returns multiple image URLs with metadata:
-   - Full image URL (for museum data)
-   - Thumbnail URL
-   - Image dimensions and file size
-   - Source page URL
+**Tool Location**: `tools/search-museum-images.js`
 
-3. **Select Appropriate Images**: Choose images that are:
-   - High quality and clear
-   - Properly licensed (public domain, Wikimedia Commons, etc.)
-   - Representative of the museum/treasure
-   - Appropriate resolution (typically 800x600 or higher)
+For advanced users who need automated batch processing, there's also a Bing Search API tool available. However, this requires a Bing API key from Azure. For most users, the browser-based helper above is recommended.
 
-4. **Verify Image URLs**: Before adding to museum data:
-   ```bash
-   node tools/verify-treasure-images.js <image-url>
-   ```
+**Prerequisites**: Bing Search API key from Azure Cognitive Services
 
-5. **Add to Museum Data**: Copy the selected URLs to the museum structure:
-   ```javascript
-   {
-       id: 'museum-id',
-       name: '博物馆名称',
-       image: 'URL_FROM_SEARCH_TOOL',  // Museum building photo
-       collections: [
-           {
-               name: '镇馆之宝名称',
-               imageUrl: 'URL_FROM_SEARCH_TOOL',  // Treasure photo
-               description: '...'
-           }
-       ]
-   }
-   ```
+**Usage**: See `tools/README.md` for details on setting up the API key
 
-6. **Validate Data Quality**:
-   ```bash
-   npm run validate-data
-   ```
+#### Recommended Workflow for Adding Museum Photos
 
-**Best Practices**:
-- Always verify image licenses and permissions
-- Prefer Wikimedia Commons and public domain images
-- Use high-resolution images (minimum 800x600)
-- Verify URLs are accessible before committing
-- Test images load correctly in the application
+**Step 1: Try Wikimedia Commons First**
+```bash
+# Search Wikimedia Commons
+node tools/search-museum-images-wikimedia.js "博物馆名称" "镇馆之宝名称"
+```
 
-**Image Search Tips**:
-- For museum buildings: Search includes "博物馆外观 建筑" keywords
-- For treasures: Search includes "文物 高清" keywords
-- Results are filtered for photos only with safe search enabled
-- Returns top 5 results by default
+**Step 2: If Wikimedia doesn't have good results, use Bing Website Search**
+```bash
+# Open the browser-based search helper (no API key needed)
+open tools/bing-image-search-helper.html
+# Or: python3 -m http.server 8000
+# Then visit: http://localhost:8000/tools/bing-image-search-helper.html
+```
+
+**Step 3: Review Results**
+
+The tools return multiple image URLs with metadata:
+- Full image URL (for museum data)
+- Thumbnail URL
+- Image dimensions and file size
+- Source page URL
+- License information (Wikimedia only)
+
+**Step 4: Select Appropriate Images**
+
+Choose images that are:
+- High quality and clear
+- Properly licensed (public domain, Wikimedia Commons, CC0, CC BY-SA, etc.)
+- Representative of the museum/treasure
+- Appropriate resolution (typically 800x600 or higher)
+- Accessible and stable URLs
+
+**Step 5: Verify Image URLs**
+
+Before adding to museum data:
+```bash
+node tools/verify-treasure-images.js <image-url>
+```
+
+**Step 6: Add to Museum Data**
+
+Copy the selected URLs to the museum structure:
+```javascript
+{
+    id: 'museum-id',
+    name: '博物馆名称',
+    image: 'URL_FROM_SEARCH_TOOL',  // Museum building photo
+    collections: [
+        {
+            name: '镇馆之宝名称',
+            imageUrl: 'URL_FROM_SEARCH_TOOL',  // Treasure photo
+            description: '...'
+        }
+    ]
+}
+```
+
+**Step 7: Validate Data Quality**
+```bash
+npm run validate-data
+```
+
+#### Best Practices
+
+**Image Selection**:
+- ✅ Always prefer Wikimedia Commons images (free licenses, no restrictions)
+- ✅ Verify image licenses and permissions for Bing results
+- ✅ Use high-resolution images (minimum 800x600 pixels)
+- ✅ Choose representative, high-quality photos
+- ✅ Verify URLs are accessible before committing
+- ✅ Test images load correctly in the application
+
+**License Verification**:
+- Wikimedia Commons: All images automatically have free licenses
+- Bing Image Search: **MUST** verify license before use (check source page)
+- Acceptable licenses: Public Domain, CC0, CC BY, CC BY-SA
+- Avoid: Copyrighted images, "All Rights Reserved", watermarked images
+
+**Search Tips**:
+- For museum buildings: Search includes terms like "博物馆外观", "建筑", "exterior", "building"
+- For treasures: Search includes terms like "文物", "高清", "artifact", "collection"
+- Try both Chinese and English terms for better results
+- Results are filtered for photos only (Bing has safe search enabled)
 
 ### Local Storage Patterns (VALIDATED WORKING)
 ```javascript
