@@ -536,7 +536,7 @@ The museums are defined in `museums-data.js` in the `MUSEUMS` array:
 **IMPORTANT**: When adding or updating museum data, use the image search tools to find high-quality photos. Two tools are available:
 
 1. **Wikimedia Commons Search** (Recommended first) - Free, no API key required, all images under free licenses
-2. **Bing Image Search** (Backup option) - Requires API key, use when Wikimedia doesn't have ideal images
+2. **Bing Website Search** (Backup option) - Free browser-based search, use when Wikimedia doesn't have ideal images
 
 #### Tool Selection Strategy
 
@@ -546,7 +546,7 @@ The museums are defined in `museums-data.js` in the `MUSEUMS` array:
 - ✅ High-quality curated images from cultural institutions
 - ✅ No usage restrictions or copyright concerns
 
-**Use Bing Image Search as backup** when:
+**Use Bing Website Search as backup** when:
 - ❌ Wikimedia doesn't have images for the specific museum
 - ❌ Wikimedia images are low quality or not representative
 - ❌ You need more variety or specific angles
@@ -579,46 +579,46 @@ node tools/search-museum-images-wikimedia.js "上海博物馆" "大克鼎"
 - All results are automatically under free licenses
 - Provides image metadata (dimensions, MIME type, source page)
 
-#### Option 2: Bing Image Search (Backup)
+#### Option 2: Bing Website Search (Backup - Free Browser Tool)
+
+**Tool Location**: `tools/bing-image-search-helper.html`
+
+**Prerequisites**: None - completely free, no API key required
+
+**Features**:
+- ✅ Completely free - no API key or subscription needed
+- ✅ Easy to use - graphical web interface
+- ✅ Smart search - automatically optimizes search keywords
+- ✅ Opens Bing website with optimized search terms
+- ⚠️  Manual selection - browse images and copy URLs manually
+
+**Usage**:
+
+```bash
+# Open in browser directly
+open tools/bing-image-search-helper.html
+
+# Or through HTTP server
+python3 -m http.server 8000
+# Then visit: http://localhost:8000/tools/bing-image-search-helper.html
+```
+
+**Workflow**:
+1. Enter museum and treasure names in the web form
+2. Click search button to open Bing with optimized search
+3. Browse images, right-click and "Copy Image Address"
+4. Paste URL into museum data structure
+5. Verify image license on source page
+
+#### Advanced Option: Bing API (For Automation)
 
 **Tool Location**: `tools/search-museum-images.js`
 
-**Prerequisites**:
-- Bing Search API key from Azure Cognitive Services
-- Set environment variable: `export BING_SEARCH_API_KEY=your_api_key`
+For advanced users who need automated batch processing, there's also a Bing Search API tool available. However, this requires a Bing API key from Azure. For most users, the browser-based helper above is recommended.
 
-**Getting a Bing API Key**:
-1. Go to https://azure.microsoft.com/en-us/services/cognitive-services/bing-web-search-api/
-2. Sign up for a free Azure account
-3. Create a Bing Search resource
-4. Copy your API key
-5. Set it: `export BING_SEARCH_API_KEY=your_key_here`
+**Prerequisites**: Bing Search API key from Azure Cognitive Services
 
-**Usage Examples**:
-
-```bash
-# Search for museum building photos only
-node tools/search-museum-images.js "故宫博物院"
-
-# Search for both museum and treasure photos
-node tools/search-museum-images.js "故宫博物院" "清明上河图"
-
-# More examples
-node tools/search-museum-images.js "中国国家博物馆" "后母戊鼎"
-node tools/search-museum-images.js "上海博物馆" "大克鼎"
-```
-
-**Features**:
-- Optimized search queries with "博物馆外观 建筑" for museums, "文物 高清" for treasures
-- Results filtered for photos only with safe search enabled
-- Returns top 5 results by default
-- Includes image metadata (dimensions, file size, source URL)
-
-**Demo Version (No API Key Required)**:
-```bash
-# Test the tool without an API key using mock data
-node tools/search-museum-images-demo.js "故宫博物院" "清明上河图"
-```
+**Usage**: See `tools/README.md` for details on setting up the API key
 
 #### Recommended Workflow for Adding Museum Photos
 
@@ -628,10 +628,12 @@ node tools/search-museum-images-demo.js "故宫博物院" "清明上河图"
 node tools/search-museum-images-wikimedia.js "博物馆名称" "镇馆之宝名称"
 ```
 
-**Step 2: If Wikimedia doesn't have good results, use Bing**
+**Step 2: If Wikimedia doesn't have good results, use Bing Website Search**
 ```bash
-# Fallback to Bing Image Search
-node tools/search-museum-images.js "博物馆名称" "镇馆之宝名称"
+# Open the browser-based search helper (no API key needed)
+open tools/bing-image-search-helper.html
+# Or: python3 -m http.server 8000
+# Then visit: http://localhost:8000/tools/bing-image-search-helper.html
 ```
 
 **Step 3: Review Results**
