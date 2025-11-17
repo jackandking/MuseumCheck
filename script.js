@@ -5958,10 +5958,17 @@ class MuseumCheckApp {
         try {
             const grid = document.getElementById('museumGrid');
             const loadingIndicator = document.getElementById('loadingIndicator');
-            // v3 support whitelist (single-museum workflow) - All Beijing museums with treasure workflows
+            // v3 support whitelist (single-museum workflow) - All museums with treasure collections
+            // Note: Museums listed here will show the 🧭 导览 button on the homepage
+            // To add a new museum: ensure it has collections data in museums-data.js, then add its ID here
             const V3_SUPPORTED = [
                 'forbidden-city',
                 'national-museum',
+                'shanghai-museum',  // Added: 上海博物馆
+                'terracotta-warriors',  // Added: 秦始皇帝陵博物院
+                'nanjing-museum',  // Added: 南京博物院
+                'hubei-museum',  // Added: 湖北省博物馆
+                'shaanxi-history',  // Added: 陕西历史博物馆
                 'pinghu-museum', 
                 'beijing-capital-museum',
                 'china-art-museum',
@@ -5969,6 +5976,7 @@ class MuseumCheckApp {
                 'beijing-natural-history-museum',
                 'china-railway-museum',
                 'beijing-planetarium',
+                'lanzhou-museum',  // Added: 兰州市博物馆
                 'beijing-art-museum',
                 'china-science-technology-museum'
             ];

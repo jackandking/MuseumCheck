@@ -11,7 +11,27 @@
   }
 
   // v3 supported museums (导览模式可用清单)
-  const V3_SUPPORTED = ['forbidden-city', 'pinghu-museum', 'beijing-capital-museum'];
+  // Note: Must match the list in script.js for consistency
+  // Museums listed here can access the single-museum.html navigation mode
+  const V3_SUPPORTED = [
+    'forbidden-city',
+    'national-museum',
+    'shanghai-museum',  // Added: 上海博物馆
+    'terracotta-warriors',  // Added: 秦始皇帝陵博物院
+    'nanjing-museum',  // Added: 南京博物院
+    'hubei-museum',  // Added: 湖北省博物馆
+    'shaanxi-history',  // Added: 陕西历史博物馆
+    'pinghu-museum',
+    'beijing-capital-museum',
+    'china-art-museum',
+    'china-military-museum',
+    'beijing-natural-history-museum',
+    'china-railway-museum',
+    'beijing-planetarium',
+    'lanzhou-museum',  // Added: 兰州市博物馆
+    'beijing-art-museum',
+    'china-science-technology-museum'
+  ];
 
   function getUrlParams(){
     try{
