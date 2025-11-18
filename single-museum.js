@@ -424,7 +424,13 @@
         const loaded = await window.museumDataLoader.loadMuseum(m.id, true);
         if (loaded) {
           console.log(`Loaded enriched data for ${m.id} from museum data loader`);
-          enrichedMuseum = loaded;
+          // Merge enriched data with original museum to preserve workflows from treasure-workflow-generator
+          // Tier 1 JSON files have image/collections but not workflows field
+          // MUSEUMS array has workflows added by treasure-workflow-generator
+          enrichedMuseum = {
+            ...loaded,  // Enriched data (image, collections, checklists from Tier 1)
+            workflows: m.workflows || loaded.workflows  // Preserve workflows from MUSEUMS array
+          };
         } else {
           console.log(`Using fallback data for ${m.id} from MUSEUMS array`);
         }
