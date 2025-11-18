@@ -10,29 +10,6 @@
     try { return localStorage.getItem('ageGroup') || '7-12'; } catch(e){ return '7-12'; }
   }
 
-  // v3 supported museums (导览模式可用清单)
-  // Note: Must match the list in script.js for consistency
-  // Museums listed here can access the single-museum.html navigation mode
-  const V3_SUPPORTED = [
-    'forbidden-city',
-    'national-museum',
-    'shanghai-museum',  // Added: 上海博物馆
-    'terracotta-warriors',  // Added: 秦始皇帝陵博物院
-    'nanjing-museum',  // Added: 南京博物院
-    'hubei-museum',  // Added: 湖北省博物馆
-    'shaanxi-history',  // Added: 陕西历史博物馆
-    'pinghu-museum',
-    'beijing-capital-museum',
-    'china-art-museum',
-    'china-military-museum',
-    'beijing-natural-history-museum',
-    'china-railway-museum',
-    'beijing-planetarium',
-    'lanzhou-museum',  // Added: 兰州市博物馆
-    'beijing-art-museum',
-    'china-science-technology-museum'
-  ];
-
   function getUrlParams(){
     try{
       const u = new URL(location.href);
@@ -2179,7 +2156,8 @@
 
     if(musSel){
       const all = Array.isArray(MUSEUMS)?MUSEUMS:[];
-      const list = all.filter(m=> m && V3_SUPPORTED.includes(m.id)).sort((a,b)=> (a.name||'').localeCompare(b.name||'', 'zh-CN'));
+      // Filter museums that have collections (镇馆之宝)
+      const list = all.filter(m=> m && m.collections && Array.isArray(m.collections) && m.collections.length > 0).sort((a,b)=> (a.name||'').localeCompare(b.name||'', 'zh-CN'));
       musSel.innerHTML = '<option value="">请选择博物馆</option>' + list.map(m=> `<option value="${m.id}">${m.name}</option>`).join('');
       const cur = state.selectedMuseum && state.selectedMuseum.id;
       if(cur) musSel.value = cur;
