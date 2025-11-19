@@ -3627,6 +3627,11 @@ class MuseumCheckApp {
         // Initialize leaderboard manager
         this.leaderboardManager = new LeaderboardManager(this);
         
+        // Initialize achievement gamification system
+        if (typeof AchievementGamification !== 'undefined') {
+            this.achievementGamification = new AchievementGamification();
+        }
+        
         this.init();
     }
 
@@ -6261,6 +6266,45 @@ class MuseumCheckApp {
             
             // Proceed with checking the museum as visited
             this.visitedMuseums.push(museumId);
+            
+            // ===== ACHIEVEMENT GAMIFICATION HOOKS =====
+            // Update streak and check for new achievements
+            if (this.achievementGamification) {
+                // Update visit streak
+                this.achievementGamification.updateStreak(new Date());
+                
+                // Check for micro-achievements (first visit, streaks, etc.)
+                const visitCount = this.visitedMuseums.length;
+                
+                // First visit achievement
+                if (visitCount === 1) {
+                    this.achievementGamification.checkMicroAchievements('first_visit', { museumId });
+                }
+                
+                // Calculate and unlock main achievements
+                const achievements = this.calculateAchievements(visitCount);
+                const newlyUnlocked = achievements.filter(a => 
+                    a.achieved && !this.achievementGamification.isAchievementUnlocked(a.id || `${a.name}_${a.level}`)
+                );
+                
+                // Show notifications for newly unlocked achievements
+                newlyUnlocked.forEach(achievement => {
+                    const achievementWithId = {
+                        ...achievement,
+                        id: achievement.id || `${achievement.name}_${achievement.level}`.replace(/\s+/g, '_')
+                    };
+                    this.achievementGamification.unlockAchievement(achievementWithId);
+                });
+                
+                // Check for close-to-unlock achievement hints
+                const hints = this.achievementGamification.getAchievementHints(visitCount, {});
+                if (hints.length > 0 && Math.random() < 0.3) {
+                    // Show hint for closest achievement (30% chance)
+                    this.achievementGamification.showAchievementNotification(hints[0].achievement, 'hint');
+                }
+            }
+            // ===== END GAMIFICATION HOOKS =====
+            
             // Trigger large rocket animation for museum visit
             this.triggerLargeRocket();
             this.saveVisitedMuseums();
@@ -8063,6 +8107,39 @@ class MuseumCheckApp {
         const assessmentResults = this.getRawAssessmentResults();
         const assessmentQuality = this.calculateAssessmentQuality(assessmentResults);
         
+        // ===== GAMIFICATION STATS DISPLAY =====
+        if (this.achievementGamification) {
+            const stats = this.achievementGamification.getStats();
+            const xpProgress = this.achievementGamification.getXPProgress();
+            const streakInfo = this.achievementGamification.getStreakInfo();
+            
+            // Update gamification stat cards
+            const xpElem = document.getElementById('gamificationXP');
+            if (xpElem) xpElem.textContent = stats.xp.totalXP.toLocaleString();
+            
+            const levelElem = document.getElementById('gamificationLevel');
+            if (levelElem) levelElem.textContent = stats.xp.level;
+            
+            const streakElem = document.getElementById('gamificationStreak');
+            if (streakElem) streakElem.textContent = `${streakInfo.current}天`;
+            
+            // Update XP progress bar
+            const xpProgressText = document.getElementById('xpProgressText');
+            if (xpProgressText) {
+                xpProgressText.textContent = `${xpProgress.currentLevelXP} / ${xpProgress.nextLevelXP} XP`;
+            }
+            
+            const xpProgressFill = document.getElementById('xpProgressFill');
+            if (xpProgressFill) {
+                xpProgressFill.style.width = `${xpProgress.progress}%`;
+            }
+            
+            // Show achievement hints
+            const hints = this.achievementGamification.getAchievementHints(visitedCount, assessmentQuality);
+            this.renderAchievementHints(hints);
+        }
+        // ===== END GAMIFICATION STATS =====
+        
         // 更新统计信息 - 融合显示博物馆进度和亲子质量
         document.getElementById('totalAchievements').textContent = achievedCount;
         document.getElementById('visitProgress').textContent = `${visitedCount}/${MUSEUM_COUNT}`;
@@ -8417,6 +8494,43 @@ class MuseumCheckApp {
             `;
             container.appendChild(nextGoalSection);
         }
+    }
+
+    // 新增方法：渲染成就提示 (Achievement Hints)
+    renderAchievementHints(hints) {
+        const hintsContainer = document.getElementById('achievementHints');
+        const hintsList = document.getElementById('achievementHintsList');
+        
+        if (!hintsContainer || !hintsList) return;
+        
+        if (!hints || hints.length === 0) {
+            hintsContainer.style.display = 'none';
+            return;
+        }
+        
+        // Show hints container
+        hintsContainer.style.display = 'block';
+        
+        // Render each hint
+        hintsList.innerHTML = hints.map(hint => {
+            const achievement = hint.achievement;
+            const progressPercent = Math.round(hint.progressPercent);
+            
+            return `
+                <div class="achievement-hint-item">
+                    <div class="achievement-hint-header">
+                        <div class="achievement-hint-emoji">${achievement.emoji || '🏆'}</div>
+                        <div class="achievement-hint-name">${achievement.name || '未知成就'}</div>
+                        <div class="achievement-hint-progress-percent">${progressPercent}%</div>
+                    </div>
+                    <div class="achievement-hint-description">${achievement.description || ''}</div>
+                    <div class="achievement-hint-progress-bar">
+                        <div class="achievement-hint-progress-fill" style="width: ${progressPercent}%"></div>
+                    </div>
+                    ${hint.remaining ? `<div class="achievement-hint-remaining">还需 ${hint.remaining}</div>` : ''}
+                </div>
+            `;
+        }).join('');
     }
 
     // 新增方法：生成个性化建议
