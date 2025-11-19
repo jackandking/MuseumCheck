@@ -4719,6 +4719,52 @@ class MuseumCheckApp {
             });
         }
 
+        // ===== GAMIFICATION SETTINGS TOGGLES =====
+        const soundToggle = document.getElementById('gamificationSoundToggle');
+        if (soundToggle && this.achievementGamification) {
+            soundToggle.checked = this.achievementGamification.soundEnabled;
+            soundToggle.addEventListener('change', () => {
+                const enabled = this.achievementGamification.toggleSound();
+                
+                // Play a test sound when enabling
+                if (enabled) {
+                    this.achievementGamification.playAchievementSound('basic');
+                }
+                
+                // Track event
+                this.trackEvent('gamification_sound_toggled', {
+                    'enabled': enabled
+                });
+            });
+        }
+        
+        const animationsToggle = document.getElementById('gamificationAnimationsToggle');
+        if (animationsToggle && this.achievementGamification) {
+            animationsToggle.checked = this.achievementGamification.animationsEnabled;
+            animationsToggle.addEventListener('change', () => {
+                const enabled = this.achievementGamification.toggleAnimations();
+                
+                // Show a test animation when enabling
+                if (enabled) {
+                    this.achievementGamification.showAchievementNotification({
+                        emoji: '✨',
+                        name: '动画已启用',
+                        description: '成就解锁时将显示动画效果',
+                        level: 'basic'
+                    }, 'hint');
+                }
+                
+                // Track event
+                this.trackEvent('gamification_animations_toggled', {
+                    'enabled': enabled
+                });
+            });
+        }
+        
+        // Update gamification stats in settings
+        this.updateGamificationStatsDisplay();
+        // ===== END GAMIFICATION SETTINGS =====
+
         // Fireworks retention time slider
         const retentionSlider = document.getElementById('fireworksRetentionInput');
         if (retentionSlider) {
@@ -7357,6 +7403,27 @@ class MuseumCheckApp {
                 
                 if (e.target.checked && itemIndex === -1) {
                     completed.push(index);
+                    
+                    // ===== GAMIFICATION HOOK: Checklist Item Completed =====
+                    if (this.achievementGamification) {
+                        // Check for first checklist item
+                        const totalCompletedItems = Object.values(this.museumChecklists)
+                            .reduce((sum, items) => sum + items.length, 0);
+                        
+                        if (totalCompletedItems === 1) {
+                            this.achievementGamification.checkMicroAchievements('first_checklist_item');
+                        }
+                        
+                        // Check for checklist completion milestones
+                        if (totalCompletedItems === 10) {
+                            this.achievementGamification.checkMicroAchievements('checklist_complete_10');
+                        }
+                        
+                        // Award XP for checklist completion (small amount)
+                        this.achievementGamification.addXP(5);
+                    }
+                    // ===== END GAMIFICATION HOOK =====
+                    
                     // Trigger small rocket animation for task completion
                     this.triggerSmallRocket();
                     
@@ -7811,6 +7878,30 @@ class MuseumCheckApp {
         
         // Update fireworks retention time slider
         const retentionSlider = document.getElementById('fireworksRetentionInput');
+        
+        // Update gamification stats display
+        this.updateGamificationStatsDisplay();
+    }
+    
+    // Update gamification stats in settings panel
+    updateGamificationStatsDisplay() {
+        if (!this.achievementGamification) return;
+        
+        const stats = this.achievementGamification.getStats();
+        
+        // Update mini stats display in settings
+        const statsXP = document.getElementById('statsXP');
+        if (statsXP) statsXP.textContent = `${stats.xp.totalXP} XP`;
+        
+        const statsLevel = document.getElementById('statsLevel');
+        if (statsLevel) statsLevel.textContent = `等级 ${stats.xp.level}`;
+        
+        const statsStreak = document.getElementById('statsStreak');
+        if (statsStreak) {
+            const streakInfo = this.achievementGamification.getStreakInfo();
+            statsStreak.textContent = `连续 ${streakInfo.current} 天`;
+        }
+    }
         const retentionDisplay = document.getElementById('fireworksRetentionDisplay');
         if (retentionSlider && retentionDisplay) {
             const retentionMs = this.loadFireworksRetentionTime();
@@ -8825,6 +8916,28 @@ class MuseumCheckApp {
                     alert('照片保存失败，请重试。');
                     return;
                 }
+                
+                // ===== GAMIFICATION HOOK: Photo Upload =====
+                if (this.achievementGamification) {
+                    // Count total photos
+                    const photoCount = Object.keys(this.taskPhotos).length;
+                    
+                    // First photo achievement
+                    if (photoCount === 1) {
+                        this.achievementGamification.checkMicroAchievements('first_photo');
+                    }
+                    
+                    // Photo milestone achievements
+                    if (photoCount === 10) {
+                        this.achievementGamification.checkMicroAchievements('photo_count_10');
+                    } else if (photoCount === 50) {
+                        this.achievementGamification.checkMicroAchievements('photo_count_50');
+                    }
+                    
+                    // Award XP for photo upload
+                    this.achievementGamification.addXP(10);
+                }
+                // ===== END GAMIFICATION HOOK =====
                 
                 // Update the display
                 const existingPhoto = container.querySelector('.task-photo');

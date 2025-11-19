@@ -522,6 +522,57 @@
                 </div>
                 </div>
             </div>
+            
+            <!-- Gamification Settings Section -->
+            <div class="settings-section" data-collapsed="true">
+                <h3 class="settings-section-header">
+                    <span>🎮 成就游戏化设置</span>
+                    <span class="settings-section-toggle">▶</span>
+                </h3>
+                <div class="settings-section-content gamification-settings" style="display: none;">
+                    <div class="gamification-setting-item">
+                        <div class="gamification-setting-label">
+                            <div class="gamification-setting-icon">🔊</div>
+                            <div class="gamification-setting-text">
+                                <div class="gamification-setting-name">成就音效</div>
+                                <div class="gamification-setting-description">解锁成就时播放音效</div>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="gamificationSoundToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="gamification-setting-item">
+                        <div class="gamification-setting-label">
+                            <div class="gamification-setting-icon">✨</div>
+                            <div class="gamification-setting-text">
+                                <div class="gamification-setting-name">成就动画</div>
+                                <div class="gamification-setting-description">解锁成就时显示动画效果</div>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="gamificationAnimationsToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-item">
+                        <label class="settings-label">成就统计：</label>
+                        <div class="settings-value">
+                            <div class="gamification-stats-mini">
+                                <span id="statsXP">0 XP</span> · 
+                                <span id="statsLevel">等级 1</span> · 
+                                <span id="statsStreak">连续 0 天</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-hint">
+                        成就游戏化系统为每次小成就提供即时反馈和情绪价值，
+                        通过经验值、等级和连续打卡激励持续参观博物馆。
+                    </div>
+                </div>
+            </div>
+            
             <div class="settings-section" data-collapsed="true">
                 <h3 class="settings-section-header">
                     <span>🎆 烟花设置</span>
