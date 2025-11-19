@@ -10,9 +10,6 @@
     try { return localStorage.getItem('ageGroup') || '7-12'; } catch(e){ return '7-12'; }
   }
 
-  // v3 supported museums (导览模式可用清单)
-  const V3_SUPPORTED = ['forbidden-city', 'pinghu-museum', 'beijing-capital-museum'];
-
   function getUrlParams(){
     try{
       const u = new URL(location.href);
@@ -31,6 +28,19 @@
   }
 
   function buildForbiddenCityGrandparentMvpRoute(museum){
+    const gatePhotoTask = {
+      id: 'act:forbidden-city:gate-photo',
+      role: 'parent',
+      type: 'photo',
+      title: '门口打卡',
+      subtitle: '在午门或太和殿前合影'
+    };
+    
+    // Add museum image if available
+    if (museum && museum.image) {
+      gatePhotoTask.imageUrl = museum.image;
+    }
+    
     return {
       id: 'route:forbidden-city:grandparent-3-6-mvp',
       name: '祖父母·省心路线',
@@ -40,7 +50,7 @@
           { id: 'act:forbidden-city:enroute-tts-nearby', role: 'parent', type: 'tts', title: '快到啦', subtitle: '还有10分钟就到啦，猜猜大门有几个门钉？', tts: '还有10分钟就到啦！我们再玩个小游戏：猜猜故宫的大门有几个门钉？到了我们一起数一数～', ages:['3-6'] }
         ],
         visit: [
-          { id: 'act:forbidden-city:gate-photo', role: 'parent', type: 'photo', title: '门口打卡', subtitle: '在午门或太和殿前合影' },
+          gatePhotoTask,
           { id: 'act:forbidden-city:find-throne', role: 'child', type: 'confirm', title: '找龙椅', subtitle: '找到皇帝的宝座并观察一个细节' },
           { id: 'act:forbidden-city:count-roof-beasts', role: 'child', type: 'confirm', title: '屋顶小兽', subtitle: '抬头数一数屋檐上的小兽' },
           { id: 'act:forbidden-city:victory-photo', role: 'parent', type: 'photo', title: '胜利合影', subtitle: '参观结束前再合影留念' }
@@ -378,10 +388,12 @@
     list.forEach(m => {
       const card = document.createElement('div');
       card.className = 'sg-card';
+      card.dataset.museumId = m.id;
       const img = document.createElement('img');
       img.alt = m.name;
       img.loading = 'lazy';
       img.src = m.image || fallbackImage(m);
+      img.dataset.tier3Image = m.image || fallbackImage(m);
       const name = document.createElement('div');
       name.className = 'sg-card-name';
       name.textContent = m.name;
@@ -391,7 +403,51 @@
       card.append(img, name, desc);
       card.onclick = () => onSelectMuseum(m);
       grid.appendChild(card);
+      
+      // Lazily load Tier 1/2 image when card becomes visible
+      tryLoadEnrichedImageForCard(card, img, m);
     });
+  }
+  
+  // Lazy load enriched image for museum card
+  async function tryLoadEnrichedImageForCard(card, img, museum){
+    try {
+      // Only load for museums with workflows (same filter as hasAvailableWorkflow)
+      if (!window.museumDataLoader || typeof window.museumDataLoader.loadMuseum !== 'function') {
+        return;
+      }
+      
+      // Use Intersection Observer for lazy loading
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(async entry => {
+            if (entry.isIntersecting) {
+              observer.unobserve(card);
+              await loadEnrichedImage();
+            }
+          });
+        }, { rootMargin: '50px' });
+        observer.observe(card);
+      } else {
+        // Fallback: load immediately
+        await loadEnrichedImage();
+      }
+      
+      async function loadEnrichedImage() {
+        try {
+          const loaded = await window.museumDataLoader.loadMuseum(museum.id, true);
+          if (loaded && loaded.image && loaded.image !== img.dataset.tier3Image) {
+            // Update image if Tier 1/2 has a different image
+            img.src = loaded.image;
+            console.log(`Updated card image for ${museum.id} from Tier 1/2`);
+          }
+        } catch (error) {
+          // Silent fallback to Tier 3 image
+        }
+      }
+    } catch (error) {
+      // Silent fallback to Tier 3 image
+    }
   }
 
   function fallbackImage(m){
@@ -405,17 +461,69 @@
     } catch(e){ return false; }
   }
 
-  function onSelectMuseum(m){
-    state.selectedMuseum = m;
+  async function onSelectMuseum(m){
+    // Try to load enriched museum data from 3-tier system
+    let enrichedMuseum = m;
+    let needWorkflowRegeneration = false;
+    
+    if (window.museumDataLoader && typeof window.museumDataLoader.loadMuseum === 'function') {
+      try {
+        const loaded = await window.museumDataLoader.loadMuseum(m.id, true);
+        if (loaded) {
+          console.log(`Loaded enriched data for ${m.id} from museum data loader`);
+          
+          // Check if enriched data has different image or collections than original
+          const hasNewImage = loaded.image && loaded.image !== m.image;
+          const hasNewCollections = loaded.collections && JSON.stringify(loaded.collections) !== JSON.stringify(m.collections);
+          needWorkflowRegeneration = hasNewImage || hasNewCollections;
+          
+          // Merge enriched data with original museum to preserve workflows from treasure-workflow-generator
+          // Tier 1 JSON files have image/collections but not workflows field
+          // MUSEUMS array has workflows added by treasure-workflow-generator
+          enrichedMuseum = {
+            ...loaded,  // Enriched data (image, collections, checklists from Tier 1)
+            workflows: m.workflows || loaded.workflows  // Preserve workflows from MUSEUMS array initially
+          };
+          
+          // Regenerate treasure hunt workflow if we have enriched collections/image
+          if (needWorkflowRegeneration && window.TreasureWorkflowGenerator) {
+            console.log(`Regenerating treasure hunt workflow for ${m.id} with enriched data`);
+            try {
+              const newWorkflow = window.TreasureWorkflowGenerator.generateTreasureHuntWorkflow(enrichedMuseum);
+              
+              // Replace or add the treasure-discovery workflow
+              if (!enrichedMuseum.workflows) {
+                enrichedMuseum.workflows = [];
+              }
+              const treasureIdx = enrichedMuseum.workflows.findIndex(wf => wf.id === 'treasure-discovery');
+              if (treasureIdx >= 0) {
+                enrichedMuseum.workflows[treasureIdx] = newWorkflow;
+              } else {
+                enrichedMuseum.workflows.push(newWorkflow);
+              }
+              console.log(`Updated treasure-discovery workflow with ${enrichedMuseum.collections ? enrichedMuseum.collections.length : 0} treasures`);
+            } catch (error) {
+              console.error(`Failed to regenerate treasure hunt workflow for ${m.id}:`, error);
+            }
+          }
+        } else {
+          console.log(`Using fallback data for ${m.id} from MUSEUMS array`);
+        }
+      } catch (error) {
+        console.warn(`Failed to load enriched data for ${m.id}, using fallback:`, error);
+      }
+    }
+    
+    state.selectedMuseum = enrichedMuseum;
     // Update header museum name
     const headerName = document.getElementById('headerMuseumName');
-    if(headerName && m){
-      headerName.textContent = m.name || '';
+    if(headerName && enrichedMuseum){
+      headerName.textContent = enrichedMuseum.name || '';
     }
     // Optional: load workflows for this museum
-    setupWorkflowPicker(m);
+    setupWorkflowPicker(enrichedMuseum);
     // Apply default/explicit workflow selection without showing picker
-    applyWorkflowSettingForMuseum(m);
+    applyWorkflowSettingForMuseum(enrichedMuseum);
     // Skip prep/enroute steps for Pinghu Museum (simplified workflow)
     // Simplified flow: after museum selection, show workflow picker in select step
     // User clicks "开始探险" button to start visit step
@@ -681,6 +789,19 @@
 
   function buildDefaultWorkflow(museum){
     // Map the existing static three-step visit flow into a workflow structure
+    const gatePhotoTask = {
+      id: 'gate-photo',
+      role: 'parent',
+      type: 'photo',
+      title: '门口打卡',
+      subtitle: '在博物馆门口合影'
+    };
+    
+    // Add museum image if available
+    if (museum && museum.image) {
+      gatePhotoTask.imageUrl = museum.image;
+    }
+    
     return {
       id: 'default-basic',
       name: '基础三步走',
@@ -688,7 +809,7 @@
       tasks: {
         enroute: [],
         visit: [
-          { id: 'gate-photo', role: 'parent', type: 'photo', title: '门口打卡', subtitle: '在博物馆门口合影' },
+          gatePhotoTask,
           { id: 'find-treasure', role: 'child', type: 'confirm', title: '寻找宝藏', subtitle: '找到一件喜欢的展品，说出你看到的两个细节' },
           { id: 'victory-photo', role: 'parent', type: 'photo', title: '胜利合影', subtitle: '在大厅或出口处合影' }
         ]
@@ -2159,7 +2280,8 @@
 
     if(musSel){
       const all = Array.isArray(MUSEUMS)?MUSEUMS:[];
-      const list = all.filter(m=> m && V3_SUPPORTED.includes(m.id)).sort((a,b)=> (a.name||'').localeCompare(b.name||'', 'zh-CN'));
+      // Filter museums that have collections (镇馆之宝)
+      const list = all.filter(m=> m && m.collections && Array.isArray(m.collections) && m.collections.length > 0).sort((a,b)=> (a.name||'').localeCompare(b.name||'', 'zh-CN'));
       musSel.innerHTML = '<option value="">请选择博物馆</option>' + list.map(m=> `<option value="${m.id}">${m.name}</option>`).join('');
       const cur = state.selectedMuseum && state.selectedMuseum.id;
       if(cur) musSel.value = cur;
@@ -2193,7 +2315,7 @@
     });
   }
 
-  function init(){
+  async function init(){
     initSelect();
     
     // Try to restore workflow state if available
@@ -2216,16 +2338,23 @@
       const mid = p.museum || p.museumId;
       hasMuseumParam = !!(mid);
       
-      // If we have restored state, use that museum ID
-      const museumId = restoredState ? restoredState.museumId : mid;
+      // Prioritize URL parameter over restored state (when user explicitly navigates from homepage)
+      // Only use restored state if no URL parameter is present (user refreshing/returning to page)
+      const museumId = mid || (restoredState ? restoredState.museumId : null);
+      
+      // Clear saved state when URL parameter is present (fresh navigation intent)
+      if(hasMuseumParam && museumId){
+        __clearWorkflowState();
+      }
       
       if(museumId){
         const m = (Array.isArray(MUSEUMS)?MUSEUMS:[]).find(x=> x && x.id===museumId);
         if(m){
-          onSelectMuseum(m);
+          await onSelectMuseum(m);
           
-          // If we have restored state, find and select the workflow
-          if(restoredState && restoredState.workflowId){
+          // Only restore workflow state if we're using the saved museum (no URL param override)
+          // When URL param is present, start fresh workflow for the newly selected museum
+          if(!hasMuseumParam && restoredState && restoredState.workflowId){
             const workflows = state.workflows || [];
             const wf = workflows.find(w => w && w.id === restoredState.workflowId);
             if(wf){

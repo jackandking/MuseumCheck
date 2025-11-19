@@ -3609,6 +3609,7 @@ class MuseumCheckApp {
         this.sortBy = this.loadSortPreference(); // Load sorting preference
         this.userLocation = null; // Will be set if user grants location permission
         this.assessmentHidden = !this.loadAssessmentVisibility(); // Load from settings, default to hidden
+        this.manageButtonHidden = !this.loadManageButtonVisibility(); // Load from settings, default to hidden
         this.readonlyCheckboxes = false; // Default to interactive checkboxes
         this.isDouyinAffiliate = false; // Flag to track Douyin affiliate mode
         this.favoriteMuseums = this.loadFavoriteMuseums(); // Load favorite museums
@@ -3674,6 +3675,9 @@ class MuseumCheckApp {
         
         // Apply assessment visibility setting
         this.applyAssessmentVisibility();
+        
+        // Apply management button visibility setting
+        this.applyManageButtonVisibility();
         
         // Migrate existing localStorage photos to IndexedDB if supported
         if (this.indexedDBSupported) {
@@ -4622,6 +4626,9 @@ class MuseumCheckApp {
             }
         });
 
+        // Initialize collapsible settings sections
+        this.initializeCollapsibleSections();
+
         // Auto-save nickname on blur (when user leaves the input field)
         const nicknameInput = document.getElementById('childNicknameInput');
         if (nicknameInput) {
@@ -4641,6 +4648,24 @@ class MuseumCheckApp {
                         });
                     }
                 }
+            });
+        }
+
+        // Auto-save DeepSeek API Key on blur
+        const deepseekApiKeyInput = document.getElementById('deepseekApiKeyInput');
+        if (deepseekApiKeyInput) {
+            deepseekApiKeyInput.addEventListener('blur', () => {
+                const apiKey = deepseekApiKeyInput.value.trim();
+                if (apiKey) {
+                    localStorage.setItem('deepseekApiKey', apiKey);
+                } else {
+                    localStorage.removeItem('deepseekApiKey');
+                }
+                
+                // Track API key saved event
+                this.trackEvent('deepseek_api_key_saved', {
+                    'has_key': !!apiKey
+                });
             });
         }
 
@@ -4798,10 +4823,63 @@ class MuseumCheckApp {
             });
         }
 
+        // Management button visibility toggle
+        const showManageButtonToggle = document.getElementById('showManageButtonToggle');
+        if (showManageButtonToggle) {
+            showManageButtonToggle.addEventListener('change', (e) => {
+                const showManageButton = e.target.checked;
+                const result = this.saveManageButtonVisibility(showManageButton);
+                
+                if (result.success) {
+                    // Track manage button visibility change
+                    this.trackEvent('manage_button_visibility_changed', {
+                        'show_manage_button': showManageButton,
+                        'auto_saved': true
+                    });
+                }
+            });
+        }
+
         // Clear all data button
         document.getElementById('clearAllDataButton').addEventListener('click', () => {
             this.clearAllData();
         });
+
+        // Data tier priority selector
+        const dataTierSelector = document.getElementById('dataTierPrioritySelector');
+        if (dataTierSelector) {
+            dataTierSelector.addEventListener('change', (e) => {
+                const priority = e.target.value.split('-');
+                if (window.museumDataLoader) {
+                    window.museumDataLoader.updatePrioritySettings(priority);
+                    this.showNotification('数据优先级已更新', 2000);
+                }
+            });
+        }
+
+        // Open data manager button
+        const openDataManagerBtn = document.getElementById('openDataManagerButton');
+        if (openDataManagerBtn) {
+            openDataManagerBtn.addEventListener('click', () => {
+                window.open('museum-data-manager.html', '_blank');
+            });
+        }
+
+        // Open fireworks admin button
+        const openFireworksAdminBtn = document.getElementById('openFireworksAdminButton');
+        if (openFireworksAdminBtn) {
+            openFireworksAdminBtn.addEventListener('click', () => {
+                window.open('admin-fireworks.html?admin=1', '_blank');
+            });
+        }
+
+        // Open leaderboard admin button
+        const openLeaderboardAdminBtn = document.getElementById('openLeaderboardAdminButton');
+        if (openLeaderboardAdminBtn) {
+            openLeaderboardAdminBtn.addEventListener('click', () => {
+                window.open('admin-leaderboard.html?admin=1', '_blank');
+            });
+        }
 
         // Achievement poster generation button
         document.getElementById('generateAchievementPoster').addEventListener('click', () => {
@@ -5400,6 +5478,38 @@ class MuseumCheckApp {
         }
     }
 
+    loadManageButtonVisibility() {
+        try {
+            const saved = localStorage.getItem('showManageButton');
+            // Default to false (hidden) if not saved
+            return saved === 'true';
+        } catch (error) {
+            console.error('Failed to load manage button visibility:', error);
+            return false; // Default to hidden
+        }
+    }
+
+    saveManageButtonVisibility(showManageButton) {
+        try {
+            localStorage.setItem('showManageButton', showManageButton ? 'true' : 'false');
+            this.manageButtonHidden = !showManageButton;
+            this.applyManageButtonVisibility();
+            return { success: true, message: '显示设置已保存' };
+        } catch (error) {
+            console.error('Failed to save manage button visibility:', error);
+            return { success: false, message: '保存失败，请重试' };
+        }
+    }
+
+    applyManageButtonVisibility() {
+        const body = document.body;
+        if (this.manageButtonHidden) {
+            body.classList.add('hide-manage-buttons');
+        } else {
+            body.classList.remove('hide-manage-buttons');
+        }
+    }
+
     saveChildNickname(nickname) {
         try {
             // Validate nickname
@@ -5904,20 +6014,6 @@ class MuseumCheckApp {
         try {
             const grid = document.getElementById('museumGrid');
             const loadingIndicator = document.getElementById('loadingIndicator');
-            // v3 support whitelist (single-museum workflow) - All Beijing museums with treasure workflows
-            const V3_SUPPORTED = [
-                'forbidden-city',
-                'national-museum',
-                'pinghu-museum', 
-                'beijing-capital-museum',
-                'china-art-museum',
-                'china-military-museum',
-                'beijing-natural-history-museum',
-                'china-railway-museum',
-                'beijing-planetarium',
-                'beijing-art-museum',
-                'china-science-technology-museum'
-            ];
             
             // Hide loading indicator
             if (loadingIndicator) {
@@ -5945,6 +6041,10 @@ class MuseumCheckApp {
                     ? `<div class="museum-tags">${tagList.map(tag => `<span class="tag">${tag}</span>`).join('')}</div>`
                     : '';
                 
+                // Check if museum has collections data (check both current data and MUSEUMS array)
+                // This implements the v2 approach: dynamically check for collections instead of hardcoded lists
+                const hasCollections = this.museumHasCollections(museum);
+                
                 const card = document.createElement('div');
                 card.className = `museum-card ${isVisited ? 'visited' : ''} ${isFavorite ? 'favorite' : ''}`;
                 card.innerHTML = `
@@ -5958,7 +6058,8 @@ class MuseumCheckApp {
                                 ${museum.name}
                                 <button class="museum-fireworks-button" data-museum="${museum.id}" title="查看本馆烟花墙" style="display: none;">🎆</button>
                                 <button class="museum-checkin-button" data-museum="${museum.id}" title="进入打卡页面">🔗 打卡</button>
-                                ${V3_SUPPORTED.includes(museum.id) ? `<button class="museum-v3-button" title="进入导览模式">🧭 导览</button>` : ''}
+                                ${hasCollections ? `<button class="museum-v3-button" title="进入导览模式">🧭 导览</button>` : ''}
+                                <button class="museum-manage-button" data-museum="${museum.id}" title="管理博物馆数据">🔧 管理</button>
                                 ${isVisited && !this.assessmentHidden 
                                     ? (hasAssessment 
                                         ? '<span class="assessment-label" aria-disabled="true" title="已完成亲子测评">🧡 已完成</span>'
@@ -5978,6 +6079,7 @@ class MuseumCheckApp {
                         !e.target.classList.contains('assessment-button') &&
                         !e.target.classList.contains('museum-fireworks-button') &&
                         !e.target.classList.contains('museum-checkin-button') &&
+                        !e.target.classList.contains('museum-manage-button') &&
                         !e.target.classList.contains('favorite-button')) {
                         this.openMuseumModal(museum);
                     }
@@ -6056,6 +6158,23 @@ class MuseumCheckApp {
                     v3Btn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         window.location.href = `single-museum.html?museum=${museum.id}`;
+                    });
+                }
+
+                // Add manage button event
+                const manageButton = card.querySelector('.museum-manage-button');
+                if (manageButton) {
+                    manageButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Navigate to museum-data-manager.html with museum ID parameter
+                        window.location.href = `museum-data-manager.html?museum=${encodeURIComponent(museum.id)}`;
+                        
+                        // Track event
+                        this.trackEvent('museum_manage_opened', {
+                            'museum_id': museum.id,
+                            'museum_name': museum.name,
+                            'museum_location': museum.location
+                        });
                     });
                 }
 
@@ -6799,21 +6918,46 @@ class MuseumCheckApp {
             if (modal) modal.classList.remove('hidden');
         } catch(e) {}
 
-        // If current museum lacks checklists (meta dataset), load full data then reopen
-        try {
-            const noChecklist = !(museum && museum.checklists && museum.checklists.parent && museum.checklists.child);
-            if (noChecklist) {
-                this.ensureFullMuseumsData().then(() => {
-                    const full = (typeof this.getMuseumById === 'function') ? this.getMuseumById(museum.id) : (window.MUSEUMS || []).find(m=>m.id===museum.id) || museum;
-                    if (full && full.checklists && full.checklists.parent && full.checklists.child) {
-                        this.openMuseumModal(full, activeTab);
-                    }
-                }).catch(() => {
-                    // failed to load: keep placeholder; user can close modal
-                });
-                return;
-            }
-        } catch (e) { /* ignore */ }
+        // Load museum data with dynamic data priority support
+        // This allows updated data from KV store to override static data
+        this.getMuseumByIdWithLoader(museum.id, false).then(loadedMuseum => {
+            const museumToUse = loadedMuseum || museum;
+            
+            // If current museum lacks checklists (meta dataset), load full data then reopen
+            try {
+                const noChecklist = !(museumToUse && museumToUse.checklists && museumToUse.checklists.parent && museumToUse.checklists.child);
+                if (noChecklist) {
+                    this.ensureFullMuseumsData().then(() => {
+                        const full = (typeof this.getMuseumById === 'function') ? this.getMuseumById(museumToUse.id) : (window.MUSEUMS || []).find(m=>m.id===museumToUse.id) || museumToUse;
+                        if (full && full.checklists && full.checklists.parent && full.checklists.child) {
+                            // Merge dynamic data (like images) with checklist data
+                            const merged = { ...full, ...loadedMuseum };
+                            this.renderMuseumModalContent(merged, activeTab, safeGuidance, mi, ageLabels);
+                        }
+                    }).catch(() => {
+                        // failed to load: keep placeholder; user can close modal
+                    });
+                    return;
+                }
+            } catch (e) { /* ignore */ }
+            
+            // Render with loaded museum data (includes any KV store updates)
+            this.renderMuseumModalContent(museumToUse, activeTab, safeGuidance, mi, ageLabels);
+        }).catch(error => {
+            console.error('Error loading museum with dynamic data:', error);
+            // Fallback to original museum object
+            this.renderMuseumModalContent(museum, activeTab, safeGuidance, mi, ageLabels);
+        });
+    }
+
+    /**
+     * Render museum modal content
+     * Extracted from openMuseumModal to support async data loading
+     */
+    renderMuseumModalContent(museum, activeTab, safeGuidance, mi, ageLabels) {
+        const modal = document.getElementById('museumModal');
+        const content = document.getElementById('modalContent');
+        const title = document.getElementById('modalTitle');
 
         // Ensure currentAge is synced with UI selection and has a valid checklist
         try {
@@ -7341,6 +7485,69 @@ class MuseumCheckApp {
         document.getElementById('settingsModal').classList.add('hidden');
     }
 
+    initializeCollapsibleSections() {
+        const settingsSections = document.querySelectorAll('.settings-section');
+        
+        settingsSections.forEach(section => {
+            const header = section.querySelector('.settings-section-header');
+            if (!header) return;
+            
+            const content = section.querySelector('.settings-section-content');
+            const toggle = section.querySelector('.settings-section-toggle');
+            if (!content || !toggle) return;
+            
+            // Add click handler to header
+            header.addEventListener('click', () => {
+                const isCollapsed = section.getAttribute('data-collapsed') === 'true';
+                
+                if (isCollapsed) {
+                    // Expand section
+                    section.setAttribute('data-collapsed', 'false');
+                    content.style.display = 'block';
+                    toggle.textContent = '▼';
+                    
+                    // Animate content reveal
+                    content.style.maxHeight = '0';
+                    content.style.overflow = 'hidden';
+                    content.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                        content.style.opacity = '1';
+                        
+                        setTimeout(() => {
+                            content.style.maxHeight = 'none';
+                            content.style.overflow = 'visible';
+                        }, 300);
+                    }, 10);
+                } else {
+                    // Collapse section
+                    section.setAttribute('data-collapsed', 'true');
+                    toggle.textContent = '▶';
+                    
+                    // Animate content hide
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                    content.style.overflow = 'hidden';
+                    
+                    setTimeout(() => {
+                        content.style.maxHeight = '0';
+                        content.style.opacity = '0';
+                        
+                        setTimeout(() => {
+                            content.style.display = 'none';
+                        }, 300);
+                    }, 10);
+                }
+                
+                // Track collapse/expand event
+                this.trackEvent('settings_section_toggled', {
+                    'section': header.textContent.trim(),
+                    'action': isCollapsed ? 'expanded' : 'collapsed'
+                });
+            });
+        });
+    }
+
     async showLeaderboardModal() {
         this.modalManager.showModal('leaderboardModal');
         
@@ -7527,6 +7734,13 @@ class MuseumCheckApp {
             nicknameInput.value = this.childNickname;
         }
         
+        // Update DeepSeek API Key input
+        const deepseekApiKeyInput = document.getElementById('deepseekApiKeyInput');
+        if (deepseekApiKeyInput) {
+            const apiKey = localStorage.getItem('deepseekApiKey') || '';
+            deepseekApiKeyInput.value = apiKey;
+        }
+        
         // Update current age group display
         const ageGroupDisplay = document.getElementById('currentAgeGroupDisplay');
         if (ageGroupDisplay) {
@@ -7542,6 +7756,13 @@ class MuseumCheckApp {
         const ageGroupSelector = document.getElementById('ageGroupSelector');
         if (ageGroupSelector) {
             ageGroupSelector.value = this.currentAge;
+        }
+        
+        // Update data tier priority selector
+        const dataTierSelector = document.getElementById('dataTierPrioritySelector');
+        if (dataTierSelector && window.museumDataLoader) {
+            const priority = window.museumDataLoader.getPrioritySettings();
+            dataTierSelector.value = priority.join('-');
         }
         
         // Update fireworks retention time slider
@@ -7580,6 +7801,12 @@ class MuseumCheckApp {
         const showAssessmentToggle = document.getElementById('showAssessmentToggle');
         if (showAssessmentToggle) {
             showAssessmentToggle.checked = !this.assessmentHidden;
+        }
+
+        // Update management button visibility toggle
+        const showManageButtonToggle = document.getElementById('showManageButtonToggle');
+        if (showManageButtonToggle) {
+            showManageButtonToggle.checked = !this.manageButtonHidden;
         }
     }
 
@@ -11712,6 +11939,71 @@ class MuseumCheckApp {
         return MUSEUMS.find(museum => museum.id === museumId);
     }
 
+    /**
+     * Get museum by ID with dynamic data priority support
+     * This method respects the user's tier priority settings and checks:
+     * - Tier 1: Static JSON files (/museums/{id}.json)
+     * - Tier 2: KV store (remote/dynamic data)
+     * - Tier 3: Built-in MUSEUMS array
+     * @param {string} museumId - Museum identifier
+     * @param {boolean} useCache - Whether to use cached data
+     * @returns {Promise<Object|null>} Museum data with latest updates
+     */
+    async getMuseumByIdWithLoader(museumId, useCache = true) {
+        try {
+            // Use museumDataLoader if available (respects tier priority)
+            if (window.museumDataLoader && typeof window.museumDataLoader.loadMuseum === 'function') {
+                const museum = await window.museumDataLoader.loadMuseum(museumId, useCache);
+                if (museum) {
+                    return museum;
+                }
+            }
+            
+            // Fallback to static MUSEUMS array
+            return this.getMuseumById(museumId);
+        } catch (error) {
+            console.warn(`Error loading museum ${museumId} with loader, falling back to static data:`, error);
+            return this.getMuseumById(museumId);
+        }
+    }
+
+    /**
+     * Check if a museum has collections data
+     * Uses v2 approach: checks dynamically across all data tiers instead of hardcoded lists
+     * Priority: current museum data -> MUSEUMS array (from museums-data.js or museums-meta.js)
+     * @param {Object} museum - Museum object (may be partial data)
+     * @returns {boolean} True if museum has collections
+     */
+    museumHasCollections(museum) {
+        // Check current museum object first
+        if (museum.collections && Array.isArray(museum.collections) && museum.collections.length > 0) {
+            return true;
+        }
+        
+        // Check hasCollections metadata flag (from museums-meta.js or museums-data.js)
+        if (museum.hasCollections === true) {
+            return true;
+        }
+        
+        // Fallback: check MUSEUMS array (Tier 3 - museums-data.js or museums-meta.js)
+        // This ensures we show navigation button even if grid data doesn't have collections loaded yet
+        if (museum.id && typeof MUSEUMS !== 'undefined' && Array.isArray(MUSEUMS)) {
+            const fullMuseum = MUSEUMS.find(m => m.id === museum.id);
+            if (fullMuseum) {
+                // Check hasCollections flag first
+                if (fullMuseum.hasCollections === true) {
+                    return true;
+                }
+                // Check collections array
+                if (fullMuseum.collections && Array.isArray(fullMuseum.collections) && fullMuseum.collections.length > 0) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+
     getAgeGroupLabel(ageGroup) {
         const labels = {
             '3-6': '3-6岁 (学龄前)',
@@ -11882,8 +12174,114 @@ class MuseumCheckApp {
   }catch(e){}
 })();
 
+// ===== HOW TO PLAY GUIDE MODULE =====
+// Introductory guide for new users - now stays visible until manually closed
+const HowToPlayGuide = {
+    STORAGE_KEY: 'howToPlayGuideShown',
+    closeButtonAttached: false,
+    
+    init() {
+        // Check if guide has been shown before
+        const hasBeenShown = localStorage.getItem(this.STORAGE_KEY);
+        
+        // Show guide only for first-time users
+        if (!hasBeenShown) {
+            this.showGuide();
+        }
+        
+        // Set up the "Show Guide" button in settings
+        this.setupSettingsButton();
+    },
+    
+    showGuide() {
+        const guideElement = document.getElementById('howToPlayGuide');
+        const closeButton = document.getElementById('closeGuideButton');
+        
+        if (!guideElement) return;
+        
+        // Display the guide
+        guideElement.style.display = 'block';
+        
+        // Set up manual close button (only attach once)
+        if (closeButton && !this.closeButtonAttached) {
+            closeButton.addEventListener('click', () => this.closeGuide());
+            this.closeButtonAttached = true;
+        }
+        
+        // Scroll guide into view smoothly
+        setTimeout(() => {
+            guideElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    },
+    
+    closeGuide() {
+        const guideElement = document.getElementById('howToPlayGuide');
+        
+        if (!guideElement) return;
+        
+        // Add fade-out animation
+        guideElement.style.animation = 'guideFadeOut 0.3s ease-out';
+        
+        setTimeout(() => {
+            guideElement.style.display = 'none';
+            guideElement.style.animation = '';
+        }, 300);
+        
+        // Mark guide as shown so it won't appear automatically again
+        localStorage.setItem(this.STORAGE_KEY, 'true');
+    },
+    
+    setupSettingsButton() {
+        // Wait for DOM to be ready, then attach the button handler
+        const attachButton = () => {
+            const showGuideButton = document.getElementById('showGuideButton');
+            if (showGuideButton) {
+                showGuideButton.addEventListener('click', () => {
+                    // Show the guide
+                    this.showGuide();
+                    
+                    // Close the settings modal to see the guide
+                    const settingsModal = document.getElementById('settingsModal');
+                    if (settingsModal) {
+                        settingsModal.classList.add('hidden');
+                    }
+                });
+            }
+        };
+        
+        // Try to attach immediately if DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', attachButton);
+        } else {
+            attachButton();
+        }
+    }
+};
+
+// Add fade-out animation CSS dynamically if not already in stylesheet
+if (!document.querySelector('style[data-guide-animations]')) {
+    const style = document.createElement('style');
+    style.setAttribute('data-guide-animations', 'true');
+    style.textContent = `
+        @keyframes guideFadeOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new MuseumCheckApp();
     try { window.museumCheck = window.app; } catch(e) {}
+    
+    // Initialize the how-to-play guide for new users
+    HowToPlayGuide.init();
 });

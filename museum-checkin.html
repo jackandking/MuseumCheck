@@ -806,28 +806,11 @@
 
     <!-- Load dependencies -->
     <script src="museums-data.js"></script>
+    <!-- Museum data loader for dynamic data priority support -->
+    <script src="museum-data-loader.js"></script>
     <!-- Auto-generate treasure hunt workflows for all museums -->
     <script src="treasure-workflow-generator.js"></script>
-    <!-- Per-museum data file(s) override -->
-    <script src="museums/pinghu-museum.js"></script>
-    <script src="museums/capital-museum.js"></script>
-    <script>
-      (function(){
-        try{
-          if(Array.isArray(window.MUSEUMS)){
-            var overrides=[];
-            if(window.MUSEUM_PINGHU) overrides.push(window.MUSEUM_PINGHU);
-            if(window.MUSEUM_CAPITAL) overrides.push(window.MUSEUM_CAPITAL);
-            overrides.forEach(function(m){
-              if(!m||!m.id) return;
-              var idx = window.MUSEUMS.findIndex(function(x){ return x && x.id===m.id; });
-              if(idx>=0) window.MUSEUMS[idx] = Object.assign({}, window.MUSEUMS[idx], m);
-              else window.MUSEUMS.push(m);
-            });
-          }
-        }catch(e){}
-      })();
-    </script>
+    <!-- Museum data loaded from museums-data.js and Tier 1 JSON files via museum-data-loader.js -->
     <script src="firework.js"></script>
     
     <script>
@@ -853,13 +836,13 @@
         let currentTaskIndex = null;
 
         // Initialize the application
-        function init() {
+        async function init() {
             if (editMode) {
                 document.getElementById('editModeIndicator').classList.add('show');
             }
 
             updatePageTitle();
-            loadMuseumData();
+            await loadMuseumData(); // Wait for async museum data loading
             setupEventListeners();
             loadCompletedTasks();
             loadPhotos(); // Load saved photos
@@ -869,9 +852,41 @@
             checkCompletion(); // Check if all tasks complete
         }
 
-        // Load museum data
-        function loadMuseumData() {
-            currentMuseum = MUSEUMS.find(m => m.id === museumId);
+        // Load museum data with dynamic data priority support
+        async function loadMuseumData() {
+            // Use museum data loader if available (respects tier priority)
+            let museum = null;
+            if (window.museumDataLoader && typeof window.museumDataLoader.loadMuseum === 'function') {
+                try {
+                    museum = await window.museumDataLoader.loadMuseum(museumId, false); // Don't use cache
+                    console.log(`Loaded museum ${museumId} via museumDataLoader`);
+                } catch (error) {
+                    console.warn('Error loading museum with museumDataLoader:', error);
+                }
+            }
+            
+            // Fallback to static MUSEUMS array
+            if (!museum) {
+                museum = MUSEUMS.find(m => m.id === museumId);
+                console.log(`Loaded museum ${museumId} from static MUSEUMS array`);
+            }
+            
+            // Merge dynamic data (from KV store/Tier 1) with complete Tier 3 data
+            // KV store typically has updated images/collections but may lack checklists
+            // This ensures we have both new photos AND checklist data
+            if (museum) {
+                const tier3Museum = MUSEUMS.find(m => m.id === museumId);
+                if (tier3Museum) {
+                    // Merge: Tier 3 data as base, override with loaded data
+                    // This preserves checklists from Tier 3 while using updated collections/images
+                    currentMuseum = { ...tier3Museum, ...museum };
+                    console.log(`Merged dynamic data with Tier 3 data for museum ${museumId}`);
+                } else {
+                    currentMuseum = museum;
+                }
+            } else {
+                currentMuseum = null;
+            }
             
             if (!currentMuseum) {
                 document.getElementById('museumName').textContent = '博物馆未找到';
@@ -897,24 +912,11 @@
                 childTasks = childTasks.concat(extras);
             }
             
-            // Treasure hunt workflow pattern for museums with collections (门口打卡 + 找镇馆之宝 + 亲子合影)
-            // Applied to: Pinghu Museum, Beijing museums (Forbidden City, etc.)
-            const treasureHuntMuseums = [
-                'pinghu-museum',
-                'forbidden-city',
-                'national-museum',
-                'china-art-museum',
-                'beijing-capital-museum',
-                'china-military-museum',
-                'beijing-natural-history-museum',
-                'china-railway-museum',
-                'beijing-planetarium',
-                'beijing-art-museum',
-                'china-science-technology-museum'
-            ];
-            
-            if (treasureHuntMuseums.includes(currentMuseum.id)) {
-                const colls = Array.isArray(currentMuseum.collections) ? currentMuseum.collections : [];
+            // Treasure hunt workflow pattern for ALL museums with collections (门口打卡 + 找镇馆之宝 + 亲子合影)
+            // Automatically applied to any museum that has collections data
+            // This provides a consistent, easy-to-execute photo-based experience
+            if (Array.isArray(currentMuseum.collections) && currentMuseum.collections.length > 0) {
+                const colls = currentMuseum.collections;
                 const start = '📸 门口打卡：家长给孩子在博物馆门口拍一张照片';
                 const collTasks = colls.map(c => `🏺 镇馆之宝：找到「${c && c.name ? c.name : '镇馆之宝'}」并合影`);
                 const end = '📸 亲子合影：和家长比心/拥抱/击掌等动作合影';
@@ -972,7 +974,12 @@
             // Try to get collection image URL for treasure hunt tasks
             let imageUrl = '';
             try {
-                if (currentMuseum && Array.isArray(currentMuseum.collections) && subtitle) {
+                // Check if this is a 门口打卡 task - use museum image
+                if (currentMuseum && title && title.includes('门口打卡')) {
+                    imageUrl = currentMuseum.image || '';
+                }
+                // Otherwise, try to match collection images for treasure hunt tasks
+                else if (currentMuseum && Array.isArray(currentMuseum.collections) && subtitle) {
                     const nameMatch = subtitle.match(/「([^」]+)」/);
                     const collName = nameMatch && nameMatch[1];
                     if (collName) {
@@ -1089,12 +1096,19 @@
                 const imgEl = document.getElementById('modalImage');
                 const m = currentMuseum;
                 let matchedUrl = '';
-                if (imgEl && m && Array.isArray(m.collections)) {
+                
+                // Check if this is a 门口打卡 task - use museum image
+                if (title && title.includes('门口打卡') && m && m.image) {
+                    matchedUrl = m.image;
+                }
+                // Otherwise, try to match collection images for treasure hunt tasks
+                else if (imgEl && m && Array.isArray(m.collections)) {
                     const nameMatch = subtitle && subtitle.match(/「([^」]+)」/);
                     const collName = nameMatch && nameMatch[1];
                     const found = m.collections.find(c => c && c.name === collName);
                     matchedUrl = found && (found.imageUrl || found.url) || '';
                 }
+                
                 if (imgEl) {
                     if (matchedUrl) { imgEl.src = matchedUrl; imgEl.style.display = 'block'; }
                     else { imgEl.removeAttribute('src'); imgEl.style.display = 'none'; }

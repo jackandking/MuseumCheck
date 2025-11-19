@@ -197,8 +197,6 @@
 
         <main role="main">
             <section class="museum-list" id="museums">
-                <h2>全国主要博物馆清单</h2>
-                
                 <div class="stats" role="status" aria-live="polite">
                     <div class="progress-display">
                         <div class="progress-text minecraft-themed">
@@ -236,6 +234,31 @@
                                 <div class="assessment-score-item">
                                     <span class="score-value" id="mainLatestScore">0</span>
                                     <span class="score-label">最新得分</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- How to Play Guide - appears before search for new users -->
+                <div id="howToPlayGuide" class="how-to-play-guide" style="display: none;">
+                    <div class="guide-content">
+                        <button id="closeGuideButton" class="guide-close-button" title="关闭引导">✕</button>
+                        <h3 class="guide-title">🎉 欢迎来到博物馆打卡！</h3>
+                        <div class="guide-description">
+                            <p class="guide-intro">让孩子爱上博物馆，通过亲子游增进亲子关系</p>
+                            <div class="guide-steps">
+                                <div class="guide-step">
+                                    <span class="step-icon">1️⃣</span>
+                                    <span class="step-text">选择孩子的年龄段，获取适龄内容</span>
+                                </div>
+                                <div class="guide-step">
+                                    <span class="step-icon">2️⃣</span>
+                                    <span class="step-text">点击博物馆卡片查看详细参观指南</span>
+                                </div>
+                                <div class="guide-step">
+                                    <span class="step-icon">3️⃣</span>
+                                    <span class="step-text">完成任务打卡，记录精彩的亲子时光</span>
                                 </div>
                             </div>
                         </div>
@@ -368,8 +391,12 @@
         <div class="modal-content settings-content">
             <span class="close">&times;</span>
             <h2>⚙️ 设置</h2>
-            <div class="settings-section">
-                <h3>👶 孩子信息</h3>
+            <div class="settings-section" data-collapsed="false">
+                <h3 class="settings-section-header">
+                    <span>👶 孩子信息</span>
+                    <span class="settings-section-toggle">▼</span>
+                </h3>
+                <div class="settings-section-content">
                 <div class="settings-item">
                     <label class="settings-label" for="childNicknameInput">孩子昵称：</label>
                     <div class="settings-input-group">
@@ -392,9 +419,75 @@
                     </div>
                     <div class="settings-hint">更改后将立即重新加载博物馆内容</div>
                 </div>
+                </div>
             </div>
-            <div class="settings-section">
-                <h3>🎆 烟花设置</h3>
+            <!-- Data Management Section - Moved up for better accessibility -->
+            <div class="settings-section" data-collapsed="true">
+                <h3 class="settings-section-header">
+                    <span>🗑️ 数据管理</span>
+                    <span class="settings-section-toggle">▶</span>
+                </h3>
+                <div class="settings-section-content" style="display: none;">
+                <div class="settings-item">
+                    <label class="settings-label" for="dataTierPrioritySelector">博物馆数据优先级：</label>
+                    <div class="settings-input-group">
+                        <select id="dataTierPrioritySelector" class="settings-input">
+                            <option value="tier1-tier2-tier3">静态文件 → 远程存储 → 内置数据（推荐）</option>
+                            <option value="tier2-tier1-tier3">远程存储 → 静态文件 → 内置数据（开发调试）</option>
+                            <option value="tier3-tier1-tier2">内置数据 → 静态文件 → 远程存储（离线优先）</option>
+                        </select>
+                    </div>
+                    <div class="settings-hint">
+                        选择博物馆数据加载的优先级顺序<br>
+                        • <strong>静态文件</strong>：稳定发布的单个博物馆数据文件<br>
+                        • <strong>远程存储</strong>：开发调试中的最新内容（云端KV存储）<br>
+                        • <strong>内置数据</strong>：应用默认数据（离线可用）
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <label class="settings-label">高级数据管理：</label>
+                    <div class="settings-input-group">
+                        <button id="openDataManagerButton" class="settings-button">
+                            🔧 管理远程数据
+                        </button>
+                    </div>
+                    <div class="settings-hint">打开远程数据管理页面，可查看、上传、编辑、删除云端存储的博物馆数据</div>
+                </div>
+                <div class="settings-item">
+                    <label class="settings-label">烟花管理后台：</label>
+                    <div class="settings-input-group">
+                        <button id="openFireworksAdminButton" class="settings-button">
+                            🎆 烟花管理
+                        </button>
+                    </div>
+                    <div class="settings-hint">打开烟花管理后台，可查看、验证、删除远程和本地烟花数据</div>
+                </div>
+                <div class="settings-item">
+                    <label class="settings-label">排行榜管理后台：</label>
+                    <div class="settings-input-group">
+                        <button id="openLeaderboardAdminButton" class="settings-button">
+                            🏅 排行榜管理
+                        </button>
+                    </div>
+                    <div class="settings-hint">打开排行榜管理后台，可查看、编辑、导出、删除全网排行榜数据</div>
+                </div>
+                <div class="settings-item">
+                    <label class="settings-label">清空所有数据：</label>
+                    <div class="settings-input-group">
+                        <button id="clearAllDataButton" class="clear-data-button clear-all-button">
+                            🗑️ 清空所有数据
+                        </button>
+                    </div>
+                    <div class="settings-hint">此操作将删除所有参观记录、清单完成记录、任务照片、成就进度和测评记录，操作不可撤销</div>
+                </div>
+                </div>
+            </div>
+            <div class="settings-section" data-collapsed="true">
+                <h3 class="settings-section-header">
+                    <span>🎆 烟花设置</span>
+                    <span class="settings-section-toggle">▶</span>
+                </h3>
+                <div class="settings-section-content" style="display: none;">
                 <div class="settings-item">
                     <label class="settings-label" for="fireworksRetentionInput">烟花留存时间：</label>
                     <div class="settings-input-group">
@@ -430,9 +523,14 @@
                     </div>
                     <div class="settings-hint">点击屏幕发射烟花的最小间隔（0.5秒 - 5秒）</div>
                 </div>
+                </div>
             </div>
-            <div class="settings-section">
-                <h3>🔀 博物馆排序</h3>
+            <div class="settings-section" data-collapsed="true">
+                <h3 class="settings-section-header">
+                    <span>🔀 博物馆排序</span>
+                    <span class="settings-section-toggle">▶</span>
+                </h3>
+                <div class="settings-section-content" style="display: none;">
                 <div class="settings-item">
                     <label class="settings-label" for="sortBySelector">排序方式：</label>
                     <div class="settings-input-group">
@@ -453,9 +551,31 @@
                         1️⃣ 收藏的博物馆 → 2️⃣ 有烟花的博物馆 → 3️⃣ 未参观的博物馆 → 4️⃣ 离你较近的博物馆
                     </div>
                 </div>
+                </div>
             </div>
-            <div class="settings-section">
-                <h3>👁️ 显示选项</h3>
+            <div class="settings-section" data-collapsed="true">
+                <h3 class="settings-section-header">
+                    <span>🤖 AI 功能设置</span>
+                    <span class="settings-section-toggle">▶</span>
+                </h3>
+                <div class="settings-section-content" style="display: none;">
+                <div class="settings-item">
+                    <label class="settings-label" for="deepseekApiKeyInput">DeepSeek API Key：</label>
+                    <div class="settings-input-group">
+                        <input type="password" id="deepseekApiKeyInput" class="settings-input" placeholder="输入您的 DeepSeek API Key">
+                    </div>
+                    <div class="settings-hint">
+                        用于 AI 验证博物馆数据。获取 API Key：<a href="https://platform.deepseek.com" target="_blank" style="color:#2c5aa0; text-decoration:underline;">platform.deepseek.com</a>
+                    </div>
+                </div>
+                </div>
+            </div>
+            <div class="settings-section" data-collapsed="true">
+                <h3 class="settings-section-header">
+                    <span>👁️ 显示选项</span>
+                    <span class="settings-section-toggle">▶</span>
+                </h3>
+                <div class="settings-section-content" style="display: none;">
                 <div class="settings-item">
                     <label class="settings-label" for="showAssessmentToggle">显示亲子测评功能：</label>
                     <div class="settings-input-group">
@@ -463,9 +583,38 @@
                     </div>
                     <div class="settings-hint">控制是否显示亲子测评相关功能（测评按钮、测评历史等）</div>
                 </div>
+                <div class="settings-item">
+                    <label class="settings-label" for="showManageButtonToggle">显示管理按钮：</label>
+                    <div class="settings-input-group">
+                        <input type="checkbox" id="showManageButtonToggle" class="settings-checkbox">
+                    </div>
+                    <div class="settings-hint">控制是否在博物馆卡片上显示管理按钮（用于编辑博物馆数据）</div>
+                </div>
+                </div>
             </div>
-            <div class="settings-section">
-                <h3>📊 应用信息</h3>
+            <div class="settings-section" data-collapsed="true">
+                <h3 class="settings-section-header">
+                    <span>📖 使用帮助</span>
+                    <span class="settings-section-toggle">▶</span>
+                </h3>
+                <div class="settings-section-content" style="display: none;">
+                <div class="settings-item">
+                    <label class="settings-label">玩法提示：</label>
+                    <div class="settings-input-group">
+                        <button id="showGuideButton" class="settings-button">
+                            💡 查看玩法提示
+                        </button>
+                    </div>
+                    <div class="settings-hint">重新查看应用的使用说明和玩法提示</div>
+                </div>
+                </div>
+            </div>
+            <div class="settings-section" data-collapsed="true">
+                <h3 class="settings-section-header">
+                    <span>📊 应用信息</span>
+                    <span class="settings-section-toggle">▶</span>
+                </h3>
+                <div class="settings-section-content" style="display: none;">
                 <div class="settings-item">
                     <label class="settings-label">博物馆数量：</label>
                     <span class="settings-value" id="museumCountSettings">0</span>
@@ -475,9 +624,14 @@
                         <a href="minecraft-images-demo.html" target="_blank" style="color: #999; font-size: 11px; text-decoration: none;">🎮 资源库</a>
                     </div>
                 </div>
+                </div>
             </div>
-            <div class="settings-section">
-                <h3>ℹ️ 关于我们</h3>
+            <div class="settings-section" data-collapsed="true">
+                <h3 class="settings-section-header">
+                    <span>ℹ️ 关于我们</span>
+                    <span class="settings-section-toggle">▶</span>
+                </h3>
+                <div class="settings-section-content" style="display: none;">
                 <div class="settings-item">
                     <div class="about-content">
                         <p class="about-title">博物馆打卡 - 中国博物馆亲子参观指南</p>
@@ -493,17 +647,6 @@
                         </ul>
                     </div>
                 </div>
-            </div>
-            <div class="settings-section">
-                <h3>🗑️ 数据管理</h3>
-                <div class="settings-item">
-                    <label class="settings-label">清空所有数据：</label>
-                    <div class="settings-input-group">
-                        <button id="clearAllDataButton" class="clear-data-button clear-all-button">
-                            🗑️ 清空所有数据
-                        </button>
-                    </div>
-                    <div class="settings-hint">此操作将删除所有参观记录、清单完成记录、任务照片、成就进度和测评记录，操作不可撤销</div>
                 </div>
             </div>
         </div>
@@ -611,32 +754,13 @@
         }catch(e){}
       })();
     </script>
+    <script src="museum-data-loader.js"></script>
     <script src="museums-meta.js" onload="window.__updateMuseumsMetaCache && window.__updateMuseumsMetaCache(window.MUSEUMS_META)"></script>
     <script>
       // Adopt meta as default dataset before main script executes
       (function(){ if(!window.MUSEUMS && window.MUSEUMS_META){ window.MUSEUMS = window.MUSEUMS_META; } })();
     </script>
-    <!-- Per-museum data files (override) -->
-    <script src="museums/pinghu-museum.js"></script>
-    <script src="museums/capital-museum.js"></script>
-    <script>
-      // Merge per-museum overrides into MUSEUMS (priority to per-museum file)
-      (function(){
-        try{
-          if(Array.isArray(window.MUSEUMS)){
-            var overrides = [];
-            if(window.MUSEUM_PINGHU) overrides.push(window.MUSEUM_PINGHU);
-            if(window.MUSEUM_CAPITAL) overrides.push(window.MUSEUM_CAPITAL);
-            overrides.forEach(function(m){
-              if(!m || !m.id) return;
-              var idx = window.MUSEUMS.findIndex(function(x){ return x && x.id===m.id; });
-              if(idx>=0) window.MUSEUMS[idx] = Object.assign({}, window.MUSEUMS[idx], m);
-              else window.MUSEUMS.push(m);
-            });
-          }
-        }catch(e){}
-      })();
-    </script>
+    <!-- Museum data loaded from museums-data.js and Tier 1 JSON files via museum-data-loader.js -->
     <script src="firework.js"></script>
     <script src="script.js"></script>
     <!-- Placeholder for dynamic section museum count (for tests and UI hooks) -->

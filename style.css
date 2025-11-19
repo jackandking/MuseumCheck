@@ -760,6 +760,174 @@ header h1 {
     font-style: italic;
 }
 
+/* ===== HOW TO PLAY GUIDE STYLES ===== */
+/* Introductory guide for new users - appears before search section */
+.how-to-play-guide {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 0 auto 25px auto;
+    max-width: 600px;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+    color: white;
+    position: relative;
+    animation: guideSlideIn 0.5s ease-out;
+}
+
+@keyframes guideSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.guide-content {
+    position: relative;
+}
+
+.guide-close-button {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.guide-close-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+.guide-title {
+    margin: 0 0 16px 0;
+    font-size: 22px;
+    font-weight: 600;
+    text-align: center;
+    color: white;
+}
+
+.guide-description {
+    margin-bottom: 16px;
+}
+
+.guide-intro {
+    text-align: center;
+    font-size: 16px;
+    margin: 0 0 20px 0;
+    opacity: 0.95;
+    font-weight: 500;
+}
+
+.guide-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.guide-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 12px 16px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.guide-step:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateX(4px);
+}
+
+.step-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.step-text {
+    font-size: 15px;
+    line-height: 1.5;
+    color: white;
+}
+
+/* Mobile responsive styles for guide */
+@media (max-width: 768px) {
+    .how-to-play-guide {
+        padding: 20px;
+        margin: 0 10px 20px 10px;
+        border-radius: 12px;
+    }
+    
+    .guide-title {
+        font-size: 20px;
+        margin-bottom: 12px;
+    }
+    
+    .guide-intro {
+        font-size: 15px;
+        margin-bottom: 16px;
+    }
+    
+    .guide-step {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+    
+    .step-icon {
+        font-size: 20px;
+    }
+    
+    .step-text {
+        font-size: 14px;
+    }
+    
+    .guide-close-button {
+        width: 28px;
+        height: 28px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .how-to-play-guide {
+        padding: 16px;
+        margin: 0 5px 15px 5px;
+    }
+    
+    .guide-title {
+        font-size: 18px;
+    }
+    
+    .guide-intro {
+        font-size: 14px;
+    }
+    
+    .guide-step {
+        padding: 8px 10px;
+    }
+    
+    .step-text {
+        font-size: 13px;
+    }
+}
+
 .stats {
     text-align: center;
     margin-bottom: 30px;
@@ -1225,6 +1393,35 @@ header h1 {
     transform: var(--btn-active-transform);
 }
 
+/* Museum Manage Button - Admin/data management button */
+.museum-manage-button {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 0.75em;
+    margin-left: 12px;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--btn-transition);
+    box-shadow: 0 2px 4px rgba(23, 162, 184, 0.3);
+    cursor: pointer;
+}
+
+.museum-manage-button:hover:not(:disabled) {
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 4px 8px rgba(23, 162, 184, 0.4);
+    background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+}
+
+.museum-manage-button:active:not(:disabled) {
+    transform: var(--btn-active-transform);
+}
+
 /* Favorite Button - Icon-only button with special styling */
 .favorite-button {
     /* Special case: Icon button without background */
@@ -1285,6 +1482,14 @@ header h1 {
         min-height: 40px;
     }
     
+    .museum-manage-button {
+        padding: 6px 10px;
+        font-size: 0.75em;
+        margin-left: 6px;
+        min-width: 40px;
+        min-height: 40px;
+    }
+    
     .assessment-button {
         padding: 6px 10px;
         font-size: 0.75em;
@@ -1325,6 +1530,14 @@ header h1 {
     }
     
     .museum-v3-button {
+        padding: 5px 8px;
+        font-size: 0.7em;
+        margin-left: 4px;
+        min-width: 36px;
+        min-height: 36px;
+    }
+    
+    .museum-manage-button {
         padding: 5px 8px;
         font-size: 0.7em;
         margin-left: 4px;
@@ -2486,8 +2699,40 @@ header h1 {
 }
 
 @media (max-width: 480px) {
+    header {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 999;
+        padding: 8px 0;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    
     header h1 {
-        font-size: 1.8em;
+        font-size: 1em;
+        text-align: right;
+        padding: 0 12px;
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        line-height: 1.4;
+    }
+    
+    .settings-icon {
+        order: -1;
+        font-size: 1.3em;
+        flex-shrink: 0;
+    }
+    
+    #headerTitle {
+        flex: 1;
+        text-align: right;
+        font-size: 1em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     
     .subtitle {
@@ -2801,6 +3046,37 @@ main[role="main"] {
 
 .clear-all-button:hover:not(:disabled) {
     background: linear-gradient(135deg, #c0392b, #a93226);
+}
+
+.settings-button {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: var(--btn-border-radius);
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    min-width: 130px;
+    min-height: var(--btn-min-height-touch);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: var(--btn-transition);
+    box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+}
+
+.settings-button:hover:not(:disabled) {
+    transform: var(--btn-hover-transform);
+    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+    background: linear-gradient(135deg, #2980b9, #21618c);
+}
+
+.settings-button:active:not(:disabled) {
+    transform: var(--btn-active-transform);
 }
 
 .clear-data-button-icon {
@@ -5144,6 +5420,50 @@ main[role="main"] {
     margin-bottom: 20px;
 }
 
+.settings-section-header {
+    color: var(--primary-color);
+    font-size: 18px;
+    margin: 0 0 20px 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e9ecef;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.settings-section-header:hover {
+    color: #1e4d8b;
+}
+
+.settings-section-toggle {
+    font-size: 14px;
+    transition: transform 0.3s ease;
+    color: #6c757d;
+}
+
+.settings-section[data-collapsed="false"] .settings-section-header {
+    margin-bottom: 20px;
+}
+
+.settings-section[data-collapsed="true"] .settings-section-header {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.settings-section[data-collapsed="true"] {
+    padding: 15px 25px;
+}
+
+.settings-section-content {
+    transition: all 0.3s ease;
+}
+
 .settings-section h3 {
     color: var(--primary-color);
     font-size: 18px;
@@ -5155,6 +5475,7 @@ main[role="main"] {
     padding-bottom: 12px;
     border-bottom: 2px solid #e9ecef;
 }
+
 
 .settings-item {
     display: flex;
@@ -6083,6 +6404,11 @@ main[role="main"] {
 .hide-assessments .assessment-inline,
 .hide-assessments #assessmentModal,
 .hide-assessments #assessmentHistoryModal {
+    display: none !important;
+}
+
+/* Management button hiding */
+.hide-manage-buttons .museum-manage-button {
     display: none !important;
 }
 
@@ -7087,7 +7413,6 @@ main[role="main"] {
 }
 
 /* Hide assessment-related elements when assessments are disabled */
-body.hide-assessments .museum-checkin-button {
-    display: none !important;
-}
+/* Note: museum-checkin-button is intentionally NOT hidden here because */
+/* check-in functionality is independent of parent-child assessment features */
 }

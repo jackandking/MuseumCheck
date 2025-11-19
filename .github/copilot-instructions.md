@@ -497,7 +497,8 @@ describe('Museum Data Quality', () => {
 
 
 ### Working with Museum Data
-The museums are defined in `script.js` in the `MUSEUMS` array:
+
+The museums are defined in `museums-data.js` in the `MUSEUMS` array:
 
 ```javascript
 // Example museum structure (DO NOT modify lightly - contains extensive Chinese content)
@@ -507,6 +508,14 @@ The museums are defined in `script.js` in the `MUSEUMS` array:
     location: '北京',
     description: '世界上现存规模最大、保存最为完整的木质结构古建筑群',
     tags: ['历史', '建筑', '文物'],
+    image: 'https://example.com/museum-photo.jpg',  // Museum building photo URL
+    collections: [  // Treasures/collections with photos
+        {
+            name: '《清明上河图》',
+            imageUrl: 'https://example.com/treasure-photo.jpg',
+            description: 'Description of the treasure'
+        }
+    ],
     checklists: {
         parent: {
             '3-6': [/* age-appropriate parent preparation tasks */],
@@ -522,6 +531,181 @@ The museums are defined in `script.js` in the `MUSEUMS` array:
 }
 ```
 
+### Finding Museum and Treasure Photos
+
+**IMPORTANT**: When adding or updating museum data, use the image search tools to find high-quality photos. Two tools are available:
+
+1. **Wikimedia Commons Search** (Recommended first) - Free, no API key required, all images under free licenses
+2. **Bing Website Search** (Backup option) - Free browser-based search, use when Wikimedia doesn't have ideal images
+
+#### Tool Selection Strategy
+
+**ALWAYS try Wikimedia Commons first** because:
+- ✅ No API key required - works immediately
+- ✅ All images are under free licenses (Public Domain, CC0, CC BY-SA)
+- ✅ High-quality curated images from cultural institutions
+- ✅ No usage restrictions or copyright concerns
+
+**Use Bing Website Search as backup** when:
+- ❌ Wikimedia doesn't have images for the specific museum
+- ❌ Wikimedia images are low quality or not representative
+- ❌ You need more variety or specific angles
+- ⚠️  Remember to verify image licenses before using Bing results
+
+#### Option 1: Wikimedia Commons Search (Recommended First)
+
+**Tool Location**: `tools/search-museum-images-wikimedia.js`
+
+**Prerequisites**: None - works immediately, no API key required
+
+**Usage Examples**:
+
+```bash
+# Search for museum building photos only
+node tools/search-museum-images-wikimedia.js "故宫博物院"
+
+# Search for both museum and treasure photos
+node tools/search-museum-images-wikimedia.js "故宫博物院" "清明上河图"
+
+# More examples
+node tools/search-museum-images-wikimedia.js "中国国家博物馆" "后母戊鼎"
+node tools/search-museum-images-wikimedia.js "上海博物馆" "大克鼎"
+```
+
+**Features**:
+- Searches multiple query variations for better results
+- Returns up to 10 unique images per search
+- Includes both Chinese and English search terms
+- All results are automatically under free licenses
+- Provides image metadata (dimensions, MIME type, source page)
+
+#### Option 2: Bing Website Search (Backup - Free Browser Tool)
+
+**Tool Location**: `tools/bing-image-search-helper.html`
+
+**Prerequisites**: None - completely free, no API key required
+
+**Features**:
+- ✅ Completely free - no API key or subscription needed
+- ✅ Easy to use - graphical web interface
+- ✅ Smart search - automatically optimizes search keywords
+- ✅ Opens Bing website with optimized search terms
+- ⚠️  Manual selection - browse images and copy URLs manually
+
+**Usage**:
+
+```bash
+# Open in browser directly
+open tools/bing-image-search-helper.html
+
+# Or through HTTP server
+python3 -m http.server 8000
+# Then visit: http://localhost:8000/tools/bing-image-search-helper.html
+```
+
+**Workflow**:
+1. Enter museum and treasure names in the web form
+2. Click search button to open Bing with optimized search
+3. Browse images, right-click and "Copy Image Address"
+4. Paste URL into museum data structure
+5. Verify image license on source page
+
+#### Advanced Option: Bing API (For Automation)
+
+**Tool Location**: `tools/search-museum-images.js`
+
+For advanced users who need automated batch processing, there's also a Bing Search API tool available. However, this requires a Bing API key from Azure. For most users, the browser-based helper above is recommended.
+
+**Prerequisites**: Bing Search API key from Azure Cognitive Services
+
+**Usage**: See `tools/README.md` for details on setting up the API key
+
+#### Recommended Workflow for Adding Museum Photos
+
+**Step 1: Try Wikimedia Commons First**
+```bash
+# Search Wikimedia Commons
+node tools/search-museum-images-wikimedia.js "博物馆名称" "镇馆之宝名称"
+```
+
+**Step 2: If Wikimedia doesn't have good results, use Bing Website Search**
+```bash
+# Open the browser-based search helper (no API key needed)
+open tools/bing-image-search-helper.html
+# Or: python3 -m http.server 8000
+# Then visit: http://localhost:8000/tools/bing-image-search-helper.html
+```
+
+**Step 3: Review Results**
+
+The tools return multiple image URLs with metadata:
+- Full image URL (for museum data)
+- Thumbnail URL
+- Image dimensions and file size
+- Source page URL
+- License information (Wikimedia only)
+
+**Step 4: Select Appropriate Images**
+
+Choose images that are:
+- High quality and clear
+- Properly licensed (public domain, Wikimedia Commons, CC0, CC BY-SA, etc.)
+- Representative of the museum/treasure
+- Appropriate resolution (typically 800x600 or higher)
+- Accessible and stable URLs
+
+**Step 5: Verify Image URLs**
+
+Before adding to museum data:
+```bash
+node tools/verify-treasure-images.js <image-url>
+```
+
+**Step 6: Add to Museum Data**
+
+Copy the selected URLs to the museum structure:
+```javascript
+{
+    id: 'museum-id',
+    name: '博物馆名称',
+    image: 'URL_FROM_SEARCH_TOOL',  // Museum building photo
+    collections: [
+        {
+            name: '镇馆之宝名称',
+            imageUrl: 'URL_FROM_SEARCH_TOOL',  // Treasure photo
+            description: '...'
+        }
+    ]
+}
+```
+
+**Step 7: Validate Data Quality**
+```bash
+npm run validate-data
+```
+
+#### Best Practices
+
+**Image Selection**:
+- ✅ Always prefer Wikimedia Commons images (free licenses, no restrictions)
+- ✅ Verify image licenses and permissions for Bing results
+- ✅ Use high-resolution images (minimum 800x600 pixels)
+- ✅ Choose representative, high-quality photos
+- ✅ Verify URLs are accessible before committing
+- ✅ Test images load correctly in the application
+
+**License Verification**:
+- Wikimedia Commons: All images automatically have free licenses
+- Bing Image Search: **MUST** verify license before use (check source page)
+- Acceptable licenses: Public Domain, CC0, CC BY, CC BY-SA
+- Avoid: Copyrighted images, "All Rights Reserved", watermarked images
+
+**Search Tips**:
+- For museum buildings: Search includes terms like "博物馆外观", "建筑", "exterior", "building"
+- For treasures: Search includes terms like "文物", "高清", "artifact", "collection"
+- Try both Chinese and English terms for better results
+- Results are filtered for photos only (Bing has safe search enabled)
+
 ### Local Storage Patterns (VALIDATED WORKING)
 ```javascript
 // Load visited museums
@@ -536,6 +720,117 @@ const checklists = JSON.parse(localStorage.getItem('museumChecklists') || '{}');
 // Save checklist item completion
 localStorage.setItem('museumChecklists', JSON.stringify(checklistData));
 ```
+
+### KV Store API Best Practices (CRITICAL)
+
+The application uses a **3-Tier Museum Data Management System**:
+- **Tier 1**: Individual museum static JSON files (`/museums/{museum-id}.json`)
+- **Tier 2**: KV store dynamic data (remote storage for dev/debug)
+- **Tier 3**: Consolidated `museums-data.js` (fallback)
+
+**CRITICAL KNOWLEDGE**: The KV store API uses **composite keys** (partition key + sort key). This has been a source of bugs multiple times.
+
+#### KV Store Composite Key Structure
+
+**All KV store operations MUST include BOTH `key` AND `sortKey` parameters:**
+
+```javascript
+// ✅ CORRECT - Save operation (POST)
+const response = await fetch(kvStoreEndpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        key: 'museum-data-forbidden-city',      // Partition key
+        sortKey: 'museum',                       // Sort key (REQUIRED!)
+        value: JSON.stringify(museumData),
+        expireAt: 4866674732
+    })
+});
+
+// ✅ CORRECT - Load operation (GET)
+const key = 'museum-data-forbidden-city';
+const sortKey = 'museum';
+const url = `${endpoint}?key=${encodeURIComponent(key)}&sortKey=${encodeURIComponent(sortKey)}`;
+const response = await fetch(url, { method: 'GET' });
+
+// ❌ INCORRECT - Missing sortKey parameter
+const url = `${endpoint}?key=${encodeURIComponent(key)}`;  // WILL FAIL!
+```
+
+#### Common KV Store Patterns
+
+**Museum Data (sortKey: 'museum')**:
+```javascript
+// Save museum data
+await fetch(kvStoreEndpoint, {
+    method: 'POST',
+    body: JSON.stringify({
+        key: `museum-data-${museumId}`,
+        sortKey: 'museum',  // Always use 'museum' for museum data
+        value: JSON.stringify(data),
+        expireAt: timestamp
+    })
+});
+
+// Load museum data
+const url = `${kvStoreEndpoint}?key=museum-data-${museumId}&sortKey=museum`;
+const response = await fetch(url);
+```
+
+**Leaderboard Data (sortKey: 'user-{userId}')**:
+```javascript
+// Query all leaderboard entries with wildcard
+const url = `${endpoint}?key=museumcheck-leaderboard&sortKey=*`;
+
+// Query specific user entry
+const url = `${endpoint}?key=museumcheck-leaderboard&sortKey=user-${userId}`;
+```
+
+#### KV Store Checklist for Development
+
+**When writing ANY code that interacts with the KV store API:**
+
+1. ✅ **Always include sortKey in GET requests**: `?key=...&sortKey=...`
+2. ✅ **Always include sortKey in POST body**: `{ key: '...', sortKey: '...', ... }`
+3. ✅ **Use URL encoding**: `encodeURIComponent()` for both key and sortKey
+4. ✅ **Match save/load sortKey values**: Use the same sortKey for saving and loading
+5. ✅ **Test with actual data**: Verify the full save → load cycle works
+6. ✅ **Add regression tests**: Prevent future sortKey omission bugs
+
+#### Historical Issues (Learn from These)
+
+**Issue #1**: Museum data upload succeeded but reload failed
+- **Cause**: `loadFromTier2()` missing `&sortKey=museum` in GET URL
+- **Fix**: Added sortKey parameter to match save operation (PR #719)
+- **Lesson**: ALWAYS check that GET queries include sortKey
+
+**Issue #2**: Leaderboard showing only local user
+- **Cause**: GET request missing sortKey parameter
+- **Fix**: Added `&sortKey=*` to query all user records
+- **Lesson**: Use sortKey wildcards for range queries
+
+#### Testing KV Store Code
+
+**Required tests for any KV store interaction:**
+
+```javascript
+test('should include sortKey parameter in query', async () => {
+    await loader.loadFromTier2('forbidden-city');
+    
+    const fetchCall = fetch.mock.calls[0];
+    const url = fetchCall[0];
+    
+    // Verify both parameters present
+    expect(url).toContain('key=museum-data-forbidden-city');
+    expect(url).toContain('sortKey=museum');
+});
+```
+
+**Manual verification steps:**
+1. Save data via POST with key + sortKey
+2. Immediately try to load via GET with same key + sortKey  
+3. Verify 200 response (not 404)
+4. Verify returned data matches saved data
 
 ## Troubleshooting
 

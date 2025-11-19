@@ -49,12 +49,42 @@
       </div>
     </div>
 
+    <div class="card">
+      <div class="title" style="font-size:18px">AI 功能设置</div>
+      <div class="row">
+        <label for="deepseekApiKey">DeepSeek API Key</label>
+        <input type="password" id="deepseekApiKey" placeholder="输入您的 DeepSeek API Key" style="padding:12px;border-radius:12px;border:2px solid #dee2e6;font-size:16px;width:100%;box-sizing:border-box;" />
+        <div class="hint">用于 AI 验证博物馆数据。获取 API Key：<a href="https://platform.deepseek.com" target="_blank" style="color:#2c5aa0">platform.deepseek.com</a></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title" style="font-size:18px">博物馆数据源优先级</div>
+      <div class="row">
+        <label for="dataPriority">数据加载优先级</label>
+        <select id="dataPriority">
+          <option value="tier1-tier2-tier3">静态文件 → 远程存储 → 内置数据（推荐）</option>
+          <option value="tier2-tier1-tier3">远程存储 → 静态文件 → 内置数据（开发调试）</option>
+          <option value="tier3-tier1-tier2">内置数据 → 静态文件 → 远程存储（离线优先）</option>
+        </select>
+        <div class="hint">
+          <strong>静态文件</strong>：稳定发布的博物馆数据<br>
+          <strong>远程存储</strong>：开发调试中的最新内容<br>
+          <strong>内置数据</strong>：应用默认数据
+        </div>
+      </div>
+      <div class="row">
+        <button id="manageDataBtn" class="btn btn-secondary" style="width:100%">管理远程数据</button>
+      </div>
+    </div>
+
     <div class="actions">
       <button id="saveBtn" class="btn btn-primary">保存</button>
       <button id="backBtn" class="btn btn-secondary">返回</button>
     </div>
   </div>
 
+  <script src="museum-data-loader.js"></script>
   <script>
     (function(){
       function load(){
@@ -63,7 +93,24 @@
           const role = localStorage.getItem('caregiverRole') || 'parent';
           document.getElementById('ageGroup').value = age;
           document.getElementById('caregiverRole').value = role;
-        }catch(e){}
+          
+          // Load DeepSeek API Key
+          const deepseekApiKey = localStorage.getItem('deepseekApiKey') || '';
+          document.getElementById('deepseekApiKey').value = deepseekApiKey;
+          
+          // Load data priority setting
+          const prioritySettings = localStorage.getItem('museumDataTierPriority');
+          let priorityValue = 'tier1-tier2-tier3'; // default
+          if (prioritySettings) {
+            const parsed = JSON.parse(prioritySettings);
+            const priority = parsed.priority || ['tier1', 'tier2', 'tier3'];
+            priorityValue = priority.join('-');
+          }
+          document.getElementById('dataPriority').value = priorityValue;
+          console.log('Settings loaded. Priority:', priorityValue);
+        }catch(e){
+          console.error('Error loading settings:', e);
+        }
       }
       function save(){
         try{
@@ -71,15 +118,48 @@
           const role = document.getElementById('caregiverRole').value;
           localStorage.setItem('ageGroup', age);
           localStorage.setItem('caregiverRole', role);
+          
+          // Save DeepSeek API Key
+          const deepseekApiKey = document.getElementById('deepseekApiKey').value.trim();
+          if (deepseekApiKey) {
+            localStorage.setItem('deepseekApiKey', deepseekApiKey);
+          } else {
+            localStorage.removeItem('deepseekApiKey');
+          }
+          
+          // Save data priority setting
+          const priorityValue = document.getElementById('dataPriority').value;
+          const priority = priorityValue.split('-');
+          localStorage.setItem('museumDataTierPriority', JSON.stringify({ priority }));
+          
+          // Update museumDataLoader's in-memory priority to match
+          if (window.museumDataLoader && typeof window.museumDataLoader.updatePrioritySettings === 'function') {
+            window.museumDataLoader.updatePrioritySettings(priority);
+            console.log('Museum data loader priority updated:', priority);
+          }
+          
+          // Clear museum data cache when priority changes so new priority takes effect
+          if (window.museumDataLoader && typeof window.museumDataLoader.clearCache === 'function') {
+            window.museumDataLoader.clearCache();
+            console.log('Museum data cache cleared due to priority change');
+          }
+          
           alert('设置已保存');
-        }catch(e){ alert('保存失败，请重试'); }
+        }catch(e){ 
+          console.error('Error saving settings:', e);
+          alert('保存失败，请重试'); 
+        }
       }
       function back(){
         const ref = document.referrer || 'index.html';
         location.href = ref;
       }
+      function manageData(){
+        location.href = 'museum-data-manager.html';
+      }
       document.getElementById('saveBtn').onclick = save;
       document.getElementById('backBtn').onclick = back;
+      document.getElementById('manageDataBtn').onclick = manageData;
       load();
     })();
   </script>
