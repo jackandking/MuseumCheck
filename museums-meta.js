@@ -94,7 +94,7 @@ window.MUSEUMS_META = [
       "江南文化"
     ],
     "image": "",
-    "hasCollections": false
+    "hasCollections": true
   },
   {
     "id": "zhejiang-museum",
