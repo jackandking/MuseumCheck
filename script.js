@@ -7881,6 +7881,9 @@ class MuseumCheckApp {
         
         // Update gamification stats display
         this.updateGamificationStatsDisplay();
+        
+        // Continue with remaining settings
+        this.renderSettingsInfoComplete();
     }
     
     // Update gamification stats in settings panel
@@ -7902,6 +7905,10 @@ class MuseumCheckApp {
             statsStreak.textContent = `连续 ${streakInfo.current} 天`;
         }
     }
+
+    renderSettingsInfoComplete() {
+        // Update fireworks retention time slider
+        const retentionSlider = document.getElementById('fireworksRetentionInput');
         const retentionDisplay = document.getElementById('fireworksRetentionDisplay');
         if (retentionSlider && retentionDisplay) {
             const retentionMs = this.loadFireworksRetentionTime();
