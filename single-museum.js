@@ -253,7 +253,7 @@
   function saveFireworkRecord(museumId, museumName, taskTitle, ageGroup, childNickname){
     try{
       // Get museum city from selected museum
-      const museumCity = state.selectedMuseum && state.selectedMuseum.location || '';
+      const museumCity = (state.selectedMuseum && state.selectedMuseum.location) || '';
       
       // Get firework type from settings
       let fireworkType = 'heart';
@@ -302,10 +302,16 @@
       let retentionTimeMs = 60000; // Default: 1 minute
       try{
         const saved = localStorage.getItem('fireworksRetentionTime');
-        if(saved) retentionTimeMs = parseInt(saved, 10);
+        if(saved){
+          const parsed = parseInt(saved, 10);
+          // Validate parsed value is a valid number
+          if(!isNaN(parsed) && parsed > 0){
+            retentionTimeMs = parsed;
+          }
+        }
       }catch(e){}
       
-      // Convert milliseconds to seconds for TTL
+      // Convert milliseconds to seconds for TTL (ensure valid number)
       const ttlSeconds = Math.round(retentionTimeMs / 1000);
       
       fetch(url, {
