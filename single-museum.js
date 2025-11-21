@@ -252,7 +252,8 @@
 
   function saveFireworkRecord(museumId, museumName, taskTitle, ageGroup, childNickname){
     try{
-      const fireworks = JSON.parse(localStorage.getItem('fireworks') || '[]');
+      // Get museum city from selected museum
+      const museumCity = state.selectedMuseum && state.selectedMuseum.location || '';
       
       // Get firework type from settings
       let fireworkType = 'heart';
@@ -261,23 +262,72 @@
         if(saved) fireworkType = saved;
       }catch(e){}
       
+      const timestamp = Date.now();
       const firework = {
-        id: 'fw-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        id: `${museumId}-${timestamp}-${Math.random().toString(36).substr(2, 9)}`,
         museumId: museumId,
         museumName: museumName,
-        museumCity: '', // Can be enhanced later if needed
+        museumCity: museumCity,
         taskContent: taskTitle,
         ageGroup: ageGroup,
         childNickname: childNickname,
         fireworkType: fireworkType,
-        timestamp: Date.now(),
-        date: new Date().toISOString()
+        timestamp: timestamp,
+        date: new Date(timestamp).toISOString()
       };
       
+      // Save to legacy 'fireworks' key (for backwards compatibility)
+      const fireworks = JSON.parse(localStorage.getItem('fireworks') || '[]');
       fireworks.push(firework);
       localStorage.setItem('fireworks', JSON.stringify(fireworks));
+      
+      // Save to 'museumCheckFireworks' key (matches museum-checkin.html pattern)
+      const museumCheckFireworks = JSON.parse(localStorage.getItem('museumCheckFireworks') || '[]');
+      museumCheckFireworks.push(firework);
+      localStorage.setItem('museumCheckFireworks', JSON.stringify(museumCheckFireworks));
+      
+      // Upload to remote storage
+      uploadFireworkToRemote(firework);
     }catch(e){
       console.error('Failed to save firework record:', e);
+    }
+  }
+  
+  function uploadFireworkToRemote(fireworkData){
+    try{
+      const url = 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore';
+      const key = 'museumcheck-firework';
+      
+      // Load fireworks retention time from localStorage (in milliseconds)
+      let retentionTimeMs = 60000; // Default: 1 minute
+      try{
+        const saved = localStorage.getItem('fireworksRetentionTime');
+        if(saved) retentionTimeMs = parseInt(saved, 10);
+      }catch(e){}
+      
+      // Convert milliseconds to seconds for TTL
+      const ttlSeconds = Math.round(retentionTimeMs / 1000);
+      
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: key,
+          sortKey: fireworkData.id,
+          value: JSON.stringify(fireworkData),
+          ttl: ttlSeconds
+        })
+      }).then(response => {
+        if(response.ok){
+          console.log('Firework uploaded to remote storage');
+        } else {
+          console.warn('Failed to upload firework to remote storage:', response.status);
+        }
+      }).catch(err => {
+        console.warn('Error uploading firework to remote storage:', err);
+      });
+    }catch(e){
+      console.error('Failed to upload firework to remote:', e);
     }
   }
 
