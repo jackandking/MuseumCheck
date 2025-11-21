@@ -900,7 +900,10 @@
         const task = tasks[idx];
         if(task && task.role === 'child' && state.selectedMuseum){
           // Launch firework for child task completion
-          const taskTitle = task.title || task.subtitle || '完成任务';
+          // Use treasure name for collection/treasure-hunt tasks, otherwise use task title
+          const taskTitle = (task.source && (task.source.from === 'collections' || task.source.from === 'treasure-hunt') && task.source.name) 
+            ? task.source.name 
+            : (task.title || task.subtitle || '完成任务');
           launchFirework(state.selectedMuseum.id, state.selectedMuseum.name, taskTitle, age);
         }
       }
