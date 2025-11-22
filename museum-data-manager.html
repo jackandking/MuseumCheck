@@ -817,7 +817,7 @@
       
       // Display AI validation results
       function displayValidationResults(result, museumName) {
-        let message = `<h3>🤖 AI 验证结果：${museumName}</h3>`;
+        let message = `<h3>🤖 AI 验证结果：${escapeHtml(museumName)}</h3>`;
         
         if (result.isValid && result.invalidTreasures.length === 0) {
           message += '<div class="status status-success">✓ 所有镇馆之宝验证通过！</div>';
@@ -827,7 +827,7 @@
           if (result.invalidTreasures.length > 0) {
             message += '<h4>不正确的文物：</h4><ul>';
             result.invalidTreasures.forEach(name => {
-              message += `<li style="color: #dc3545;">${name}</li>`;
+              message += `<li style="color: #dc3545;">${escapeHtml(name)}</li>`;
             });
             message += '</ul>';
           }
@@ -837,20 +837,23 @@
           message += '<h4>AI 推荐的镇馆之宝：</h4>';
           message += '<div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-top: 12px;">';
           result.recommendations.forEach((rec, index) => {
-            const safeRec = {
-              name: escapeHtml(rec.name || ''),
-              description: escapeHtml(rec.description || ''),
+            // Store recommendation data safely in a global variable for click handlers
+            if (!window.pendingRecommendations) window.pendingRecommendations = [];
+            window.pendingRecommendations[index] = {
+              name: rec.name || '',
+              description: rec.description || '',
               imageUrl: rec.imageUrl || ''
             };
+            
             message += `
               <div id="recommendation-${index}" style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: start; gap: 12px;">
                 <div style="flex: 1;">
-                  <strong>${index + 1}. ${safeRec.name}</strong><br>
-                  <span style="color: #667; font-size: 14px;">${safeRec.description}</span>
+                  <strong>${index + 1}. ${escapeHtml(rec.name || '')}</strong><br>
+                  <span style="color: #667; font-size: 14px;">${escapeHtml(rec.description || '')}</span>
                 </div>
                 <button 
-                  class="btn btn-success btn-sm" 
-                  onclick="addRecommendedTreasure(${index}, '${safeRec.name.replace(/'/g, "\\'")}', '${safeRec.imageUrl.replace(/'/g, "\\'")}', '${safeRec.description.replace(/'/g, "\\'")}')"
+                  class="btn btn-success btn-sm recommendation-add-btn" 
+                  data-rec-index="${index}"
                   style="flex-shrink: 0; white-space: nowrap;"
                 >
                   ➕ 添加
@@ -868,6 +871,19 @@
         // Show in a modal-like display
         const statusDiv = document.getElementById('statusMsg');
         statusDiv.innerHTML = `<div class="status status-info" style="max-width: 100%; white-space: normal; text-align: left;">${message}</div>`;
+        
+        // Add event listeners to buttons (safer than inline onclick)
+        setTimeout(() => {
+          document.querySelectorAll('.recommendation-add-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+              const index = parseInt(this.getAttribute('data-rec-index'));
+              const rec = window.pendingRecommendations[index];
+              if (rec) {
+                addRecommendedTreasure(index, rec.name, rec.imageUrl, rec.description);
+              }
+            });
+          });
+        }, 100);
         
         // Scroll to results
         statusDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
