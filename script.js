@@ -6,8 +6,8 @@ const UI_CONSTANTS = {
         HIGHLIGHT_DURATION: 2000,           // Duration for element highlighting (ms)
         TRANSITION_DURATION: 300,           // Standard transition duration (ms)
         MODAL_OPEN_DELAY: 500,             // Delay before opening modal (ms)
-        NOTIFICATION_DURATION: 2500,        // Default notification display duration (ms)
-        NOTIFICATION_DURATION_LARGE: 3500   // Extended notification duration for large content (ms)
+        NOTIFICATION_DURATION: 800,         // Quick firework animation duration for task completion (ms) - v2 style
+        NOTIFICATION_DURATION_LARGE: 1200   // Quick firework animation duration for museum visits (ms) - v2 style
     },
     
     COLORS: {
@@ -3627,6 +3627,11 @@ class MuseumCheckApp {
         // Initialize leaderboard manager
         this.leaderboardManager = new LeaderboardManager(this);
         
+        // Initialize achievement gamification system
+        if (typeof AchievementGamification !== 'undefined') {
+            this.achievementGamification = new AchievementGamification();
+        }
+        
         this.init();
     }
 
@@ -4714,6 +4719,52 @@ class MuseumCheckApp {
             });
         }
 
+        // ===== GAMIFICATION SETTINGS TOGGLES =====
+        const soundToggle = document.getElementById('gamificationSoundToggle');
+        if (soundToggle && this.achievementGamification) {
+            soundToggle.checked = this.achievementGamification.soundEnabled;
+            soundToggle.addEventListener('change', () => {
+                const enabled = this.achievementGamification.toggleSound();
+                
+                // Play a test sound when enabling
+                if (enabled) {
+                    this.achievementGamification.playAchievementSound('basic');
+                }
+                
+                // Track event
+                this.trackEvent('gamification_sound_toggled', {
+                    'enabled': enabled
+                });
+            });
+        }
+        
+        const animationsToggle = document.getElementById('gamificationAnimationsToggle');
+        if (animationsToggle && this.achievementGamification) {
+            animationsToggle.checked = this.achievementGamification.animationsEnabled;
+            animationsToggle.addEventListener('change', () => {
+                const enabled = this.achievementGamification.toggleAnimations();
+                
+                // Show a test animation when enabling
+                if (enabled) {
+                    this.achievementGamification.showAchievementNotification({
+                        emoji: '✨',
+                        name: '动画已启用',
+                        description: '成就解锁时将显示动画效果',
+                        level: 'basic'
+                    }, 'hint');
+                }
+                
+                // Track event
+                this.trackEvent('gamification_animations_toggled', {
+                    'enabled': enabled
+                });
+            });
+        }
+        
+        // Update gamification stats in settings
+        this.updateGamificationStatsDisplay();
+        // ===== END GAMIFICATION SETTINGS =====
+
         // Fireworks retention time slider
         const retentionSlider = document.getElementById('fireworksRetentionInput');
         if (retentionSlider) {
@@ -4878,6 +4929,14 @@ class MuseumCheckApp {
         if (openLeaderboardAdminBtn) {
             openLeaderboardAdminBtn.addEventListener('click', () => {
                 window.open('admin-leaderboard.html?admin=1', '_blank');
+            });
+        }
+
+        // Open treasures page button
+        const openTreasuresBtn = document.getElementById('openTreasuresButton');
+        if (openTreasuresBtn) {
+            openTreasuresBtn.addEventListener('click', () => {
+                window.location.href = 'treasures.html';
             });
         }
 
@@ -6261,6 +6320,45 @@ class MuseumCheckApp {
             
             // Proceed with checking the museum as visited
             this.visitedMuseums.push(museumId);
+            
+            // ===== ACHIEVEMENT GAMIFICATION HOOKS =====
+            // Update streak and check for new achievements
+            if (this.achievementGamification) {
+                // Update visit streak
+                this.achievementGamification.updateStreak(new Date());
+                
+                // Check for micro-achievements (first visit, streaks, etc.)
+                const visitCount = this.visitedMuseums.length;
+                
+                // First visit achievement
+                if (visitCount === 1) {
+                    this.achievementGamification.checkMicroAchievements('first_visit', { museumId });
+                }
+                
+                // Calculate and unlock main achievements
+                const achievements = this.calculateAchievements(visitCount);
+                const newlyUnlocked = achievements.filter(a => 
+                    a.achieved && !this.achievementGamification.isAchievementUnlocked(a.id || `${a.name}_${a.level}`)
+                );
+                
+                // Show notifications for newly unlocked achievements
+                newlyUnlocked.forEach(achievement => {
+                    const achievementWithId = {
+                        ...achievement,
+                        id: achievement.id || `${achievement.name}_${achievement.level}`.replace(/\s+/g, '_')
+                    };
+                    this.achievementGamification.unlockAchievement(achievementWithId);
+                });
+                
+                // Check for close-to-unlock achievement hints
+                const hints = this.achievementGamification.getAchievementHints(visitCount, {});
+                if (hints.length > 0 && Math.random() < 0.3) {
+                    // Show hint for closest achievement (30% chance)
+                    this.achievementGamification.showAchievementNotification(hints[0].achievement, 'hint');
+                }
+            }
+            // ===== END GAMIFICATION HOOKS =====
+            
             // Trigger large rocket animation for museum visit
             this.triggerLargeRocket();
             this.saveVisitedMuseums();
@@ -7313,6 +7411,27 @@ class MuseumCheckApp {
                 
                 if (e.target.checked && itemIndex === -1) {
                     completed.push(index);
+                    
+                    // ===== GAMIFICATION HOOK: Checklist Item Completed =====
+                    if (this.achievementGamification) {
+                        // Check for first checklist item
+                        const totalCompletedItems = Object.values(this.museumChecklists)
+                            .reduce((sum, items) => sum + items.length, 0);
+                        
+                        if (totalCompletedItems === 1) {
+                            this.achievementGamification.checkMicroAchievements('first_checklist_item');
+                        }
+                        
+                        // Check for checklist completion milestones
+                        if (totalCompletedItems === 10) {
+                            this.achievementGamification.checkMicroAchievements('checklist_complete_10');
+                        }
+                        
+                        // Award XP for checklist completion (small amount)
+                        this.achievementGamification.addXP(5);
+                    }
+                    // ===== END GAMIFICATION HOOK =====
+                    
                     // Trigger small rocket animation for task completion
                     this.triggerSmallRocket();
                     
@@ -7767,6 +7886,37 @@ class MuseumCheckApp {
         
         // Update fireworks retention time slider
         const retentionSlider = document.getElementById('fireworksRetentionInput');
+        
+        // Update gamification stats display
+        this.updateGamificationStatsDisplay();
+        
+        // Continue with remaining settings
+        this.renderSettingsInfoComplete();
+    }
+    
+    // Update gamification stats in settings panel
+    updateGamificationStatsDisplay() {
+        if (!this.achievementGamification) return;
+        
+        const stats = this.achievementGamification.getStats();
+        
+        // Update mini stats display in settings
+        const statsXP = document.getElementById('statsXP');
+        if (statsXP) statsXP.textContent = `${stats.xp.totalXP} XP`;
+        
+        const statsLevel = document.getElementById('statsLevel');
+        if (statsLevel) statsLevel.textContent = `等级 ${stats.xp.level}`;
+        
+        const statsStreak = document.getElementById('statsStreak');
+        if (statsStreak) {
+            const streakInfo = this.achievementGamification.getStreakInfo();
+            statsStreak.textContent = `连续 ${streakInfo.current} 天`;
+        }
+    }
+
+    renderSettingsInfoComplete() {
+        // Update fireworks retention time slider
+        const retentionSlider = document.getElementById('fireworksRetentionInput');
         const retentionDisplay = document.getElementById('fireworksRetentionDisplay');
         if (retentionSlider && retentionDisplay) {
             const retentionMs = this.loadFireworksRetentionTime();
@@ -8062,6 +8212,39 @@ class MuseumCheckApp {
         // ✅ 修复3: 深度融合亲子测评与博物馆成就系统
         const assessmentResults = this.getRawAssessmentResults();
         const assessmentQuality = this.calculateAssessmentQuality(assessmentResults);
+        
+        // ===== GAMIFICATION STATS DISPLAY =====
+        if (this.achievementGamification) {
+            const stats = this.achievementGamification.getStats();
+            const xpProgress = this.achievementGamification.getXPProgress();
+            const streakInfo = this.achievementGamification.getStreakInfo();
+            
+            // Update gamification stat cards
+            const xpElem = document.getElementById('gamificationXP');
+            if (xpElem) xpElem.textContent = stats.xp.totalXP.toLocaleString();
+            
+            const levelElem = document.getElementById('gamificationLevel');
+            if (levelElem) levelElem.textContent = stats.xp.level;
+            
+            const streakElem = document.getElementById('gamificationStreak');
+            if (streakElem) streakElem.textContent = `${streakInfo.current}天`;
+            
+            // Update XP progress bar
+            const xpProgressText = document.getElementById('xpProgressText');
+            if (xpProgressText) {
+                xpProgressText.textContent = `${xpProgress.currentLevelXP} / ${xpProgress.nextLevelXP} XP`;
+            }
+            
+            const xpProgressFill = document.getElementById('xpProgressFill');
+            if (xpProgressFill) {
+                xpProgressFill.style.width = `${xpProgress.progress}%`;
+            }
+            
+            // Show achievement hints
+            const hints = this.achievementGamification.getAchievementHints(visitedCount, assessmentQuality);
+            this.renderAchievementHints(hints);
+        }
+        // ===== END GAMIFICATION STATS =====
         
         // 更新统计信息 - 融合显示博物馆进度和亲子质量
         document.getElementById('totalAchievements').textContent = achievedCount;
@@ -8419,6 +8602,43 @@ class MuseumCheckApp {
         }
     }
 
+    // 新增方法：渲染成就提示 (Achievement Hints)
+    renderAchievementHints(hints) {
+        const hintsContainer = document.getElementById('achievementHints');
+        const hintsList = document.getElementById('achievementHintsList');
+        
+        if (!hintsContainer || !hintsList) return;
+        
+        if (!hints || hints.length === 0) {
+            hintsContainer.style.display = 'none';
+            return;
+        }
+        
+        // Show hints container
+        hintsContainer.style.display = 'block';
+        
+        // Render each hint
+        hintsList.innerHTML = hints.map(hint => {
+            const achievement = hint.achievement;
+            const progressPercent = Math.round(hint.progressPercent);
+            
+            return `
+                <div class="achievement-hint-item">
+                    <div class="achievement-hint-header">
+                        <div class="achievement-hint-emoji">${achievement.emoji || '🏆'}</div>
+                        <div class="achievement-hint-name">${achievement.name || '未知成就'}</div>
+                        <div class="achievement-hint-progress-percent">${progressPercent}%</div>
+                    </div>
+                    <div class="achievement-hint-description">${achievement.description || ''}</div>
+                    <div class="achievement-hint-progress-bar">
+                        <div class="achievement-hint-progress-fill" style="width: ${progressPercent}%"></div>
+                    </div>
+                    ${hint.remaining ? `<div class="achievement-hint-remaining">还需 ${hint.remaining}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
     // 新增方法：生成个性化建议
     generatePersonalizedSuggestions(visitedCount, assessmentQuality, achievements) {
         // 基于用户当前状态提供个性化建议
@@ -8711,6 +8931,28 @@ class MuseumCheckApp {
                     alert('照片保存失败，请重试。');
                     return;
                 }
+                
+                // ===== GAMIFICATION HOOK: Photo Upload =====
+                if (this.achievementGamification) {
+                    // Count total photos
+                    const photoCount = Object.keys(this.taskPhotos).length;
+                    
+                    // First photo achievement
+                    if (photoCount === 1) {
+                        this.achievementGamification.checkMicroAchievements('first_photo');
+                    }
+                    
+                    // Photo milestone achievements
+                    if (photoCount === 10) {
+                        this.achievementGamification.checkMicroAchievements('photo_count_10');
+                    } else if (photoCount === 50) {
+                        this.achievementGamification.checkMicroAchievements('photo_count_50');
+                    }
+                    
+                    // Award XP for photo upload
+                    this.achievementGamification.addXP(10);
+                }
+                // ===== END GAMIFICATION HOOK =====
                 
                 // Update the display
                 const existingPhoto = container.querySelector('.task-photo');
@@ -9570,12 +9812,12 @@ class MuseumCheckApp {
                 particle.classList.add('particle-explode');
             }, 50);
             
-            // Remove particle
+            // Remove particle quickly for v2 style effect (600ms for small, 800ms for large)
             setTimeout(() => {
                 if (particle && particle.parentNode) {
                     particle.parentNode.removeChild(particle);
                 }
-            }, 1500);
+            }, isLarge ? 800 : 600);
         }
     }
 
@@ -9597,11 +9839,12 @@ class MuseumCheckApp {
             celebration.classList.add('celebration-appear');
         }, 200);
         
+        // Quick celebration display for v2 style (800ms for small, 1200ms for large)
         setTimeout(() => {
             if (celebration && celebration.parentNode) {
                 celebration.parentNode.removeChild(celebration);
             }
-        }, 3000);
+        }, isLarge ? 1200 : 800);
         
         return celebration;
     }
@@ -9610,16 +9853,17 @@ class MuseumCheckApp {
         // Create multiple small rockets for more impact
         const rocketCount = Math.floor(Math.random() * 2) + 1;
         
+        // Quick succession for v2 style - reduced delay from 300ms to 150ms
         for (let i = 0; i < rocketCount; i++) {
             setTimeout(() => {
                 this.createRocketAnimation(false, sourceElement);
-            }, i * 300);
+            }, i * 150);
         }
         
-        // Add celebration effect
+        // Quick celebration effect - reduced delay from 500ms to 300ms
         setTimeout(() => {
             this.createCelebrationEffect(false);
-        }, 500);
+        }, 300);
         
         // Track small rocket animation
         this.trackEvent('enhanced_small_rocket_animation', {
@@ -9632,16 +9876,17 @@ class MuseumCheckApp {
         // Create multiple large rockets for museum visits
         const rocketCount = Math.floor(Math.random() * 3) + 2; // 2-4 rockets
         
+        // Quick succession for v2 style - reduced delay from 400ms to 200ms
         for (let i = 0; i < rocketCount; i++) {
             setTimeout(() => {
                 this.createRocketAnimation(true, sourceElement);
-            }, i * 400);
+            }, i * 200);
         }
         
-        // Add celebration effect
+        // Quick celebration effect - reduced delay from 800ms to 400ms
         setTimeout(() => {
             this.createCelebrationEffect(true);
-        }, 800);
+        }, 400);
         
         // Track large rocket animation  
         this.trackEvent('enhanced_large_rocket_animation', {
@@ -11969,8 +12214,8 @@ class MuseumCheckApp {
 
     /**
      * Check if a museum has collections data
-     * Uses v2 approach: checks dynamically across all data tiers instead of hardcoded lists
-     * Priority: current museum data -> MUSEUMS array (from museums-data.js or museums-meta.js)
+     * Uses v2 approach: checks dynamically by examining actual collections array
+     * Priority: current museum data -> MUSEUMS array (from museums-data.js)
      * @param {Object} museum - Museum object (may be partial data)
      * @returns {boolean} True if museum has collections
      */
@@ -11980,24 +12225,17 @@ class MuseumCheckApp {
             return true;
         }
         
-        // Check hasCollections metadata flag (from museums-meta.js or museums-data.js)
+        // Check if museum meta has hasCollections flag (from museums-meta.js)
         if (museum.hasCollections === true) {
             return true;
         }
         
-        // Fallback: check MUSEUMS array (Tier 3 - museums-data.js or museums-meta.js)
+        // Fallback: check MUSEUMS array (Tier 3 - museums-data.js)
         // This ensures we show navigation button even if grid data doesn't have collections loaded yet
         if (museum.id && typeof MUSEUMS !== 'undefined' && Array.isArray(MUSEUMS)) {
             const fullMuseum = MUSEUMS.find(m => m.id === museum.id);
-            if (fullMuseum) {
-                // Check hasCollections flag first
-                if (fullMuseum.hasCollections === true) {
-                    return true;
-                }
-                // Check collections array
-                if (fullMuseum.collections && Array.isArray(fullMuseum.collections) && fullMuseum.collections.length > 0) {
-                    return true;
-                }
+            if (fullMuseum && fullMuseum.collections && Array.isArray(fullMuseum.collections) && fullMuseum.collections.length > 0) {
+                return true;
             }
         }
         

@@ -94,7 +94,7 @@ window.MUSEUMS_META = [
       "江南文化"
     ],
     "image": "",
-    "hasCollections": false
+    "hasCollections": true
   },
   {
     "id": "zhejiang-museum",
@@ -3130,7 +3130,7 @@ window.MUSEUMS_META = [
       "地方",
       "文化"
     ],
-    "image": "",
-    "hasCollections": false
+    "image": "https://upload.wikimedia.org/wikipedia/commons/9/92/Pinghu_Museum_02_2014-06.JPG",
+    "hasCollections": true
   }
 ];
