@@ -16,14 +16,19 @@
       "description": "元代青花瓷代表作，壶身绘凤凰纹饰，造型优美，釉色纯正，是元代景德镇窑的精品，体现了元代制瓷工艺的高超水平"
     },
     {
-      "name": "堇鼎",
-      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c3/Western_Zhou_Bronze_Jin_Ding_%289890625245%29.jpg",
-      "description": "西周早期青铜器，是北京地区出土青铜礼器中体形最大、最重的一件，内壁26字铭文为研究燕国历史提供了宝贵资料。12"
+      "name": "乾隆款金嵌珍珠天球仪",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Qianlong_Celestial_Globe.jpg/400px-Qianlong_Celestial_Globe.jpg",
+      "description": "清乾隆时期制作的天文仪器，镶嵌珍珠标注星座位置，工艺精湛，既是科学仪器，又是艺术珍品，反映了清代天文学与工艺美术的结合"
     },
     {
-      "name": "伯矩鬲",
-      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/2/28/%E4%BC%AF%E7%9F%A9%E9%AC%B2.jpg",
-      "description": "西周初期青铜器，全身装饰七组立体牛头纹，工艺精湛，是青铜艺术巅峰之作"
+      "name": "明代金丝翼善冠",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6b/Golden_Crown_Replica_of_King_Wanli.jpg",
+      "description": "明代皇帝冠冕，用金丝编织而成，上嵌珠宝，制作精美，是明代皇家礼制文化的重要实物，展现了明代金属工艺的高超技艺"
+    },
+    {
+      "name": "神兽玉佩",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a1/%E7%A5%9E%E5%85%BD%E7%8E%89%E4%BD%A9.JPG",
+      "description": "首都博物馆珍贵的玉器藏品，以青玉为材，雕刻神话祥瑞动物形象。玉佩造型生动，工艺精湛，融入浮雕、阴刻等技法，寓意吉祥如意、辟邪纳福，体现了古代玉器艺术的高超水平和礼制文化"
     }
   ],
   "workflows": [],
