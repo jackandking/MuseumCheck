@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Museum Data Manager - Capital Museum</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+    .success { background: #d4edda; }
+    .error { background: #f8d7da; }
+    .info { background: #d1ecf1; }
+  </style>
+</head>
+<body>
+  <h1>Test Museum Data Manager - Capital Museum (beijing-capital-museum)</h1>
+  <div id="results"></div>
+  
+  <script src="museums-data.js"></script>
+  <script src="museum-data-loader.js"></script>
+  <script>
+    async function runTests() {
+      const results = document.getElementById('results');
+      const loader = new MuseumDataLoader();
+      const museumId = 'beijing-capital-museum';
+      
+      // Test 1: Load from Tier 1
+      results.innerHTML += '<h2>Test 1: Load from Tier 1 (Static File)</h2>';
+      try {
+        const tier1Data = await loader.loadFromTier1(museumId);
+        if (tier1Data) {
+          results.innerHTML += `<div class="result success">✓ Tier 1 loaded successfully<br>Name: ${tier1Data.name}<br>Collections: ${tier1Data.collections ? tier1Data.collections.length : 0}</div>`;
+        } else {
+          results.innerHTML += `<div class="result error">✗ Tier 1 returned null</div>`;
+        }
+      } catch (error) {
+        results.innerHTML += `<div class="result error">✗ Tier 1 error: ${error.message}</div>`;
+      }
+      
+      // Test 2: Load from Tier 2
+      results.innerHTML += '<h2>Test 2: Load from Tier 2 (KV Store)</h2>';
+      try {
+        const tier2Data = await loader.loadFromTier2(museumId);
+        if (tier2Data) {
+          results.innerHTML += `<div class="result success">✓ Tier 2 loaded successfully<br>Name: ${tier2Data.name}<br>Collections: ${tier2Data.collections ? tier2Data.collections.length : 0}</div>`;
+        } else {
+          results.innerHTML += `<div class="result info">ℹ Tier 2 returned null (expected if no KV store data)</div>`;
+        }
+      } catch (error) {
+        results.innerHTML += `<div class="result info">ℹ Tier 2 error: ${error.message} (expected if no KV store data)</div>`;
+      }
+      
+      // Test 3: Load from Tier 3
+      results.innerHTML += '<h2>Test 3: Load from Tier 3 (MUSEUMS array)</h2>';
+      try {
+        const tier3Data = await loader.loadFromTier3(museumId);
+        if (tier3Data) {
+          results.innerHTML += `<div class="result success">✓ Tier 3 loaded successfully<br>Name: ${tier3Data.name}<br>Collections: ${tier3Data.collections ? tier3Data.collections.length : 0}</div>`;
+        } else {
+          results.innerHTML += `<div class="result error">✗ Tier 3 returned null</div>`;
+        }
+      } catch (error) {
+        results.innerHTML += `<div class="result error">✗ Tier 3 error: ${error.message}</div>`;
+      }
+      
+      // Test 4: Simulate museum manager quick load
+      results.innerHTML += '<h2>Test 4: Simulate Museum Manager Quick Load</h2>';
+      try {
+        const tier1Data = await loader.loadFromTier1(museumId);
+        const tier2Data = await loader.loadFromTier2(museumId);
+        const tier3Data = await loader.loadFromTier3(museumId);
+        
+        let currentMuseums = [];
+        
+        if (tier1Data) {
+          currentMuseums.push({
+            id: museumId,
+            name: tier1Data.name || museumId,
+            location: tier1Data.location || '未知位置',
+            tier: 'tier1',
+            hasData: true,
+            data: tier1Data
+          });
+        }
+        
+        if (tier2Data) {
+          currentMuseums.push({
+            id: museumId,
+            name: tier2Data.name || museumId,
+            location: tier2Data.location || '未知位置',
+            tier: 'tier2',
+            hasData: true,
+            data: tier2Data
+          });
+        }
+        
+        if (tier3Data) {
+          currentMuseums.push({
+            id: museumId,
+            name: tier3Data.name || museumId,
+            location: tier3Data.location || '未知位置',
+            tier: 'tier3',
+            hasData: true,
+            data: tier3Data
+          });
+        }
+        
+        results.innerHTML += `<div class="result ${currentMuseums.length > 0 ? 'success' : 'error'}">`;
+        results.innerHTML += `Total tiers found: ${currentMuseums.length}<br>`;
+        currentMuseums.forEach(m => {
+          results.innerHTML += `- ${m.tier}: ${m.name} (${m.data.collections ? m.data.collections.length : 0} collections)<br>`;
+        });
+        results.innerHTML += `</div>`;
+        
+      } catch (error) {
+        results.innerHTML += `<div class="result error">✗ Simulation error: ${error.message}</div>`;
+      }
+    }
+    
+    runTests();
+  </script>
+</body>
+</html>
