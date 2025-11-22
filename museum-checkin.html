@@ -645,7 +645,6 @@
             width: 10px;
             height: 10px;
             background: #f0f;
-            position: absolute;
             animation: confetti-fall 3s linear forwards;
             z-index: 1999;
         }
@@ -1270,7 +1269,16 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             
-            const colors = ['#FF6B9D', '#C44569', '#F8B500', '#54A0FF', '#5F27CD', '#FFD93D', '#6BCF7F'];
+            // Colors in RGB format for easier alpha manipulation
+            const colors = [
+                '255, 107, 157',  // #FF6B9D Pink
+                '196, 69, 105',   // #C44569 Deep red
+                '248, 181, 0',    // #F8B500 Orange
+                '84, 160, 255',   // #54A0FF Blue
+                '95, 39, 205',    // #5F27CD Purple
+                '255, 217, 61',   // #FFD93D Gold
+                '107, 207, 127'   // #6BCF7F Green
+            ];
             let allParticles = [];
             
             // Create explosion at a position
@@ -1330,13 +1338,13 @@
                     // Glow effect
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
-                    ctx.fillStyle = p.color.replace(')', `, ${p.life * 0.3})`).replace('rgb', 'rgba');
+                    ctx.fillStyle = `rgba(${p.color}, ${p.life * 0.3})`;
                     ctx.fill();
                     
                     // Core
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                    ctx.fillStyle = p.color.replace(')', `, ${p.life})`).replace('rgb', 'rgba');
+                    ctx.fillStyle = `rgba(${p.color}, ${p.life})`;
                     ctx.fill();
                     
                     ctx.restore();
