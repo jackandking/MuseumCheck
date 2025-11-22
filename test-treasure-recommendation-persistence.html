@@ -176,7 +176,7 @@
     // Simulated pending recommendations
     window.pendingRecommendations = [];
     
-    // Simulate the validation results display (FIXED VERSION)
+    // Simulate the validation results display (preserves recommendations after individual additions)
     function simulateValidation() {
       const museumName = '故宫博物院';
       
@@ -296,7 +296,10 @@
         // Update collections display
         updateCollectionsDisplay();
         
-        // Update the button to show it was added (IMPORTANT: don't call showStatus to preserve other recommendations)
+        // Update the button to show it was added
+        // IMPORTANT: Don't call showStatus() here as it replaces the entire innerHTML of statusMsg div,
+        // which clears the validation results display area and removes all other recommendation buttons,
+        // making them impossible to click.
         const recommendationDiv = document.getElementById('recommendation-' + index);
         if (recommendationDiv) {
           const button = recommendationDiv.querySelector('button');

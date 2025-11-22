@@ -922,7 +922,9 @@
           // Re-render collections editor
           renderCollectionsEditor(collections);
           
-          // Update the button to show it was added (IMPORTANT: don't call showStatus to preserve other recommendations)
+          // Update the button to show it was added
+          // IMPORTANT: Don't call showStatus() here as it clears the entire validation results display,
+          // which would remove all other recommendation buttons and make them impossible to click.
           const recommendationDiv = document.getElementById('recommendation-' + index);
           if (recommendationDiv) {
             const button = recommendationDiv.querySelector('button');
@@ -936,7 +938,7 @@
             }
           }
           
-          // Scroll to collections editor to show the newly added item
+          // Scroll to collections editor to show the newly added treasure in the collections list
           setTimeout(() => {
             document.getElementById('collections-editor').scrollIntoView({ 
               behavior: 'smooth', 
