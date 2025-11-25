@@ -1748,7 +1748,7 @@
             if (currentTaskIndex === null) return;
 
             // Check if puzzle game should be shown (has photo and setting enabled)
-            const hasPhoto = taskPhotos[currentTaskIndex] ? true : false;
+            const hasPhoto = !!taskPhotos[currentTaskIndex];
             const puzzleEnabled = loadPuzzleGameSetting();
             const showPuzzle = hasPhoto && puzzleEnabled;
 
@@ -2898,6 +2898,8 @@
         let puzzleMoves = 0;
         let puzzleImageUrl = '';
         const PUZZLE_SIZE = 3;
+        const EMPTY_CELL = 8;  // The empty cell value (last position)
+        const SHUFFLE_MOVES = 100;  // Number of random moves to shuffle puzzle
 
         // Initialize the puzzle game with a photo
         function initPuzzleGame(imageUrl) {
@@ -2912,8 +2914,8 @@
                 refImg.classList.remove('show');
             }
             
-            // Create initial state (0-8 where 8 is the empty cell)
-            puzzleState = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+            // Create initial state (0-8 where EMPTY_CELL is the empty cell)
+            puzzleState = [0, 1, 2, 3, 4, 5, 6, 7, EMPTY_CELL];
             
             // Shuffle the puzzle (ensure it's solvable)
             shufflePuzzle();
@@ -2931,16 +2933,16 @@
         // Shuffle puzzle ensuring it's solvable
         function shufflePuzzle() {
             // Perform random valid moves to ensure solvability
-            const emptyIndex = puzzleState.indexOf(8);
+            const emptyIndex = puzzleState.indexOf(EMPTY_CELL);
             let currentEmpty = emptyIndex;
             
-            for (let i = 0; i < 100; i++) {
+            for (let i = 0; i < SHUFFLE_MOVES; i++) {
                 const neighbors = getValidMoves(currentEmpty);
                 const randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
                 
                 // Swap empty with random neighbor
                 puzzleState[currentEmpty] = puzzleState[randomNeighbor];
-                puzzleState[randomNeighbor] = 8;
+                puzzleState[randomNeighbor] = EMPTY_CELL;
                 currentEmpty = randomNeighbor;
             }
         }
@@ -2980,7 +2982,7 @@
                 
                 const value = puzzleState[i];
                 
-                if (value === 8) {
+                if (value === EMPTY_CELL) {
                     // Empty cell
                     tile.classList.add('empty');
                 } else {
@@ -3005,13 +3007,13 @@
 
         // Handle tile click
         function handleTileClick(clickedIndex) {
-            const emptyIndex = puzzleState.indexOf(8);
+            const emptyIndex = puzzleState.indexOf(EMPTY_CELL);
             const validMoves = getValidMoves(emptyIndex);
             
             if (validMoves.includes(clickedIndex)) {
                 // Swap tiles
                 puzzleState[emptyIndex] = puzzleState[clickedIndex];
-                puzzleState[clickedIndex] = 8;
+                puzzleState[clickedIndex] = EMPTY_CELL;
                 
                 // Update moves count
                 puzzleMoves++;
