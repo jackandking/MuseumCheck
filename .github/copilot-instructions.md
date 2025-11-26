@@ -316,6 +316,27 @@ test('should auto-adjust canvas height based on content', () => {
 ### No Exceptions Policy
 **Every bug fix must include unit tests.** No exceptions, even for "simple" fixes. Historical evidence shows simple fixes often cause unexpected regressions.
 
+### Handling Unrelated Bugs Discovered During Development
+
+**IMPORTANT**: When you discover a bug during development that is **unrelated to your current task**, do NOT attempt to fix it immediately. Instead:
+
+1. **Create a new GitHub issue** to document the unrelated bug
+2. **Include in the issue**:
+   - Clear description of the bug
+   - Steps to reproduce (if known)
+   - Expected vs. actual behavior
+   - Any relevant code locations or files
+3. **Continue with your current task** - stay focused on the original issue
+4. **Reference the new issue** in your progress report so stakeholders are aware
+
+**Rationale**: Attempting to fix unrelated bugs can:
+- Introduce scope creep and delays
+- Make code review more difficult
+- Increase risk of unintended side effects
+- Complicate rollback if issues arise
+
+**Exception**: If the unrelated bug is a **critical security vulnerability** or **blocks your current task**, escalate immediately to the user for guidance.
+
 ## Systematic Issue Detection Requirements (CRITICAL)
 
 **MANDATORY**: Before making ANY changes to the codebase, especially when fixing bugs or adding features involving museum data, you MUST perform comprehensive systematic analysis to identify broader issues.
