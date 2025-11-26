@@ -14,6 +14,43 @@ describe('Puzzle Game Reward Feature', () => {
         localStorage.clear();
     });
 
+    // Shared utility functions to reduce code duplication
+    function createGetValidMoves(puzzleSize) {
+        return function getValidMoves(emptyIndex) {
+            const moves = [];
+            const row = Math.floor(emptyIndex / puzzleSize);
+            const col = emptyIndex % puzzleSize;
+            
+            if (row > 0) moves.push(emptyIndex - puzzleSize);
+            if (row < puzzleSize - 1) moves.push(emptyIndex + puzzleSize);
+            if (col > 0) moves.push(emptyIndex - 1);
+            if (col < puzzleSize - 1) moves.push(emptyIndex + 1);
+            
+            return moves;
+        };
+    }
+
+    function createShufflePuzzle(puzzleSize) {
+        const emptyCell = puzzleSize * puzzleSize - 1;
+        const getValidMoves = createGetValidMoves(puzzleSize);
+        const numMoves = puzzleSize === 2 ? 20 : 60;
+        
+        return function shufflePuzzle(initialState) {
+            const state = [...initialState];
+            let emptyIndex = state.indexOf(emptyCell);
+            
+            for (let i = 0; i < numMoves; i++) {
+                const neighbors = getValidMoves(emptyIndex);
+                const randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
+                state[emptyIndex] = state[randomNeighbor];
+                state[randomNeighbor] = emptyCell;
+                emptyIndex = randomNeighbor;
+            }
+            
+            return state;
+        };
+    }
+
     describe('Settings Management', () => {
         // Mock functions that would exist in museum-checkin.html
         function loadPuzzleGameSetting() {
@@ -95,20 +132,7 @@ describe('Puzzle Game Reward Feature', () => {
     });
 
     describe('Puzzle State Management - 2x2 Grid', () => {
-        const PUZZLE_SIZE = 2;
-
-        function getValidMoves(emptyIndex) {
-            const moves = [];
-            const row = Math.floor(emptyIndex / PUZZLE_SIZE);
-            const col = emptyIndex % PUZZLE_SIZE;
-            
-            if (row > 0) moves.push(emptyIndex - PUZZLE_SIZE);
-            if (row < PUZZLE_SIZE - 1) moves.push(emptyIndex + PUZZLE_SIZE);
-            if (col > 0) moves.push(emptyIndex - 1);
-            if (col < PUZZLE_SIZE - 1) moves.push(emptyIndex + 1);
-            
-            return moves;
-        }
+        const getValidMoves = createGetValidMoves(2);
 
         test('should return correct valid moves for top-left corner (2x2 grid)', () => {
             const moves = getValidMoves(0);
@@ -140,20 +164,7 @@ describe('Puzzle Game Reward Feature', () => {
     });
 
     describe('Puzzle State Management - 3x3 Grid', () => {
-        const PUZZLE_SIZE = 3;
-
-        function getValidMoves(emptyIndex) {
-            const moves = [];
-            const row = Math.floor(emptyIndex / PUZZLE_SIZE);
-            const col = emptyIndex % PUZZLE_SIZE;
-            
-            if (row > 0) moves.push(emptyIndex - PUZZLE_SIZE);
-            if (row < PUZZLE_SIZE - 1) moves.push(emptyIndex + PUZZLE_SIZE);
-            if (col > 0) moves.push(emptyIndex - 1);
-            if (col < PUZZLE_SIZE - 1) moves.push(emptyIndex + 1);
-            
-            return moves;
-        }
+        const getValidMoves = createGetValidMoves(3);
 
         test('should return correct valid moves for top-left corner (3x3 grid)', () => {
             // Index 0: can move down (3) and right (1)
@@ -267,31 +278,7 @@ describe('Puzzle Game Reward Feature', () => {
     });
 
     describe('Puzzle Shuffle Solvability (2x2 Grid)', () => {
-        function shufflePuzzle(initialState, numMoves = 20) {
-            const state = [...initialState];
-            let emptyIndex = state.indexOf(3);
-            
-            function getValidMoves(idx) {
-                const moves = [];
-                const row = Math.floor(idx / 2);
-                const col = idx % 2;
-                if (row > 0) moves.push(idx - 2);
-                if (row < 1) moves.push(idx + 2);
-                if (col > 0) moves.push(idx - 1);
-                if (col < 1) moves.push(idx + 1);
-                return moves;
-            }
-            
-            for (let i = 0; i < numMoves; i++) {
-                const neighbors = getValidMoves(emptyIndex);
-                const randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
-                state[emptyIndex] = state[randomNeighbor];
-                state[randomNeighbor] = 3;
-                emptyIndex = randomNeighbor;
-            }
-            
-            return state;
-        }
+        const shufflePuzzle = createShufflePuzzle(2);
 
         test('shuffled 2x2 puzzle should have all tiles 0-3', () => {
             const initial = [0, 1, 2, 3];
@@ -308,31 +295,7 @@ describe('Puzzle Game Reward Feature', () => {
     });
 
     describe('Puzzle Shuffle Solvability (3x3 Grid)', () => {
-        function shufflePuzzle(initialState, numMoves = 60) {
-            const state = [...initialState];
-            let emptyIndex = state.indexOf(8);
-            
-            function getValidMoves(idx) {
-                const moves = [];
-                const row = Math.floor(idx / 3);
-                const col = idx % 3;
-                if (row > 0) moves.push(idx - 3);
-                if (row < 2) moves.push(idx + 3);
-                if (col > 0) moves.push(idx - 1);
-                if (col < 2) moves.push(idx + 1);
-                return moves;
-            }
-            
-            for (let i = 0; i < numMoves; i++) {
-                const neighbors = getValidMoves(emptyIndex);
-                const randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
-                state[emptyIndex] = state[randomNeighbor];
-                state[randomNeighbor] = 8;
-                emptyIndex = randomNeighbor;
-            }
-            
-            return state;
-        }
+        const shufflePuzzle = createShufflePuzzle(3);
 
         test('shuffled 3x3 puzzle should have all tiles 0-8', () => {
             const initial = [0, 1, 2, 3, 4, 5, 6, 7, 8];
