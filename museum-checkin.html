@@ -2886,10 +2886,9 @@
                         initSpaceInvadersGame(taskIndexForGame);
                     } else if (gameType === 'tank-battle') {
                         initTankBattleGame(taskIndexForGame);
-                    } else if (gameType === 'minesweeper') {
-                        initMinesweeperGame(taskIndexForGame);
                     } else {
-                        initTankBattleGame(taskIndexForGame);
+                        // Default to minesweeper
+                        initMinesweeperGame(taskIndexForGame);
                     }
                 }, 800);
             }
@@ -6195,19 +6194,24 @@
                         handleCellRightClick(r, c);
                     });
                     
-                    // Long press for flag on mobile
-                    let longPressTimer;
+                    // Long press for flag on mobile - store timer on cell element to avoid interference
                     cell.addEventListener('touchstart', (e) => {
-                        longPressTimer = setTimeout(() => {
+                        cell._longPressTimer = setTimeout(() => {
                             e.preventDefault();
                             handleCellRightClick(r, c);
                         }, 500);
                     });
                     cell.addEventListener('touchend', () => {
-                        clearTimeout(longPressTimer);
+                        if (cell._longPressTimer) {
+                            clearTimeout(cell._longPressTimer);
+                            cell._longPressTimer = null;
+                        }
                     });
                     cell.addEventListener('touchmove', () => {
-                        clearTimeout(longPressTimer);
+                        if (cell._longPressTimer) {
+                            clearTimeout(cell._longPressTimer);
+                            cell._longPressTimer = null;
+                        }
                     });
                     
                     updateCellDisplay(cell, r, c);
@@ -6379,20 +6383,9 @@
         // ===== Random Game Selection =====
         // Randomly select between puzzle, maze, shooting, space invaders, tank battle, and minesweeper game
         function selectRandomGame() {
-            const rand = Math.random();
-            if (rand < 0.166) {
-                return 'puzzle';
-            } else if (rand < 0.333) {
-                return 'maze';
-            } else if (rand < 0.5) {
-                return 'shooting';
-            } else if (rand < 0.666) {
-                return 'space-invaders';
-            } else if (rand < 0.833) {
-                return 'tank-battle';
-            } else {
-                return 'minesweeper';
-            }
+            const games = ['puzzle', 'maze', 'shooting', 'space-invaders', 'tank-battle', 'minesweeper'];
+            const randomIndex = Math.floor(Math.random() * games.length);
+            return games[randomIndex];
         }
 
         // Initialize on page load
