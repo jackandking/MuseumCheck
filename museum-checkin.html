@@ -3846,6 +3846,7 @@
         const SHOOTING_HARD_TIME = 20;   // 20 seconds for subsequent tasks
         const SHOOTING_CANVAS_WIDTH = 320;
         const SHOOTING_CANVAS_HEIGHT = 400;
+        const HIT_TOLERANCE = 10;        // Extra pixels for easier hitting
         
         // Target types with different points and speeds
         const TARGET_TYPES = [
@@ -4062,7 +4063,7 @@
                 const centerY = target.y + target.size / 2;
                 const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
                 
-                if (distance < target.size / 2 + 10) {  // +10 for easier hitting
+                if (distance < target.size / 2 + HIT_TOLERANCE) {
                     // Hit!
                     target.hit = true;
                     shootingScore += target.points;
