@@ -337,8 +337,7 @@ function fireBullet() {
         height: GAME_CONFIG.BULLET_HEIGHT
     });
     
-    // Play sound effect (optional)
-    // playSound('shoot');
+    // TODO: Add sound effects in future update
 }
 
 /**
@@ -528,32 +527,41 @@ function updateStars() {
  * Check collisions
  */
 function checkCollisions() {
-    // Bullet vs Enemy
-    bullets.forEach((bullet, bulletIndex) => {
-        enemies.forEach((enemy, enemyIndex) => {
+    // Bullet vs Enemy - iterate backwards to safely remove items
+    const bulletsToRemove = [];
+    const enemiesToRemove = [];
+    
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        const bullet = bullets[i];
+        for (let j = enemies.length - 1; j >= 0; j--) {
+            const enemy = enemies[j];
             if (isColliding(bullet, enemy)) {
-                // Remove bullet
-                bullets.splice(bulletIndex, 1);
-                // Remove enemy
-                enemies.splice(enemyIndex, 1);
+                bulletsToRemove.push(i);
+                enemiesToRemove.push(j);
                 // Create explosion
                 createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
                 // Update score
                 score += GAME_CONFIG.ENEMY_SCORE * (enemy.type + 1);
                 enemiesKilled++;
                 updateUI();
+                break; // Each bullet can only hit one enemy
             }
-        });
-    });
+        }
+    }
     
-    // Enemy bullet vs Player
+    // Remove marked bullets and enemies (in reverse order to maintain indices)
+    bulletsToRemove.forEach(index => bullets.splice(index, 1));
+    enemiesToRemove.sort((a, b) => b - a).forEach(index => enemies.splice(index, 1));
+    
+    // Enemy bullet vs Player - iterate backwards to safely remove items
     if (!player.invincible) {
-        enemyBullets.forEach((bullet, index) => {
-            if (isColliding(bullet, player)) {
-                enemyBullets.splice(index, 1);
+        for (let i = enemyBullets.length - 1; i >= 0; i--) {
+            if (isColliding(enemyBullets[i], player)) {
+                enemyBullets.splice(i, 1);
                 playerHit();
+                break; // Only one hit per frame
             }
-        });
+        }
     }
 }
 
