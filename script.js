@@ -7171,7 +7171,7 @@ class MuseumCheckApp {
             return;
         }
 
-        // In child mode, always default to child tab
+        // In child mode, always default to child tab (activeTab has default 'parent')
         if (this.childModeEnabled) {
             activeTab = 'child';
         }
