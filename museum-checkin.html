@@ -5151,6 +5151,7 @@
         const TB_BULLET_SPEED = 6;
         const TB_FIRE_COOLDOWN = 400;     // Longer cooldown for more strategic play
         const TB_ENEMY_FIRE_COOLDOWN = 2500;  // Enemies fire less often
+        const TB_ENEMY_RANDOM_FIRE_CHANCE = 0.015;  // Random fire probability per frame (lower = easier)
         
         const TB_COLORS = {
             player: '#4CAF50',
@@ -5553,7 +5554,7 @@
                 }
                 
                 // Enemy fires at player (with lower probability for easier gameplay)
-                if (Math.random() < 0.015) {
+                if (Math.random() < TB_ENEMY_RANDOM_FIRE_CHANCE) {
                     tbEnemyFire(enemy);
                 }
             });
