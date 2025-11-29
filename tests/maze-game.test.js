@@ -38,7 +38,12 @@ describe('Maze Game Feature', () => {
             
             while (stack.length > 0) {
                 const current = stack[stack.length - 1];
-                const shuffledDirs = [...directions].sort(() => Math.random() - 0.5);
+                // Fisher-Yates shuffle
+                const shuffledDirs = [...directions];
+                for (let i = shuffledDirs.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffledDirs[i], shuffledDirs[j]] = [shuffledDirs[j], shuffledDirs[i]];
+                }
                 
                 let found = false;
                 for (const dir of shuffledDirs) {
@@ -383,7 +388,12 @@ describe('Maze Game Feature', () => {
             
             while (stack.length > 0) {
                 const current = stack[stack.length - 1];
-                const shuffledDirs = [...directions].sort(() => Math.random() - 0.5);
+                // Fisher-Yates shuffle
+                const shuffledDirs = [...directions];
+                for (let i = shuffledDirs.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffledDirs[i], shuffledDirs[j]] = [shuffledDirs[j], shuffledDirs[i]];
+                }
                 
                 let found = false;
                 for (const dir of shuffledDirs) {
