@@ -445,10 +445,16 @@
    */
   function showAutoCheckinNotification(museumName){
     try{
-      // Create notification element
+      // Create notification element with leaderboard hint
       const notification = document.createElement('div');
       notification.className = 'auto-checkin-notification';
-      notification.innerHTML = `<span class="notification-icon">🎉</span><span class="notification-text">恭喜！完成 ${museumName} 所有任务，自动打卡成功！</span>`;
+      notification.innerHTML = `
+        <div class="notification-main">
+          <span class="notification-icon">🎉</span>
+          <span class="notification-text">恭喜！完成 ${museumName} 所有任务，自动打卡成功！</span>
+        </div>
+        <div class="notification-hint">🏆 排行榜已更新，快去看看你的排名吧！</div>
+      `;
       notification.style.cssText = `
         position: fixed;
         top: 20%;
@@ -463,8 +469,9 @@
         font-size: 16px;
         font-weight: 600;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
         animation: slideIn 0.4s ease-out, pulse 0.5s ease-in-out 0.5s;
         max-width: 90%;
         text-align: center;
@@ -483,13 +490,25 @@
             0%, 100% { transform: translateX(-50%) scale(1); }
             50% { transform: translateX(-50%) scale(1.05); }
           }
+          .notification-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+          .notification-hint {
+            font-size: 14px;
+            opacity: 0.95;
+            padding-top: 4px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            margin-top: 4px;
+          }
         `;
         document.head.appendChild(style);
       }
       
       document.body.appendChild(notification);
       
-      // Auto remove after 3 seconds
+      // Auto remove after 4 seconds (extended to show leaderboard hint)
       setTimeout(()=>{
         notification.style.opacity = '0';
         notification.style.transition = 'opacity 0.3s ease-out';
@@ -498,7 +517,7 @@
             notification.parentNode.removeChild(notification);
           }
         }, 300);
-      }, 3000);
+      }, 4000);
       
     }catch(e){
       console.warn('Failed to show auto check-in notification:', e);

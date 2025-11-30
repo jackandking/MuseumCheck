@@ -6734,10 +6734,10 @@ class MuseumCheckApp {
             });
         }
         
-        // Show congratulation notification for auto check-in
+        // Show congratulation notification for auto check-in with leaderboard hint
         UIManager.showNotification(
-            `🎉 恭喜！完成 ${museum.name} 所有任务，自动打卡成功！`,
-            3000,
+            `🎉 恭喜！完成 ${museum.name} 所有任务，自动打卡成功！🏆 排行榜已更新`,
+            4000,
             'success'
         );
         
