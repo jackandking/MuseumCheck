@@ -3671,7 +3671,8 @@ class LeaderboardManager {
         }
         
         // Calculate rank change (positive means rank improved, e.g., from #5 to #3 is +2)
-        const rankChange = (oldRank && newRank) ? (oldRank - newRank) : null;
+        // Note: oldRank and newRank are always >= 1 or null (never 0), since getUserRank returns index + 1
+        const rankChange = (oldRank !== null && newRank !== null) ? (oldRank - newRank) : null;
         
         return {
             success: true,
