@@ -25,8 +25,8 @@ class VirtualPet {
 
     // ===== CONSTANTS =====
     static get HUNGER_DEATH_DAYS() { return 90; } // 3 months = ~90 days
-    static get POINTS_PER_TASK() { return 10; } // Points for completing a task
-    static get POINTS_PER_PHOTO() { return 25; } // Bonus points for uploading photo
+    // Note: XP rewards are configured in script.js achievement system (5 XP for tasks, 10 XP for photos)
+    // Pet uses the same XP/points system for feeding and upgrades
     static get FEED_COST() { return 20; } // Points to feed pet
     static get ATTACK_UPGRADE_COST() { return 50; } // Points to increase attack
     static get DEFENSE_UPGRADE_COST() { return 50; } // Points to increase defense
@@ -89,23 +89,21 @@ class VirtualPet {
         const pet = this.petData.pet;
         if (pet.isDead) return;
 
-        // Calculate hunger decrease since last check
+        // Calculate hunger decrease since last fed
         const now = Date.now();
         const lastFed = pet.lastFed || pet.adoptedAt;
         const daysSinceLastFed = Math.floor((now - lastFed) / (1000 * 60 * 60 * 24));
         
-        // Decrease hunger based on days passed
-        const hungerDecrease = daysSinceLastFed * VirtualPet.HUNGER_DECREASE_PER_DAY;
-        pet.hunger = Math.max(0, VirtualPet.MAX_HUNGER - hungerDecrease);
+        // Calculate expected hunger based on days since last fed
+        // Hunger starts at MAX_HUNGER when fed, decreases by HUNGER_DECREASE_PER_DAY per day
+        const expectedHunger = VirtualPet.MAX_HUNGER - (daysSinceLastFed * VirtualPet.HUNGER_DECREASE_PER_DAY);
+        pet.hunger = Math.max(0, expectedHunger);
         
-        // Check if pet has starved (hunger = 0 for too long)
-        if (pet.hunger <= 0) {
-            const daysSinceStarvation = daysSinceLastFed;
-            if (daysSinceStarvation >= VirtualPet.HUNGER_DEATH_DAYS) {
-                pet.isDead = true;
-                pet.deathDate = now;
-                this.onPetDeath();
-            }
+        // Check if pet has starved (hunger = 0 for long enough)
+        if (pet.hunger <= 0 && daysSinceLastFed >= VirtualPet.HUNGER_DEATH_DAYS) {
+            pet.isDead = true;
+            pet.deathDate = now;
+            this.onPetDeath();
         }
 
         this.savePetData();
@@ -630,19 +628,19 @@ class VirtualPet {
     }
 
     deductPoints(amount) {
-        // Deduct points from the achievement gamification system
-        if (window.achievementGamification) {
-            window.achievementGamification.addXP(-amount);
-            return true;
-        }
-        
-        // Fallback to direct localStorage manipulation
+        // Deduct points by directly modifying localStorage
+        // Note: We don't use addXP(-amount) because the XP system may not handle negative values
         try {
             const data = localStorage.getItem('museumcheck_xp_data');
             if (data) {
                 const parsed = JSON.parse(data);
                 parsed.totalXP = Math.max(0, (parsed.totalXP || 0) - amount);
                 localStorage.setItem('museumcheck_xp_data', JSON.stringify(parsed));
+                
+                // If achievement gamification exists, sync its internal state
+                if (window.achievementGamification) {
+                    window.achievementGamification.xpData = parsed;
+                }
                 return true;
             }
         } catch (error) {
@@ -686,7 +684,10 @@ class VirtualPet {
 // Initialize virtual pet when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     // Only initialize if child mode toggle exists (meaning the feature is available)
-    window.virtualPet = new VirtualPet();
+    const childModeToggle = document.getElementById('childModeToggle');
+    if (childModeToggle) {
+        window.virtualPet = new VirtualPet();
+    }
 });
 
 // Make class available globally

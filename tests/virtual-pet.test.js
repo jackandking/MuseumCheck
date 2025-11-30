@@ -56,8 +56,6 @@ class VirtualPet {
     }
 
     static get HUNGER_DEATH_DAYS() { return 90; }
-    static get POINTS_PER_TASK() { return 10; }
-    static get POINTS_PER_PHOTO() { return 25; }
     static get FEED_COST() { return 20; }
     static get ATTACK_UPGRADE_COST() { return 50; }
     static get DEFENSE_UPGRADE_COST() { return 50; }
@@ -309,14 +307,6 @@ describe('VirtualPet', () => {
     describe('Constants', () => {
         test('should have correct hunger death days (90 days = ~3 months)', () => {
             expect(VirtualPet.HUNGER_DEATH_DAYS).toBe(90);
-        });
-
-        test('should have points per task defined', () => {
-            expect(VirtualPet.POINTS_PER_TASK).toBe(10);
-        });
-
-        test('should have bonus points per photo defined', () => {
-            expect(VirtualPet.POINTS_PER_PHOTO).toBe(25);
         });
 
         test('should have feed cost defined', () => {
