@@ -3953,6 +3953,23 @@
                 setTimeout(() => {
                     generatePoster();
                 }, 500);
+                
+                // Auto-mark museum as visited when all tasks are completed
+                markMuseumAsVisited();
+            }
+        }
+        
+        // Mark the museum as visited in localStorage (syncs with main app)
+        function markMuseumAsVisited() {
+            try {
+                const visitedMuseums = JSON.parse(localStorage.getItem('visitedMuseums') || '[]');
+                if (!visitedMuseums.includes(museumId)) {
+                    visitedMuseums.push(museumId);
+                    localStorage.setItem('visitedMuseums', JSON.stringify(visitedMuseums));
+                    console.log('Museum auto-marked as visited:', museumId);
+                }
+            } catch (error) {
+                console.error('Error marking museum as visited:', error);
             }
         }
 
