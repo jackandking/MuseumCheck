@@ -3947,15 +3947,15 @@
         // Check if all tasks are complete and update poster card
         function checkCompletion() {
             if (childTasks && childTasks.length > 0 && completedTasks && completedTasks.size === childTasks.length) {
+                // Auto-mark museum as visited when all tasks are completed
+                markMuseumAsVisited();
+                
                 // Re-render tasks to update poster card to completed state
                 renderTasks();
                 // Generate poster in background (for quick loading when opened)
                 setTimeout(() => {
                     generatePoster();
                 }, 500);
-                
-                // Auto-mark museum as visited when all tasks are completed
-                markMuseumAsVisited();
             }
         }
         
