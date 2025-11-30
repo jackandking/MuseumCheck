@@ -686,8 +686,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize if child mode toggle exists (main page) or if child mode is enabled (checkin page)
     const childModeToggle = document.getElementById('childModeToggle');
     const childModeEnabled = localStorage.getItem('childModeEnabled') === 'true';
-    // Also check if we're on a checkin page (museum-checkin.html)
-    const isCheckinPage = window.location.pathname.includes('museum-checkin');
+    // Also check if we're on a checkin page (museum-checkin.html) - this page is specifically for kids
+    const isCheckinPage = window.location.pathname.endsWith('museum-checkin.html');
     
     if (childModeToggle || childModeEnabled || isCheckinPage) {
         window.virtualPet = new VirtualPet();
