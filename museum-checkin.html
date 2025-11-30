@@ -4895,6 +4895,18 @@
                     playFireworkSound();
                 }
                 
+                // Award XP for game completion
+                const gameXP = 15; // Puzzle game base XP
+                if (window.achievementGamification) {
+                    window.achievementGamification.addXP(gameXP);
+                    window.achievementGamification.showXPGainNotification(gameXP, '拼图游戏通关');
+                }
+                
+                // Notify virtual pet about game completion
+                if (typeof VirtualPet !== 'undefined') {
+                    VirtualPet.notifyGameCompleted('puzzle', puzzleMoves, 0);
+                }
+                
                 // Auto-close after delay
                 setTimeout(() => {
                     closePuzzleGame();
@@ -5273,6 +5285,18 @@
                 playFireworkSound();
             }
             
+            // Award XP for game completion
+            const gameXP = 20; // Maze game base XP
+            if (window.achievementGamification) {
+                window.achievementGamification.addXP(gameXP);
+                window.achievementGamification.showXPGainNotification(gameXP, '迷宫游戏通关');
+            }
+            
+            // Notify virtual pet about game completion
+            if (typeof VirtualPet !== 'undefined') {
+                VirtualPet.notifyGameCompleted('maze', mazeSteps, 0);
+            }
+            
             // Auto-close after delay
             setTimeout(() => {
                 closeMazeGame();
@@ -5575,6 +5599,18 @@
             // Show completion message
             document.getElementById('finalScore').textContent = shootingScore;
             document.getElementById('shootingCompleteMessage').classList.add('show');
+            
+            // Award XP for game completion (score-based)
+            const gameXP = Math.max(10, Math.min(30, Math.floor(shootingScore / 10)));
+            if (window.achievementGamification) {
+                window.achievementGamification.addXP(gameXP);
+                window.achievementGamification.showXPGainNotification(gameXP, '射击游戏完成');
+            }
+            
+            // Notify virtual pet about game completion
+            if (typeof VirtualPet !== 'undefined') {
+                VirtualPet.notifyGameCompleted('shooting', shootingScore, 0);
+            }
             
             // Auto-close after delay
             setTimeout(() => {
@@ -5931,6 +5967,18 @@
             if (victory) siScore += 100;
             document.getElementById('siFinalScore').textContent = siScore;
             document.getElementById('spaceInvadersCompleteMessage').classList.add('show');
+            
+            // Award XP for game completion (score-based)
+            const gameXP = Math.max(15, Math.min(30, Math.floor(siScore / 10)));
+            if (window.achievementGamification) {
+                window.achievementGamification.addXP(gameXP);
+                window.achievementGamification.showXPGainNotification(gameXP, '小蜜蜂游戏完成');
+            }
+            
+            // Notify virtual pet about game completion
+            if (typeof VirtualPet !== 'undefined') {
+                VirtualPet.notifyGameCompleted('space-invaders', siScore, 0);
+            }
         }
         
         function siRender() {
@@ -6580,6 +6628,18 @@
             if (victory) tbScore += 200;  // Bonus for winning
             document.getElementById('tbFinalScore').textContent = tbScore;
             document.getElementById('tankBattleCompleteMessage').classList.add('show');
+            
+            // Award XP for game completion (score-based)
+            const gameXP = Math.max(20, Math.min(30, Math.floor(tbScore / 5)));
+            if (window.achievementGamification) {
+                window.achievementGamification.addXP(gameXP);
+                window.achievementGamification.showXPGainNotification(gameXP, '坦克大战完成');
+            }
+            
+            // Notify virtual pet about game completion
+            if (typeof VirtualPet !== 'undefined') {
+                VirtualPet.notifyGameCompleted('tank-battle', tbScore, 0);
+            }
         }
         
         function tbRender() {
@@ -7022,6 +7082,18 @@
             if (won) {
                 msgEl.innerHTML = `🎉 胜利！用时：<span id="msFinalTime">${msTime}</span>秒`;
                 msgEl.classList.remove('lose');
+                
+                // Award XP for winning minesweeper (time-based bonus)
+                const gameXP = Math.max(10, Math.min(25, Math.floor((100 - Math.min(msTime, 100)) * 0.3)));
+                if (window.achievementGamification) {
+                    window.achievementGamification.addXP(gameXP);
+                    window.achievementGamification.showXPGainNotification(gameXP, '扫雷游戏胜利');
+                }
+                
+                // Notify virtual pet about game completion
+                if (typeof VirtualPet !== 'undefined') {
+                    VirtualPet.notifyGameCompleted('minesweeper', 0, msTime);
+                }
             } else {
                 msgEl.innerHTML = `💥 踩雷了！用时：<span id="msFinalTime">${msTime}</span>秒`;
                 msgEl.classList.add('lose');

@@ -912,7 +912,9 @@ class VirtualPet {
         if (!floating) return;
 
         if (this.hasPet() && this.isPetAlive()) {
-            floating.innerHTML = `<span class="floating-pet-emoji">${this.petData.pet.emoji}</span>`;
+            // Use level-based emoji
+            const petEmoji = this.getPetEmoji();
+            floating.innerHTML = `<span class="floating-pet-emoji">${petEmoji}</span>`;
             floating.style.display = 'block';
         } else if (this.hasPet() && !this.isPetAlive()) {
             floating.innerHTML = `<span class="floating-pet-emoji dead">😢</span>`;
@@ -1077,6 +1079,14 @@ class VirtualPet {
         if (window.virtualPet) {
             window.virtualPet.onPhotoUploaded();
         }
+    }
+    
+    // Call when game is completed (from museum-checkin page)
+    static notifyGameCompleted(gameType, score = 0, time = 0) {
+        if (window.virtualPet) {
+            return window.virtualPet.onGameCompleted(gameType, score, time);
+        }
+        return 0;
     }
 
     // Check if child mode is active
