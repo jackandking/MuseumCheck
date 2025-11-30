@@ -1111,6 +1111,13 @@ class VirtualPet {
             existingPrompt.remove();
         }
         
+        // Escape HTML to prevent XSS (even though title/message are hardcoded, this is best practice)
+        const escapeHtml = (str) => {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        };
+        
         // Create the prompt element
         const prompt = document.createElement('div');
         prompt.id = 'pet-adoption-prompt';
@@ -1119,8 +1126,8 @@ class VirtualPet {
             <div class="pet-adoption-prompt-content">
                 <button class="pet-adoption-prompt-close" aria-label="关闭">×</button>
                 <div class="pet-adoption-prompt-icon">🐾</div>
-                <div class="pet-adoption-prompt-title">${title}</div>
-                <div class="pet-adoption-prompt-message">${message}</div>
+                <div class="pet-adoption-prompt-title">${escapeHtml(title)}</div>
+                <div class="pet-adoption-prompt-message">${escapeHtml(message)}</div>
                 <div class="pet-adoption-prompt-buttons">
                     <button class="pet-adoption-prompt-btn primary" id="petAdoptNowBtn">去领养</button>
                     <button class="pet-adoption-prompt-btn secondary" id="petAdoptLaterBtn">稍后再说</button>
@@ -1135,7 +1142,7 @@ class VirtualPet {
             prompt.classList.add('show');
         }, 10);
         
-        // Bind events
+        // Bind events - elements are guaranteed to exist since we just created them
         const adoptNowBtn = document.getElementById('petAdoptNowBtn');
         const adoptLaterBtn = document.getElementById('petAdoptLaterBtn');
         const closeBtn = prompt.querySelector('.pet-adoption-prompt-close');
@@ -1147,21 +1154,14 @@ class VirtualPet {
             }, 300);
         };
         
-        if (adoptNowBtn) {
-            adoptNowBtn.addEventListener('click', () => {
-                closePrompt();
-                // Open the pet panel to show adoption options
-                this.showPetPanel();
-            });
-        }
+        adoptNowBtn.addEventListener('click', () => {
+            closePrompt();
+            // Open the pet panel to show adoption options
+            this.showPetPanel();
+        });
         
-        if (adoptLaterBtn) {
-            adoptLaterBtn.addEventListener('click', closePrompt);
-        }
-        
-        if (closeBtn) {
-            closeBtn.addEventListener('click', closePrompt);
-        }
+        adoptLaterBtn.addEventListener('click', closePrompt);
+        closeBtn.addEventListener('click', closePrompt);
         
         // Click outside to close
         prompt.addEventListener('click', (e) => {
