@@ -715,10 +715,14 @@ if (typeof global.MuseumCheckApp === 'undefined') {
     }
     checkNicknameContentSafety(nickname) {
       if (!nickname) {
-        return { isValid: true };
+      return { isValid: true };
       }
       const normalizedNickname = nickname.toLowerCase().replace(/\s+/g, '');
-      // Blocklist of prohibited content patterns
+      // Empty string after normalization is considered safe
+      if (normalizedNickname.length === 0) {
+        return { isValid: true };
+      }
+      // Blocklist of prohibited content patterns (pre-lowercased for performance)
       const blockedPatterns = [
         '法轮', '轮子功', '反共', '反党', '反华', '台独', '港独', '藏独', '疆独',
         '邪教', '传销', '六四', '64事件', '天安门事件',
@@ -732,7 +736,7 @@ if (typeof global.MuseumCheckApp === 'undefined') {
       ];
       // Check if nickname contains any blocked patterns
       for (const pattern of blockedPatterns) {
-        if (normalizedNickname.includes(pattern.toLowerCase())) {
+        if (normalizedNickname.includes(pattern)) {
           return { isValid: false, message: '昵称包含不适当内容，请更换一个健康的昵称' };
         }
       }
@@ -747,10 +751,12 @@ if (typeof global.MuseumCheckApp === 'undefined') {
           return { isValid: false, message: '昵称包含不适当内容，请更换一个健康的昵称' };
         }
       }
-      // Check for excessive special characters
-      const specialCharRatio = (nickname.match(/[!@#$%^&*()_+=\[\]{};':"\\|,.<>\/?`~]/g) || []).length / nickname.length;
-      if (specialCharRatio > 0.5) {
-        return { isValid: false, message: '昵称包含过多特殊字符，请使用正常的昵称' };
+      // Check for excessive special characters (guard against division by zero)
+      if (nickname.length > 0) {
+        const specialCharRatio = (nickname.match(/[!@#$%^&*()_+=\[\]{};':"\\|,.<>\/?`~]/g) || []).length / nickname.length;
+        if (specialCharRatio > 0.5) {
+          return { isValid: false, message: '昵称包含过多特殊字符，请使用正常的昵称' };
+        }
       }
       return { isValid: true };
     }

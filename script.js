@@ -6559,7 +6559,12 @@ class MuseumCheckApp {
         
         const normalizedNickname = nickname.toLowerCase().replace(/\s+/g, '');
         
-        // Blocklist of prohibited content patterns
+        // Empty string after normalization is considered safe (length validation is separate)
+        if (normalizedNickname.length === 0) {
+            return { isValid: true };
+        }
+        
+        // Blocklist of prohibited content patterns (pre-lowercased for performance)
         // Categories: political, vulgar, discriminatory, violent, illegal, other inappropriate
         const blockedPatterns = [
             // Political sensitive terms (simplified for content compliance)
@@ -6584,7 +6589,7 @@ class MuseumCheckApp {
         
         // Check if nickname contains any blocked patterns
         for (const pattern of blockedPatterns) {
-            if (normalizedNickname.includes(pattern.toLowerCase())) {
+            if (normalizedNickname.includes(pattern)) {
                 return { 
                     isValid: false, 
                     message: '昵称包含不适当内容，请更换一个健康的昵称' 
@@ -6621,12 +6626,15 @@ class MuseumCheckApp {
         }
         
         // Check for excessive special characters or suspicious patterns
-        const specialCharRatio = (nickname.match(/[!@#$%^&*()_+=\[\]{};':"\\|,.<>\/?`~]/g) || []).length / nickname.length;
-        if (specialCharRatio > 0.5) {
-            return { 
-                isValid: false, 
-                message: '昵称包含过多特殊字符，请使用正常的昵称' 
-            };
+        // Guard against division by zero
+        if (nickname.length > 0) {
+            const specialCharRatio = (nickname.match(/[!@#$%^&*()_+=\[\]{};':"\\|,.<>\/?`~]/g) || []).length / nickname.length;
+            if (specialCharRatio > 0.5) {
+                return { 
+                    isValid: false, 
+                    message: '昵称包含过多特殊字符，请使用正常的昵称' 
+                };
+            }
         }
         
         return { isValid: true };
