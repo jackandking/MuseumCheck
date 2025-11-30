@@ -4082,9 +4082,6 @@
                 clearCheckinData();
             };
 
-            // Initialize treasure check-in configuration (parent mode)
-            initializeTreasureCheckinConfig();
-
             // Puzzle game settings toggle
             const puzzleToggle = document.getElementById('puzzleGameToggle');
             if (puzzleToggle) {
@@ -4314,14 +4311,6 @@
         // =====================================================
 
         /**
-         * Initialize the treasure check-in configuration UI in settings modal
-         * No save button needed - changes take effect immediately
-         */
-        function initializeTreasureCheckinConfig() {
-            // No save button - selections are saved immediately on change
-        }
-
-        /**
          * Show treasure selection checkboxes for the current museum
          * Default: first 3 treasures are selected
          */
@@ -4504,40 +4493,6 @@
         function saveTreasureCheckinConfigV2() {
             // Now handled by handleTreasureSelectionChange
             handleTreasureSelectionChange();
-        }
-
-        /**
-         * Clear treasure configuration for current museum (legacy function, kept for compatibility)
-         */
-        function clearTreasureCheckinConfigV2() {
-            try {
-                if (!museumId) {
-                    showNotification('清空失败：未找到博物馆', 2000);
-                    return;
-                }
-
-                // Load current config and remove this museum
-                const config = loadTreasureCheckinConfig();
-                delete config[museumId];
-                localStorage.setItem('treasureCheckinConfig', JSON.stringify(config));
-
-                // Uncheck all checkboxes
-                const checkboxList = document.getElementById('v2TreasureCheckboxList');
-                if (checkboxList) {
-                    checkboxList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                        checkbox.checked = false;
-                        checkbox.closest('.treasure-checkbox-item')?.classList.remove('selected');
-                    });
-                }
-
-                // Update displays
-                updateSelectedTreasureCountV2();
-
-                showNotification('已清空该博物馆的打卡配置', 2000);
-            } catch (error) {
-                console.error('Failed to clear treasure config:', error);
-                showNotification('操作失败，请重试', 2000);
-            }
         }
 
         /**
