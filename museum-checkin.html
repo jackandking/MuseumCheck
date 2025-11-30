@@ -4895,8 +4895,10 @@
                     playFireworkSound();
                 }
                 
-                // Award XP for game completion
-                const gameXP = 15; // Puzzle game base XP
+                // Award XP for game completion - use VirtualPet constants if available
+                const gameXP = (typeof VirtualPet !== 'undefined' && VirtualPet.GAME_XP_REWARDS && VirtualPet.GAME_XP_REWARDS.puzzle) 
+                    ? VirtualPet.GAME_XP_REWARDS.puzzle.base 
+                    : 15;
                 if (window.achievementGamification) {
                     window.achievementGamification.addXP(gameXP);
                     window.achievementGamification.showXPGainNotification(gameXP, '拼图游戏通关');
@@ -5285,8 +5287,10 @@
                 playFireworkSound();
             }
             
-            // Award XP for game completion
-            const gameXP = 20; // Maze game base XP
+            // Award XP for game completion - use VirtualPet constants if available
+            const gameXP = (typeof VirtualPet !== 'undefined' && VirtualPet.GAME_XP_REWARDS && VirtualPet.GAME_XP_REWARDS.maze) 
+                ? VirtualPet.GAME_XP_REWARDS.maze.base 
+                : 20;
             if (window.achievementGamification) {
                 window.achievementGamification.addXP(gameXP);
                 window.achievementGamification.showXPGainNotification(gameXP, '迷宫游戏通关');
@@ -5600,8 +5604,14 @@
             document.getElementById('finalScore').textContent = shootingScore;
             document.getElementById('shootingCompleteMessage').classList.add('show');
             
-            // Award XP for game completion (score-based)
-            const gameXP = Math.max(10, Math.min(30, Math.floor(shootingScore / 10)));
+            // Award XP for game completion (score-based) - use VirtualPet constants if available
+            let gameXP = 10;
+            if (typeof VirtualPet !== 'undefined' && VirtualPet.GAME_XP_REWARDS && VirtualPet.GAME_XP_REWARDS.shooting) {
+                const reward = VirtualPet.GAME_XP_REWARDS.shooting;
+                gameXP = Math.max(reward.min, Math.min(reward.max, Math.floor(shootingScore / reward.divisor)));
+            } else {
+                gameXP = Math.max(10, Math.min(30, Math.floor(shootingScore / 10)));
+            }
             if (window.achievementGamification) {
                 window.achievementGamification.addXP(gameXP);
                 window.achievementGamification.showXPGainNotification(gameXP, '射击游戏完成');
@@ -5968,8 +5978,14 @@
             document.getElementById('siFinalScore').textContent = siScore;
             document.getElementById('spaceInvadersCompleteMessage').classList.add('show');
             
-            // Award XP for game completion (score-based)
-            const gameXP = Math.max(15, Math.min(30, Math.floor(siScore / 10)));
+            // Award XP for game completion (score-based) - use VirtualPet constants if available
+            let gameXP = 15;
+            if (typeof VirtualPet !== 'undefined' && VirtualPet.GAME_XP_REWARDS && VirtualPet.GAME_XP_REWARDS['space-invaders']) {
+                const reward = VirtualPet.GAME_XP_REWARDS['space-invaders'];
+                gameXP = Math.max(reward.min, Math.min(reward.max, Math.floor(siScore / reward.divisor)));
+            } else {
+                gameXP = Math.max(15, Math.min(30, Math.floor(siScore / 10)));
+            }
             if (window.achievementGamification) {
                 window.achievementGamification.addXP(gameXP);
                 window.achievementGamification.showXPGainNotification(gameXP, '小蜜蜂游戏完成');
@@ -6629,8 +6645,14 @@
             document.getElementById('tbFinalScore').textContent = tbScore;
             document.getElementById('tankBattleCompleteMessage').classList.add('show');
             
-            // Award XP for game completion (score-based)
-            const gameXP = Math.max(20, Math.min(30, Math.floor(tbScore / 5)));
+            // Award XP for game completion (score-based) - use VirtualPet constants if available
+            let gameXP = 20;
+            if (typeof VirtualPet !== 'undefined' && VirtualPet.GAME_XP_REWARDS && VirtualPet.GAME_XP_REWARDS['tank-battle']) {
+                const reward = VirtualPet.GAME_XP_REWARDS['tank-battle'];
+                gameXP = Math.max(reward.min, Math.min(reward.max, Math.floor(tbScore / reward.divisor)));
+            } else {
+                gameXP = Math.max(20, Math.min(30, Math.floor(tbScore / 5)));
+            }
             if (window.achievementGamification) {
                 window.achievementGamification.addXP(gameXP);
                 window.achievementGamification.showXPGainNotification(gameXP, '坦克大战完成');
@@ -7083,8 +7105,15 @@
                 msgEl.innerHTML = `🎉 胜利！用时：<span id="msFinalTime">${msTime}</span>秒`;
                 msgEl.classList.remove('lose');
                 
-                // Award XP for winning minesweeper (time-based bonus)
-                const gameXP = Math.max(10, Math.min(25, Math.floor((100 - Math.min(msTime, 100)) * 0.3)));
+                // Award XP for winning minesweeper (time-based bonus) - use VirtualPet constants if available
+                let gameXP = 10;
+                if (typeof VirtualPet !== 'undefined' && VirtualPet.GAME_XP_REWARDS && VirtualPet.GAME_XP_REWARDS.minesweeper) {
+                    const reward = VirtualPet.GAME_XP_REWARDS.minesweeper;
+                    const bonusXP = Math.floor((100 - Math.min(msTime, 100)) * 0.3);
+                    gameXP = Math.max(reward.min, Math.min(reward.max, bonusXP));
+                } else {
+                    gameXP = Math.max(10, Math.min(25, Math.floor((100 - Math.min(msTime, 100)) * 0.3)));
+                }
                 if (window.achievementGamification) {
                     window.achievementGamification.addXP(gameXP);
                     window.achievementGamification.showXPGainNotification(gameXP, '扫雷游戏胜利');
