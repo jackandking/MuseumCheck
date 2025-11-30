@@ -3825,7 +3825,6 @@ class MuseumCheckApp {
      */
     setupAgeSelectorAutoHide() {
         const ageSelector = document.querySelector('.age-selector');
-        const hint = document.getElementById('ageSelectorHint');
         
         if (!ageSelector) {
             return;
@@ -4135,20 +4134,16 @@ class MuseumCheckApp {
         }
 
         // Setup age selector listener for step progression
-        // Bug fix: Listen for both 'change' and 'click' events because if user wants
+        // Bug fix: Listen for both 'change' and 'blur' events because if user wants
         // the default pre-selected value, 'change' won't fire when they click it
         const ageSelector = document.getElementById('ageGroupSelector');
         if (ageSelector) {
-            // Track if user has interacted with the dropdown
-            let hasInteracted = false;
-            
             ageSelector.addEventListener('change', () => {
-                hasInteracted = true;
                 this.markOnboardingStepCompleted(2);
                 this.showOnboardingStep(3);
             });
             
-            // Also listen for click - if user clicks on the dropdown and then clicks
+            // Also listen for blur - if user clicks on the dropdown and then clicks
             // the same option, the change event won't fire, so we use blur to detect completion
             ageSelector.addEventListener('blur', () => {
                 // Only mark complete if we're still on step 2 (not already completed via change event)
