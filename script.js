@@ -4059,14 +4059,10 @@ class MuseumCheckApp {
                 }
                 .onboarding-step.completed .step-number {
                     background: rgba(40,167,69,0.8);
-                }
-                .onboarding-step.completed .step-number::after {
-                    content: '✓';
-                }
-                .onboarding-step.completed .step-number {
                     font-size: 0;
                 }
                 .onboarding-step.completed .step-number::after {
+                    content: '✓';
                     font-size: 11px;
                 }
                 .onboarding-hint {
@@ -4144,9 +4140,9 @@ class MuseumCheckApp {
         }
 
         // Setup settings modal close listener for step progression
-        const closeBtn = settingsModal.querySelector('.close');
+        const settingsModalElement = document.getElementById('settingsModal');
+        const closeBtn = settingsModalElement ? settingsModalElement.querySelector('.close') : null;
         if (closeBtn) {
-            const originalClickHandler = closeBtn.onclick;
             closeBtn.addEventListener('click', () => {
                 if (document.getElementById('onboardingOverlay')) {
                     this.markOnboardingStepCompleted(3);
