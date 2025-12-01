@@ -1,0 +1,1114 @@
+/**
+ * Virtual Pet System - 电子宠物系统 (积分养宠重构版)
+ * 
+ * Features:
+ * - Pet adoption for child mode users
+ * - Pet only appears when points change (task completion, photo upload, game completion)
+ * - Points from check-in tasks (5 XP), photos (10 XP), games (15-30 XP)
+ * - Feed pet with points
+ * - Upgrade attack/defense stats with points
+ * - Pet LEVEL system based on total points spent (affects animation quality)
+ * - Higher level pets have cooler animations during check-in
+ * - Intelligence increases with completed tasks
+ * - Pet dies after 3 months without feeding
+ * - Dead pet can be revived with points
+ * 
+ * NEW - Points Earning:
+ * - Check-in task: 5 XP
+ * - Photo upload: 10 XP  
+ * - Puzzle game completion: 15 XP
+ * - Maze game completion: 20 XP
+ * - Shooting game: score/10 XP (min 10, max 30)
+ * - Space Invaders: score/10 XP (min 15, max 30)
+ * - Tank Battle: score/5 XP (min 20, max 30)
+ * - Minesweeper: (100-time)*0.3 XP (min 10, max 25)
+ * 
+ * NEW - Pet Levels:
+ * - Level 1 (新手): 0 XP spent - basic bounce animation
+ * - Level 2 (见习): 100 XP spent - spin animation
+ * - Level 3 (熟练): 300 XP spent - glow + spin animation
+ * - Level 4 (专家): 600 XP spent - rainbow glow + flip animation
+ * - Level 5 (大师): 1000 XP spent - fireworks + dance animation
+ */
+
+class VirtualPet {
+    constructor() {
+        this.petData = this.loadPetData();
+        this.isVisible = false;
+        this.animationTimeout = null;
+        this.celebrationAnimationId = null;
+        this.initializeUI();
+        
+        // Check pet status on load
+        this.checkPetStatus();
+    }
+
+    // ===== CONSTANTS =====
+    static get HUNGER_DEATH_DAYS() { return 90; } // 3 months = ~90 days
+    // Note: XP rewards are configured in script.js achievement system (5 XP for tasks, 10 XP for photos)
+    // Pet uses the same XP/points system for feeding and upgrades
+    static get FEED_COST() { return 20; } // Points to feed pet
+    static get ATTACK_UPGRADE_COST() { return 50; } // Points to increase attack
+    static get DEFENSE_UPGRADE_COST() { return 50; } // Points to increase defense
+    static get REVIVE_COST() { return 100; } // Points to revive dead pet
+    static get HUNGER_DECREASE_PER_DAY() { return 1; } // Hunger decreases by 1 per day
+    static get MAX_HUNGER() { return 100; }
+    static get INTELLIGENCE_PER_TASK() { return 1; } // Intelligence increases by 1 per task
+    
+    // Game completion XP rewards
+    static get GAME_XP_REWARDS() {
+        return {
+            puzzle: { base: 15, name: '拼图游戏' },
+            maze: { base: 20, name: '迷宫游戏' },
+            shooting: { min: 10, max: 30, divisor: 10, name: '射击游戏' },
+            'space-invaders': { min: 15, max: 30, divisor: 10, name: '小蜜蜂' },
+            'tank-battle': { min: 20, max: 30, divisor: 5, name: '坦克大战' },
+            minesweeper: { min: 10, max: 25, timeBonus: true, name: '扫雷' }
+        };
+    }
+    
+    // Pet level thresholds (based on total XP spent)
+    static get PET_LEVELS() {
+        return [
+            { level: 1, xpRequired: 0, name: '新手', animation: 'bounce' },
+            { level: 2, xpRequired: 100, name: '见习', animation: 'spin' },
+            { level: 3, xpRequired: 300, name: '熟练', animation: 'glow-spin' },
+            { level: 4, xpRequired: 600, name: '专家', animation: 'rainbow-flip' },
+            { level: 5, xpRequired: 1000, name: '大师', animation: 'fireworks-dance' }
+        ];
+    }
+    
+    // Pet types with different appearances and level-specific emojis
+    static get PET_TYPES() {
+        return {
+            dragon: { 
+                name: '小龙', 
+                emoji: '🐲', 
+                description: '勇敢的小龙',
+                levelEmojis: ['🐲', '🐉', '🔥', '⚡', '🌟']
+            },
+            cat: { 
+                name: '小猫', 
+                emoji: '🐱', 
+                description: '可爱的小猫',
+                levelEmojis: ['🐱', '😺', '😸', '😻', '✨']
+            },
+            dog: { 
+                name: '小狗', 
+                emoji: '🐶', 
+                description: '忠诚的小狗',
+                levelEmojis: ['🐶', '🐕', '🦮', '🏆', '👑']
+            },
+            rabbit: { 
+                name: '小兔', 
+                emoji: '🐰', 
+                description: '活泼的小兔',
+                levelEmojis: ['🐰', '🐇', '🥕', '💫', '🌈']
+            },
+            panda: { 
+                name: '小熊猫', 
+                emoji: '🐼', 
+                description: '憨厚的小熊猫',
+                levelEmojis: ['🐼', '🎋', '🎍', '🎎', '🏅']
+            },
+            fox: { 
+                name: '小狐狸', 
+                emoji: '🦊', 
+                description: '聪明的小狐狸',
+                levelEmojis: ['🦊', '🍂', '🌙', '💎', '🎆']
+            }
+        };
+    }
+
+    // ===== DATA MANAGEMENT =====
+    loadPetData() {
+        try {
+            const saved = localStorage.getItem('virtualPetData');
+            if (saved) {
+                return JSON.parse(saved);
+            }
+        } catch (error) {
+            console.error('Failed to load pet data:', error);
+        }
+        
+        // Default state: no pet adopted
+        return {
+            adopted: false,
+            pet: null
+        };
+    }
+
+    savePetData() {
+        try {
+            localStorage.setItem('virtualPetData', JSON.stringify(this.petData));
+        } catch (error) {
+            console.error('Failed to save pet data:', error);
+        }
+    }
+
+    // ===== PET STATUS =====
+    hasPet() {
+        return this.petData.adopted && this.petData.pet !== null;
+    }
+
+    isPetAlive() {
+        if (!this.hasPet()) return false;
+        return !this.petData.pet.isDead;
+    }
+
+    checkPetStatus() {
+        if (!this.hasPet()) return;
+
+        const pet = this.petData.pet;
+        if (pet.isDead) return;
+
+        // Calculate hunger decrease since last fed
+        const now = Date.now();
+        const lastFed = pet.lastFed || pet.adoptedAt;
+        const daysSinceLastFed = Math.floor((now - lastFed) / (1000 * 60 * 60 * 24));
+        
+        // Calculate expected hunger based on days since last fed
+        // Hunger starts at MAX_HUNGER when fed, decreases by HUNGER_DECREASE_PER_DAY per day
+        const expectedHunger = VirtualPet.MAX_HUNGER - (daysSinceLastFed * VirtualPet.HUNGER_DECREASE_PER_DAY);
+        pet.hunger = Math.max(0, expectedHunger);
+        
+        // Check if pet has starved (hunger = 0 for long enough)
+        if (pet.hunger <= 0 && daysSinceLastFed >= VirtualPet.HUNGER_DEATH_DAYS) {
+            pet.isDead = true;
+            pet.deathDate = now;
+            this.onPetDeath();
+        }
+
+        this.savePetData();
+        this.updateUI();
+    }
+
+    // ===== PET ACTIONS =====
+    adoptPet(petType) {
+        if (this.hasPet()) {
+            return { success: false, message: '你已经有一只宠物了！' };
+        }
+
+        const petTypeInfo = VirtualPet.PET_TYPES[petType];
+        if (!petTypeInfo) {
+            return { success: false, message: '未知的宠物类型' };
+        }
+
+        const now = Date.now();
+        this.petData = {
+            adopted: true,
+            pet: {
+                type: petType,
+                name: petTypeInfo.name,
+                emoji: petTypeInfo.emoji,
+                description: petTypeInfo.description,
+                adoptedAt: now,
+                lastFed: now,
+                hunger: VirtualPet.MAX_HUNGER,
+                attack: 10,
+                defense: 10,
+                intelligence: 1,
+                totalTasksCompleted: 0,
+                totalPhotosUploaded: 0,
+                totalGamesCompleted: 0,  // NEW: Track game completions
+                totalXPSpent: 0,         // NEW: Track XP spent (determines pet level)
+                isDead: false,
+                deathDate: null
+            }
+        };
+
+        this.savePetData();
+        this.updateUI();
+        this.showPetAnimation('adopted');
+
+        return { success: true, message: `恭喜你领养了${petTypeInfo.name}！` };
+    }
+
+    feedPet(points) {
+        if (!this.hasPet()) {
+            return { success: false, message: '你还没有宠物' };
+        }
+
+        if (!this.isPetAlive()) {
+            return { success: false, message: '宠物已经死了，需要复活才能喂食' };
+        }
+
+        if (points < VirtualPet.FEED_COST) {
+            return { success: false, message: `积分不足，当前积分: ${points}，喂食需要 ${VirtualPet.FEED_COST} 积分` };
+        }
+
+        const pet = this.petData.pet;
+        const oldLevel = this.getPetLevel();
+        
+        pet.hunger = Math.min(VirtualPet.MAX_HUNGER, pet.hunger + 30);
+        pet.lastFed = Date.now();
+        pet.totalXPSpent = (pet.totalXPSpent || 0) + VirtualPet.FEED_COST;
+
+        this.savePetData();
+        this.updateUI();
+        this.showPetAnimation('fed');
+        
+        // Check for level up
+        const newLevel = this.getPetLevel();
+        if (newLevel > oldLevel) {
+            this.onLevelUp(oldLevel, newLevel);
+        }
+
+        return { 
+            success: true, 
+            message: `${pet.name}吃饱了！`, 
+            pointsUsed: VirtualPet.FEED_COST 
+        };
+    }
+
+    upgradeAttack(points) {
+        if (!this.isPetAlive()) {
+            return { success: false, message: '宠物需要活着才能训练' };
+        }
+
+        if (points < VirtualPet.ATTACK_UPGRADE_COST) {
+            return { success: false, message: `积分不足，当前积分: ${points}，需要 ${VirtualPet.ATTACK_UPGRADE_COST} 积分` };
+        }
+
+        const pet = this.petData.pet;
+        const oldLevel = this.getPetLevel();
+        
+        pet.attack += 5;
+        pet.totalXPSpent = (pet.totalXPSpent || 0) + VirtualPet.ATTACK_UPGRADE_COST;
+
+        this.savePetData();
+        this.updateUI();
+        this.showPetAnimation('trained');
+        
+        // Check for level up
+        const newLevel = this.getPetLevel();
+        if (newLevel > oldLevel) {
+            this.onLevelUp(oldLevel, newLevel);
+        }
+
+        return { 
+            success: true, 
+            message: `${pet.name}的攻击力提升了！现在攻击: ${pet.attack}`,
+            pointsUsed: VirtualPet.ATTACK_UPGRADE_COST
+        };
+    }
+
+    upgradeDefense(points) {
+        if (!this.isPetAlive()) {
+            return { success: false, message: '宠物需要活着才能训练' };
+        }
+
+        if (points < VirtualPet.DEFENSE_UPGRADE_COST) {
+            return { success: false, message: `积分不足，当前积分: ${points}，需要 ${VirtualPet.DEFENSE_UPGRADE_COST} 积分` };
+        }
+
+        const pet = this.petData.pet;
+        const oldLevel = this.getPetLevel();
+        
+        pet.defense += 5;
+        pet.totalXPSpent = (pet.totalXPSpent || 0) + VirtualPet.DEFENSE_UPGRADE_COST;
+
+        this.savePetData();
+        this.updateUI();
+        this.showPetAnimation('trained');
+        
+        // Check for level up
+        const newLevel = this.getPetLevel();
+        if (newLevel > oldLevel) {
+            this.onLevelUp(oldLevel, newLevel);
+        }
+
+        return { 
+            success: true, 
+            message: `${pet.name}的防御力提升了！现在防御: ${pet.defense}`,
+            pointsUsed: VirtualPet.DEFENSE_UPGRADE_COST
+        };
+    }
+
+    revivePet(points) {
+        if (!this.hasPet()) {
+            return { success: false, message: '你还没有宠物' };
+        }
+
+        if (this.isPetAlive()) {
+            return { success: false, message: '宠物还活着，不需要复活' };
+        }
+
+        if (points < VirtualPet.REVIVE_COST) {
+            return { success: false, message: `积分不足，当前积分: ${points}，复活需要 ${VirtualPet.REVIVE_COST} 积分` };
+        }
+
+        const pet = this.petData.pet;
+        const oldLevel = this.getPetLevel();
+        
+        pet.isDead = false;
+        pet.deathDate = null;
+        pet.hunger = VirtualPet.MAX_HUNGER / 2; // Revive with half hunger
+        pet.lastFed = Date.now();
+        pet.totalXPSpent = (pet.totalXPSpent || 0) + VirtualPet.REVIVE_COST;
+
+        this.savePetData();
+        this.updateUI();
+        this.showPetAnimation('revived');
+        
+        // Check for level up
+        const newLevel = this.getPetLevel();
+        if (newLevel > oldLevel) {
+            this.onLevelUp(oldLevel, newLevel);
+        }
+
+        return { 
+            success: true, 
+            message: `${pet.name}复活了！记得经常喂食哦！`,
+            pointsUsed: VirtualPet.REVIVE_COST
+        };
+    }
+
+    // Called when a task is completed
+    onTaskCompleted() {
+        if (!this.isPetAlive()) return;
+
+        const pet = this.petData.pet;
+        pet.totalTasksCompleted++;
+        pet.intelligence += VirtualPet.INTELLIGENCE_PER_TASK;
+
+        this.savePetData();
+        this.showPetWithMessage('太棒了！继续加油！');
+        
+        // Show level-appropriate celebration animation
+        this.playCelebrationAnimation();
+    }
+
+    // Called when a photo is uploaded
+    onPhotoUploaded() {
+        if (!this.isPetAlive()) return;
+
+        const pet = this.petData.pet;
+        pet.totalPhotosUploaded++;
+
+        this.savePetData();
+        this.showPetWithMessage('好照片！主人真厉害！');
+        
+        // Show level-appropriate celebration animation
+        this.playCelebrationAnimation();
+    }
+    
+    // Called when a game is completed
+    onGameCompleted(gameType, score = 0, time = 0) {
+        if (!this.isPetAlive()) return;
+
+        const pet = this.petData.pet;
+        pet.totalGamesCompleted = (pet.totalGamesCompleted || 0) + 1;
+        
+        // Calculate XP reward based on game type and performance
+        const xpEarned = this.calculateGameXP(gameType, score, time);
+        
+        this.savePetData();
+        
+        // Show celebration message with XP earned
+        const gameReward = VirtualPet.GAME_XP_REWARDS[gameType];
+        const gameName = gameReward ? gameReward.name : '游戏';
+        this.showPetWithMessage(`🎮 ${gameName}通关！+${xpEarned}积分！`, 4000);
+        
+        // Show special level-appropriate celebration animation
+        this.playCelebrationAnimation('game-complete');
+        
+        return xpEarned;
+    }
+    
+    // Calculate XP reward for game completion
+    calculateGameXP(gameType, score = 0, time = 0) {
+        const rewards = VirtualPet.GAME_XP_REWARDS;
+        const gameReward = rewards[gameType];
+        
+        if (!gameReward) {
+            return 10; // Default XP for unknown games
+        }
+        
+        if (gameReward.base) {
+            // Fixed reward games (puzzle, maze)
+            return gameReward.base;
+        }
+        
+        if (gameReward.timeBonus) {
+            // Time-based reward (minesweeper)
+            const bonusXP = Math.floor((100 - Math.min(time, 100)) * 0.3);
+            return Math.max(gameReward.min, Math.min(gameReward.max, bonusXP));
+        }
+        
+        // Score-based reward (shooting, space-invaders, tank-battle)
+        const scoreXP = Math.floor(score / gameReward.divisor);
+        return Math.max(gameReward.min, Math.min(gameReward.max, scoreXP));
+    }
+    
+    // ===== PET LEVEL SYSTEM =====
+    getPetLevel() {
+        if (!this.hasPet()) return 1;
+        
+        const pet = this.petData.pet;
+        const xpSpent = pet.totalXPSpent || 0;
+        const levels = VirtualPet.PET_LEVELS;
+        
+        let currentLevel = 1;
+        for (const levelData of levels) {
+            if (xpSpent >= levelData.xpRequired) {
+                currentLevel = levelData.level;
+            } else {
+                break;
+            }
+        }
+        
+        return currentLevel;
+    }
+    
+    getPetLevelInfo() {
+        const level = this.getPetLevel();
+        const levels = VirtualPet.PET_LEVELS;
+        const levelData = levels.find(l => l.level === level) || levels[0];
+        
+        const nextLevelData = levels.find(l => l.level === level + 1);
+        const pet = this.petData.pet;
+        const xpSpent = pet ? (pet.totalXPSpent || 0) : 0;
+        
+        return {
+            level: levelData.level,
+            name: levelData.name,
+            animation: levelData.animation,
+            xpSpent: xpSpent,
+            xpToNextLevel: nextLevelData ? (nextLevelData.xpRequired - xpSpent) : 0,
+            nextLevelXP: nextLevelData ? nextLevelData.xpRequired : null,
+            isMaxLevel: !nextLevelData
+        };
+    }
+    
+    // Get pet emoji based on current level
+    getPetEmoji() {
+        if (!this.hasPet()) return '🐾';
+        
+        const pet = this.petData.pet;
+        const petType = VirtualPet.PET_TYPES[pet.type];
+        if (!petType) return pet.emoji;
+        
+        const level = this.getPetLevel();
+        const levelEmojis = petType.levelEmojis || [petType.emoji];
+        
+        // Get emoji for current level (0-indexed array)
+        const emojiIndex = Math.min(level - 1, levelEmojis.length - 1);
+        return levelEmojis[emojiIndex] || petType.emoji;
+    }
+    
+    onLevelUp(oldLevel, newLevel) {
+        const levelInfo = this.getPetLevelInfo();
+        const pet = this.petData.pet;
+        
+        // Show level up notification
+        this.showPetWithMessage(`🎉 升级！${pet.name}现在是 ${levelInfo.name} (Lv.${newLevel})！`, 5000);
+        
+        // Play special level up animation
+        this.playLevelUpAnimation(oldLevel, newLevel);
+        
+        // Update floating pet emoji
+        this.updateFloatingPet();
+    }
+    
+    // ===== LEVEL-BASED ANIMATIONS =====
+    playCelebrationAnimation(type = 'task') {
+        const level = this.getPetLevel();
+        const levelInfo = this.getPetLevelInfo();
+        
+        // Get the celebration container or create one
+        let celebrationContainer = document.getElementById('pet-celebration-overlay');
+        if (!celebrationContainer) {
+            celebrationContainer = document.createElement('div');
+            celebrationContainer.id = 'pet-celebration-overlay';
+            celebrationContainer.className = 'pet-celebration-overlay';
+            document.body.appendChild(celebrationContainer);
+        }
+        
+        // Clear any existing animation
+        if (this.celebrationAnimationId) {
+            cancelAnimationFrame(this.celebrationAnimationId);
+        }
+        celebrationContainer.innerHTML = '';
+        
+        // Create animation based on pet level
+        switch (levelInfo.animation) {
+            case 'fireworks-dance':
+                this.createFireworksDanceAnimation(celebrationContainer, type);
+                break;
+            case 'rainbow-flip':
+                this.createRainbowFlipAnimation(celebrationContainer, type);
+                break;
+            case 'glow-spin':
+                this.createGlowSpinAnimation(celebrationContainer, type);
+                break;
+            case 'spin':
+                this.createSpinAnimation(celebrationContainer, type);
+                break;
+            default:
+                this.createBounceAnimation(celebrationContainer, type);
+        }
+        
+        // Remove animation after duration
+        const duration = type === 'game-complete' ? 3000 : 2000;
+        setTimeout(() => {
+            celebrationContainer.innerHTML = '';
+        }, duration);
+    }
+    
+    createBounceAnimation(container, type) {
+        const emoji = this.getPetEmoji();
+        container.innerHTML = `
+            <div class="pet-celebration pet-bounce-anim level-1">
+                <span class="celebration-pet">${emoji}</span>
+            </div>
+        `;
+    }
+    
+    createSpinAnimation(container, type) {
+        const emoji = this.getPetEmoji();
+        container.innerHTML = `
+            <div class="pet-celebration pet-spin-anim level-2">
+                <span class="celebration-pet">${emoji}</span>
+                <span class="celebration-sparkle">✨</span>
+            </div>
+        `;
+    }
+    
+    createGlowSpinAnimation(container, type) {
+        const emoji = this.getPetEmoji();
+        container.innerHTML = `
+            <div class="pet-celebration pet-glow-spin-anim level-3">
+                <span class="celebration-pet">${emoji}</span>
+                <span class="celebration-sparkle sparkle-1">✨</span>
+                <span class="celebration-sparkle sparkle-2">⭐</span>
+                <div class="glow-ring"></div>
+            </div>
+        `;
+    }
+    
+    createRainbowFlipAnimation(container, type) {
+        const emoji = this.getPetEmoji();
+        container.innerHTML = `
+            <div class="pet-celebration pet-rainbow-flip-anim level-4">
+                <span class="celebration-pet">${emoji}</span>
+                <span class="celebration-sparkle sparkle-1">✨</span>
+                <span class="celebration-sparkle sparkle-2">⭐</span>
+                <span class="celebration-sparkle sparkle-3">💫</span>
+                <div class="rainbow-trail"></div>
+            </div>
+        `;
+    }
+    
+    createFireworksDanceAnimation(container, type) {
+        const emoji = this.getPetEmoji();
+        container.innerHTML = `
+            <div class="pet-celebration pet-fireworks-dance-anim level-5">
+                <span class="celebration-pet">${emoji}</span>
+                <span class="firework-particle p1">🎆</span>
+                <span class="firework-particle p2">🎇</span>
+                <span class="firework-particle p3">✨</span>
+                <span class="firework-particle p4">⭐</span>
+                <span class="firework-particle p5">💫</span>
+                <span class="firework-particle p6">🌟</span>
+                <div class="rainbow-trail"></div>
+                <div class="glow-ring glow-rainbow"></div>
+            </div>
+        `;
+    }
+    
+    playLevelUpAnimation(oldLevel, newLevel) {
+        let celebrationContainer = document.getElementById('pet-celebration-overlay');
+        if (!celebrationContainer) {
+            celebrationContainer = document.createElement('div');
+            celebrationContainer.id = 'pet-celebration-overlay';
+            celebrationContainer.className = 'pet-celebration-overlay';
+            document.body.appendChild(celebrationContainer);
+        }
+        
+        const emoji = this.getPetEmoji();
+        const levelInfo = this.getPetLevelInfo();
+        
+        celebrationContainer.innerHTML = `
+            <div class="pet-level-up-celebration">
+                <div class="level-up-glow"></div>
+                <span class="level-up-pet">${emoji}</span>
+                <div class="level-up-text">
+                    <span class="level-up-title">🎉 升级！</span>
+                    <span class="level-up-level">Lv.${newLevel} ${levelInfo.name}</span>
+                </div>
+                <div class="level-up-particles">
+                    <span class="particle p1">⭐</span>
+                    <span class="particle p2">✨</span>
+                    <span class="particle p3">🌟</span>
+                    <span class="particle p4">💫</span>
+                    <span class="particle p5">🎆</span>
+                    <span class="particle p6">🎇</span>
+                </div>
+            </div>
+        `;
+        
+        // Remove after animation
+        setTimeout(() => {
+            celebrationContainer.innerHTML = '';
+        }, 4000);
+    }
+
+    // ===== UI MANAGEMENT =====
+    initializeUI() {
+        // Create pet container if it doesn't exist
+        if (!document.getElementById('virtual-pet-container')) {
+            const container = document.createElement('div');
+            container.id = 'virtual-pet-container';
+            container.className = 'virtual-pet-container';
+            container.innerHTML = this.getPetHTML();
+            document.body.appendChild(container);
+        }
+
+        this.bindEvents();
+        this.updateUI();
+    }
+
+    getPetHTML() {
+        return `
+            <div class="virtual-pet-panel">
+                <div class="pet-header">
+                    <span class="pet-title">🐾 我的宠物</span>
+                    <button class="pet-close-btn" id="petCloseBtn">×</button>
+                </div>
+                <div class="pet-content" id="petContent">
+                    <!-- Content will be populated dynamically -->
+                </div>
+            </div>
+            <div class="pet-floating" id="petFloating">
+                <!-- Floating pet icon that shows on points change -->
+            </div>
+        `;
+    }
+
+    bindEvents() {
+        // Close button
+        const closeBtn = document.getElementById('petCloseBtn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.hidePetPanel());
+        }
+
+        // Floating pet click to open panel
+        const floating = document.getElementById('petFloating');
+        if (floating) {
+            floating.addEventListener('click', () => this.togglePetPanel());
+        }
+    }
+
+    updateUI() {
+        const petContent = document.getElementById('petContent');
+        if (!petContent) return;
+
+        if (!this.hasPet()) {
+            petContent.innerHTML = this.getAdoptionHTML();
+            this.bindAdoptionEvents();
+        } else if (!this.isPetAlive()) {
+            petContent.innerHTML = this.getDeadPetHTML();
+            this.bindDeadPetEvents();
+        } else {
+            petContent.innerHTML = this.getAlivePetHTML();
+            this.bindAlivePetEvents();
+        }
+
+        // Update floating pet
+        this.updateFloatingPet();
+    }
+
+    getAdoptionHTML() {
+        const petOptions = Object.entries(VirtualPet.PET_TYPES).map(([type, info]) => `
+            <button class="pet-adopt-btn" data-pet-type="${type}">
+                <span class="pet-emoji">${info.emoji}</span>
+                <span class="pet-name">${info.name}</span>
+            </button>
+        `).join('');
+
+        return `
+            <div class="pet-adoption">
+                <div class="adoption-title">🎁 领养一只宠物吧！</div>
+                <div class="adoption-desc">完成任务获得积分，照顾你的小伙伴</div>
+                <div class="pet-options">
+                    ${petOptions}
+                </div>
+            </div>
+        `;
+    }
+
+    getDeadPetHTML() {
+        const pet = this.petData.pet;
+        return `
+            <div class="pet-dead">
+                <div class="pet-dead-emoji">😢</div>
+                <div class="pet-dead-name">${pet.name}</div>
+                <div class="pet-dead-message">你的宠物因为太久没有喂食离开了...</div>
+                <button class="pet-action-btn revive-btn" id="revivePetBtn">
+                    💫 复活 (${VirtualPet.REVIVE_COST}积分)
+                </button>
+            </div>
+        `;
+    }
+
+    getAlivePetHTML() {
+        const pet = this.petData.pet;
+        const hungerPercent = Math.round(pet.hunger);
+        const hungerStatus = hungerPercent > 70 ? '饱' : hungerPercent > 30 ? '一般' : '饿';
+        const hungerClass = hungerPercent > 70 ? 'full' : hungerPercent > 30 ? 'normal' : 'hungry';
+        
+        // Get level information
+        const levelInfo = this.getPetLevelInfo();
+        const petEmoji = this.getPetEmoji();
+        const levelProgressPercent = levelInfo.isMaxLevel 
+            ? 100 
+            : Math.round(((levelInfo.xpSpent - (VirtualPet.PET_LEVELS[levelInfo.level - 1]?.xpRequired || 0)) / 
+                         (levelInfo.nextLevelXP - (VirtualPet.PET_LEVELS[levelInfo.level - 1]?.xpRequired || 0))) * 100);
+
+        return `
+            <div class="pet-alive">
+                <div class="pet-display">
+                    <span class="pet-main-emoji ${this.isVisible ? 'pet-bounce' : ''}">${petEmoji}</span>
+                    <div class="pet-name-display">${pet.name}</div>
+                    <div class="pet-level-badge level-${levelInfo.level}">
+                        Lv.${levelInfo.level} ${levelInfo.name}
+                    </div>
+                </div>
+                
+                <!-- Level Progress Bar -->
+                <div class="pet-level-progress">
+                    <div class="level-progress-label">
+                        <span>等级进度</span>
+                        <span>${levelInfo.isMaxLevel ? '满级' : `还需 ${levelInfo.xpToNextLevel} 积分`}</span>
+                    </div>
+                    <div class="level-progress-bar">
+                        <div class="level-progress-fill level-${levelInfo.level}" style="width: ${levelProgressPercent}%"></div>
+                    </div>
+                </div>
+                
+                <div class="pet-stats">
+                    <div class="pet-stat">
+                        <span class="stat-icon">🍖</span>
+                        <div class="stat-bar">
+                            <div class="stat-fill hunger-fill ${hungerClass}" style="width: ${hungerPercent}%"></div>
+                        </div>
+                        <span class="stat-value">${hungerStatus}</span>
+                    </div>
+                    <div class="pet-stat-row">
+                        <div class="pet-stat-item">
+                            <span class="stat-icon">⚔️</span>
+                            <span class="stat-value">${pet.attack}</span>
+                        </div>
+                        <div class="pet-stat-item">
+                            <span class="stat-icon">🛡️</span>
+                            <span class="stat-value">${pet.defense}</span>
+                        </div>
+                        <div class="pet-stat-item">
+                            <span class="stat-icon">🧠</span>
+                            <span class="stat-value">${pet.intelligence}</span>
+                        </div>
+                        <div class="pet-stat-item">
+                            <span class="stat-icon">🎮</span>
+                            <span class="stat-value">${pet.totalGamesCompleted || 0}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pet-actions">
+                    <button class="pet-action-btn feed-btn" id="feedPetBtn">
+                        🍖 喂食 (${VirtualPet.FEED_COST})
+                    </button>
+                    <button class="pet-action-btn attack-btn" id="upgradeAttackBtn">
+                        ⚔️ 攻击 (${VirtualPet.ATTACK_UPGRADE_COST})
+                    </button>
+                    <button class="pet-action-btn defense-btn" id="upgradeDefenseBtn">
+                        🛡️ 防御 (${VirtualPet.DEFENSE_UPGRADE_COST})
+                    </button>
+                </div>
+                
+                <div class="pet-message" id="petMessage"></div>
+            </div>
+        `;
+    }
+
+    bindAdoptionEvents() {
+        document.querySelectorAll('.pet-adopt-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const petType = e.currentTarget.dataset.petType;
+                const result = this.adoptPet(petType);
+                if (result.success) {
+                    this.showPetMessage(result.message);
+                } else {
+                    alert(result.message);
+                }
+            });
+        });
+    }
+
+    bindDeadPetEvents() {
+        const reviveBtn = document.getElementById('revivePetBtn');
+        if (reviveBtn) {
+            reviveBtn.addEventListener('click', () => {
+                const points = this.getCurrentPoints();
+                const result = this.revivePet(points);
+                if (result.success) {
+                    this.deductPoints(result.pointsUsed);
+                    this.showPetMessage(result.message);
+                } else {
+                    alert(result.message);
+                }
+            });
+        }
+    }
+
+    bindAlivePetEvents() {
+        const feedBtn = document.getElementById('feedPetBtn');
+        const attackBtn = document.getElementById('upgradeAttackBtn');
+        const defenseBtn = document.getElementById('upgradeDefenseBtn');
+
+        if (feedBtn) {
+            feedBtn.addEventListener('click', () => {
+                const points = this.getCurrentPoints();
+                const result = this.feedPet(points);
+                if (result.success) {
+                    this.deductPoints(result.pointsUsed);
+                    this.showPetMessage(result.message);
+                } else {
+                    alert(result.message);
+                }
+            });
+        }
+
+        if (attackBtn) {
+            attackBtn.addEventListener('click', () => {
+                const points = this.getCurrentPoints();
+                const result = this.upgradeAttack(points);
+                if (result.success) {
+                    this.deductPoints(result.pointsUsed);
+                    this.showPetMessage(result.message);
+                } else {
+                    alert(result.message);
+                }
+            });
+        }
+
+        if (defenseBtn) {
+            defenseBtn.addEventListener('click', () => {
+                const points = this.getCurrentPoints();
+                const result = this.upgradeDefense(points);
+                if (result.success) {
+                    this.deductPoints(result.pointsUsed);
+                    this.showPetMessage(result.message);
+                } else {
+                    alert(result.message);
+                }
+            });
+        }
+    }
+
+    updateFloatingPet() {
+        const floating = document.getElementById('petFloating');
+        if (!floating) return;
+
+        if (this.hasPet() && this.isPetAlive()) {
+            // Use level-based emoji
+            const petEmoji = this.getPetEmoji();
+            floating.innerHTML = `<span class="floating-pet-emoji">${petEmoji}</span>`;
+            floating.style.display = 'block';
+        } else if (this.hasPet() && !this.isPetAlive()) {
+            floating.innerHTML = `<span class="floating-pet-emoji dead">😢</span>`;
+            floating.style.display = 'block';
+        } else {
+            floating.innerHTML = `<span class="floating-pet-emoji">🐾</span>`;
+            floating.style.display = 'block';
+        }
+    }
+
+    // ===== ANIMATIONS & VISIBILITY =====
+    showPetPanel() {
+        const container = document.getElementById('virtual-pet-container');
+        if (container) {
+            container.classList.add('show-panel');
+        }
+    }
+
+    hidePetPanel() {
+        const container = document.getElementById('virtual-pet-container');
+        if (container) {
+            container.classList.remove('show-panel');
+        }
+    }
+
+    togglePetPanel() {
+        const container = document.getElementById('virtual-pet-container');
+        if (container) {
+            container.classList.toggle('show-panel');
+        }
+    }
+
+    // Show pet with temporary message when points change
+    showPetWithMessage(message, duration = 3000) {
+        if (!this.isPetAlive()) return;
+
+        this.isVisible = true;
+        const container = document.getElementById('virtual-pet-container');
+        const floating = document.getElementById('petFloating');
+        
+        if (floating) {
+            floating.classList.add('pet-active');
+        }
+
+        this.showPetMessage(message);
+        this.updateUI(); // Update to show bounce animation
+
+        // Clear existing timeout
+        if (this.animationTimeout) {
+            clearTimeout(this.animationTimeout);
+        }
+
+        // Hide after duration
+        this.animationTimeout = setTimeout(() => {
+            this.isVisible = false;
+            if (floating) {
+                floating.classList.remove('pet-active');
+            }
+            this.updateUI();
+        }, duration);
+    }
+
+    showPetMessage(message) {
+        const messageEl = document.getElementById('petMessage');
+        if (messageEl) {
+            messageEl.textContent = message;
+            messageEl.classList.add('show');
+            setTimeout(() => {
+                messageEl.classList.remove('show');
+            }, 2500);
+        }
+    }
+
+    showPetAnimation(type) {
+        const floating = document.getElementById('petFloating');
+        if (!floating) return;
+
+        floating.classList.add(`pet-${type}`);
+        setTimeout(() => {
+            floating.classList.remove(`pet-${type}`);
+        }, 1000);
+    }
+
+    onPetDeath() {
+        // Show sad animation
+        this.showPetAnimation('death');
+        
+        // Show notification
+        setTimeout(() => {
+            if (this.hasPet()) {
+                alert(`😢 很抱歉，${this.petData.pet.name}因为太久没有喂食离开了...你可以用积分复活它。`);
+            }
+        }, 500);
+    }
+
+    // ===== POINTS INTEGRATION =====
+    // These methods integrate with the main app's gamification system
+    getCurrentPoints() {
+        // Get current points from the achievement gamification system
+        if (window.achievementGamification) {
+            const xpProgress = window.achievementGamification.getXPProgress();
+            return xpProgress.totalXP || 0;
+        }
+        
+        // Fallback to localStorage
+        try {
+            const data = localStorage.getItem('museumcheck_xp_data');
+            if (data) {
+                const parsed = JSON.parse(data);
+                return parsed.totalXP || 0;
+            }
+        } catch (error) {
+            console.error('Failed to get current points:', error);
+        }
+        
+        return 0;
+    }
+
+    deductPoints(amount) {
+        // Deduct points by directly modifying localStorage
+        // Note: We don't use addXP(-amount) because the XP system may not handle negative values
+        try {
+            const data = localStorage.getItem('museumcheck_xp_data');
+            if (data) {
+                const parsed = JSON.parse(data);
+                parsed.totalXP = Math.max(0, (parsed.totalXP || 0) - amount);
+                localStorage.setItem('museumcheck_xp_data', JSON.stringify(parsed));
+                
+                // If achievement gamification exists, sync its internal state
+                if (window.achievementGamification) {
+                    window.achievementGamification.xpData = parsed;
+                }
+                return true;
+            }
+        } catch (error) {
+            console.error('Failed to deduct points:', error);
+        }
+        
+        return false;
+    }
+
+    addPoints(amount) {
+        // Add points through the achievement gamification system
+        if (window.achievementGamification) {
+            window.achievementGamification.addXP(amount);
+            return true;
+        }
+        
+        return false;
+    }
+
+    // ===== PUBLIC API FOR INTEGRATION =====
+    // Call when task is completed (from main app)
+    static notifyTaskCompleted() {
+        if (window.virtualPet) {
+            window.virtualPet.onTaskCompleted();
+        }
+    }
+
+    // Call when photo is uploaded (from main app)
+    static notifyPhotoUploaded() {
+        if (window.virtualPet) {
+            window.virtualPet.onPhotoUploaded();
+        }
+    }
+    
+    // Call when game is completed (from museum-checkin page)
+    static notifyGameCompleted(gameType, score = 0, time = 0) {
+        if (window.virtualPet) {
+            return window.virtualPet.onGameCompleted(gameType, score, time);
+        }
+        return 0;
+    }
+
+    // Check if child mode is active
+    static isChildModeActive() {
+        return document.body.classList.contains('child-mode');
+    }
+}
+
+// Initialize virtual pet when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize if child mode toggle exists (main page) or if child mode is enabled (checkin page)
+    const childModeToggle = document.getElementById('childModeToggle');
+    const childModeEnabled = localStorage.getItem('childModeEnabled') === 'true';
+    // Also check if we're on a checkin page (museum-checkin.html) - this page is specifically for kids
+    const isCheckinPage = window.location.pathname.endsWith('museum-checkin.html');
+    
+    if (childModeToggle || childModeEnabled || isCheckinPage) {
+        window.virtualPet = new VirtualPet();
+    }
+});
+
+// Make class available globally
+if (typeof window !== 'undefined') {
+    window.VirtualPet = VirtualPet;
+}

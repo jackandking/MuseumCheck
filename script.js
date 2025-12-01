@@ -170,6 +170,55 @@ const UtilityFunctions = {
             const v = c === 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
+    },
+    
+    // ===== WeChat Environment Detection =====
+    // Detect if running in WeChat browser or Mini Program webview
+    isWeChatEnvironment: () => {
+        const ua = navigator.userAgent.toLowerCase();
+        return ua.indexOf('micromessenger') > -1;
+    },
+    
+    isWeChatMiniProgram: () => {
+        // Check if running inside WeChat Mini Program webview
+        return UtilityFunctions.isWeChatEnvironment() && (
+            window.__wxjs_environment === 'miniprogram' ||
+            (typeof wx !== 'undefined' && typeof wx.miniProgram !== 'undefined')
+        );
+    },
+    
+    // Show a hint message for WeChat users to long-press save
+    showWeChatSaveHint: (container) => {
+        if (!container) return;
+        // Remove any existing hint
+        const existingHint = container.querySelector('.wechat-save-hint');
+        if (existingHint) existingHint.remove();
+        
+        const hint = document.createElement('div');
+        hint.className = 'wechat-save-hint';
+        hint.innerHTML = '📱 <strong>长按图片</strong>可保存到相册';
+        // Using CSS class .wechat-save-hint defined in style.css
+        container.appendChild(hint);
+    },
+    
+    // Try to send image to Mini Program for saving (if in webview)
+    sendImageToMiniProgram: (dataURL, filename) => {
+        if (typeof wx !== 'undefined' && wx.miniProgram && typeof wx.miniProgram.postMessage === 'function') {
+            try {
+                wx.miniProgram.postMessage({ 
+                    data: { 
+                        action: 'saveImage',
+                        image: dataURL,
+                        filename: filename || 'poster.png'
+                    }
+                });
+                return true;
+            } catch (e) {
+                console.warn('Failed to post message to Mini Program:', e);
+                return false;
+            }
+        }
+        return false;
     }
 };
 
@@ -3575,19 +3624,64 @@ class LeaderboardManager {
     }
 
     /**
-     * Auto-submit score if count changed
+     * Auto-submit score if count changed and return rank change information
+     * @returns {Object} Result with rank change info: { success, oldRank, newRank, rankChange, totalUsers }
      */
     async autoSubmitScore() {
-        if (this.shouldSubmitScore()) {
-            const nickname = this.app.childNickname || '小朋友';
-            const visitedCount = this.app.visitedMuseums.length;
-            
-            const result = await this.submitScore(nickname, visitedCount);
-            if (result.success) {
-                localStorage.setItem('lastSubmittedVisitCount', visitedCount.toString());
-                console.log('Auto-submitted score to leaderboard');
-            }
+        if (!this.shouldSubmitScore()) {
+            return { success: false, reason: 'no_change' };
         }
+        
+        const nickname = this.app.childNickname || '小朋友';
+        const visitedCount = this.app.visitedMuseums.length;
+        const userId = this.getUserId();
+        
+        // Get old rank before submitting new score
+        let oldRank = null;
+        let totalUsers = 0;
+        try {
+            const oldLeaderboard = await this.fetchLeaderboard(false); // Use cache if available
+            if (oldLeaderboard.success && oldLeaderboard.data) {
+                oldRank = this.getUserRank(oldLeaderboard.data, userId);
+                totalUsers = oldLeaderboard.data.length;
+            }
+        } catch (err) {
+            console.warn('Failed to get old rank:', err);
+        }
+        
+        // Submit new score
+        const result = await this.submitScore(nickname, visitedCount);
+        if (!result.success) {
+            return { success: false, error: result.error };
+        }
+        
+        localStorage.setItem('lastSubmittedVisitCount', visitedCount.toString());
+        console.log('Auto-submitted score to leaderboard');
+        
+        // Get new rank after submitting
+        let newRank = null;
+        try {
+            const newLeaderboard = await this.fetchLeaderboard(true); // Force refresh
+            if (newLeaderboard.success && newLeaderboard.data) {
+                newRank = this.getUserRank(newLeaderboard.data, userId);
+                totalUsers = newLeaderboard.data.length;
+            }
+        } catch (err) {
+            console.warn('Failed to get new rank:', err);
+        }
+        
+        // Calculate rank change (positive means rank improved, e.g., from #5 to #3 is +2)
+        // Note: oldRank and newRank are always >= 1 or null (never 0), since getUserRank returns index + 1
+        const rankChange = (oldRank !== null && newRank !== null) ? (oldRank - newRank) : null;
+        
+        return {
+            success: true,
+            oldRank,
+            newRank,
+            rankChange,
+            totalUsers,
+            isNewEntry: !oldRank && newRank
+        };
     }
 }
 
@@ -3610,6 +3704,8 @@ class MuseumCheckApp {
         this.userLocation = null; // Will be set if user grants location permission
         this.assessmentHidden = !this.loadAssessmentVisibility(); // Load from settings, default to hidden
         this.manageButtonHidden = !this.loadManageButtonVisibility(); // Load from settings, default to hidden
+        this.guideButtonHidden = !this.loadGuideButtonVisibility(); // Load from settings, default to hidden
+        this.childModeEnabled = this.loadChildModeEnabled(); // Load child mode setting
         this.showOnlyMuseumsWithCollections = this.loadShowOnlyMuseumsWithCollections(); // Load from settings, default to true
         this.readonlyCheckboxes = false; // Default to interactive checkboxes
         this.isDouyinAffiliate = false; // Flag to track Douyin affiliate mode
@@ -3637,22 +3733,8 @@ class MuseumCheckApp {
     }
 
     initAgeSelector() {
-        // Set the radio button to match the saved age group
-        const savedAgeRadio = UtilityFunctions.querySelector(`input[name="ageGroup"][value="${this.currentAge}"]`);
-        if (savedAgeRadio) {
-            savedAgeRadio.checked = true;
-        }
-        
-        // Set initial selected state for browsers that don't support :has()
-        const checkedRadio = UtilityFunctions.querySelector(DOM_SELECTORS.AGE_GROUP.CHECKED_RADIO);
-        if (checkedRadio) {
-            // Remove previous selected states
-            UtilityFunctions.querySelectorAll(DOM_SELECTORS.AGE_GROUP.OPTIONS).forEach(option => {
-                option.classList.remove('selected');
-            });
-            // Add selected state to the current radio
-            checkedRadio.closest('.age-option').classList.add('selected');
-        }
+        // Age selector removed from index.html - age selection now handled in settings page.
+        // Method kept as no-op since it's called from init() method.
     }
 
     // Google Analytics tracking helper - now using AnalyticsManager
@@ -3684,6 +3766,12 @@ class MuseumCheckApp {
         
         // Apply management button visibility setting
         this.applyManageButtonVisibility();
+        
+        // Apply guide button visibility setting
+        this.applyGuideButtonVisibility();
+        
+        // Apply child mode setting
+        this.applyChildMode();
         
         // Migrate existing localStorage photos to IndexedDB if supported
         if (this.indexedDBSupported) {
@@ -3718,10 +3806,8 @@ class MuseumCheckApp {
         this.initGlobalFireworksWall();
         // Auto-hide age selector after 10 seconds
         this.setupAgeSelectorAutoHide();
-        // Show settings hint for new users
-        this.setupSettingsHint();
-        // Setup new user onboarding for leaderboard
-        this.setupLeaderboardOnboarding();
+        // Setup new user onboarding (replaces old hints system)
+        this.setupNewUserOnboarding();
     }
     
     /**
@@ -3760,236 +3846,140 @@ class MuseumCheckApp {
     }
     
     /**
-     * Setup auto-hide functionality for age selector
-     * For first-time users: keeps selector visible until they make a selection
-     * For returning users: hides selector immediately (they've already chosen)
-     * 
-     * Bug fix: Removed 10-second auto-hide timer for first-time users
-     * Issue: 自动消失bug - Age selector should only hide after user makes a selection
+     * Setup auto-hide functionality for age selector.
+     * @deprecated Age selector removed from index.html - functionality moved to settings page.
+     * Method kept as no-op since it's called from init() method.
      */
     setupAgeSelectorAutoHide() {
-        const ageSelector = document.querySelector('.age-selector');
-        const hint = document.getElementById('ageSelectorHint');
-        
-        if (!ageSelector || !hint) {
-            return;
-        }
-        
-        // Check if user has already saved their age preference
-        let hasSavedAge = null;
-        
-        try {
-            hasSavedAge = localStorage.getItem('ageGroup');
-        } catch (error) {
-            console.error('Failed to check localStorage:', error);
-            // Treat as first-time user if localStorage fails
-        }
-        
-        if (hasSavedAge) {
-            // Returning user - hide age selector immediately
-            ageSelector.classList.add('hidden');
-            return;
-        }
-        
-        // First-time user - keep selector visible until they make a selection
-        // The selector will be hidden when user selects an age (see age group change handler)
+        // Age selector removed from index.html - no action needed
     }
     
     /**
-     * Hide age selector and show hint notification
-     * Called after user selects an age for the first time
+     * Hide age selector after user makes a selection.
+     * @deprecated Age selector removed from index.html - functionality moved to settings page.
+     * Method kept as no-op since it may be called from other event handlers.
      */
     hideAgeSelectorAndShowHint() {
-        const ageSelector = document.querySelector('.age-selector');
-        const hint = document.getElementById('ageSelectorHint');
-        
-        if (!ageSelector || !hint) {
-            return;
-        }
-        
-        // Check if hint has already been shown
-        let hasSeenHint = null;
-        try {
-            hasSeenHint = localStorage.getItem('ageSelectorHintShown');
-        } catch (error) {
-            console.error('Failed to check hint status:', error);
-        }
-        
-        // Hide age selector
-        ageSelector.classList.add('hidden');
-        
-        // Only show hint if it hasn't been shown before
-        if (!hasSeenHint) {
-            // Show hint after age selector is hidden (wait for transition)
-            setTimeout(() => {
-                hint.classList.add('show');
-                
-                // Mark hint as shown
-                try {
-                    localStorage.setItem('ageSelectorHintShown', 'true');
-                } catch (error) {
-                    console.error('Failed to save hint status:', error);
-                }
-                
-                // Hide hint after 5 seconds
-                setTimeout(() => {
-                    hint.classList.remove('show');
-                }, 5000);
-            }, 500);
-        }
+        // Age selector removed from index.html - no action needed
     }
     
     /**
-     * Show settings hint for new users
-     * Displays a notification telling users they can modify nickname and age group in settings
-     * Only shown once for first-time users who haven't configured settings yet
+     * Setup new user onboarding flow
+     * For first-time users: auto-open settings modal with step-by-step onboarding prompts
+     * Steps: 1) Set nickname 2) Select age 3) Close settings 4) Select museum
      */
-    setupSettingsHint() {
-        const settingsHint = document.getElementById('settingsHint');
-        
-        if (!settingsHint) {
-            return;
-        }
-        
-        // Check if user is a new user (no settings configured)
-        let hasConfiguredSettings = false;
-        let hasSeenHint = false;
-        
-        try {
-            // User is considered "configured" if they have set a nickname or age group
-            const hasNickname = localStorage.getItem('childNickname');
-            const hasAgeGroup = localStorage.getItem('ageGroup');
-            hasConfiguredSettings = hasNickname || hasAgeGroup;
-            
-            // Check if hint was already shown
-            hasSeenHint = localStorage.getItem('settingsHintShown') === 'true';
-        } catch (error) {
-            console.error('Failed to check settings hint status:', error);
-            return;
-        }
-        
-        // Only show hint for new users who haven't seen it
-        if (hasConfiguredSettings || hasSeenHint) {
-            return;
-        }
-        
-        // Show hint after a short delay (2 seconds) to let user orient
-        setTimeout(() => {
-            settingsHint.classList.add('show');
-            
-            // Mark hint as shown
-            try {
-                localStorage.setItem('settingsHintShown', 'true');
-            } catch (error) {
-                console.error('Failed to save settings hint status:', error);
-            }
-            
-            // Auto-hide hint after 8 seconds
-            setTimeout(() => {
-                settingsHint.classList.remove('show');
-            }, 8000);
-        }, 2000);
-    }
-    
-    /**
-     * Setup new user onboarding for leaderboard feature
-     * Guide new users to: 1) set nickname, 2) check-in museums, 3) view leaderboard
-     */
-    setupLeaderboardOnboarding() {
+    setupNewUserOnboarding() {
         try {
             // Check if onboarding already completed
-            const onboardingCompleted = localStorage.getItem('leaderboardOnboardingCompleted') === 'true';
+            const onboardingCompleted = localStorage.getItem('newUserOnboardingCompleted') === 'true';
             if (onboardingCompleted) {
                 return;
             }
 
-            // Check if user is truly new (no visited museums and default nickname)
+            // Check if user is truly new (no nickname, no age group saved, no visited museums)
+            const hasNickname = localStorage.getItem('childNickname');
+            const hasAgeGroup = localStorage.getItem('ageGroup');
             const hasVisitedMuseums = this.visitedMuseums.length > 0;
-            const hasCustomNickname = this.childNickname !== '小淘气';
 
-            // If user already has some progress, mark onboarding as completed
-            if (hasVisitedMuseums || hasCustomNickname) {
-                localStorage.setItem('leaderboardOnboardingCompleted', 'true');
+            // If user already has some configuration, mark onboarding as completed
+            if (hasNickname || hasAgeGroup || hasVisitedMuseums) {
+                localStorage.setItem('newUserOnboardingCompleted', 'true');
                 return;
             }
 
-            // Show gentle hint about leaderboard after 5 seconds
+            // For new users: show onboarding after a short delay to let the page load
             setTimeout(() => {
-                this.showLeaderboardIntroHint();
-            }, 5000);
+                this.startNewUserOnboarding();
+            }, 500);
 
         } catch (error) {
-            console.error('Failed to setup leaderboard onboarding:', error);
+            console.error('Failed to setup new user onboarding:', error);
         }
     }
 
     /**
-     * Show intro hint about leaderboard to new users
+     * Start new user onboarding flow
+     * Opens settings modal with onboarding guide
      */
-    showLeaderboardIntroHint() {
-        // Create a notification element
-        const notification = document.createElement('div');
-        notification.className = 'leaderboard-intro-hint';
-        notification.innerHTML = `
-            <div class="hint-content">
-                <div class="hint-icon">🏅</div>
-                <div class="hint-text">
-                    <strong>欢迎来到博物馆打卡！</strong><br>
-                    设置孩子昵称，打卡参观过的博物馆，就能在全网排行榜上看到自己的排名啦！
+    startNewUserOnboarding() {
+        // Add onboarding UI to settings modal
+        this.injectOnboardingUI();
+        
+        // Open settings modal
+        this.showSettingsModal();
+        
+        // Start onboarding step 1
+        this.showOnboardingStep(1);
+        
+        // Track event
+        this.trackEvent('new_user_onboarding_started', {
+            'timestamp': new Date().toISOString()
+        });
+    }
+
+    /**
+     * Inject onboarding UI elements into settings modal
+     */
+    injectOnboardingUI() {
+        const settingsModal = document.getElementById('settingsModal');
+        if (!settingsModal) return;
+
+        // Check if already injected
+        if (document.getElementById('onboardingOverlay')) return;
+
+        // Create onboarding overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'onboardingOverlay';
+        overlay.className = 'onboarding-overlay';
+        overlay.innerHTML = `
+            <div class="onboarding-card">
+                <div class="onboarding-header">
+                    <span class="onboarding-emoji">🎉</span>
+                    <h3 class="onboarding-title">欢迎来到博物馆打卡！</h3>
                 </div>
-                <button class="hint-close-btn">知道了</button>
+                <div class="onboarding-steps">
+                    <div class="onboarding-step active" data-step="1">
+                        <span class="step-number">1</span>
+                        <span class="step-text">设置孩子昵称</span>
+                    </div>
+                    <div class="onboarding-step" data-step="2">
+                        <span class="step-number">2</span>
+                        <span class="step-text">选择年龄段</span>
+                    </div>
+                    <div class="onboarding-step" data-step="3">
+                        <span class="step-number">3</span>
+                        <span class="step-text">关闭设置</span>
+                    </div>
+                    <div class="onboarding-step" data-step="4">
+                        <span class="step-number">4</span>
+                        <span class="step-text">选择博物馆</span>
+                    </div>
+                </div>
+                <div class="onboarding-hint" id="onboardingHint">
+                    👆 请先在上方输入孩子的昵称
+                </div>
+                <button class="onboarding-skip-btn" id="onboardingSkipBtn">跳过引导</button>
             </div>
         `;
 
-        // Add styles inline for the hint
-        notification.style.cssText = `
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
-            z-index: 1001;
-            max-width: 90%;
-            width: 400px;
-            animation: slideUp 0.3s ease-out;
-        `;
-
-        document.body.appendChild(notification);
-
-        // Close button handler
-        const closeBtn = notification.querySelector('.hint-close-btn');
-        closeBtn.addEventListener('click', () => {
-            notification.style.animation = 'slideDown 0.3s ease-out';
-            setTimeout(() => {
-                notification.remove();
-            }, 300);
-            
-            // Mark intro as seen
-            localStorage.setItem('leaderboardIntroSeen', 'true');
-        });
-
-        // Auto-remove after 10 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.style.animation = 'slideDown 0.3s ease-out';
-                setTimeout(() => {
-                    notification.remove();
-                }, 300);
-            }
-        }, 10000);
-
-        // Add CSS animations if not already present
-        if (!document.getElementById('leaderboard-hint-styles')) {
+        // Add styles
+        if (!document.getElementById('onboarding-styles')) {
             const style = document.createElement('style');
-            style.id = 'leaderboard-hint-styles';
+            style.id = 'onboarding-styles';
             style.textContent = `
-                @keyframes slideUp {
+                .onboarding-overlay {
+                    position: fixed;
+                    bottom: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    z-index: 10002;
+                    max-width: 90%;
+                    width: 400px;
+                    animation: onboardingSlideUp 0.4s ease-out;
+                }
+                @keyframes onboardingSlideUp {
                     from {
-                        transform: translateX(-50%) translateY(100px);
+                        transform: translateX(-50%) translateY(50px);
                         opacity: 0;
                     }
                     to {
@@ -3997,46 +3987,279 @@ class MuseumCheckApp {
                         opacity: 1;
                     }
                 }
-                @keyframes slideDown {
+                @keyframes onboardingSlideDown {
                     from {
                         transform: translateX(-50%) translateY(0);
                         opacity: 1;
                     }
                     to {
-                        transform: translateX(-50%) translateY(100px);
+                        transform: translateX(-50%) translateY(50px);
                         opacity: 0;
                     }
                 }
-                .leaderboard-intro-hint .hint-content {
+                .onboarding-card {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 16px;
+                    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+                }
+                .onboarding-header {
                     display: flex;
                     align-items: center;
-                    gap: 15px;
+                    gap: 12px;
+                    margin-bottom: 16px;
                 }
-                .leaderboard-intro-hint .hint-icon {
-                    font-size: 32px;
-                    flex-shrink: 0;
+                .onboarding-emoji {
+                    font-size: 28px;
                 }
-                .leaderboard-intro-hint .hint-text {
-                    flex: 1;
-                    line-height: 1.5;
+                .onboarding-title {
+                    margin: 0;
+                    font-size: 18px;
+                    font-weight: 600;
                 }
-                .leaderboard-intro-hint .hint-close-btn {
-                    background: rgba(255, 255, 255, 0.2);
-                    border: 1px solid rgba(255, 255, 255, 0.3);
+                .onboarding-steps {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin-bottom: 16px;
+                }
+                .onboarding-step {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 6px 12px;
+                    background: rgba(255,255,255,0.15);
+                    border-radius: 20px;
+                    font-size: 13px;
+                    opacity: 0.6;
+                    transition: all 0.3s ease;
+                }
+                .onboarding-step.active {
+                    opacity: 1;
+                    background: rgba(255,255,255,0.3);
+                    transform: scale(1.05);
+                }
+                .onboarding-step.completed {
+                    opacity: 0.8;
+                    text-decoration: line-through;
+                }
+                .onboarding-step .step-number {
+                    width: 20px;
+                    height: 20px;
+                    background: rgba(255,255,255,0.3);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 11px;
+                    font-weight: bold;
+                }
+                .onboarding-step.completed .step-number {
+                    background: rgba(40,167,69,0.8);
+                    font-size: 0;
+                }
+                .onboarding-step.completed .step-number::after {
+                    content: '✓';
+                    font-size: 11px;
+                }
+                .onboarding-hint {
+                    background: rgba(255,255,255,0.2);
+                    padding: 12px 16px;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    margin-bottom: 12px;
+                    text-align: center;
+                    animation: hintPulse 2s ease-in-out infinite;
+                }
+                @keyframes hintPulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.02); }
+                }
+                .onboarding-skip-btn {
+                    width: 100%;
+                    padding: 10px;
+                    background: rgba(255,255,255,0.2);
+                    border: 1px solid rgba(255,255,255,0.3);
                     color: white;
-                    padding: 8px 16px;
-                    border-radius: 6px;
+                    border-radius: 8px;
                     cursor: pointer;
                     font-size: 14px;
-                    white-space: nowrap;
                     transition: all 0.2s ease;
                 }
-                .leaderboard-intro-hint .hint-close-btn:hover {
-                    background: rgba(255, 255, 255, 0.3);
+                .onboarding-skip-btn:hover {
+                    background: rgba(255,255,255,0.3);
+                }
+                @media (max-width: 480px) {
+                    .onboarding-overlay {
+                        width: calc(100% - 20px);
+                        bottom: 10px;
+                    }
+                    .onboarding-card {
+                        padding: 16px;
+                    }
+                    .onboarding-steps {
+                        gap: 6px;
+                    }
+                    .onboarding-step {
+                        padding: 5px 10px;
+                        font-size: 12px;
+                    }
                 }
             `;
             document.head.appendChild(style);
         }
+
+        document.body.appendChild(overlay);
+
+        // Setup skip button handler
+        document.getElementById('onboardingSkipBtn').addEventListener('click', () => {
+            this.completeOnboarding();
+        });
+
+        // Setup nickname input listener for step progression
+        const nicknameInput = document.getElementById('childNicknameInput');
+        if (nicknameInput) {
+            nicknameInput.addEventListener('input', () => {
+                if (nicknameInput.value.trim().length > 0) {
+                    this.markOnboardingStepCompleted(1);
+                    this.showOnboardingStep(2);
+                }
+            });
+        }
+
+        // Setup age selector listener for step progression
+        // Bug fix: Listen for both 'change' and 'blur' events because if user wants
+        // the default pre-selected value, 'change' won't fire when they click it
+        const ageSelector = document.getElementById('ageGroupSelector');
+        if (ageSelector) {
+            ageSelector.addEventListener('change', () => {
+                this.markOnboardingStepCompleted(2);
+                this.showOnboardingStep(3);
+            });
+            
+            // Also listen for blur - if user clicks on the dropdown and then clicks
+            // the same option, the change event won't fire, so we use blur to detect completion
+            ageSelector.addEventListener('blur', () => {
+                // Only mark complete if we're still on step 2 (not already completed via change event)
+                const step2 = document.querySelector('.onboarding-step[data-step="2"]');
+                if (step2 && !step2.classList.contains('completed')) {
+                    this.markOnboardingStepCompleted(2);
+                    this.showOnboardingStep(3);
+                }
+            });
+        }
+
+        // Setup settings modal close listener for step progression
+        const settingsModalElement = document.getElementById('settingsModal');
+        const closeBtn = settingsModalElement ? settingsModalElement.querySelector('.close') : null;
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                if (document.getElementById('onboardingOverlay')) {
+                    this.markOnboardingStepCompleted(3);
+                    this.showOnboardingStep(4);
+                    // Move overlay outside modal for step 4
+                    this.moveOnboardingToMainPage();
+                }
+            });
+        }
+    }
+
+    /**
+     * Show specific onboarding step
+     */
+    showOnboardingStep(stepNumber) {
+        const steps = document.querySelectorAll('.onboarding-step');
+        const hint = document.getElementById('onboardingHint');
+        
+        steps.forEach(step => {
+            const num = parseInt(step.getAttribute('data-step'));
+            if (num === stepNumber) {
+                step.classList.add('active');
+            } else {
+                step.classList.remove('active');
+            }
+        });
+
+        // Update hint text based on step
+        if (hint) {
+            const hints = {
+                1: '👆 请先在上方输入孩子的昵称',
+                2: '👆 请选择孩子的年龄段',
+                3: '👆 点击右上角 ✕ 关闭设置',
+                4: '👆 点击任意博物馆卡片开始探索吧！'
+            };
+            hint.textContent = hints[stepNumber] || '';
+        }
+    }
+
+    /**
+     * Mark onboarding step as completed
+     */
+    markOnboardingStepCompleted(stepNumber) {
+        const step = document.querySelector(`.onboarding-step[data-step="${stepNumber}"]`);
+        if (step) {
+            step.classList.add('completed');
+            step.classList.remove('active');
+        }
+    }
+
+    /**
+     * Move onboarding overlay to main page for step 4
+     */
+    moveOnboardingToMainPage() {
+        const overlay = document.getElementById('onboardingOverlay');
+        if (!overlay) return;
+
+        // Update for step 4 (select museum)
+        const hint = document.getElementById('onboardingHint');
+        if (hint) {
+            hint.textContent = '👆 点击任意博物馆卡片开始探索吧！';
+        }
+
+        // Setup museum card click listener to complete onboarding
+        const museumGrid = document.getElementById('museumGrid');
+        if (museumGrid) {
+            const handler = (e) => {
+                const card = e.target.closest('.museum-card');
+                if (card) {
+                    this.markOnboardingStepCompleted(4);
+                    this.completeOnboarding();
+                    museumGrid.removeEventListener('click', handler);
+                }
+            };
+            museumGrid.addEventListener('click', handler);
+        }
+
+        // Auto-complete after 15 seconds if user doesn't click
+        setTimeout(() => {
+            if (document.getElementById('onboardingOverlay')) {
+                this.completeOnboarding();
+            }
+        }, 15000);
+    }
+
+    /**
+     * Complete the onboarding flow
+     */
+    completeOnboarding() {
+        const overlay = document.getElementById('onboardingOverlay');
+        if (overlay) {
+            overlay.style.animation = 'onboardingSlideDown 0.3s ease-out';
+            setTimeout(() => {
+                overlay.remove();
+            }, 300);
+        }
+
+        // Mark onboarding as completed
+        localStorage.setItem('newUserOnboardingCompleted', 'true');
+        
+        // Note: Age selector has been removed from index.html - functionality moved to settings page
+
+        // Track completion
+        this.trackEvent('new_user_onboarding_completed', {
+            'timestamp': new Date().toISOString()
+        });
     }
     
     /**
@@ -4892,6 +5115,23 @@ class MuseumCheckApp {
             });
         }
 
+        // Guide button visibility toggle
+        const showGuideButtonToggle = document.getElementById('showGuideButtonToggle');
+        if (showGuideButtonToggle) {
+            showGuideButtonToggle.addEventListener('change', (e) => {
+                const showGuideButton = e.target.checked;
+                const result = this.saveGuideButtonVisibility(showGuideButton);
+                
+                if (result.success) {
+                    // Track guide button visibility change
+                    this.trackEvent('guide_button_visibility_changed', {
+                        'show_guide_button': showGuideButton,
+                        'auto_saved': true
+                    });
+                }
+            });
+        }
+
         // Show only museums with collections toggle
         const showOnlyMuseumsWithCollections = document.getElementById('showOnlyMuseumsWithCollections');
         if (showOnlyMuseumsWithCollections) {
@@ -4906,6 +5146,33 @@ class MuseumCheckApp {
                         'auto_saved': true
                     });
                 }
+            });
+        }
+
+        // Child mode toggle
+        const childModeToggle = document.getElementById('childModeToggle');
+        if (childModeToggle) {
+            childModeToggle.addEventListener('change', (e) => {
+                const enabled = e.target.checked;
+                const result = this.saveChildModeEnabled(enabled);
+                
+                if (result.success) {
+                    this.showNotification(result.message, 2000);
+                    
+                    // Close settings modal when entering child mode
+                    if (enabled) {
+                        document.getElementById('settingsModal').classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+        // Child mode indicator click handler (to exit child mode)
+        const childModeIndicator = document.getElementById('childModeIndicator');
+        if (childModeIndicator) {
+            childModeIndicator.addEventListener('click', () => {
+                this.exitChildMode();
+                this.showNotification('已退出孩子模式', 2000);
             });
         }
 
@@ -4958,10 +5225,29 @@ class MuseumCheckApp {
             });
         }
 
+        // Initialize treasure check-in configuration feature
+        this.initializeTreasureCheckinConfig();
+
         // Achievement poster generation button
         document.getElementById('generateAchievementPoster').addEventListener('click', () => {
             this.generateAchievementPoster();
         });
+
+        // Achievement poster download button
+        const downloadAchievementBtn = document.getElementById('downloadAchievementPoster');
+        if (downloadAchievementBtn) {
+            downloadAchievementBtn.addEventListener('click', () => {
+                this.downloadAchievementPoster();
+            });
+        }
+
+        // Achievement poster share button
+        const shareAchievementBtn = document.getElementById('shareAchievementPoster');
+        if (shareAchievementBtn) {
+            shareAchievementBtn.addEventListener('click', () => {
+                this.shareAchievementPoster();
+            });
+        }
 
         // Fireworks button - opens fireworks wall page showing all museum achievements
         document.getElementById('fireworksButton').addEventListener('click', () => {
@@ -5587,6 +5873,446 @@ class MuseumCheckApp {
         }
     }
 
+    loadGuideButtonVisibility() {
+        try {
+            const saved = localStorage.getItem('showGuideButton');
+            // Default to false (hidden) if not saved
+            return saved === 'true';
+        } catch (error) {
+            console.error('Failed to load guide button visibility:', error);
+            return false; // Default to hidden
+        }
+    }
+
+    saveGuideButtonVisibility(showGuideButton) {
+        try {
+            localStorage.setItem('showGuideButton', showGuideButton ? 'true' : 'false');
+            this.guideButtonHidden = !showGuideButton;
+            this.applyGuideButtonVisibility();
+            return { success: true, message: '显示设置已保存' };
+        } catch (error) {
+            console.error('Failed to save guide button visibility:', error);
+            return { success: false, message: '保存失败，请重试' };
+        }
+    }
+
+    applyGuideButtonVisibility() {
+        const body = document.body;
+        if (this.guideButtonHidden) {
+            body.classList.add('hide-guide-buttons');
+        } else {
+            body.classList.remove('hide-guide-buttons');
+        }
+    }
+
+    // =====================================================
+    // Treasure Check-in Configuration Functions
+    // 镇馆之宝打卡配置功能
+    // =====================================================
+
+    /**
+     * Initialize the treasure check-in configuration feature
+     */
+    initializeTreasureCheckinConfig() {
+        const museumSelector = document.getElementById('treasureMuseumSelector');
+        const selectionContainer = document.getElementById('treasureSelectionContainer');
+        const selectionActions = document.getElementById('treasureSelectionActions');
+        const saveBtn = document.getElementById('saveTreasureSelection');
+        const clearBtn = document.getElementById('clearTreasureSelection');
+
+        if (!museumSelector) return;
+
+        // Populate museum selector with museums that have collections
+        this.populateTreasureMuseumSelector();
+
+        // Museum selection change handler
+        museumSelector.addEventListener('change', () => {
+            const museumId = museumSelector.value;
+            if (museumId) {
+                this.showTreasureSelectionForMuseum(museumId);
+                if (selectionContainer) selectionContainer.style.display = 'block';
+                if (selectionActions) selectionActions.style.display = 'block';
+            } else {
+                if (selectionContainer) selectionContainer.style.display = 'none';
+                if (selectionActions) selectionActions.style.display = 'none';
+            }
+        });
+
+        // Save button handler
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                this.saveTreasureCheckinConfig();
+            });
+        }
+
+        // Clear button handler
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                this.clearCurrentMuseumTreasureConfig();
+            });
+        }
+
+        // Load and display current configuration
+        this.displayCurrentTreasureConfig();
+    }
+
+    /**
+     * Populate the museum selector with museums that have collections
+     */
+    populateTreasureMuseumSelector() {
+        const selector = document.getElementById('treasureMuseumSelector');
+        if (!selector) return;
+
+        // Clear existing options except the placeholder
+        selector.innerHTML = '<option value="">-- 请选择博物馆 --</option>';
+
+        // Get museums from MUSEUMS array (global constant from museums-data.js)
+        const museums = MUSEUMS || [];
+        const museumsWithCollections = museums.filter(m => 
+            m.collections && Array.isArray(m.collections) && m.collections.length > 0
+        );
+
+        // Sort by name
+        museumsWithCollections.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+
+        // Add options
+        museumsWithCollections.forEach(museum => {
+            const option = document.createElement('option');
+            option.value = museum.id;
+            option.textContent = `${museum.name} (${museum.location})`;
+            selector.appendChild(option);
+        });
+    }
+
+    /**
+     * Show treasure selection checkboxes for a specific museum
+     */
+    showTreasureSelectionForMuseum(museumId) {
+        const checkboxList = document.getElementById('treasureCheckboxList');
+        if (!checkboxList) return;
+
+        const museum = this.getMuseumById(museumId);
+        if (!museum || !museum.collections || !Array.isArray(museum.collections)) {
+            checkboxList.innerHTML = '<div class="empty-config-hint">该博物馆暂无镇馆之宝信息</div>';
+            return;
+        }
+
+        // Load current selection for this museum
+        const currentConfig = this.loadTreasureCheckinConfig();
+        const selectedTreasures = currentConfig[museumId] || [];
+
+        // Build checkbox list
+        let html = '';
+        museum.collections.forEach((treasure, index) => {
+            const isSelected = selectedTreasures.includes(treasure.name);
+            const imageHtml = treasure.imageUrl 
+                ? `<img src="${treasure.imageUrl}" alt="${treasure.name}" class="treasure-item-image" loading="lazy">`
+                : '';
+            
+            html += `
+                <label class="treasure-checkbox-item ${isSelected ? 'selected' : ''}" data-index="${index}">
+                    <input type="checkbox" 
+                           value="${treasure.name}" 
+                           ${isSelected ? 'checked' : ''}
+                           data-museum="${museumId}">
+                    <div class="treasure-item-info">
+                        <div class="treasure-item-name">🏺 ${treasure.name}</div>
+                        <div class="treasure-item-description">${treasure.description || '镇馆之宝'}</div>
+                    </div>
+                    ${imageHtml}
+                </label>
+            `;
+        });
+
+        checkboxList.innerHTML = html;
+
+        // Add click handlers for visual feedback
+        checkboxList.querySelectorAll('.treasure-checkbox-item').forEach(item => {
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+                this.updateSelectedTreasureCount();
+            });
+        });
+
+        this.updateSelectedTreasureCount();
+    }
+
+    /**
+     * Update the selected treasure count display
+     */
+    updateSelectedTreasureCount() {
+        const countDisplay = document.getElementById('selectedTreasureCount');
+        const checkboxList = document.getElementById('treasureCheckboxList');
+        
+        if (countDisplay && checkboxList) {
+            const checkedCount = checkboxList.querySelectorAll('input[type="checkbox"]:checked').length;
+            countDisplay.textContent = checkedCount;
+        }
+    }
+
+    /**
+     * Load treasure check-in configuration from localStorage
+     * @returns {Object} Configuration object with museum ID as keys
+     */
+    loadTreasureCheckinConfig() {
+        try {
+            const saved = localStorage.getItem('treasureCheckinConfig');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            console.error('Failed to load treasure check-in config:', error);
+            return {};
+        }
+    }
+
+    /**
+     * Save treasure check-in configuration to localStorage
+     */
+    saveTreasureCheckinConfig() {
+        try {
+            const museumSelector = document.getElementById('treasureMuseumSelector');
+            const checkboxList = document.getElementById('treasureCheckboxList');
+            
+            if (!museumSelector || !checkboxList) return;
+
+            const museumId = museumSelector.value;
+            if (!museumId) {
+                this.showNotification('请先选择博物馆', 2000);
+                return;
+            }
+
+            // Get selected treasures
+            const selectedTreasures = [];
+            checkboxList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                selectedTreasures.push(checkbox.value);
+            });
+
+            // Load current config and update
+            const config = this.loadTreasureCheckinConfig();
+            
+            if (selectedTreasures.length > 0) {
+                config[museumId] = selectedTreasures;
+            } else {
+                // Remove if no selection
+                delete config[museumId];
+            }
+
+            // Save to localStorage
+            localStorage.setItem('treasureCheckinConfig', JSON.stringify(config));
+
+            // Update display
+            this.displayCurrentTreasureConfig();
+
+            // Track event - only track count to avoid excessive logging
+            this.trackEvent('treasure_checkin_config_saved', {
+                museum_id: museumId,
+                treasure_count: selectedTreasures.length
+            });
+
+            this.showNotification(`已保存 ${selectedTreasures.length} 个打卡目标`, 2000);
+        } catch (error) {
+            console.error('Failed to save treasure check-in config:', error);
+            this.showNotification('保存失败，请重试', 2000);
+        }
+    }
+
+    /**
+     * Clear treasure configuration for current selected museum
+     */
+    clearCurrentMuseumTreasureConfig() {
+        try {
+            const museumSelector = document.getElementById('treasureMuseumSelector');
+            if (!museumSelector) return;
+
+            const museumId = museumSelector.value;
+            if (!museumId) {
+                this.showNotification('请先选择博物馆', 2000);
+                return;
+            }
+
+            // Load current config and remove this museum
+            const config = this.loadTreasureCheckinConfig();
+            delete config[museumId];
+            localStorage.setItem('treasureCheckinConfig', JSON.stringify(config));
+
+            // Uncheck all checkboxes
+            const checkboxList = document.getElementById('treasureCheckboxList');
+            if (checkboxList) {
+                checkboxList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                    checkbox.closest('.treasure-checkbox-item')?.classList.remove('selected');
+                });
+            }
+
+            // Update displays
+            this.updateSelectedTreasureCount();
+            this.displayCurrentTreasureConfig();
+
+            this.showNotification('已清空该博物馆的打卡配置', 2000);
+        } catch (error) {
+            console.error('Failed to clear treasure config:', error);
+            this.showNotification('操作失败，请重试', 2000);
+        }
+    }
+
+    /**
+     * Display current treasure check-in configuration
+     */
+    displayCurrentTreasureConfig() {
+        const configContainer = document.getElementById('currentTreasureConfig');
+        const configList = document.getElementById('currentTreasureConfigList');
+        
+        if (!configContainer || !configList) return;
+
+        const config = this.loadTreasureCheckinConfig();
+        const museumIds = Object.keys(config);
+
+        if (museumIds.length === 0) {
+            configContainer.style.display = 'none';
+            return;
+        }
+
+        configContainer.style.display = 'block';
+        
+        let html = '';
+        museumIds.forEach(museumId => {
+            const museum = this.getMuseumById(museumId);
+            const treasures = config[museumId] || [];
+            
+            if (museum && treasures.length > 0) {
+                html += `
+                    <div class="current-config-museum" data-museum-id="${museumId}">
+                        <div class="current-config-museum-name">
+                            🏛️ ${museum.name}
+                        </div>
+                        <div class="current-config-treasures">
+                            ${treasures.map(t => `
+                                <span class="current-config-treasure-tag">
+                                    🏺 ${t}
+                                    <span class="remove-treasure" data-museum="${museumId}" data-treasure="${t}" title="移除">×</span>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        if (!html) {
+            configContainer.style.display = 'none';
+            return;
+        }
+
+        configList.innerHTML = html;
+
+        // Add click handlers for removing individual treasures
+        configList.querySelectorAll('.remove-treasure').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const museumId = btn.dataset.museum;
+                const treasureName = btn.dataset.treasure;
+                this.removeTreasureFromConfig(museumId, treasureName);
+            });
+        });
+    }
+
+    /**
+     * Remove a single treasure from config
+     */
+    removeTreasureFromConfig(museumId, treasureName) {
+        try {
+            const config = this.loadTreasureCheckinConfig();
+            if (config[museumId]) {
+                config[museumId] = config[museumId].filter(t => t !== treasureName);
+                if (config[museumId].length === 0) {
+                    delete config[museumId];
+                }
+                localStorage.setItem('treasureCheckinConfig', JSON.stringify(config));
+                
+                // Update displays
+                this.displayCurrentTreasureConfig();
+                
+                // If this museum is currently selected, update the checkboxes
+                const museumSelector = document.getElementById('treasureMuseumSelector');
+                if (museumSelector && museumSelector.value === museumId) {
+                    this.showTreasureSelectionForMuseum(museumId);
+                }
+
+                this.showNotification('已移除打卡目标', 1500);
+            }
+        } catch (error) {
+            console.error('Failed to remove treasure from config:', error);
+        }
+    }
+
+    /**
+     * Get configured treasures for a museum
+     * @param {string} museumId - The museum ID
+     * @returns {Array} Array of treasure names to check in
+     */
+    getConfiguredTreasures(museumId) {
+        const config = this.loadTreasureCheckinConfig();
+        return config[museumId] || [];
+    }
+
+    // Child Mode Functions
+    loadChildModeEnabled() {
+        try {
+            const saved = localStorage.getItem('childModeEnabled');
+            // Default to false (disabled) if not saved
+            return saved === 'true';
+        } catch (error) {
+            console.error('Failed to load child mode setting:', error);
+            return false; // Default to disabled
+        }
+    }
+
+    saveChildModeEnabled(enabled) {
+        try {
+            localStorage.setItem('childModeEnabled', enabled ? 'true' : 'false');
+            this.childModeEnabled = enabled;
+            this.applyChildMode();
+            
+            // Track event
+            this.trackEvent('child_mode_toggle', {
+                'enabled': enabled,
+                'timestamp': new Date().toISOString()
+            });
+            
+            return { success: true, message: enabled ? '已进入孩子模式' : '已退出孩子模式' };
+        } catch (error) {
+            console.error('Failed to save child mode setting:', error);
+            return { success: false, message: '保存失败，请重试' };
+        }
+    }
+
+    applyChildMode() {
+        const body = document.body;
+        if (this.childModeEnabled) {
+            body.classList.add('child-mode');
+            // If a modal is currently open, force show child checklist
+            const childChecklist = document.getElementById('childChecklist');
+            if (childChecklist) {
+                childChecklist.style.display = 'block';
+            }
+        } else {
+            body.classList.remove('child-mode');
+        }
+    }
+
+    exitChildMode() {
+        this.saveChildModeEnabled(false);
+        // Update the toggle in settings if the settings modal is open
+        const childModeToggle = document.getElementById('childModeToggle');
+        if (childModeToggle) {
+            childModeToggle.checked = false;
+        }
+    }
+
     loadShowOnlyMuseumsWithCollections() {
         try {
             const saved = localStorage.getItem('showOnlyMuseumsWithCollections');
@@ -6181,14 +6907,19 @@ class MuseumCheckApp {
                 `;
 
                 // Add click event for the card (excluding checkbox, buttons)
+                // Navigate to v2 (museum-checkin.html) when clicking the card
                 card.addEventListener('click', (e) => {
                     if (!e.target.classList.contains('visit-checkbox') && 
                         !e.target.classList.contains('assessment-button') &&
                         !e.target.classList.contains('museum-fireworks-button') &&
                         !e.target.classList.contains('museum-checkin-button') &&
                         !e.target.classList.contains('museum-manage-button') &&
+                        !e.target.classList.contains('museum-v3-button') &&
                         !e.target.classList.contains('favorite-button')) {
-                        this.openMuseumModal(museum);
+                        // Navigate to v2 check-in page (museum-checkin.html)
+                        const checkedRadio = document.querySelector('input[name="ageGroup"]:checked');
+                        const ageGroup = checkedRadio ? checkedRadio.value : (this.currentAge || APP_CONFIG.DEFAULT_AGE);
+                        window.location.href = `museum-checkin.html?museum=${museum.id}&age=${ageGroup}`;
                     }
                 });
 
@@ -6412,11 +7143,16 @@ class MuseumCheckApp {
             this.saveVisitedMuseums();
             this.renderMuseums();
             
-            // Auto-submit score to leaderboard
+            // Auto-submit score to leaderboard and show rank change notification
             if (this.leaderboardManager) {
-                this.leaderboardManager.autoSubmitScore().catch(err => {
-                    console.warn('Failed to auto-submit leaderboard score:', err);
-                });
+                this.leaderboardManager.autoSubmitScore()
+                    .then(result => {
+                        // Show rank change notification after manual check-in
+                        this.showManualCheckinRankNotification(museum, result);
+                    })
+                    .catch(err => {
+                        console.warn('Failed to auto-submit leaderboard score:', err);
+                    });
             }
             
             // Show leaderboard hint for first museum visit
@@ -6439,6 +7175,191 @@ class MuseumCheckApp {
         }
         
         return 'no_action';
+    }
+
+    /**
+     * Check if all child tasks are completed and auto-checkin the museum
+     * This provides the same celebration effects as manual check-in:
+     * - Large rocket animation
+     * - Fireworks wall display
+     * - Gamification achievements
+     * - Leaderboard update
+     * 
+     * @param {string} museumId - The museum ID to check
+     * @param {Object} museum - The museum object
+     * @param {string} ageGroup - The current age group (e.g., '7-12')
+     */
+    checkAutoCheckin(museumId, museum, ageGroup) {
+        // Skip if museum is already visited
+        if (this.visitedMuseums.includes(museumId)) {
+            return;
+        }
+        
+        // Get child tasks for this museum and age group
+        const childChecklistKey = `${museumId}-child-${ageGroup}`;
+        const completedChildTasks = this.museumChecklists[childChecklistKey] || [];
+        
+        // Get total child tasks count from museum data
+        const childTasks = museum.checklists && museum.checklists.child && museum.checklists.child[ageGroup];
+        if (!childTasks || childTasks.length === 0) {
+            return; // No child tasks defined for this museum/age
+        }
+        
+        // Check if all child tasks are completed
+        if (completedChildTasks.length < childTasks.length) {
+            return; // Not all tasks completed yet
+        }
+        
+        // All child tasks completed - auto check-in the museum!
+        console.log(`🎉 Auto check-in triggered for ${museum.name} - all ${childTasks.length} child tasks completed!`);
+        
+        // Add museum to visited list
+        this.visitedMuseums.push(museumId);
+        
+        // ===== ACHIEVEMENT GAMIFICATION HOOKS (same as manual check-in) =====
+        if (this.achievementGamification) {
+            // Update visit streak
+            this.achievementGamification.updateStreak(new Date());
+            
+            // Check for micro-achievements
+            const visitCount = this.visitedMuseums.length;
+            
+            // First visit achievement
+            if (visitCount === 1) {
+                this.achievementGamification.checkMicroAchievements('first_visit', { museumId });
+            }
+            
+            // Calculate and unlock main achievements
+            const achievements = this.calculateAchievements(visitCount);
+            const newlyUnlocked = achievements.filter(a => 
+                a.achieved && !this.achievementGamification.isAchievementUnlocked(a.id || `${a.name}_${a.level}`)
+            );
+            
+            // Show notifications for newly unlocked achievements
+            newlyUnlocked.forEach(achievement => {
+                const achievementWithId = {
+                    ...achievement,
+                    id: achievement.id || `${achievement.name}_${achievement.level}`.replace(/\s+/g, '_')
+                };
+                this.achievementGamification.unlockAchievement(achievementWithId);
+            });
+            
+            // Check for close-to-unlock achievement hints
+            const hints = this.achievementGamification.getAchievementHints(visitCount, {});
+            if (hints.length > 0 && Math.random() < 0.3) {
+                this.achievementGamification.showAchievementNotification(hints[0].achievement, 'hint');
+            }
+        }
+        // ===== END GAMIFICATION HOOKS =====
+        
+        // Trigger large rocket animation for museum visit (same as manual check-in)
+        this.triggerLargeRocket();
+        this.saveVisitedMuseums();
+        this.renderMuseums();
+        
+        // Auto-submit score to leaderboard (same as manual check-in) and show rank change
+        if (this.leaderboardManager) {
+            this.leaderboardManager.autoSubmitScore()
+                .then(result => {
+                    // Show rank change notification after leaderboard update
+                    this.showAutoCheckinNotification(museum, result);
+                })
+                .catch(err => {
+                    console.warn('Failed to auto-submit leaderboard score:', err);
+                    // Still show basic notification on error
+                    UIManager.showNotification(
+                        `🎉 恭喜！完成 ${museum.name} 所有任务，自动打卡成功！`,
+                        4000,
+                        'success'
+                    );
+                });
+        } else {
+            // No leaderboard manager, show basic notification
+            UIManager.showNotification(
+                `🎉 恭喜！完成 ${museum.name} 所有任务，自动打卡成功！`,
+                4000,
+                'success'
+            );
+        }
+        
+        // Track auto check-in event
+        this.trackEvent('museum_auto_checkin', {
+            'museum_id': museumId,
+            'museum_name': museum.name,
+            'museum_location': museum.location,
+            'age_group': ageGroup,
+            'completed_tasks': childTasks.length,
+            'total_visited': this.visitedMuseums.length
+        });
+        
+        // Update stats after auto check-in
+        this.updateStats();
+    }
+
+    /**
+     * Show notification for auto check-in with rank change information
+     * @param {Object} museum - The museum object
+     * @param {Object} rankResult - Result from autoSubmitScore with rank change info
+     */
+    showAutoCheckinNotification(museum, rankResult) {
+        let message = `🎉 恭喜！完成 ${museum.name} 所有任务，自动打卡成功！`;
+        
+        if (rankResult && rankResult.success) {
+            // Build rank change message
+            if (rankResult.isNewEntry && rankResult.newRank) {
+                // First time on leaderboard
+                message += ` 🏆 首次登榜第${rankResult.newRank}名！`;
+            } else if (rankResult.rankChange !== null) {
+                if (rankResult.rankChange > 0) {
+                    // Rank improved
+                    message += ` 🚀 排名上升${rankResult.rankChange}位，现在第${rankResult.newRank}名！`;
+                } else if (rankResult.rankChange === 0 && rankResult.newRank) {
+                    // Rank unchanged
+                    message += ` 🏆 保持第${rankResult.newRank}名！`;
+                } else if (rankResult.newRank) {
+                    // Rank dropped (unlikely but possible if others submitted higher scores)
+                    message += ` 🏆 当前第${rankResult.newRank}名`;
+                }
+            } else if (rankResult.newRank) {
+                // Have a rank but no change info
+                message += ` 🏆 排行榜第${rankResult.newRank}名`;
+            }
+        }
+        
+        UIManager.showNotification(message, 5000, 'success');
+    }
+
+    /**
+     * Show rank notification for manual check-in
+     * This is a subtle notification that doesn't interrupt the user too much
+     * @param {Object} museum - The museum object
+     * @param {Object} rankResult - Result from autoSubmitScore with rank change info
+     */
+    showManualCheckinRankNotification(museum, rankResult) {
+        if (!rankResult || !rankResult.success) {
+            return; // No notification if submission failed
+        }
+        
+        let message = '';
+        
+        if (rankResult.isNewEntry && rankResult.newRank) {
+            // First time on leaderboard
+            message = `🏆 首次登上排行榜！当前第${rankResult.newRank}名`;
+        } else if (rankResult.rankChange !== null && rankResult.rankChange > 0) {
+            // Rank improved
+            message = `🚀 排名上升${rankResult.rankChange}位！当前第${rankResult.newRank}名`;
+        } else if (rankResult.newRank && this.visitedMuseums.length > 1) {
+            // Have a rank but no improvement (only show occasionally to avoid spam)
+            // Only show for significant milestones (every 5 museums)
+            if (this.visitedMuseums.length % 5 === 0) {
+                message = `🏆 已打卡${this.visitedMuseums.length}个博物馆，排名第${rankResult.newRank}`;
+            }
+        }
+        
+        if (message) {
+            // Show a brief notification
+            UIManager.showNotification(message, 3000, 'success');
+        }
     }
 
     toggleFavorite(museumId) {
@@ -7030,6 +7951,11 @@ class MuseumCheckApp {
             return;
         }
 
+        // In child mode, always default to child tab (activeTab has default 'parent')
+        if (this.childModeEnabled) {
+            activeTab = 'child';
+        }
+
         const modal = document.getElementById('museumModal');
         const content = document.getElementById('modalContent');
         const title = document.getElementById('modalTitle');
@@ -7477,6 +8403,11 @@ class MuseumCheckApp {
                         
                         // Award XP for checklist completion (small amount)
                         this.achievementGamification.addXP(5);
+                        
+                        // ===== VIRTUAL PET INTEGRATION =====
+                        // Notify virtual pet of task completion
+                        VirtualPet.notifyTaskCompleted();
+                        // ===== END VIRTUAL PET INTEGRATION =====
                     }
                     // ===== END GAMIFICATION HOOK =====
                     
@@ -7537,6 +8468,14 @@ class MuseumCheckApp {
                         this.removePhotoUploadFromItem(item);
                     }
                 }
+                
+                // ===== AUTO CHECK-IN FEATURE =====
+                // When all child tasks are completed, automatically check-in the museum
+                // with the same celebration effects as manual check-in
+                if (e.target.checked && checklistType === 'child' && museum) {
+                    this.checkAutoCheckin(museumId, museum, fullAgeGroup);
+                }
+                // ===== END AUTO CHECK-IN FEATURE =====
             });
         });
 
@@ -7640,6 +8579,10 @@ class MuseumCheckApp {
     showSettingsModal() {
         this.renderSettingsInfo();
         this.modalManager.showModal('settingsModal');
+        
+        // Populate the treasure museum selector when settings modal is opened
+        this.populateTreasureMuseumSelector();
+        this.displayCurrentTreasureConfig();
         
         // Track settings view
         this.trackEvent('settings_viewed', {
@@ -8005,6 +8948,18 @@ class MuseumCheckApp {
         const showManageButtonToggle = document.getElementById('showManageButtonToggle');
         if (showManageButtonToggle) {
             showManageButtonToggle.checked = !this.manageButtonHidden;
+        }
+
+        // Update guide button visibility toggle
+        const showGuideButtonToggle = document.getElementById('showGuideButtonToggle');
+        if (showGuideButtonToggle) {
+            showGuideButtonToggle.checked = !this.guideButtonHidden;
+        }
+
+        // Update child mode toggle
+        const childModeToggle = document.getElementById('childModeToggle');
+        if (childModeToggle) {
+            childModeToggle.checked = this.childModeEnabled;
         }
 
         // Update show only museums with collections toggle
@@ -9005,6 +9960,11 @@ class MuseumCheckApp {
                     
                     // Award XP for photo upload
                     this.achievementGamification.addXP(10);
+                    
+                    // ===== VIRTUAL PET INTEGRATION =====
+                    // Notify virtual pet of photo upload (more points than regular task)
+                    VirtualPet.notifyPhotoUploaded();
+                    // ===== END VIRTUAL PET INTEGRATION =====
                 }
                 // ===== END GAMIFICATION HOOK =====
                 
@@ -9605,16 +10565,52 @@ class MuseumCheckApp {
 
     downloadPoster(museum) {
         const canvas = document.getElementById('posterCanvas');
+        const preview = document.getElementById('posterPreview');
+        if (!canvas) return;
+        
+        const dataURL = canvas.toDataURL('image/png');
+        const filename = `${museum.name}_博物馆打卡_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.png`;
+        
+        // In WeChat environment, show long-press hint instead of triggering download
+        if (UtilityFunctions.isWeChatEnvironment()) {
+            // Try to send to Mini Program first (for webview scenarios)
+            if (UtilityFunctions.isWeChatMiniProgram()) {
+                UtilityFunctions.sendImageToMiniProgram(dataURL, filename);
+            }
+            // Show hint for users to long-press save the image
+            if (preview) {
+                UtilityFunctions.showWeChatSaveHint(preview);
+            }
+            // Make sure the preview image is interactive for long-press
+            if (preview) {
+                const previewCanvas = preview.querySelector('canvas');
+                if (previewCanvas) {
+                    previewCanvas.style.pointerEvents = 'auto';
+                    previewCanvas.style.webkitTouchCallout = 'default';
+                }
+            }
+            // Track download attempt in WeChat
+            this.trackEvent('poster_downloaded', {
+                'museum_id': museum.id,
+                'museum_name': museum.name,
+                'age_group': this.currentAge,
+                'method': 'wechat_longpress'
+            });
+            return;
+        }
+        
+        // Standard browser download
         const link = document.createElement('a');
-        link.download = `${museum.name}_博物馆打卡_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.download = filename;
+        link.href = dataURL;
         link.click();
         
         // Track download
         this.trackEvent('poster_downloaded', {
             'museum_id': museum.id,
             'museum_name': museum.name,
-            'age_group': this.currentAge
+            'age_group': this.currentAge,
+            'method': 'browser_download'
         });
     }
 
@@ -9754,9 +10750,13 @@ class MuseumCheckApp {
         clonedCanvas.style.display = 'block';
         preview.appendChild(clonedCanvas);
         
-        // Show poster section and download button
+        // Show poster section and buttons
         document.getElementById('achievementPosterSection').style.display = 'block';
         document.getElementById('downloadAchievementPoster').style.display = 'inline-block';
+        const shareBtn = document.getElementById('shareAchievementPoster');
+        if (shareBtn) {
+            shareBtn.style.display = 'inline-block';
+        }
         
         // Auto-scroll to the generated poster for better user experience
         const posterSection = document.getElementById('achievementPosterSection');
@@ -9772,16 +10772,113 @@ class MuseumCheckApp {
     
     downloadAchievementPoster() {
         const canvas = document.getElementById('achievementPosterCanvas');
+        const preview = document.getElementById('achievementPosterPreview');
+        if (!canvas) return;
+        
+        const dataURL = canvas.toDataURL('image/png');
+        const filename = `博物馆成就榜_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.png`;
+        
+        // In WeChat environment, show long-press hint instead of triggering download
+        if (UtilityFunctions.isWeChatEnvironment()) {
+            // Try to send to Mini Program first (for webview scenarios)
+            if (UtilityFunctions.isWeChatMiniProgram()) {
+                UtilityFunctions.sendImageToMiniProgram(dataURL, filename);
+            }
+            // Show hint for users to long-press save the image
+            const posterSection = document.getElementById('achievementPosterSection');
+            if (posterSection) {
+                UtilityFunctions.showWeChatSaveHint(posterSection);
+            }
+            // Make sure the preview image is interactive for long-press
+            if (preview) {
+                const previewCanvas = preview.querySelector('canvas');
+                if (previewCanvas) {
+                    previewCanvas.style.pointerEvents = 'auto';
+                    previewCanvas.style.webkitTouchCallout = 'default';
+                }
+            }
+            // Track download attempt in WeChat
+            this.trackEvent('achievement_poster_downloaded', {
+                'visited_count': this.visitedMuseums.length,
+                'achievement_count': this.currentAchievements ? this.currentAchievements.filter(a => a.achieved).length : 0,
+                'method': 'wechat_longpress'
+            });
+            return;
+        }
+        
+        // Standard browser download
         const link = document.createElement('a');
-        link.download = `博物馆成就榜_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.download = filename;
+        link.href = dataURL;
         link.click();
         
         // Track download
         this.trackEvent('achievement_poster_downloaded', {
             'visited_count': this.visitedMuseums.length,
-            'achievement_count': this.currentAchievements ? this.currentAchievements.filter(a => a.achieved).length : 0
+            'achievement_count': this.currentAchievements ? this.currentAchievements.filter(a => a.achieved).length : 0,
+            'method': 'browser_download'
         });
+    }
+
+    async shareAchievementPoster() {
+        const canvas = document.getElementById('achievementPosterCanvas');
+        const preview = document.getElementById('achievementPosterPreview');
+        if (!canvas) return;
+        
+        const dataURL = canvas.toDataURL('image/png');
+        const filename = `博物馆成就榜_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.png`;
+        
+        // In WeChat environment, show long-press hint
+        if (UtilityFunctions.isWeChatEnvironment()) {
+            // Try to send to Mini Program first (for webview scenarios)
+            if (UtilityFunctions.isWeChatMiniProgram()) {
+                UtilityFunctions.sendImageToMiniProgram(dataURL, filename);
+            }
+            // Show hint for users to long-press save the image
+            const posterSection = document.getElementById('achievementPosterSection');
+            if (posterSection) {
+                UtilityFunctions.showWeChatSaveHint(posterSection);
+            }
+            // Make sure the preview image is interactive for long-press
+            if (preview) {
+                const previewCanvas = preview.querySelector('canvas');
+                if (previewCanvas) {
+                    previewCanvas.style.pointerEvents = 'auto';
+                    previewCanvas.style.webkitTouchCallout = 'default';
+                }
+            }
+            // Track share attempt in WeChat
+            this.trackEvent('achievement_poster_shared', {
+                'visited_count': this.visitedMuseums.length,
+                'achievement_count': this.currentAchievements ? this.currentAchievements.filter(a => a.achieved).length : 0,
+                'method': 'wechat_longpress'
+            });
+            return;
+        }
+        
+        // Standard browser share/download
+        try {
+            const blob = await (await fetch(dataURL)).blob();
+            const files = [new File([blob], filename, { type: 'image/png' })];
+            if (navigator.canShare && navigator.canShare({ files })) {
+                await navigator.share({ 
+                    files, 
+                    title: '博物馆成就榜', 
+                    text: '快来看看我的博物馆参观成就！' 
+                });
+                this.trackEvent('achievement_poster_shared', {
+                    'visited_count': this.visitedMuseums.length,
+                    'achievement_count': this.currentAchievements ? this.currentAchievements.filter(a => a.achieved).length : 0,
+                    'method': 'native_share'
+                });
+            } else {
+                // Fallback to download
+                this.downloadAchievementPoster();
+            }
+        } catch (e) {
+            // Fallback to download on error
+            this.downloadAchievementPoster();
+        }
     }
 
     // Enhanced Rocket Animation Methods

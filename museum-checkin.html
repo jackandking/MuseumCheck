@@ -1341,9 +1341,842 @@
                 font-size: 16px;
             }
         }
+
+        /* ===== Space Invaders (小蜜蜂) Game Styles ===== */
+        .space-invaders-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            z-index: 3000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .space-invaders-overlay.show {
+            display: flex;
+        }
+
+        .space-invaders-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .space-invaders-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #FFD700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .space-invaders-stats {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .space-invaders-stats span {
+            color: #FFD700;
+        }
+
+        .space-invaders-container {
+            background: #000;
+            border-radius: 16px;
+            padding: 10px;
+            box-shadow: 0 8px 32px rgba(255, 215, 0, 0.2);
+            border: 2px solid #FFD700;
+        }
+
+        .space-invaders-canvas {
+            display: block;
+            border-radius: 8px;
+            background: #000;
+        }
+
+        .space-invaders-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .space-invaders-button {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .space-invaders-button-continue {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #000;
+        }
+
+        .space-invaders-button-continue:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
+        }
+
+        .space-invaders-button-reset {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .space-invaders-button-reset:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .space-invaders-hint {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .space-invaders-complete-message {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #000;
+            padding: 20px 40px;
+            border-radius: 16px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(255, 215, 0, 0.4);
+            z-index: 3001;
+            animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .space-invaders-complete-message.show {
+            display: block;
+        }
+
+        /* Mobile touch controls for Space Invaders */
+        .si-touch-controls {
+            display: none;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 320px;
+            margin-top: 15px;
+        }
+
+        .si-touch-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 215, 0, 0.3);
+            border: 2px solid #FFD700;
+            border-radius: 50%;
+            color: #FFD700;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .si-touch-btn:active {
+            background: rgba(255, 215, 0, 0.6);
+        }
+
+        .si-touch-btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .si-fire-btn {
+            width: 70px;
+            height: 70px;
+            font-size: 28px;
+        }
+
+        @media (max-width: 768px) {
+            .si-touch-controls {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .space-invaders-canvas {
+                max-width: 280px;
+                max-height: 350px;
+            }
+            .space-invaders-title {
+                font-size: 24px;
+            }
+            .space-invaders-stats {
+                font-size: 16px;
+            }
+            .si-touch-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            .si-fire-btn {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        /* ===== Tank Battle (坦克大战) Game Styles ===== */
+        .tank-battle-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #2d5016 0%, #4a7c23 50%, #2d5016 100%);
+            z-index: 3000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .tank-battle-overlay.show {
+            display: flex;
+        }
+
+        .tank-battle-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .tank-battle-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #FFD700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .tank-battle-stats {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .tank-battle-stats span {
+            color: #FFD700;
+        }
+
+        .tank-battle-container {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 2px solid #4a7c23;
+        }
+
+        .tank-battle-canvas {
+            display: block;
+            border-radius: 8px;
+            background: #1a1a1a;
+        }
+
+        .tank-battle-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .tank-battle-button {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tank-battle-button-continue {
+            background: linear-gradient(135deg, #4a7c23 0%, #6b9b2e 100%);
+            color: white;
+        }
+
+        .tank-battle-button-continue:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 16px rgba(74, 124, 35, 0.4);
+        }
+
+        .tank-battle-button-reset {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .tank-battle-button-reset:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .tank-battle-hint {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .tank-battle-complete-message {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #4a7c23 0%, #6b9b2e 100%);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 16px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(74, 124, 35, 0.4);
+            z-index: 3001;
+            animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .tank-battle-complete-message.show {
+            display: block;
+        }
+
+        /* Mobile touch controls for Tank Battle */
+        .tb-touch-controls {
+            display: none;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 320px;
+            margin-top: 15px;
+            align-items: center;
+        }
+
+        .tb-touch-btn {
+            width: 55px;
+            height: 55px;
+            background: rgba(74, 124, 35, 0.5);
+            border: 2px solid #4a7c23;
+            border-radius: 50%;
+            color: #FFD700;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .tb-touch-btn:active {
+            background: rgba(74, 124, 35, 0.8);
+        }
+
+        .tb-dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 55px);
+            grid-template-rows: repeat(3, 55px);
+            gap: 2px;
+        }
+
+        .tb-dpad-btn {
+            width: 55px;
+            height: 55px;
+            background: rgba(74, 124, 35, 0.5);
+            border: 2px solid #4a7c23;
+            border-radius: 8px;
+            color: #FFD700;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tb-dpad-btn:active {
+            background: rgba(74, 124, 35, 0.8);
+        }
+
+        .tb-dpad-btn.empty {
+            visibility: hidden;
+        }
+
+        .tb-fire-btn {
+            width: 70px;
+            height: 70px;
+            font-size: 28px;
+            border-radius: 50%;
+        }
+
+        @media (max-width: 768px) {
+            .tb-touch-controls {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .tank-battle-canvas {
+                max-width: 280px;
+                max-height: 280px;
+            }
+            .tank-battle-title {
+                font-size: 24px;
+            }
+            .tank-battle-stats {
+                font-size: 16px;
+            }
+            .tb-touch-btn, .tb-dpad-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+            .tb-dpad {
+                grid-template-columns: repeat(3, 45px);
+                grid-template-rows: repeat(3, 45px);
+            }
+            .tb-fire-btn {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        /* ===== Minesweeper (扫雷) Game Styles ===== */
+        .minesweeper-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 50%, #2c3e50 100%);
+            z-index: 3000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .minesweeper-overlay.show {
+            display: flex;
+        }
+
+        .minesweeper-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .minesweeper-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e74c3c;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .minesweeper-stats {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .minesweeper-stats span {
+            color: #e74c3c;
+        }
+
+        .minesweeper-container {
+            background: #c0c0c0;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 3px solid #808080;
+        }
+
+        .minesweeper-grid {
+            display: grid;
+            gap: 2px;
+            background: #808080;
+            padding: 2px;
+        }
+
+        .minesweeper-grid.size-8 {
+            grid-template-columns: repeat(8, 1fr);
+        }
+
+        .minesweeper-grid.size-9 {
+            grid-template-columns: repeat(9, 1fr);
+        }
+
+        .minesweeper-cell {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #fff 0%, #c0c0c0 50%, #808080 100%);
+            border: 2px solid;
+            border-color: #fff #808080 #808080 #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: all 0.1s ease;
+        }
+
+        .minesweeper-cell:active:not(.revealed):not(.flagged) {
+            border-color: #808080;
+            background: #c0c0c0;
+        }
+
+        .minesweeper-cell.revealed {
+            background: #c0c0c0;
+            border: 1px solid #808080;
+            cursor: default;
+        }
+
+        .minesweeper-cell.revealed.mine {
+            background: #ff4444;
+        }
+
+        .minesweeper-cell.flagged {
+            background: linear-gradient(135deg, #fff 0%, #c0c0c0 50%, #808080 100%);
+        }
+
+        .minesweeper-cell.num-1 { color: #0000ff; }
+        .minesweeper-cell.num-2 { color: #008000; }
+        .minesweeper-cell.num-3 { color: #ff0000; }
+        .minesweeper-cell.num-4 { color: #000080; }
+        .minesweeper-cell.num-5 { color: #800000; }
+        .minesweeper-cell.num-6 { color: #008080; }
+        .minesweeper-cell.num-7 { color: #000000; }
+        .minesweeper-cell.num-8 { color: #808080; }
+
+        .minesweeper-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .minesweeper-button {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .minesweeper-button-continue {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .minesweeper-button-continue:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 16px rgba(52, 152, 219, 0.4);
+        }
+
+        .minesweeper-button-reset {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .minesweeper-button-reset:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .minesweeper-hint {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .minesweeper-complete-message {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 16px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(39, 174, 96, 0.4);
+            z-index: 3001;
+            animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .minesweeper-complete-message.show {
+            display: block;
+        }
+
+        .minesweeper-complete-message.lose {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            box-shadow: 0 8px 32px rgba(231, 76, 60, 0.4);
+        }
+
+        .minesweeper-flag-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .flag-toggle-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .flag-toggle-btn.active {
+            background: #e74c3c;
+            border-color: #e74c3c;
+        }
+
+        .flag-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .minesweeper-cell {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .minesweeper-cell {
+                width: 24px;
+                height: 24px;
+                font-size: 12px;
+            }
+            .minesweeper-title {
+                font-size: 24px;
+            }
+            .minesweeper-stats {
+                font-size: 16px;
+            }
+        }
+
+        /* Treasure Check-in Configuration Styles (Parent Mode) */
+        .treasure-checkbox-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .treasure-checkbox-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .treasure-checkbox-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.1);
+        }
+
+        .treasure-checkbox-item.selected {
+            border-color: #22c55e;
+            background: linear-gradient(135deg, #f0fff4 0%, #e8f5e9 100%);
+        }
+
+        .treasure-checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            cursor: pointer;
+            accent-color: #22c55e;
+        }
+
+        .treasure-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .treasure-item-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .treasure-item-description {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .treasure-item-image {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .empty-config-hint {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        .treasure-config-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .treasure-config-buttons button {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .treasure-config-buttons .save-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .treasure-config-buttons .save-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .treasure-config-buttons .clear-btn {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .treasure-config-buttons .clear-btn:hover {
+            background: #e5e5e5;
+        }
+
+        /* Treasure selection error state */
+        .treasure-selection-error {
+            color: #dc2626;
+            font-size: 13px;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .treasure-selection-error.show {
+            display: block;
+        }
+
+        .treasure-selection-count {
+            font-size: 13px;
+            color: #667;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .treasure-selection-count.error {
+            color: #dc2626;
+        }
+
+        .treasure-selection-count .count-number {
+            font-weight: 600;
+            color: #22c55e;
+        }
+
+        .treasure-selection-count.error .count-number {
+            color: #dc2626;
+        }
+
+        /* Mobile optimization for treasure configuration */
+        @media (max-width: 768px) {
+            .treasure-checkbox-list {
+                max-height: 250px;
+            }
+            
+            .treasure-checkbox-item {
+                padding: 8px;
+            }
+            
+            .treasure-item-name {
+                font-size: 13px;
+            }
+            
+            .treasure-item-description {
+                font-size: 11px;
+                -webkit-line-clamp: 1;
+            }
+            
+            .treasure-item-image {
+                width: 40px;
+                height: 40px;
+            }
+        }
     </style>
+    <!-- Virtual Pet and Achievement Gamification Styles -->
+    <link rel="stylesheet" href="virtual-pet.css">
+    <link rel="stylesheet" href="achievement-gamification.css">
 </head>
-<body>
+<!-- child-mode class is intentionally hardcoded because this page is specifically for kids' tasks -->
+<body class="child-mode">
     <div class="edit-mode-indicator" id="editModeIndicator">
         ✏️ 编辑模式
     </div>
@@ -1457,18 +2290,69 @@
             </div>
 
             <div class="settings-section">
+                <h3>🏺 任务打卡配置（家长模式）</h3>
+                <div class="settings-item">
+                    <div class="settings-hint" style="margin-bottom: 12px;">
+                        选择本次参观要打卡的镇馆之宝（至少选择3个），选择后立即生效。
+                    </div>
+                    <div id="v2TreasureSelectionContainer">
+                        <label class="settings-label">选择要打卡的镇馆之宝：</label>
+                        <div id="v2TreasureCheckboxList" class="treasure-checkbox-list">
+                            <!-- Treasure checkboxes will be populated dynamically -->
+                        </div>
+                        <div id="v2TreasureSelectionCount" class="treasure-selection-count">
+                            已选择 <span id="v2SelectedTreasureCount" class="count-number">0</span> 个镇馆之宝
+                        </div>
+                        <div id="v2TreasureSelectionError" class="treasure-selection-error">
+                            ⚠️ 至少需要选择3个镇馆之宝
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
                 <h3>🎮 游戏奖励</h3>
                 <div class="settings-item">
                     <div class="settings-toggle">
                         <div>
                             <label class="settings-label" style="margin-bottom: 0;">小游戏奖励</label>
-                            <div class="settings-hint" style="margin-top: 4px;">完成任务并上传照片后，随机解锁拼图、迷宫或射击游戏作为奖励</div>
+                            <div class="settings-hint" style="margin-top: 4px;">完成任务并上传照片后，随机解锁选中的小游戏作为奖励</div>
                         </div>
                         <label class="toggle-switch">
                             <input type="checkbox" id="puzzleGameToggle">
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
+                </div>
+                <div class="settings-item" id="gameSelectionSection">
+                    <label class="settings-label">选择可奖励的小游戏：</label>
+                    <div class="game-selection-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
+                            <input type="checkbox" id="gameTogglePuzzle" class="game-toggle" data-game="puzzle" checked>
+                            <span>🧩 拼图</span>
+                        </label>
+                        <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
+                            <input type="checkbox" id="gameToggleMaze" class="game-toggle" data-game="maze" checked>
+                            <span>🏃 迷宫</span>
+                        </label>
+                        <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
+                            <input type="checkbox" id="gameToggleShooting" class="game-toggle" data-game="shooting" checked>
+                            <span>🎯 射击</span>
+                        </label>
+                        <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
+                            <input type="checkbox" id="gameToggleSpaceInvaders" class="game-toggle" data-game="space-invaders" checked>
+                            <span>🐝 小蜜蜂</span>
+                        </label>
+                        <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
+                            <input type="checkbox" id="gameToggleTankBattle" class="game-toggle" data-game="tank-battle" checked>
+                            <span>🎖️ 坦克大战</span>
+                        </label>
+                        <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
+                            <input type="checkbox" id="gameToggleMinesweeper" class="game-toggle" data-game="minesweeper" checked>
+                            <span>💣 扫雷</span>
+                        </label>
+                    </div>
+                    <div class="settings-hint" style="margin-top: 8px;">选择希望奖励的游戏类型，至少选择一个</div>
                 </div>
             </div>
 
@@ -1561,6 +2445,93 @@
         </div>
     </div>
 
+    <!-- Space Invaders (小蜜蜂) Game Overlay -->
+    <div class="space-invaders-overlay" id="spaceInvadersOverlay">
+        <div class="space-invaders-header">
+            <div class="space-invaders-title">🐝 经典小蜜蜂 🐝</div>
+            <div class="space-invaders-stats">
+                得分：<span id="siScore">0</span> | 生命：<span id="siLives">3</span>
+            </div>
+        </div>
+        <div class="space-invaders-container">
+            <canvas class="space-invaders-canvas" id="spaceInvadersCanvas" width="320" height="400"></canvas>
+        </div>
+        <div class="space-invaders-hint">移动飞船消灭小蜜蜂！</div>
+        <div class="si-touch-controls" id="siTouchControls">
+            <div class="si-touch-btn-group">
+                <button class="si-touch-btn" id="siLeftBtn">◀</button>
+                <button class="si-touch-btn" id="siRightBtn">▶</button>
+            </div>
+            <button class="si-touch-btn si-fire-btn" id="siFireBtn">🔥</button>
+        </div>
+        <div class="space-invaders-buttons">
+            <button class="space-invaders-button space-invaders-button-reset" id="resetSpaceInvaders">🔄 重新开始</button>
+            <button class="space-invaders-button space-invaders-button-continue" id="exitSpaceInvaders">继续游览 ➡️</button>
+        </div>
+        <div class="space-invaders-complete-message" id="spaceInvadersCompleteMessage">
+            🎉 游戏结束！得分：<span id="siFinalScore">0</span>
+        </div>
+    </div>
+
+    <!-- Tank Battle (坦克大战) Game Overlay -->
+    <div class="tank-battle-overlay" id="tankBattleOverlay">
+        <div class="tank-battle-header">
+            <div class="tank-battle-title">🎖️ 坦克大战 🎖️</div>
+            <div class="tank-battle-stats">
+                得分：<span id="tbScore">0</span> | 生命：<span id="tbLives">3</span> | 敌人：<span id="tbEnemiesLeft">5</span>
+            </div>
+        </div>
+        <div class="tank-battle-container">
+            <canvas class="tank-battle-canvas" id="tankBattleCanvas" width="320" height="320"></canvas>
+        </div>
+        <div class="tank-battle-hint">使用方向键移动坦克，空格键发射炮弹！</div>
+        <div class="tb-touch-controls" id="tbTouchControls">
+            <div class="tb-dpad">
+                <button class="tb-dpad-btn empty"></button>
+                <button class="tb-dpad-btn" id="tbUpBtn">⬆️</button>
+                <button class="tb-dpad-btn empty"></button>
+                <button class="tb-dpad-btn" id="tbLeftBtn">⬅️</button>
+                <button class="tb-dpad-btn empty"></button>
+                <button class="tb-dpad-btn" id="tbRightBtn">➡️</button>
+                <button class="tb-dpad-btn empty"></button>
+                <button class="tb-dpad-btn" id="tbDownBtn">⬇️</button>
+                <button class="tb-dpad-btn empty"></button>
+            </div>
+            <button class="tb-touch-btn tb-fire-btn" id="tbFireBtn">💥</button>
+        </div>
+        <div class="tank-battle-buttons">
+            <button class="tank-battle-button tank-battle-button-reset" id="resetTankBattle">🔄 重新开始</button>
+            <button class="tank-battle-button tank-battle-button-continue" id="exitTankBattle">继续游览 ➡️</button>
+        </div>
+        <div class="tank-battle-complete-message" id="tankBattleCompleteMessage">
+            🎉 胜利！得分：<span id="tbFinalScore">0</span>
+        </div>
+    </div>
+
+    <!-- Minesweeper (扫雷) Game Overlay -->
+    <div class="minesweeper-overlay" id="minesweeperOverlay">
+        <div class="minesweeper-header">
+            <div class="minesweeper-title">💣 扫雷挑战 💣</div>
+            <div class="minesweeper-stats">
+                剩余地雷：<span id="msRemainingMines">10</span> | 用时：<span id="msTimer">0</span>秒
+            </div>
+        </div>
+        <div class="minesweeper-container">
+            <div class="minesweeper-grid size-8" id="minesweeperGrid"></div>
+        </div>
+        <div class="minesweeper-hint">点击揭开方块，长按或开启标记模式插旗标记地雷！</div>
+        <div class="minesweeper-flag-toggle">
+            <button class="flag-toggle-btn" id="flagModeToggle">🚩 标记模式</button>
+        </div>
+        <div class="minesweeper-buttons">
+            <button class="minesweeper-button minesweeper-button-reset" id="resetMinesweeper">🔄 重新开始</button>
+            <button class="minesweeper-button minesweeper-button-continue" id="exitMinesweeper">继续游览 ➡️</button>
+        </div>
+        <div class="minesweeper-complete-message" id="minesweeperCompleteMessage">
+            🎉 胜利！用时：<span id="msFinalTime">0</span>秒
+        </div>
+    </div>
+
     <!-- Completion Celebration -->
     <div class="completion-celebration" id="completionCelebration">
         <button class="close-button celebration-close-button" id="closeCelebration">&times;</button>
@@ -1583,6 +2554,10 @@
     <script src="treasure-workflow-generator.js"></script>
     <!-- Museum data loaded from museums-data.js and Tier 1 JSON files via museum-data-loader.js -->
     <script src="firework.js"></script>
+    <!-- Achievement Gamification System for XP/Points -->
+    <script src="achievement-gamification.js"></script>
+    <!-- Virtual Pet System for child mode -->
+    <script src="virtual-pet.js"></script>
     
     <script>
         // Configuration
@@ -1606,11 +2581,65 @@
         let completedTasks = new Set();
         let currentTaskIndex = null;
 
+        // =====================================================
+        // 镇馆之宝打卡配置常量和核心函数
+        // Treasure check-in configuration constants and core functions
+        // =====================================================
+        
+        // Minimum treasures required for check-in
+        const MIN_TREASURES_REQUIRED = 3;
+
+        /**
+         * Load treasure check-in configuration from localStorage
+         * @returns {Object} Configuration object with museum ID as keys
+         */
+        function loadTreasureCheckinConfig() {
+            try {
+                const saved = localStorage.getItem('treasureCheckinConfig');
+                return saved ? JSON.parse(saved) : {};
+            } catch (error) {
+                console.error('Failed to load treasure check-in config:', error);
+                return {};
+            }
+        }
+
+        /**
+         * Get the selected treasures for the current museum
+         * Returns default first 3 treasures if no configuration exists
+         * @returns {Array} Array of treasure names
+         */
+        function getSelectedTreasuresForMuseum() {
+            if (!currentMuseum || !currentMuseum.collections || !Array.isArray(currentMuseum.collections)) {
+                return [];
+            }
+            
+            const config = loadTreasureCheckinConfig();
+            const selectedTreasures = config[museumId];
+            
+            // If no configuration exists, return first 3 treasures as default
+            if (!selectedTreasures || !Array.isArray(selectedTreasures) || selectedTreasures.length === 0) {
+                return currentMuseum.collections.slice(0, Math.min(3, currentMuseum.collections.length)).map(t => t.name);
+            }
+            
+            return selectedTreasures;
+        }
+
         // Initialize the application
         async function init() {
             if (editMode) {
                 document.getElementById('editModeIndicator').classList.add('show');
             }
+
+            // Check if child mode is enabled and hide settings button
+            applyChildMode();
+            
+            // Initialize achievement gamification system
+            if (typeof AchievementGamification !== 'undefined') {
+                window.achievementGamification = new AchievementGamification();
+            }
+            
+            // Initialize virtual pet system (auto-initializes when child mode toggle exists)
+            // Note: Virtual pet is automatically initialized in virtual-pet.js on DOMContentLoaded
 
             updatePageTitle();
             await loadMuseumData(); // Wait for async museum data loading
@@ -1621,6 +2650,21 @@
             renderTasks();
             updateProgress();
             checkCompletion(); // Check if all tasks complete
+        }
+
+        // Apply child mode settings - hide settings button when child mode is enabled
+        function applyChildMode() {
+            try {
+                const childModeEnabled = localStorage.getItem('childModeEnabled') === 'true';
+                if (childModeEnabled) {
+                    const settingsButton = document.getElementById('settingsButton');
+                    if (settingsButton) {
+                        settingsButton.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.warn('Error checking child mode:', error);
+            }
         }
 
         // Load museum data with dynamic data priority support
@@ -1685,9 +2729,17 @@
             
             // Treasure hunt workflow pattern for ALL museums with collections (门口打卡 + 找镇馆之宝 + 亲子合影)
             // Automatically applied to any museum that has collections data
-            // This provides a consistent, easy-to-execute photo-based experience
+            // Uses selected treasures from configuration, defaults to first 3
             if (Array.isArray(currentMuseum.collections) && currentMuseum.collections.length > 0) {
-                const colls = currentMuseum.collections;
+                // Get selected treasures from configuration (defaults to first 3)
+                const selectedTreasureNames = getSelectedTreasuresForMuseum();
+                const selectedCollections = currentMuseum.collections.filter(c => selectedTreasureNames.includes(c.name));
+                
+                // If no valid selections, fall back to first 3
+                const colls = selectedCollections.length >= MIN_TREASURES_REQUIRED 
+                    ? selectedCollections 
+                    : currentMuseum.collections.slice(0, Math.min(3, currentMuseum.collections.length));
+                
                 const start = '📸 门口打卡：家长给孩子在博物馆门口拍一张照片';
                 const collTasks = colls.map(c => `🏺 镇馆之宝：找到「${c && c.name ? c.name : '镇馆之宝'}」并合影`);
                 const end = '📸 亲子合影：和家长比心/拥抱/击掌等动作合影';
@@ -2116,6 +3168,18 @@
             completedTasks.add(currentTaskIndex);
             saveCompletedTasks();
             
+            // Award XP for task completion and show notification
+            const taskXP = hasPhoto ? 10 : 5; // More XP for tasks with photos
+            if (window.achievementGamification) {
+                window.achievementGamification.addXP(taskXP);
+                window.achievementGamification.showXPGainNotification(taskXP, hasPhoto ? '任务完成 (含照片)' : '任务完成');
+            }
+            
+            // Notify virtual pet about task completion
+            if (window.virtualPet && window.virtualPet.isPetAlive()) {
+                window.virtualPet.onTaskCompleted();
+            }
+            
             // Close modal
             document.getElementById('taskModal').classList.remove('show');
             
@@ -2133,7 +3197,7 @@
             checkCompletion();
 
             // Show game as reward if photo was uploaded and setting is enabled
-            // Randomly select between puzzle game and maze game
+            // Randomly select between puzzle game, maze game, shooting game, space invaders, and tank battle
             if (showGame) {
                 // Delay slightly to let fireworks animation start
                 // Store current task index for closure
@@ -2144,8 +3208,15 @@
                         initPuzzleGame(taskPhotos[taskIndexForGame], taskIndexForGame);
                     } else if (gameType === 'maze') {
                         initMazeGame(taskIndexForGame);
-                    } else {
+                    } else if (gameType === 'shooting') {
                         initShootingGame(taskIndexForGame);
+                    } else if (gameType === 'space-invaders') {
+                        initSpaceInvadersGame(taskIndexForGame);
+                    } else if (gameType === 'tank-battle') {
+                        initTankBattleGame(taskIndexForGame);
+                    } else {
+                        // Default to minesweeper
+                        initMinesweeperGame(taskIndexForGame);
                     }
                 }, 800);
             }
@@ -2904,12 +3975,29 @@
         // Check if all tasks are complete and update poster card
         function checkCompletion() {
             if (childTasks && childTasks.length > 0 && completedTasks && completedTasks.size === childTasks.length) {
+                // Auto-mark museum as visited when all tasks are completed
+                markMuseumAsVisited();
+                
                 // Re-render tasks to update poster card to completed state
                 renderTasks();
                 // Generate poster in background (for quick loading when opened)
                 setTimeout(() => {
                     generatePoster();
                 }, 500);
+            }
+        }
+        
+        // Mark the museum as visited in localStorage (syncs with main app)
+        function markMuseumAsVisited() {
+            try {
+                const visitedMuseums = JSON.parse(localStorage.getItem('visitedMuseums') || '[]');
+                if (!visitedMuseums.includes(museumId)) {
+                    visitedMuseums.push(museumId);
+                    localStorage.setItem('visitedMuseums', JSON.stringify(visitedMuseums));
+                    console.log('Museum auto-marked as visited:', museumId);
+                }
+            } catch (error) {
+                console.error('Error marking museum as visited:', error);
             }
         }
 
@@ -3044,8 +4132,15 @@
             if (puzzleToggle) {
                 puzzleToggle.addEventListener('change', (e) => {
                     savePuzzleGameSetting(e.target.checked);
+                    updateGameSelectionVisibility(e.target.checked);
                 });
             }
+
+            // Individual game toggles
+            const gameToggles = document.querySelectorAll('.game-toggle');
+            gameToggles.forEach(toggle => {
+                toggle.addEventListener('change', handleGameToggleChange);
+            });
 
             // Puzzle game controls
             const exitPuzzleBtn = document.getElementById('exitPuzzle');
@@ -3253,6 +4348,236 @@
             }
         }
 
+        // =====================================================
+        // Treasure Check-in Configuration Functions (Parent Mode)
+        // 镇馆之宝打卡配置功能 - Settings Modal UI Functions
+        // Note: Core functions (MIN_TREASURES_REQUIRED, getSelectedTreasuresForMuseum, 
+        // loadTreasureCheckinConfig) are defined earlier in the file for use in loadMuseumData
+        // =====================================================
+
+        /**
+         * Show treasure selection checkboxes for the current museum
+         * Default: first 3 treasures are selected
+         */
+        function showTreasureSelectionForCurrentMuseum() {
+            const checkboxList = document.getElementById('v2TreasureCheckboxList');
+            if (!checkboxList || !currentMuseum) return;
+
+            if (!currentMuseum.collections || !Array.isArray(currentMuseum.collections) || currentMuseum.collections.length === 0) {
+                checkboxList.innerHTML = '<div class="empty-config-hint">该博物馆暂无镇馆之宝信息</div>';
+                updateSelectedTreasureCountV2();
+                return;
+            }
+
+            // Load current selection for this museum, or use default first 3
+            const currentConfig = loadTreasureCheckinConfig();
+            let selectedTreasures = currentConfig[museumId];
+            
+            // Default: select first 3 treasures if no config exists
+            if (!selectedTreasures || !Array.isArray(selectedTreasures) || selectedTreasures.length === 0) {
+                selectedTreasures = currentMuseum.collections.slice(0, Math.min(3, currentMuseum.collections.length)).map(t => t.name);
+                // Save the default selection
+                saveTreasureSelectionSilently(selectedTreasures);
+            }
+
+            // Build checkbox list
+            let html = '';
+            currentMuseum.collections.forEach((treasure, index) => {
+                const isSelected = selectedTreasures.includes(treasure.name);
+                const imageHtml = treasure.imageUrl 
+                    ? `<img src="${treasure.imageUrl}" alt="${treasure.name}" class="treasure-item-image" loading="lazy">`
+                    : '';
+                
+                html += `
+                    <label class="treasure-checkbox-item ${isSelected ? 'selected' : ''}" data-index="${index}">
+                        <input type="checkbox" 
+                               value="${treasure.name}" 
+                               ${isSelected ? 'checked' : ''}
+                               data-museum="${museumId}">
+                        <div class="treasure-item-info">
+                            <div class="treasure-item-name">🏺 ${treasure.name}</div>
+                            <div class="treasure-item-description">${treasure.description || '镇馆之宝'}</div>
+                        </div>
+                        ${imageHtml}
+                    </label>
+                `;
+            });
+
+            checkboxList.innerHTML = html;
+
+            // Add click handlers for immediate save with validation
+            checkboxList.querySelectorAll('.treasure-checkbox-item').forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        item.classList.add('selected');
+                    } else {
+                        item.classList.remove('selected');
+                    }
+                    // Validate and save immediately
+                    handleTreasureSelectionChange();
+                });
+            });
+
+            updateSelectedTreasureCountV2();
+        }
+
+        /**
+         * Handle treasure selection change - validate and save immediately
+         */
+        function handleTreasureSelectionChange() {
+            const checkboxList = document.getElementById('v2TreasureCheckboxList');
+            if (!checkboxList || !museumId) return;
+
+            // Get currently selected treasures
+            const selectedTreasures = [];
+            checkboxList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                selectedTreasures.push(checkbox.value);
+            });
+
+            const count = selectedTreasures.length;
+            const isValid = count >= MIN_TREASURES_REQUIRED;
+
+            // Update count display
+            updateSelectedTreasureCountV2();
+
+            // Show/hide error message
+            const errorEl = document.getElementById('v2TreasureSelectionError');
+            const countContainer = document.getElementById('v2TreasureSelectionCount');
+            
+            if (errorEl) {
+                if (isValid) {
+                    errorEl.classList.remove('show');
+                } else {
+                    errorEl.classList.add('show');
+                }
+            }
+            
+            if (countContainer) {
+                if (isValid) {
+                    countContainer.classList.remove('error');
+                } else {
+                    countContainer.classList.add('error');
+                }
+            }
+
+            // Only save if valid (at least 3 selected)
+            if (isValid) {
+                saveTreasureSelectionSilently(selectedTreasures);
+                // Refresh the task list to reflect the change
+                refreshTasksWithSelectedTreasures();
+            }
+        }
+
+        /**
+         * Save treasure selection silently (no notification)
+         */
+        function saveTreasureSelectionSilently(selectedTreasures) {
+            try {
+                const config = loadTreasureCheckinConfig();
+                
+                if (selectedTreasures.length > 0) {
+                    config[museumId] = selectedTreasures;
+                } else {
+                    delete config[museumId];
+                }
+
+                localStorage.setItem('treasureCheckinConfig', JSON.stringify(config));
+            } catch (error) {
+                console.error('Failed to save treasure selection:', error);
+            }
+        }
+
+        /**
+         * Refresh the task list based on selected treasures
+         */
+        function refreshTasksWithSelectedTreasures() {
+            // Re-load and render tasks with the new treasure selection
+            if (currentMuseum && Array.isArray(currentMuseum.collections) && currentMuseum.collections.length > 0) {
+                const selectedTreasures = getSelectedTreasuresForMuseum();
+                
+                // Filter collections to only selected ones
+                const selectedCollections = currentMuseum.collections.filter(c => selectedTreasures.includes(c.name));
+                
+                // Build new task list
+                const start = '📸 门口打卡：家长给孩子在博物馆门口拍一张照片';
+                const collTasks = selectedCollections.map(c => `🏺 镇馆之宝：找到「${c && c.name ? c.name : '镇馆之宝'}」并合影`);
+                const end = '📸 亲子合影：和家长比心/拥抱/击掌等动作合影';
+                childTasks = [start].concat(collTasks, [end]);
+                
+                // Re-render tasks
+                renderTasks();
+                updateProgress();
+            }
+        }
+
+        /**
+         * Update the selected treasure count display
+         */
+        function updateSelectedTreasureCountV2() {
+            const countDisplay = document.getElementById('v2SelectedTreasureCount');
+            const checkboxList = document.getElementById('v2TreasureCheckboxList');
+            
+            if (countDisplay && checkboxList) {
+                const checkedCount = checkboxList.querySelectorAll('input[type="checkbox"]:checked').length;
+                countDisplay.textContent = checkedCount;
+            }
+        }
+
+        /**
+         * Alias for backward compatibility
+         * @returns {Object} Configuration object with museum ID as keys
+         */
+        function loadTreasureCheckinConfigV2() {
+            return loadTreasureCheckinConfig();
+        }
+
+        /**
+         * Save treasure check-in configuration to localStorage (legacy function, kept for compatibility)
+         */
+        function saveTreasureCheckinConfigV2() {
+            // Now handled by handleTreasureSelectionChange
+            handleTreasureSelectionChange();
+        }
+
+        /**
+         * Show notification message
+         */
+        function showNotification(message, duration = 2000) {
+            // Try to use the existing notification system or create a simple one
+            if (typeof alert === 'function') {
+                // Create a toast-like notification
+                const existingToast = document.getElementById('v2Toast');
+                if (existingToast) {
+                    existingToast.remove();
+                }
+                
+                const toast = document.createElement('div');
+                toast.id = 'v2Toast';
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 80px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    z-index: 10000;
+                    animation: fadeIn 0.3s ease;
+                `;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
+        }
+
         function openSettings() {
             // Load current settings
             const nickname = loadChildNickname();
@@ -3282,18 +4607,35 @@
                 puzzleToggle.checked = puzzleGameEnabled;
             }
 
+            // Initialize treasure check-in configuration for parent mode
+            showTreasureSelectionForCurrentMuseum();
+            // Load individual game settings
+            updateGameSelectionUI();
+            
+            // Update game selection visibility based on main toggle
+            updateGameSelectionVisibility(puzzleGameEnabled);
+
             // Show modal
             document.getElementById('settingsModal').classList.add('show');
+        }
+        
+        // Show/hide game selection section based on main toggle
+        function updateGameSelectionVisibility(enabled) {
+            const gameSelectionSection = document.getElementById('gameSelectionSection');
+            if (gameSelectionSection) {
+                gameSelectionSection.style.display = enabled ? 'block' : 'none';
+            }
         }
 
         // ===== Puzzle Game Settings =====
         function loadPuzzleGameSetting() {
             try {
                 const saved = localStorage.getItem('puzzleGameEnabled');
-                return saved === 'true';  // Default is false (disabled)
+                // Default is true (enabled) - changed to default enabled
+                return saved === null ? true : saved === 'true';
             } catch (error) {
                 console.error('Failed to load puzzle game setting:', error);
-                return false;
+                return true;  // Default to enabled
             }
         }
 
@@ -3305,6 +4647,67 @@
                 console.error('Failed to save puzzle game setting:', error);
                 return false;
             }
+        }
+
+        // ===== Individual Game Settings =====
+        // All games enabled by default
+        const ALL_GAMES = ['puzzle', 'maze', 'shooting', 'space-invaders', 'tank-battle', 'minesweeper'];
+
+        function loadEnabledGames() {
+            try {
+                const saved = localStorage.getItem('enabledGames');
+                if (saved === null) {
+                    // Default: all games enabled
+                    return [...ALL_GAMES];
+                }
+                const parsed = JSON.parse(saved);
+                // Ensure we return at least one game
+                return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...ALL_GAMES];
+            } catch (error) {
+                console.error('Failed to load enabled games:', error);
+                return [...ALL_GAMES];
+            }
+        }
+
+        function saveEnabledGames(games) {
+            try {
+                // Ensure at least one game is enabled
+                const toSave = games.length > 0 ? games : [...ALL_GAMES];
+                localStorage.setItem('enabledGames', JSON.stringify(toSave));
+                return true;
+            } catch (error) {
+                console.error('Failed to save enabled games:', error);
+                return false;
+            }
+        }
+
+        function updateGameSelectionUI() {
+            const enabledGames = loadEnabledGames();
+            const gameToggles = document.querySelectorAll('.game-toggle');
+            gameToggles.forEach(toggle => {
+                const game = toggle.dataset.game;
+                toggle.checked = enabledGames.includes(game);
+            });
+        }
+
+        function handleGameToggleChange() {
+            const gameToggles = document.querySelectorAll('.game-toggle');
+            const enabledGames = [];
+            gameToggles.forEach(toggle => {
+                if (toggle.checked) {
+                    enabledGames.push(toggle.dataset.game);
+                }
+            });
+            
+            // Ensure at least one game is enabled
+            if (enabledGames.length === 0) {
+                // Re-enable the one that was just unchecked
+                event.target.checked = true;
+                enabledGames.push(event.target.dataset.game);
+                alert('至少需要选择一个游戏！');
+            }
+            
+            saveEnabledGames(enabledGames);
         }
 
         // ===== Puzzle Game Logic =====
@@ -3492,6 +4895,20 @@
                     playFireworkSound();
                 }
                 
+                // Award XP for game completion - use VirtualPet constants if available
+                const gameXP = (typeof VirtualPet !== 'undefined' && VirtualPet.GAME_XP_REWARDS && VirtualPet.GAME_XP_REWARDS.puzzle) 
+                    ? VirtualPet.GAME_XP_REWARDS.puzzle.base 
+                    : 15;
+                if (window.achievementGamification) {
+                    window.achievementGamification.addXP(gameXP);
+                    window.achievementGamification.showXPGainNotification(gameXP, '拼图游戏通关');
+                }
+                
+                // Notify virtual pet about game completion
+                if (typeof VirtualPet !== 'undefined') {
+                    VirtualPet.notifyGameCompleted('puzzle', puzzleMoves, 0);
+                }
+                
                 // Auto-close after delay
                 setTimeout(() => {
                     closePuzzleGame();
@@ -3529,17 +4946,19 @@
         let exitPos = { x: 7, y: 7 };
         let mazeSteps = 0;
         let CELL_SIZE = 30;  // Dynamic based on maze size
+        let fogOfWarEnabled = false;  // Fog of war feature for harder difficulty
+        let visibleRadius = 2;        // Number of cells visible around player (fog of war)
         const EASY_MAZE_SIZE = 9;   // 9x9 for first task
         const HARD_MAZE_SIZE = 15;  // 15x15 for subsequent tasks
         
         // Determine maze size and cell size based on task index
-        // First task (门口打卡, index 0) uses easier 9x9 maze
-        // Subsequent tasks use more challenging 15x15 maze
+        // First task (门口打卡, index 0) uses easier 9x9 maze with no fog
+        // Subsequent tasks use more challenging 15x15 maze with fog of war
         function determineMazeSize(taskIndex) {
             if (taskIndex === 0) {
-                return { size: EASY_MAZE_SIZE, cellSize: 30 };  // Easy: larger cells
+                return { size: EASY_MAZE_SIZE, cellSize: 30, fogEnabled: false, fogRadius: 3 };  // Easy: no fog
             } else {
-                return { size: HARD_MAZE_SIZE, cellSize: 18 };  // Hard: smaller cells to fit
+                return { size: HARD_MAZE_SIZE, cellSize: 18, fogEnabled: true, fogRadius: 2 };   // Hard: fog of war enabled
             }
         }
         const WALL = 1;
@@ -3618,11 +5037,17 @@
             const difficulty = determineMazeSize(taskIndex);
             mazeSize = difficulty.size;
             CELL_SIZE = difficulty.cellSize;
+            fogOfWarEnabled = difficulty.fogEnabled;  // Enable fog for harder difficulty
+            visibleRadius = difficulty.fogRadius;      // Set visible radius
             
             // Update title to reflect difficulty
             const titleEl = document.querySelector('.maze-title');
             if (titleEl) {
-                titleEl.textContent = mazeSize === EASY_MAZE_SIZE ? '🏃 迷宫冒险（简单）' : '🏃 迷宫冒险（困难）';
+                if (fogOfWarEnabled) {
+                    titleEl.textContent = '🏃 迷宫冒险（迷雾模式）';
+                } else {
+                    titleEl.textContent = '🏃 迷宫冒险（简单）';
+                }
             }
             
             generateMaze();
@@ -3650,9 +5075,32 @@
             canvas.width = mazeSize * CELL_SIZE;
             canvas.height = mazeSize * CELL_SIZE;
             
-            // Clear canvas
-            ctx.fillStyle = '#f0f0f0';
+            // Clear canvas with fog color if fog of war enabled
+            if (fogOfWarEnabled) {
+                ctx.fillStyle = '#1a1a2e';  // Dark fog color
+            } else {
+                ctx.fillStyle = '#f0f0f0';
+            }
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Helper function to check if a cell is visible (within player's visible radius)
+            function isCellVisible(x, y) {
+                if (!fogOfWarEnabled) return true;
+                const dx = Math.abs(x - playerPos.x);
+                const dy = Math.abs(y - playerPos.y);
+                return dx <= visibleRadius && dy <= visibleRadius;
+            }
+            
+            // Helper function to get visibility alpha based on distance from player
+            function getVisibilityAlpha(x, y) {
+                if (!fogOfWarEnabled) return 1;
+                const dx = Math.abs(x - playerPos.x);
+                const dy = Math.abs(y - playerPos.y);
+                const distance = Math.max(dx, dy);
+                if (distance > visibleRadius) return 0;
+                // Fade out at the edges
+                return 1 - (distance / (visibleRadius + 1)) * 0.5;
+            }
             
             // Draw maze
             for (let y = 0; y < mazeSize; y++) {
@@ -3660,33 +5108,44 @@
                     const cellX = x * CELL_SIZE;
                     const cellY = y * CELL_SIZE;
                     
+                    // Skip cells not visible in fog of war mode
+                    if (!isCellVisible(x, y)) continue;
+                    
+                    const alpha = getVisibilityAlpha(x, y);
+                    
                     if (mazeGrid[y][x] === WALL) {
                         // Wall
-                        ctx.fillStyle = '#4a4a4a';
+                        ctx.fillStyle = fogOfWarEnabled ? `rgba(74, 74, 74, ${alpha})` : '#4a4a4a';
                         ctx.fillRect(cellX, cellY, CELL_SIZE, CELL_SIZE);
                         
                         // Add 3D effect to walls
-                        ctx.fillStyle = '#3a3a3a';
+                        ctx.fillStyle = fogOfWarEnabled ? `rgba(58, 58, 58, ${alpha})` : '#3a3a3a';
                         ctx.fillRect(cellX + CELL_SIZE - 2, cellY, 2, CELL_SIZE);
                         ctx.fillRect(cellX, cellY + CELL_SIZE - 2, CELL_SIZE, 2);
                     } else {
                         // Path
-                        ctx.fillStyle = '#ffffff';
+                        ctx.fillStyle = fogOfWarEnabled ? `rgba(255, 255, 255, ${alpha})` : '#ffffff';
                         ctx.fillRect(cellX, cellY, CELL_SIZE, CELL_SIZE);
                     }
                 }
             }
             
-            // Draw exit (goal)
-            ctx.fillStyle = '#28a745';
-            ctx.fillRect(exitPos.x * CELL_SIZE + 4, exitPos.y * CELL_SIZE + 4, CELL_SIZE - 8, CELL_SIZE - 8);
-            ctx.fillStyle = '#fff';
-            ctx.font = '16px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('🏁', exitPos.x * CELL_SIZE + CELL_SIZE / 2, exitPos.y * CELL_SIZE + CELL_SIZE / 2);
+            // Draw exit (goal) - only if visible or always show for navigation
+            const exitVisible = isCellVisible(exitPos.x, exitPos.y);
+            if (exitVisible || !fogOfWarEnabled) {
+                const exitAlpha = fogOfWarEnabled ? getVisibilityAlpha(exitPos.x, exitPos.y) : 1;
+                ctx.globalAlpha = exitAlpha;
+                ctx.fillStyle = '#28a745';
+                ctx.fillRect(exitPos.x * CELL_SIZE + 4, exitPos.y * CELL_SIZE + 4, CELL_SIZE - 8, CELL_SIZE - 8);
+                ctx.fillStyle = '#fff';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🏁', exitPos.x * CELL_SIZE + CELL_SIZE / 2, exitPos.y * CELL_SIZE + CELL_SIZE / 2);
+                ctx.globalAlpha = 1;
+            }
             
-            // Draw player
+            // Draw player (always fully visible)
             ctx.fillStyle = '#667eea';
             ctx.beginPath();
             ctx.arc(
@@ -3704,6 +5163,22 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText('😊', playerPos.x * CELL_SIZE + CELL_SIZE / 2, playerPos.y * CELL_SIZE + CELL_SIZE / 2);
+            
+            // Draw fog gradient overlay for smooth edges (only in fog mode)
+            if (fogOfWarEnabled) {
+                const centerX = playerPos.x * CELL_SIZE + CELL_SIZE / 2;
+                const centerY = playerPos.y * CELL_SIZE + CELL_SIZE / 2;
+                const innerRadius = visibleRadius * CELL_SIZE * 0.7;
+                const outerRadius = (visibleRadius + 1) * CELL_SIZE;
+                
+                const gradient = ctx.createRadialGradient(centerX, centerY, innerRadius, centerX, centerY, outerRadius);
+                gradient.addColorStop(0, 'rgba(26, 26, 46, 0)');
+                gradient.addColorStop(0.7, 'rgba(26, 26, 46, 0.3)');
+                gradient.addColorStop(1, 'rgba(26, 26, 46, 0.9)');
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
         }
 
         // Move player in the maze
@@ -3810,6 +5285,20 @@
             // Play sound if available
             if (typeof playFireworkSound === 'function') {
                 playFireworkSound();
+            }
+            
+            // Award XP for game completion - use VirtualPet constants if available
+            const gameXP = (typeof VirtualPet !== 'undefined' && VirtualPet.GAME_XP_REWARDS && VirtualPet.GAME_XP_REWARDS.maze) 
+                ? VirtualPet.GAME_XP_REWARDS.maze.base 
+                : 20;
+            if (window.achievementGamification) {
+                window.achievementGamification.addXP(gameXP);
+                window.achievementGamification.showXPGainNotification(gameXP, '迷宫游戏通关');
+            }
+            
+            // Notify virtual pet about game completion
+            if (typeof VirtualPet !== 'undefined') {
+                VirtualPet.notifyGameCompleted('maze', mazeSteps, 0);
             }
             
             // Auto-close after delay
@@ -4115,6 +5604,24 @@
             document.getElementById('finalScore').textContent = shootingScore;
             document.getElementById('shootingCompleteMessage').classList.add('show');
             
+            // Award XP for game completion (score-based) - use VirtualPet constants if available
+            let gameXP = 10;
+            if (typeof VirtualPet !== 'undefined' && VirtualPet.GAME_XP_REWARDS && VirtualPet.GAME_XP_REWARDS.shooting) {
+                const reward = VirtualPet.GAME_XP_REWARDS.shooting;
+                gameXP = Math.max(reward.min, Math.min(reward.max, Math.floor(shootingScore / reward.divisor)));
+            } else {
+                gameXP = Math.max(10, Math.min(30, Math.floor(shootingScore / 10)));
+            }
+            if (window.achievementGamification) {
+                window.achievementGamification.addXP(gameXP);
+                window.achievementGamification.showXPGainNotification(gameXP, '射击游戏完成');
+            }
+            
+            // Notify virtual pet about game completion
+            if (typeof VirtualPet !== 'undefined') {
+                VirtualPet.notifyGameCompleted('shooting', shootingScore, 0);
+            }
+            
             // Auto-close after delay
             setTimeout(() => {
                 closeShootingGame();
@@ -4172,17 +5679,1476 @@
             canvas.ontouchstart = null;
         }
 
-        // ===== Random Game Selection =====
-        // Randomly select between puzzle, maze, and shooting game
-        function selectRandomGame() {
-            const rand = Math.random();
-            if (rand < 0.33) {
-                return 'puzzle';
-            } else if (rand < 0.66) {
-                return 'maze';
-            } else {
-                return 'shooting';
+        // ===== Space Invaders (小蜜蜂) Game Logic =====
+        let siScore = 0;
+        let siLives = 3;
+        let siGameOver = false;
+        let siAnimationId = null;
+        let siPlayer = null;
+        let siBullets = [];
+        let siEnemies = [];
+        let siEnemyBullets = [];
+        let siExplosions = [];
+        let siEnemyDirection = 1;
+        let siEnemySpeed = 1;
+        let siKeys = { left: false, right: false, fire: false };
+        let siTouchLeft = false;
+        let siTouchRight = false;
+        let siLastFireTime = 0;
+        
+        const SI_CANVAS_WIDTH = 320;
+        const SI_CANVAS_HEIGHT = 400;
+        const SI_PLAYER_WIDTH = 50;      // Larger player for easier control
+        const SI_PLAYER_HEIGHT = 30;     // Larger player for easier control
+        const SI_PLAYER_SPEED = 8;       // Faster movement for better dodging
+        const SI_BULLET_SPEED = 12;      // Faster bullets for easier hitting
+        const SI_ENEMY_WIDTH = 40;       // Larger enemies = easier targets
+        const SI_ENEMY_HEIGHT = 30;      // Larger enemies = easier targets
+        const SI_FIRE_COOLDOWN = 200;    // Faster shooting for more fun
+        const SI_ENEMY_FIRE_CHANCE = 0.003;  // Enemies fire less often
+        const SI_MAX_BULLETS = 5;        // More bullets on screen
+        
+        const SI_ENEMY_COLORS = ['#FFD700', '#FF6B00', '#FF00FF', '#00FFFF'];
+        
+        // Initialize Space Invaders game
+        function initSpaceInvadersGame(taskIndex) {
+            siScore = 0;
+            siLives = 5;                 // More lives for better sense of achievement
+            siGameOver = false;
+            siBullets = [];
+            siEnemies = [];
+            siEnemyBullets = [];
+            siExplosions = [];
+            siEnemyDirection = 1;
+            siEnemySpeed = taskIndex === 0 ? 0.5 : 0.8;  // Slower enemies for easier gameplay
+            siKeys = { left: false, right: false, fire: false };
+            siTouchLeft = false;
+            siTouchRight = false;
+            
+            // Initialize player
+            siPlayer = {
+                x: SI_CANVAS_WIDTH / 2 - SI_PLAYER_WIDTH / 2,
+                y: SI_CANVAS_HEIGHT - SI_PLAYER_HEIGHT - 15,
+                width: SI_PLAYER_WIDTH,
+                height: SI_PLAYER_HEIGHT,
+                invincible: false,
+                invincibleTime: 0
+            };
+            
+            // Initialize enemies - fewer enemies for easier completion
+            const rows = taskIndex === 0 ? 2 : 3;    // Fewer rows
+            const cols = taskIndex === 0 ? 5 : 6;    // Fewer columns
+            const startX = (SI_CANVAS_WIDTH - (cols * (SI_ENEMY_WIDTH + 8))) / 2;
+            const startY = 50;
+            
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    siEnemies.push({
+                        x: startX + col * (SI_ENEMY_WIDTH + 8),
+                        y: startY + row * (SI_ENEMY_HEIGHT + 8),
+                        width: SI_ENEMY_WIDTH,
+                        height: SI_ENEMY_HEIGHT,
+                        type: row % 4,
+                        animFrame: 0,
+                        animTimer: 0
+                    });
+                }
             }
+            
+            // Update UI
+            document.getElementById('siScore').textContent = '0';
+            document.getElementById('siLives').textContent = '5';
+            document.getElementById('spaceInvadersCompleteMessage').classList.remove('show');
+            
+            // Show overlay
+            document.getElementById('spaceInvadersOverlay').classList.add('show');
+            
+            // Setup keyboard events
+            document.addEventListener('keydown', siHandleKeyDown);
+            document.addEventListener('keyup', siHandleKeyUp);
+            
+            // Setup touch controls
+            setupSITouchControls();
+            
+            // Setup button handlers
+            document.getElementById('resetSpaceInvaders').onclick = () => {
+                cleanupSpaceInvadersGame();
+                initSpaceInvadersGame(taskIndex);
+            };
+            document.getElementById('exitSpaceInvaders').onclick = cleanupSpaceInvadersGame;
+            
+            // Start game loop
+            siGameLoop();
+        }
+        
+        function setupSITouchControls() {
+            const leftBtn = document.getElementById('siLeftBtn');
+            const rightBtn = document.getElementById('siRightBtn');
+            const fireBtn = document.getElementById('siFireBtn');
+            
+            leftBtn.ontouchstart = (e) => { e.preventDefault(); siTouchLeft = true; };
+            leftBtn.ontouchend = () => { siTouchLeft = false; };
+            leftBtn.onmousedown = () => { siTouchLeft = true; };
+            leftBtn.onmouseup = () => { siTouchLeft = false; };
+            
+            rightBtn.ontouchstart = (e) => { e.preventDefault(); siTouchRight = true; };
+            rightBtn.ontouchend = () => { siTouchRight = false; };
+            rightBtn.onmousedown = () => { siTouchRight = true; };
+            rightBtn.onmouseup = () => { siTouchRight = false; };
+            
+            fireBtn.ontouchstart = (e) => { e.preventDefault(); siFireBullet(); };
+            fireBtn.onmousedown = () => { siFireBullet(); };
+        }
+        
+        function siHandleKeyDown(e) {
+            if (siGameOver) return;
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') { siKeys.left = true; e.preventDefault(); }
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') { siKeys.right = true; e.preventDefault(); }
+            if (e.code === 'Space') { siFireBullet(); e.preventDefault(); }
+        }
+        
+        function siHandleKeyUp(e) {
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') siKeys.left = false;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') siKeys.right = false;
+        }
+        
+        function siFireBullet() {
+            if (siGameOver) return;
+            const now = Date.now();
+            if (now - siLastFireTime < SI_FIRE_COOLDOWN) return;
+            if (siBullets.length >= SI_MAX_BULLETS) return;
+            
+            siLastFireTime = now;
+            siBullets.push({
+                x: siPlayer.x + siPlayer.width / 2 - 2,
+                y: siPlayer.y,
+                width: 4,
+                height: 12
+            });
+        }
+        
+        function siCreateExplosion(x, y) {
+            for (let i = 0; i < 12; i++) {
+                const angle = (Math.PI * 2 * i) / 12;
+                const speed = Math.random() * 3 + 2;
+                siExplosions.push({
+                    x: x, y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1,
+                    color: SI_ENEMY_COLORS[Math.floor(Math.random() * SI_ENEMY_COLORS.length)],
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+        
+        function siGameLoop() {
+            if (siGameOver) return;
+            
+            siUpdate();
+            siRender();
+            siAnimationId = requestAnimationFrame(siGameLoop);
+        }
+        
+        function siUpdate() {
+            // Update player
+            if (siKeys.left || siTouchLeft) siPlayer.x -= SI_PLAYER_SPEED;
+            if (siKeys.right || siTouchRight) siPlayer.x += SI_PLAYER_SPEED;
+            siPlayer.x = Math.max(0, Math.min(SI_CANVAS_WIDTH - siPlayer.width, siPlayer.x));
+            
+            // Update bullets
+            siBullets = siBullets.filter(b => {
+                b.y -= SI_BULLET_SPEED;
+                return b.y + b.height > 0;
+            });
+            
+            // Update enemy bullets
+            siEnemyBullets = siEnemyBullets.filter(b => {
+                b.y += 4;
+                return b.y < SI_CANVAS_HEIGHT;
+            });
+            
+            // Update enemies
+            if (siEnemies.length > 0) {
+                let leftMost = SI_CANVAS_WIDTH, rightMost = 0;
+                siEnemies.forEach(e => {
+                    leftMost = Math.min(leftMost, e.x);
+                    rightMost = Math.max(rightMost, e.x + e.width);
+                });
+                
+                let shouldDrop = false;
+                if (siEnemyDirection > 0 && rightMost + siEnemySpeed >= SI_CANVAS_WIDTH) {
+                    siEnemyDirection = -1;
+                    shouldDrop = true;
+                } else if (siEnemyDirection < 0 && leftMost - siEnemySpeed <= 0) {
+                    siEnemyDirection = 1;
+                    shouldDrop = true;
+                }
+                
+                siEnemies.forEach(e => {
+                    e.x += siEnemySpeed * siEnemyDirection;
+                    if (shouldDrop) e.y += 20;
+                    e.animTimer++;
+                    if (e.animTimer > 20) { e.animFrame = (e.animFrame + 1) % 2; e.animTimer = 0; }
+                    
+                    // Random fire
+                    if (Math.random() < SI_ENEMY_FIRE_CHANCE) {
+                        siEnemyBullets.push({
+                            x: e.x + e.width / 2 - 2,
+                            y: e.y + e.height,
+                            width: 4,
+                            height: 10
+                        });
+                    }
+                    
+                    // Check if reached bottom
+                    if (e.y + e.height >= siPlayer.y) {
+                        siEndGame();
+                    }
+                });
+            }
+            
+            // Update explosions
+            siExplosions = siExplosions.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1;
+                p.life -= 0.03;
+                return p.life > 0;
+            });
+            
+            // Check collisions: bullets vs enemies
+            for (let i = siBullets.length - 1; i >= 0; i--) {
+                for (let j = siEnemies.length - 1; j >= 0; j--) {
+                    if (siIsColliding(siBullets[i], siEnemies[j])) {
+                        siCreateExplosion(siEnemies[j].x + siEnemies[j].width / 2, siEnemies[j].y + siEnemies[j].height / 2);
+                        siScore += 10 * (siEnemies[j].type + 1);
+                        document.getElementById('siScore').textContent = siScore;
+                        siBullets.splice(i, 1);
+                        siEnemies.splice(j, 1);
+                        break;
+                    }
+                }
+            }
+            
+            // Check collisions: enemy bullets vs player
+            if (!siPlayer.invincible) {
+                for (let i = siEnemyBullets.length - 1; i >= 0; i--) {
+                    if (siIsColliding(siEnemyBullets[i], siPlayer)) {
+                        siEnemyBullets.splice(i, 1);
+                        siPlayerHit();
+                        break;
+                    }
+                }
+            }
+            
+            // Update invincibility
+            if (siPlayer.invincible) {
+                siPlayer.invincibleTime--;
+                if (siPlayer.invincibleTime <= 0) siPlayer.invincible = false;
+            }
+            
+            // Check victory
+            if (siEnemies.length === 0) {
+                siEndGame(true);
+            }
+        }
+        
+        function siIsColliding(a, b) {
+            return a.x < b.x + b.width && a.x + a.width > b.x &&
+                   a.y < b.y + b.height && a.y + a.height > b.y;
+        }
+        
+        function siPlayerHit() {
+            siLives--;
+            document.getElementById('siLives').textContent = siLives;
+            siCreateExplosion(siPlayer.x + siPlayer.width / 2, siPlayer.y + siPlayer.height / 2);
+            
+            if (siLives <= 0) {
+                siEndGame();
+            } else {
+                siPlayer.invincible = true;
+                siPlayer.invincibleTime = 90;
+            }
+        }
+        
+        function siEndGame(victory = false) {
+            siGameOver = true;
+            if (victory) siScore += 100;
+            document.getElementById('siFinalScore').textContent = siScore;
+            document.getElementById('spaceInvadersCompleteMessage').classList.add('show');
+            
+            // Award XP for game completion (score-based) - use VirtualPet constants if available
+            let gameXP = 15;
+            if (typeof VirtualPet !== 'undefined' && VirtualPet.GAME_XP_REWARDS && VirtualPet.GAME_XP_REWARDS['space-invaders']) {
+                const reward = VirtualPet.GAME_XP_REWARDS['space-invaders'];
+                gameXP = Math.max(reward.min, Math.min(reward.max, Math.floor(siScore / reward.divisor)));
+            } else {
+                gameXP = Math.max(15, Math.min(30, Math.floor(siScore / 10)));
+            }
+            if (window.achievementGamification) {
+                window.achievementGamification.addXP(gameXP);
+                window.achievementGamification.showXPGainNotification(gameXP, '小蜜蜂游戏完成');
+            }
+            
+            // Notify virtual pet about game completion
+            if (typeof VirtualPet !== 'undefined') {
+                VirtualPet.notifyGameCompleted('space-invaders', siScore, 0);
+            }
+        }
+        
+        function siRender() {
+            const canvas = document.getElementById('spaceInvadersCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, SI_CANVAS_WIDTH, SI_CANVAS_HEIGHT);
+            
+            // Draw stars
+            ctx.fillStyle = '#FFF';
+            for (let i = 0; i < 30; i++) {
+                const x = (i * 37) % SI_CANVAS_WIDTH;
+                const y = (i * 23) % SI_CANVAS_HEIGHT;
+                ctx.fillRect(x, y, 1, 1);
+            }
+            
+            // Draw player (blink when invincible)
+            if (!siPlayer.invincible || Math.floor(siPlayer.invincibleTime / 4) % 2 === 0) {
+                ctx.fillStyle = '#00FF00';
+                ctx.beginPath();
+                ctx.moveTo(siPlayer.x + siPlayer.width / 2, siPlayer.y);
+                ctx.lineTo(siPlayer.x + siPlayer.width, siPlayer.y + siPlayer.height);
+                ctx.lineTo(siPlayer.x + siPlayer.width * 0.7, siPlayer.y + siPlayer.height * 0.7);
+                ctx.lineTo(siPlayer.x + siPlayer.width * 0.3, siPlayer.y + siPlayer.height * 0.7);
+                ctx.lineTo(siPlayer.x, siPlayer.y + siPlayer.height);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Cockpit
+                ctx.fillStyle = '#00CCFF';
+                ctx.beginPath();
+                ctx.arc(siPlayer.x + siPlayer.width / 2, siPlayer.y + siPlayer.height * 0.4, siPlayer.width * 0.12, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw bullets
+            ctx.fillStyle = '#FFFF00';
+            ctx.shadowColor = '#FFFF00';
+            ctx.shadowBlur = 8;
+            siBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+            ctx.shadowBlur = 0;
+            
+            // Draw enemy bullets
+            ctx.fillStyle = '#FF0000';
+            ctx.shadowColor = '#FF0000';
+            ctx.shadowBlur = 8;
+            siEnemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+            ctx.shadowBlur = 0;
+            
+            // Draw enemies (bees)
+            siEnemies.forEach(e => {
+                const color = SI_ENEMY_COLORS[e.type];
+                const x = e.x, y = e.y, w = e.width, h = e.height;
+                
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 8;
+                
+                // Body
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.ellipse(x + w / 2, y + h / 2, w / 2.5, h / 2.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Stripes
+                ctx.fillStyle = '#000';
+                ctx.fillRect(x + w * 0.25, y + h * 0.35, w * 0.5, h * 0.08);
+                ctx.fillRect(x + w * 0.2, y + h * 0.5, w * 0.6, h * 0.08);
+                
+                // Wings
+                const wingAngle = e.animFrame === 0 ? 0.3 : -0.3;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.beginPath();
+                ctx.ellipse(x + w * 0.15, y + h * 0.3, w * 0.2, h * 0.12, wingAngle, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(x + w * 0.85, y + h * 0.3, w * 0.2, h * 0.12, -wingAngle, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eyes
+                ctx.fillStyle = '#FFF';
+                ctx.beginPath();
+                ctx.arc(x + w * 0.35, y + h * 0.35, w * 0.06, 0, Math.PI * 2);
+                ctx.arc(x + w * 0.65, y + h * 0.35, w * 0.06, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+            });
+            
+            // Draw explosions
+            siExplosions.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+        }
+        
+        function cleanupSpaceInvadersGame() {
+            siGameOver = true;
+            if (siAnimationId) {
+                cancelAnimationFrame(siAnimationId);
+                siAnimationId = null;
+            }
+            
+            document.removeEventListener('keydown', siHandleKeyDown);
+            document.removeEventListener('keyup', siHandleKeyUp);
+            
+            document.getElementById('spaceInvadersOverlay').classList.remove('show');
+            document.getElementById('spaceInvadersCompleteMessage').classList.remove('show');
+        }
+
+        // ===== Tank Battle (坦克大战) Game Logic =====
+        let tbScore = 0;
+        let tbLives = 3;
+        let tbGameOver = false;
+        let tbAnimationId = null;
+        let tbPlayer = null;
+        let tbBullets = [];
+        let tbEnemies = [];
+        let tbEnemyBullets = [];
+        let tbExplosions = [];
+        let tbWalls = [];
+        let tbKeys = { up: false, down: false, left: false, right: false, fire: false };
+        let tbLastFireTime = 0;
+        let tbEnemiesKilled = 0;
+        let tbTotalEnemies = 5;
+        
+        const TB_CANVAS_WIDTH = 320;
+        const TB_CANVAS_HEIGHT = 320;
+        const TB_TILE_SIZE = 32;
+        const TB_TANK_SIZE = 28;
+        const TB_BULLET_SIZE = 6;
+        const TB_PLAYER_SPEED = 2.5;      // Faster player for easier control
+        const TB_ENEMY_SPEED = 1.2;       // Slower enemies for easier gameplay
+        const TB_BULLET_SPEED = 6;
+        const TB_FIRE_COOLDOWN = 400;     // Longer cooldown for more strategic play
+        const TB_ENEMY_FIRE_COOLDOWN = 2500;  // Enemies fire less often
+        const TB_ENEMY_RANDOM_FIRE_CHANCE = 0.015;  // Random fire probability per frame (lower = easier)
+        
+        const TB_COLORS = {
+            player: '#4CAF50',
+            playerBarrel: '#2E7D32',
+            enemy: '#F44336',
+            enemyBarrel: '#C62828',
+            bullet: '#FFD700',
+            wall: '#795548',
+            wallBorder: '#5D4037',
+            grass: '#1a1a1a'
+        };
+        
+        // Initialize Tank Battle game
+        function initTankBattleGame(taskIndex) {
+            tbScore = 0;
+            tbLives = taskIndex === 0 ? 5 : 3;  // More lives for easier difficulty
+            tbGameOver = false;
+            tbBullets = [];
+            tbEnemies = [];
+            tbEnemyBullets = [];
+            tbExplosions = [];
+            tbWalls = [];
+            tbKeys = { up: false, down: false, left: false, right: false, fire: false };
+            tbEnemiesKilled = 0;
+            tbTotalEnemies = taskIndex === 0 ? 3 : 5;  // Fewer enemies for easier mode
+            
+            // Initialize player tank
+            tbPlayer = {
+                x: TB_CANVAS_WIDTH / 2 - TB_TANK_SIZE / 2,
+                y: TB_CANVAS_HEIGHT - TB_TANK_SIZE - 10,
+                width: TB_TANK_SIZE,
+                height: TB_TANK_SIZE,
+                direction: 'up',  // 'up', 'down', 'left', 'right'
+                invincible: false,
+                invincibleTime: 0
+            };
+            
+            // Generate walls (obstacles)
+            generateTBWalls(taskIndex);
+            
+            // Generate enemy tanks
+            generateTBEnemies();
+            
+            // Update UI
+            document.getElementById('tbScore').textContent = '0';
+            document.getElementById('tbLives').textContent = tbLives;
+            document.getElementById('tbEnemiesLeft').textContent = tbTotalEnemies - tbEnemiesKilled;
+            document.getElementById('tankBattleCompleteMessage').classList.remove('show');
+            
+            // Show overlay
+            document.getElementById('tankBattleOverlay').classList.add('show');
+            
+            // Setup keyboard events
+            document.addEventListener('keydown', tbHandleKeyDown);
+            document.addEventListener('keyup', tbHandleKeyUp);
+            
+            // Setup touch controls
+            setupTBTouchControls();
+            
+            // Setup button handlers
+            document.getElementById('resetTankBattle').onclick = () => {
+                cleanupTankBattleGame();
+                initTankBattleGame(taskIndex);
+            };
+            document.getElementById('exitTankBattle').onclick = cleanupTankBattleGame;
+            
+            // Start game loop
+            tbGameLoop();
+        }
+        
+        function generateTBWalls(taskIndex) {
+            tbWalls = [];
+            const wallCount = taskIndex === 0 ? 6 : 10;  // Fewer walls for easier mode
+            
+            // Create some walls in the middle of the battlefield
+            const positions = [
+                { x: 2, y: 3 }, { x: 3, y: 3 }, { x: 6, y: 3 }, { x: 7, y: 3 },
+                { x: 2, y: 6 }, { x: 3, y: 6 }, { x: 6, y: 6 }, { x: 7, y: 6 },
+                { x: 4, y: 4 }, { x: 5, y: 4 }, { x: 4, y: 5 }, { x: 5, y: 5 }
+            ];
+            
+            for (let i = 0; i < Math.min(wallCount, positions.length); i++) {
+                const pos = positions[i];
+                tbWalls.push({
+                    x: pos.x * TB_TILE_SIZE,
+                    y: pos.y * TB_TILE_SIZE,
+                    width: TB_TILE_SIZE,
+                    height: TB_TILE_SIZE,
+                    health: 2  // Walls can take 2 hits
+                });
+            }
+        }
+        
+        function generateTBEnemies() {
+            const spawnPositions = [
+                { x: TB_TILE_SIZE, y: TB_TILE_SIZE },
+                { x: TB_CANVAS_WIDTH - TB_TILE_SIZE - TB_TANK_SIZE, y: TB_TILE_SIZE },
+                { x: TB_CANVAS_WIDTH / 2 - TB_TANK_SIZE / 2, y: TB_TILE_SIZE },
+                { x: TB_TILE_SIZE, y: TB_TILE_SIZE * 3 },
+                { x: TB_CANVAS_WIDTH - TB_TILE_SIZE - TB_TANK_SIZE, y: TB_TILE_SIZE * 3 }
+            ];
+            
+            for (let i = 0; i < tbTotalEnemies; i++) {
+                const pos = spawnPositions[i % spawnPositions.length];
+                tbEnemies.push({
+                    x: pos.x + (i * 5) % 20,  // Slight offset to avoid overlap
+                    y: pos.y,
+                    width: TB_TANK_SIZE,
+                    height: TB_TANK_SIZE,
+                    direction: 'down',
+                    lastFireTime: Date.now() + i * 1000,  // Stagger initial fire times
+                    moveTimer: 0,
+                    moveDirection: Math.random() < 0.5 ? 1 : -1
+                });
+            }
+        }
+        
+        function setupTBTouchControls() {
+            const upBtn = document.getElementById('tbUpBtn');
+            const downBtn = document.getElementById('tbDownBtn');
+            const leftBtn = document.getElementById('tbLeftBtn');
+            const rightBtn = document.getElementById('tbRightBtn');
+            const fireBtn = document.getElementById('tbFireBtn');
+            
+            // Direction buttons
+            upBtn.ontouchstart = (e) => { e.preventDefault(); tbKeys.up = true; };
+            upBtn.ontouchend = () => { tbKeys.up = false; };
+            upBtn.onmousedown = () => { tbKeys.up = true; };
+            upBtn.onmouseup = () => { tbKeys.up = false; };
+            
+            downBtn.ontouchstart = (e) => { e.preventDefault(); tbKeys.down = true; };
+            downBtn.ontouchend = () => { tbKeys.down = false; };
+            downBtn.onmousedown = () => { tbKeys.down = true; };
+            downBtn.onmouseup = () => { tbKeys.down = false; };
+            
+            leftBtn.ontouchstart = (e) => { e.preventDefault(); tbKeys.left = true; };
+            leftBtn.ontouchend = () => { tbKeys.left = false; };
+            leftBtn.onmousedown = () => { tbKeys.left = true; };
+            leftBtn.onmouseup = () => { tbKeys.left = false; };
+            
+            rightBtn.ontouchstart = (e) => { e.preventDefault(); tbKeys.right = true; };
+            rightBtn.ontouchend = () => { tbKeys.right = false; };
+            rightBtn.onmousedown = () => { tbKeys.right = true; };
+            rightBtn.onmouseup = () => { tbKeys.right = false; };
+            
+            fireBtn.ontouchstart = (e) => { e.preventDefault(); tbFireBullet(); };
+            fireBtn.onmousedown = () => { tbFireBullet(); };
+        }
+        
+        function tbHandleKeyDown(e) {
+            if (tbGameOver) return;
+            switch (e.code) {
+                case 'ArrowUp':
+                case 'KeyW':
+                    tbKeys.up = true;
+                    e.preventDefault();
+                    break;
+                case 'ArrowDown':
+                case 'KeyS':
+                    tbKeys.down = true;
+                    e.preventDefault();
+                    break;
+                case 'ArrowLeft':
+                case 'KeyA':
+                    tbKeys.left = true;
+                    e.preventDefault();
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    tbKeys.right = true;
+                    e.preventDefault();
+                    break;
+                case 'Space':
+                    tbFireBullet();
+                    e.preventDefault();
+                    break;
+            }
+        }
+        
+        function tbHandleKeyUp(e) {
+            switch (e.code) {
+                case 'ArrowUp':
+                case 'KeyW':
+                    tbKeys.up = false;
+                    break;
+                case 'ArrowDown':
+                case 'KeyS':
+                    tbKeys.down = false;
+                    break;
+                case 'ArrowLeft':
+                case 'KeyA':
+                    tbKeys.left = false;
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    tbKeys.right = false;
+                    break;
+            }
+        }
+        
+        function tbFireBullet() {
+            if (tbGameOver) return;
+            const now = Date.now();
+            if (now - tbLastFireTime < TB_FIRE_COOLDOWN) return;
+            
+            tbLastFireTime = now;
+            
+            let bx, by, vx = 0, vy = 0;
+            switch (tbPlayer.direction) {
+                case 'up':
+                    bx = tbPlayer.x + tbPlayer.width / 2 - TB_BULLET_SIZE / 2;
+                    by = tbPlayer.y - TB_BULLET_SIZE;
+                    vy = -TB_BULLET_SPEED;
+                    break;
+                case 'down':
+                    bx = tbPlayer.x + tbPlayer.width / 2 - TB_BULLET_SIZE / 2;
+                    by = tbPlayer.y + tbPlayer.height;
+                    vy = TB_BULLET_SPEED;
+                    break;
+                case 'left':
+                    bx = tbPlayer.x - TB_BULLET_SIZE;
+                    by = tbPlayer.y + tbPlayer.height / 2 - TB_BULLET_SIZE / 2;
+                    vx = -TB_BULLET_SPEED;
+                    break;
+                case 'right':
+                    bx = tbPlayer.x + tbPlayer.width;
+                    by = tbPlayer.y + tbPlayer.height / 2 - TB_BULLET_SIZE / 2;
+                    vx = TB_BULLET_SPEED;
+                    break;
+            }
+            
+            tbBullets.push({
+                x: bx, y: by,
+                vx: vx, vy: vy,
+                width: TB_BULLET_SIZE,
+                height: TB_BULLET_SIZE,
+                isPlayer: true
+            });
+        }
+        
+        function tbEnemyFire(enemy) {
+            const now = Date.now();
+            if (now - enemy.lastFireTime < TB_ENEMY_FIRE_COOLDOWN) return;
+            
+            enemy.lastFireTime = now;
+            
+            let bx, by, vx = 0, vy = 0;
+            switch (enemy.direction) {
+                case 'up':
+                    bx = enemy.x + enemy.width / 2 - TB_BULLET_SIZE / 2;
+                    by = enemy.y - TB_BULLET_SIZE;
+                    vy = -TB_BULLET_SPEED * 0.7;  // Slower enemy bullets
+                    break;
+                case 'down':
+                    bx = enemy.x + enemy.width / 2 - TB_BULLET_SIZE / 2;
+                    by = enemy.y + enemy.height;
+                    vy = TB_BULLET_SPEED * 0.7;
+                    break;
+                case 'left':
+                    bx = enemy.x - TB_BULLET_SIZE;
+                    by = enemy.y + enemy.height / 2 - TB_BULLET_SIZE / 2;
+                    vx = -TB_BULLET_SPEED * 0.7;
+                    break;
+                case 'right':
+                    bx = enemy.x + enemy.width;
+                    by = enemy.y + enemy.height / 2 - TB_BULLET_SIZE / 2;
+                    vx = TB_BULLET_SPEED * 0.7;
+                    break;
+            }
+            
+            tbEnemyBullets.push({
+                x: bx, y: by,
+                vx: vx, vy: vy,
+                width: TB_BULLET_SIZE,
+                height: TB_BULLET_SIZE,
+                isPlayer: false
+            });
+        }
+        
+        function tbCreateExplosion(x, y) {
+            for (let i = 0; i < 10; i++) {
+                const angle = (Math.PI * 2 * i) / 10;
+                const speed = Math.random() * 2 + 1;
+                tbExplosions.push({
+                    x: x, y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1,
+                    color: ['#FFD700', '#FFA500', '#FF6347', '#FF4500'][Math.floor(Math.random() * 4)],
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+        
+        function tbGameLoop() {
+            if (tbGameOver) return;
+            
+            tbUpdate();
+            tbRender();
+            tbAnimationId = requestAnimationFrame(tbGameLoop);
+        }
+        
+        function tbUpdate() {
+            // Update player
+            let newX = tbPlayer.x;
+            let newY = tbPlayer.y;
+            
+            if (tbKeys.up) {
+                newY -= TB_PLAYER_SPEED;
+                tbPlayer.direction = 'up';
+            }
+            if (tbKeys.down) {
+                newY += TB_PLAYER_SPEED;
+                tbPlayer.direction = 'down';
+            }
+            if (tbKeys.left) {
+                newX -= TB_PLAYER_SPEED;
+                tbPlayer.direction = 'left';
+            }
+            if (tbKeys.right) {
+                newX += TB_PLAYER_SPEED;
+                tbPlayer.direction = 'right';
+            }
+            
+            // Check collision with boundaries
+            newX = Math.max(0, Math.min(TB_CANVAS_WIDTH - tbPlayer.width, newX));
+            newY = Math.max(0, Math.min(TB_CANVAS_HEIGHT - tbPlayer.height, newY));
+            
+            // Check collision with walls
+            const playerRect = { x: newX, y: newY, width: tbPlayer.width, height: tbPlayer.height };
+            let canMove = true;
+            for (const wall of tbWalls) {
+                if (tbIsColliding(playerRect, wall)) {
+                    canMove = false;
+                    break;
+                }
+            }
+            
+            if (canMove) {
+                tbPlayer.x = newX;
+                tbPlayer.y = newY;
+            }
+            
+            // Update player bullets
+            tbBullets = tbBullets.filter(b => {
+                b.x += b.vx;
+                b.y += b.vy;
+                return b.x >= 0 && b.x <= TB_CANVAS_WIDTH && b.y >= 0 && b.y <= TB_CANVAS_HEIGHT;
+            });
+            
+            // Update enemy bullets
+            tbEnemyBullets = tbEnemyBullets.filter(b => {
+                b.x += b.vx;
+                b.y += b.vy;
+                return b.x >= 0 && b.x <= TB_CANVAS_WIDTH && b.y >= 0 && b.y <= TB_CANVAS_HEIGHT;
+            });
+            
+            // Update enemies
+            tbEnemies.forEach(enemy => {
+                enemy.moveTimer++;
+                
+                // Change direction periodically
+                if (enemy.moveTimer > 60 + Math.random() * 60) {
+                    enemy.moveTimer = 0;
+                    const dirs = ['up', 'down', 'left', 'right'];
+                    enemy.direction = dirs[Math.floor(Math.random() * dirs.length)];
+                }
+                
+                // Move enemy
+                let enX = enemy.x;
+                let enY = enemy.y;
+                
+                switch (enemy.direction) {
+                    case 'up': enY -= TB_ENEMY_SPEED; break;
+                    case 'down': enY += TB_ENEMY_SPEED; break;
+                    case 'left': enX -= TB_ENEMY_SPEED; break;
+                    case 'right': enX += TB_ENEMY_SPEED; break;
+                }
+                
+                // Check boundaries
+                enX = Math.max(0, Math.min(TB_CANVAS_WIDTH - enemy.width, enX));
+                enY = Math.max(0, Math.min(TB_CANVAS_HEIGHT - enemy.height, enY));
+                
+                // Check wall collision
+                const enemyRect = { x: enX, y: enY, width: enemy.width, height: enemy.height };
+                let enemyCanMove = true;
+                for (const wall of tbWalls) {
+                    if (tbIsColliding(enemyRect, wall)) {
+                        enemyCanMove = false;
+                        // Change direction when hitting wall
+                        const dirs = ['up', 'down', 'left', 'right'];
+                        enemy.direction = dirs[Math.floor(Math.random() * dirs.length)];
+                        break;
+                    }
+                }
+                
+                if (enemyCanMove) {
+                    enemy.x = enX;
+                    enemy.y = enY;
+                }
+                
+                // Enemy fires at player (with lower probability for easier gameplay)
+                if (Math.random() < TB_ENEMY_RANDOM_FIRE_CHANCE) {
+                    tbEnemyFire(enemy);
+                }
+            });
+            
+            // Update explosions
+            tbExplosions = tbExplosions.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.03;
+                return p.life > 0;
+            });
+            
+            // Check collisions: player bullets vs enemies
+            for (let i = tbBullets.length - 1; i >= 0; i--) {
+                for (let j = tbEnemies.length - 1; j >= 0; j--) {
+                    if (tbIsColliding(tbBullets[i], tbEnemies[j])) {
+                        tbCreateExplosion(tbEnemies[j].x + tbEnemies[j].width / 2, tbEnemies[j].y + tbEnemies[j].height / 2);
+                        tbScore += 100;
+                        tbEnemiesKilled++;
+                        document.getElementById('tbScore').textContent = tbScore;
+                        document.getElementById('tbEnemiesLeft').textContent = tbTotalEnemies - tbEnemiesKilled;
+                        tbBullets.splice(i, 1);
+                        tbEnemies.splice(j, 1);
+                        
+                        // Check victory
+                        if (tbEnemies.length === 0) {
+                            tbEndGame(true);
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            // Check collisions: player bullets vs walls
+            for (let i = tbBullets.length - 1; i >= 0; i--) {
+                for (let j = tbWalls.length - 1; j >= 0; j--) {
+                    if (tbIsColliding(tbBullets[i], tbWalls[j])) {
+                        tbWalls[j].health--;
+                        tbBullets.splice(i, 1);
+                        if (tbWalls[j].health <= 0) {
+                            tbCreateExplosion(tbWalls[j].x + tbWalls[j].width / 2, tbWalls[j].y + tbWalls[j].height / 2);
+                            tbWalls.splice(j, 1);
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            // Check collisions: enemy bullets vs walls
+            for (let i = tbEnemyBullets.length - 1; i >= 0; i--) {
+                for (let j = tbWalls.length - 1; j >= 0; j--) {
+                    if (tbIsColliding(tbEnemyBullets[i], tbWalls[j])) {
+                        tbWalls[j].health--;
+                        tbEnemyBullets.splice(i, 1);
+                        if (tbWalls[j].health <= 0) {
+                            tbCreateExplosion(tbWalls[j].x + tbWalls[j].width / 2, tbWalls[j].y + tbWalls[j].height / 2);
+                            tbWalls.splice(j, 1);
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            // Check collisions: enemy bullets vs player
+            if (!tbPlayer.invincible) {
+                for (let i = tbEnemyBullets.length - 1; i >= 0; i--) {
+                    if (tbIsColliding(tbEnemyBullets[i], tbPlayer)) {
+                        tbEnemyBullets.splice(i, 1);
+                        tbPlayerHit();
+                        break;
+                    }
+                }
+            }
+            
+            // Update invincibility
+            if (tbPlayer.invincible) {
+                tbPlayer.invincibleTime--;
+                if (tbPlayer.invincibleTime <= 0) tbPlayer.invincible = false;
+            }
+        }
+        
+        function tbIsColliding(a, b) {
+            return a.x < b.x + b.width && a.x + a.width > b.x &&
+                   a.y < b.y + b.height && a.y + a.height > b.y;
+        }
+        
+        function tbPlayerHit() {
+            tbLives--;
+            document.getElementById('tbLives').textContent = tbLives;
+            tbCreateExplosion(tbPlayer.x + tbPlayer.width / 2, tbPlayer.y + tbPlayer.height / 2);
+            
+            if (tbLives <= 0) {
+                tbEndGame(false);
+            } else {
+                tbPlayer.invincible = true;
+                tbPlayer.invincibleTime = 90;
+            }
+        }
+        
+        function tbEndGame(victory) {
+            tbGameOver = true;
+            if (victory) tbScore += 200;  // Bonus for winning
+            document.getElementById('tbFinalScore').textContent = tbScore;
+            document.getElementById('tankBattleCompleteMessage').classList.add('show');
+            
+            // Award XP for game completion (score-based) - use VirtualPet constants if available
+            let gameXP = 20;
+            if (typeof VirtualPet !== 'undefined' && VirtualPet.GAME_XP_REWARDS && VirtualPet.GAME_XP_REWARDS['tank-battle']) {
+                const reward = VirtualPet.GAME_XP_REWARDS['tank-battle'];
+                gameXP = Math.max(reward.min, Math.min(reward.max, Math.floor(tbScore / reward.divisor)));
+            } else {
+                gameXP = Math.max(20, Math.min(30, Math.floor(tbScore / 5)));
+            }
+            if (window.achievementGamification) {
+                window.achievementGamification.addXP(gameXP);
+                window.achievementGamification.showXPGainNotification(gameXP, '坦克大战完成');
+            }
+            
+            // Notify virtual pet about game completion
+            if (typeof VirtualPet !== 'undefined') {
+                VirtualPet.notifyGameCompleted('tank-battle', tbScore, 0);
+            }
+        }
+        
+        function tbRender() {
+            const canvas = document.getElementById('tankBattleCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas with grass color
+            ctx.fillStyle = TB_COLORS.grass;
+            ctx.fillRect(0, 0, TB_CANVAS_WIDTH, TB_CANVAS_HEIGHT);
+            
+            // Draw grid lines (subtle)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= TB_CANVAS_WIDTH; x += TB_TILE_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, TB_CANVAS_HEIGHT);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= TB_CANVAS_HEIGHT; y += TB_TILE_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(TB_CANVAS_WIDTH, y);
+                ctx.stroke();
+            }
+            
+            // Draw walls
+            tbWalls.forEach(wall => {
+                ctx.fillStyle = TB_COLORS.wall;
+                ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
+                ctx.fillStyle = TB_COLORS.wallBorder;
+                ctx.fillRect(wall.x + wall.width - 3, wall.y, 3, wall.height);
+                ctx.fillRect(wall.x, wall.y + wall.height - 3, wall.width, 3);
+            });
+            
+            // Draw player tank
+            if (!tbPlayer.invincible || Math.floor(tbPlayer.invincibleTime / 5) % 2 === 1) {
+                drawTank(ctx, tbPlayer, TB_COLORS.player, TB_COLORS.playerBarrel);
+            }
+            
+            // Draw enemy tanks
+            tbEnemies.forEach(enemy => {
+                drawTank(ctx, enemy, TB_COLORS.enemy, TB_COLORS.enemyBarrel);
+            });
+            
+            // Draw bullets
+            ctx.fillStyle = TB_COLORS.bullet;
+            tbBullets.forEach(b => {
+                ctx.beginPath();
+                ctx.arc(b.x + b.width / 2, b.y + b.height / 2, TB_BULLET_SIZE / 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            ctx.fillStyle = '#FF6347';
+            tbEnemyBullets.forEach(b => {
+                ctx.beginPath();
+                ctx.arc(b.x + b.width / 2, b.y + b.height / 2, TB_BULLET_SIZE / 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // Draw explosions
+            tbExplosions.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+        }
+        
+        function drawTank(ctx, tank, bodyColor, barrelColor) {
+            const x = tank.x;
+            const y = tank.y;
+            const size = TB_TANK_SIZE;
+            
+            // Tank body
+            ctx.fillStyle = bodyColor;
+            ctx.fillRect(x + 2, y + 2, size - 4, size - 4);
+            
+            // Tank tracks
+            ctx.fillStyle = '#333';
+            if (tank.direction === 'up' || tank.direction === 'down') {
+                ctx.fillRect(x, y, 4, size);
+                ctx.fillRect(x + size - 4, y, 4, size);
+            } else {
+                ctx.fillRect(x, y, size, 4);
+                ctx.fillRect(x, y + size - 4, size, 4);
+            }
+            
+            // Tank turret (barrel)
+            ctx.fillStyle = barrelColor;
+            const centerX = x + size / 2;
+            const centerY = y + size / 2;
+            const barrelLength = size / 2;
+            const barrelWidth = 6;
+            
+            ctx.beginPath();
+            switch (tank.direction) {
+                case 'up':
+                    ctx.fillRect(centerX - barrelWidth / 2, y - barrelLength / 2 + 4, barrelWidth, barrelLength);
+                    break;
+                case 'down':
+                    ctx.fillRect(centerX - barrelWidth / 2, y + size - barrelLength / 2 - 4, barrelWidth, barrelLength);
+                    break;
+                case 'left':
+                    ctx.fillRect(x - barrelLength / 2 + 4, centerY - barrelWidth / 2, barrelLength, barrelWidth);
+                    break;
+                case 'right':
+                    ctx.fillRect(x + size - barrelLength / 2 - 4, centerY - barrelWidth / 2, barrelLength, barrelWidth);
+                    break;
+            }
+            
+            // Tank center (turret base)
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, size / 5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function cleanupTankBattleGame() {
+            tbGameOver = true;
+            if (tbAnimationId) {
+                cancelAnimationFrame(tbAnimationId);
+                tbAnimationId = null;
+            }
+            
+            document.removeEventListener('keydown', tbHandleKeyDown);
+            document.removeEventListener('keyup', tbHandleKeyUp);
+            
+            document.getElementById('tankBattleOverlay').classList.remove('show');
+            document.getElementById('tankBattleCompleteMessage').classList.remove('show');
+        }
+
+        // ===== Minesweeper (扫雷) Game Logic =====
+        // Game state
+        let msGrid = [];
+        let msRows = 8;
+        let msCols = 8;
+        let msTotalMines = 10;
+        let msRemainingMines = 10;
+        let msRevealedCount = 0;
+        let msGameOver = false;
+        let msGameWon = false;
+        let msFlagMode = false;
+        let msTimerInterval = null;
+        let msTime = 0;
+        let msFirstClick = true;
+
+        function initMinesweeperGame(taskIndex = 0) {
+            // Adjust difficulty based on task
+            if (taskIndex === 0) {
+                // Easier: 8x8 grid with 8 mines
+                msRows = 8;
+                msCols = 8;
+                msTotalMines = 8;
+            } else {
+                // Standard: 8x8 grid with 10 mines
+                msRows = 8;
+                msCols = 8;
+                msTotalMines = 10;
+            }
+            
+            msRemainingMines = msTotalMines;
+            msRevealedCount = 0;
+            msGameOver = false;
+            msGameWon = false;
+            msFlagMode = false;
+            msTime = 0;
+            msFirstClick = true;
+            
+            // Clear timer
+            if (msTimerInterval) {
+                clearInterval(msTimerInterval);
+                msTimerInterval = null;
+            }
+            
+            // Initialize empty grid
+            msGrid = [];
+            for (let r = 0; r < msRows; r++) {
+                msGrid[r] = [];
+                for (let c = 0; c < msCols; c++) {
+                    msGrid[r][c] = {
+                        mine: false,
+                        revealed: false,
+                        flagged: false,
+                        adjacentMines: 0
+                    };
+                }
+            }
+            
+            // Update UI
+            document.getElementById('msRemainingMines').textContent = msRemainingMines;
+            document.getElementById('msTimer').textContent = '0';
+            document.getElementById('minesweeperCompleteMessage').classList.remove('show');
+            document.getElementById('minesweeperCompleteMessage').classList.remove('lose');
+            
+            // Update flag mode button
+            const flagBtn = document.getElementById('flagModeToggle');
+            flagBtn.classList.remove('active');
+            flagBtn.onclick = toggleFlagMode;
+            
+            // Render grid
+            renderMinesweeperGrid();
+            
+            // Show overlay
+            document.getElementById('minesweeperOverlay').classList.add('show');
+            
+            // Setup button handlers
+            document.getElementById('resetMinesweeper').onclick = () => {
+                cleanupMinesweeperGame();
+                initMinesweeperGame(taskIndex);
+            };
+            document.getElementById('exitMinesweeper').onclick = cleanupMinesweeperGame;
+        }
+
+        function placeMines(excludeRow, excludeCol) {
+            // Place mines randomly, excluding the first clicked cell and its neighbors
+            let minesPlaced = 0;
+            while (minesPlaced < msTotalMines) {
+                const r = Math.floor(Math.random() * msRows);
+                const c = Math.floor(Math.random() * msCols);
+                
+                // Skip if already a mine or near first click
+                if (msGrid[r][c].mine) continue;
+                if (Math.abs(r - excludeRow) <= 1 && Math.abs(c - excludeCol) <= 1) continue;
+                
+                msGrid[r][c].mine = true;
+                minesPlaced++;
+            }
+            
+            // Calculate adjacent mine counts
+            for (let r = 0; r < msRows; r++) {
+                for (let c = 0; c < msCols; c++) {
+                    if (!msGrid[r][c].mine) {
+                        msGrid[r][c].adjacentMines = countAdjacentMines(r, c);
+                    }
+                }
+            }
+        }
+
+        function countAdjacentMines(row, col) {
+            let count = 0;
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    if (dr === 0 && dc === 0) continue;
+                    const nr = row + dr;
+                    const nc = col + dc;
+                    if (nr >= 0 && nr < msRows && nc >= 0 && nc < msCols && msGrid[nr][nc].mine) {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
+
+        function renderMinesweeperGrid() {
+            const gridEl = document.getElementById('minesweeperGrid');
+            gridEl.innerHTML = '';
+            gridEl.className = `minesweeper-grid size-${msCols}`;
+            
+            for (let r = 0; r < msRows; r++) {
+                for (let c = 0; c < msCols; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'minesweeper-cell';
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    
+                    // Add event listeners
+                    cell.addEventListener('click', (e) => handleCellClick(r, c, e));
+                    cell.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        handleCellRightClick(r, c);
+                    });
+                    
+                    // Long press for flag on mobile - store timer on cell element to avoid interference
+                    cell.addEventListener('touchstart', (e) => {
+                        cell._longPressTimer = setTimeout(() => {
+                            e.preventDefault();
+                            handleCellRightClick(r, c);
+                        }, 500);
+                    });
+                    cell.addEventListener('touchend', () => {
+                        if (cell._longPressTimer) {
+                            clearTimeout(cell._longPressTimer);
+                            cell._longPressTimer = null;
+                        }
+                    });
+                    cell.addEventListener('touchmove', () => {
+                        if (cell._longPressTimer) {
+                            clearTimeout(cell._longPressTimer);
+                            cell._longPressTimer = null;
+                        }
+                    });
+                    
+                    updateCellDisplay(cell, r, c);
+                    gridEl.appendChild(cell);
+                }
+            }
+        }
+
+        function updateCellDisplay(cell, row, col) {
+            const cellData = msGrid[row][col];
+            cell.className = 'minesweeper-cell';
+            cell.textContent = '';
+            
+            if (cellData.revealed) {
+                cell.classList.add('revealed');
+                if (cellData.mine) {
+                    cell.classList.add('mine');
+                    cell.textContent = '💣';
+                } else if (cellData.adjacentMines > 0) {
+                    cell.textContent = cellData.adjacentMines;
+                    cell.classList.add(`num-${cellData.adjacentMines}`);
+                }
+            } else if (cellData.flagged) {
+                cell.classList.add('flagged');
+                cell.textContent = '🚩';
+            }
+        }
+
+        function handleCellClick(row, col, event) {
+            if (msGameOver) return;
+            
+            const cellData = msGrid[row][col];
+            if (cellData.revealed || cellData.flagged) return;
+            
+            // In flag mode, toggle flag instead of revealing
+            if (msFlagMode) {
+                handleCellRightClick(row, col);
+                return;
+            }
+            
+            // First click: place mines and start timer
+            if (msFirstClick) {
+                msFirstClick = false;
+                placeMines(row, col);
+                startTimer();
+            }
+            
+            revealCell(row, col);
+            checkWinCondition();
+        }
+
+        function handleCellRightClick(row, col) {
+            if (msGameOver) return;
+            
+            const cellData = msGrid[row][col];
+            if (cellData.revealed) return;
+            
+            // Toggle flag
+            cellData.flagged = !cellData.flagged;
+            msRemainingMines += cellData.flagged ? -1 : 1;
+            
+            // Update display
+            document.getElementById('msRemainingMines').textContent = msRemainingMines;
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            updateCellDisplay(cell, row, col);
+        }
+
+        function revealCell(row, col) {
+            if (row < 0 || row >= msRows || col < 0 || col >= msCols) return;
+            
+            const cellData = msGrid[row][col];
+            if (cellData.revealed || cellData.flagged) return;
+            
+            cellData.revealed = true;
+            msRevealedCount++;
+            
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            updateCellDisplay(cell, row, col);
+            
+            // Hit a mine - game over
+            if (cellData.mine) {
+                endGame(false);
+                return;
+            }
+            
+            // If no adjacent mines, reveal neighbors
+            if (cellData.adjacentMines === 0) {
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        if (dr !== 0 || dc !== 0) {
+                            revealCell(row + dr, col + dc);
+                        }
+                    }
+                }
+            }
+        }
+
+        function toggleFlagMode() {
+            msFlagMode = !msFlagMode;
+            const flagBtn = document.getElementById('flagModeToggle');
+            if (msFlagMode) {
+                flagBtn.classList.add('active');
+            } else {
+                flagBtn.classList.remove('active');
+            }
+        }
+
+        function startTimer() {
+            msTimerInterval = setInterval(() => {
+                msTime++;
+                document.getElementById('msTimer').textContent = msTime;
+            }, 1000);
+        }
+
+        function checkWinCondition() {
+            // Win if all non-mine cells are revealed
+            const totalNonMines = msRows * msCols - msTotalMines;
+            if (msRevealedCount === totalNonMines) {
+                endGame(true);
+            }
+        }
+
+        function endGame(won) {
+            msGameOver = true;
+            msGameWon = won;
+            
+            // Stop timer
+            if (msTimerInterval) {
+                clearInterval(msTimerInterval);
+                msTimerInterval = null;
+            }
+            
+            // Reveal all mines
+            if (!won) {
+                for (let r = 0; r < msRows; r++) {
+                    for (let c = 0; c < msCols; c++) {
+                        if (msGrid[r][c].mine) {
+                            msGrid[r][c].revealed = true;
+                            const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                            updateCellDisplay(cell, r, c);
+                        }
+                    }
+                }
+            }
+            
+            // Show completion message
+            const msgEl = document.getElementById('minesweeperCompleteMessage');
+            if (won) {
+                msgEl.innerHTML = `🎉 胜利！用时：<span id="msFinalTime">${msTime}</span>秒`;
+                msgEl.classList.remove('lose');
+                
+                // Award XP for winning minesweeper (time-based bonus) - use VirtualPet constants if available
+                let gameXP = 10;
+                if (typeof VirtualPet !== 'undefined' && VirtualPet.GAME_XP_REWARDS && VirtualPet.GAME_XP_REWARDS.minesweeper) {
+                    const reward = VirtualPet.GAME_XP_REWARDS.minesweeper;
+                    const bonusXP = Math.floor((100 - Math.min(msTime, 100)) * 0.3);
+                    gameXP = Math.max(reward.min, Math.min(reward.max, bonusXP));
+                } else {
+                    gameXP = Math.max(10, Math.min(25, Math.floor((100 - Math.min(msTime, 100)) * 0.3)));
+                }
+                if (window.achievementGamification) {
+                    window.achievementGamification.addXP(gameXP);
+                    window.achievementGamification.showXPGainNotification(gameXP, '扫雷游戏胜利');
+                }
+                
+                // Notify virtual pet about game completion
+                if (typeof VirtualPet !== 'undefined') {
+                    VirtualPet.notifyGameCompleted('minesweeper', 0, msTime);
+                }
+            } else {
+                msgEl.innerHTML = `💥 踩雷了！用时：<span id="msFinalTime">${msTime}</span>秒`;
+                msgEl.classList.add('lose');
+            }
+            msgEl.classList.add('show');
+        }
+
+        function cleanupMinesweeperGame() {
+            msGameOver = true;
+            if (msTimerInterval) {
+                clearInterval(msTimerInterval);
+                msTimerInterval = null;
+            }
+            
+            document.getElementById('minesweeperOverlay').classList.remove('show');
+            document.getElementById('minesweeperCompleteMessage').classList.remove('show');
+        }
+
+        // ===== Random Game Selection =====
+        // Randomly select from enabled games only
+        function selectRandomGame() {
+            const enabledGames = loadEnabledGames();
+            // Fallback to all games if somehow none are enabled
+            const games = enabledGames.length > 0 ? enabledGames : ALL_GAMES;
+            const randomIndex = Math.floor(Math.random() * games.length);
+            return games[randomIndex];
         }
 
         // Initialize on page load

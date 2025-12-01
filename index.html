@@ -37,6 +37,7 @@
     
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="achievement-gamification.css">
+    <link rel="stylesheet" href="virtual-pet.css">
     <!-- Performance: preconnect/dns-prefetch to CDN hosting images -->
     <link rel="preconnect" href="https://eb118-file.cdn.bcebos.com" crossorigin>
     <link rel="dns-prefetch" href="//eb118-file.cdn.bcebos.com">
@@ -158,43 +159,20 @@
         <canvas id="globalFireworksCanvas"></canvas>
     </div>
     
+    <!-- Child Mode Indicator (shown when child mode is active) -->
+    <div id="childModeIndicator" class="child-mode-indicator" title="点击退出孩子模式">
+        <span>👶 孩子模式</span>
+        <span class="exit-text">点击退出</span>
+    </div>
+    
     <div class="container">
         <header>
             <h1>
                 <span id="settingsIcon" class="settings-icon" title="点击打开设置">🏛️</span> <span id="headerTitle">博物馆之旅</span>
             </h1>
         </header>
-        
-        <nav class="age-selector" aria-label="年龄组选择">
-            <fieldset class="age-group-fieldset">
-                <legend class="age-group-legend">孩子年龄：</legend>
-                <div class="age-options">
-                    <label class="age-option">
-                        <input type="radio" name="ageGroup" value="3-6" checked aria-describedby="age-help">
-                        <span class="age-option-text">3-6岁 (学龄前)</span>
-                    </label>
-                    <label class="age-option">
-                        <input type="radio" name="ageGroup" value="7-12" aria-describedby="age-help">
-                        <span class="age-option-text">7-12岁 (小学)</span>
-                    </label>
-                    <label class="age-option">
-                        <input type="radio" name="ageGroup" value="13-18" aria-describedby="age-help">
-                        <span class="age-option-text">13-18岁 (中学)</span>
-                    </label>
-                </div>
-            </fieldset>
-            <span id="age-help" class="sr-only">选择孩子的年龄段以获取适合的博物馆参观内容</span>
-        </nav>
 
-        <!-- Age selector hint notification -->
-        <div id="ageSelectorHint" class="age-selector-hint">
-            💡 提示：您可以点击左上角 🏛️ 设置按钮来更改年龄选择
-        </div>
-
-        <!-- Settings hint notification for new users -->
-        <div id="settingsHint" class="settings-hint-notification">
-            💡 提示：点击左上角 🏛️ 设置按钮，可以修改孩子昵称、选择年龄段等
-        </div>
+        <!-- Age selector removed - functionality moved to settings page -->
 
         <main role="main">
             <section class="museum-list" id="museums">
@@ -380,7 +358,10 @@
             <div id="achievementPosterSection" class="achievement-poster-section" style="display: none;">
                 <canvas id="achievementPosterCanvas" style="display: none; max-width: 100%;"></canvas>
                 <div id="achievementPosterPreview" class="poster-preview"></div>
-                <button id="downloadAchievementPoster" class="poster-button" style="display: none;">📱 下载成就海报</button>
+                <div class="poster-actions">
+                    <button id="downloadAchievementPoster" class="poster-button" style="display: none;">📱 下载成就海报</button>
+                    <button id="shareAchievementPoster" class="poster-button" style="display: none;">📤 分享成就海报</button>
+                </div>
             </div>
         </div>
     </div>
@@ -458,6 +439,16 @@
                     </div>
                     <div class="settings-hint">更改后将立即重新加载博物馆内容</div>
                 </div>
+                <div class="settings-item">
+                    <label class="settings-label" for="childModeToggle">孩子模式：</label>
+                    <div class="settings-input-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="childModeToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-hint">开启后简化界面，仅显示孩子探索任务，适合把手机给孩子在博物馆里找镇馆之宝</div>
+                </div>
                 </div>
             </div>
             <!-- Data Management Section - Moved up for better accessibility -->
@@ -471,15 +462,15 @@
                     <label class="settings-label" for="dataTierPrioritySelector">博物馆数据优先级：</label>
                     <div class="settings-input-group">
                         <select id="dataTierPrioritySelector" class="settings-input">
-                            <option value="tier1-tier2-tier3">静态文件 → 远程存储 → 内置数据（推荐）</option>
-                            <option value="tier2-tier1-tier3">远程存储 → 静态文件 → 内置数据（开发调试）</option>
+                            <option value="tier2-tier1-tier3">远程存储 → 静态文件 → 内置数据（推荐，获取最新数据）</option>
+                            <option value="tier1-tier2-tier3">静态文件 → 远程存储 → 内置数据（稳定优先）</option>
                             <option value="tier3-tier1-tier2">内置数据 → 静态文件 → 远程存储（离线优先）</option>
                         </select>
                     </div>
                     <div class="settings-hint">
                         选择博物馆数据加载的优先级顺序<br>
+                        • <strong>远程存储</strong>：动态数据，单馆页面可获取最新内容（云端KV存储）<br>
                         • <strong>静态文件</strong>：稳定发布的单个博物馆数据文件<br>
-                        • <strong>远程存储</strong>：开发调试中的最新内容（云端KV存储）<br>
                         • <strong>内置数据</strong>：应用默认数据（离线可用）
                     </div>
                 </div>
@@ -681,6 +672,13 @@
                     <div class="settings-hint">控制是否在博物馆卡片上显示管理按钮（用于编辑博物馆数据）</div>
                 </div>
                 <div class="settings-item">
+                    <label class="settings-label" for="showGuideButtonToggle">显示导览按钮：</label>
+                    <div class="settings-input-group">
+                        <input type="checkbox" id="showGuideButtonToggle" class="settings-checkbox">
+                    </div>
+                    <div class="settings-hint">控制是否在博物馆卡片上显示导览按钮（用于进入单馆导览模式）</div>
+                </div>
+                <div class="settings-item">
                     <label class="settings-label" for="showOnlyMuseumsWithCollections">只显示有藏品信息的博物馆：</label>
                     <div class="settings-input-group">
                         <input type="checkbox" id="showOnlyMuseumsWithCollections" class="settings-checkbox" checked>
@@ -728,6 +726,8 @@
                 <div class="settings-item">
                     <div class="settings-hint" style="margin-top: 16px; text-align: right;">
                         <a href="minecraft-images-demo.html" target="_blank" style="color: #999; font-size: 11px; text-decoration: none;">🎮 资源库</a>
+                        <span style="color: #666; margin: 0 8px;">|</span>
+                        <a href="space-invaders.html" target="_blank" style="color: #999; font-size: 11px; text-decoration: none;">🐝 小蜜蜂</a>
                     </div>
                 </div>
                 </div>
@@ -869,6 +869,7 @@
     <!-- Museum data loaded from museums-data.js and Tier 1 JSON files via museum-data-loader.js -->
     <script src="firework.js"></script>
     <script src="achievement-gamification.js"></script>
+    <script src="virtual-pet.js"></script>
     <script src="script.js"></script>
     <!-- Placeholder for dynamic section museum count (for tests and UI hooks) -->
     <span id="sectionMuseumCount" style="display:none"></span>
