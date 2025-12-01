@@ -132,7 +132,9 @@ class MuseumDataLoader {
      * 
      * @param {string} museumId - Museum identifier
      * @returns {Promise<Object|null>} Museum data or null if not found
-     * @deprecated Do not use for individual museum data loading - use loadMuseum() instead
+     * @deprecated since v2.2.0 - Do not use for individual museum data loading.
+     *             Use loadMuseum() instead which tries dynamic data first.
+     *             This method is retained only for internal use by loadAllMuseums() for homepage listing.
      */
     async loadFromTier3(museumId) {
         try {
