@@ -5322,6 +5322,14 @@ class MuseumCheckApp {
             });
         }
 
+        // Open website admin button (affiliate routing configuration)
+        const openAdminBtn = document.getElementById('openAdminButton');
+        if (openAdminBtn) {
+            openAdminBtn.addEventListener('click', () => {
+                window.open('admin.html?admin=1', '_blank');
+            });
+        }
+
         // Open treasures page button
         const openTreasuresBtn = document.getElementById('openTreasuresButton');
         if (openTreasuresBtn) {

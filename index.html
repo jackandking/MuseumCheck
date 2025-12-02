@@ -143,6 +143,63 @@
         ]
     }
     </script>
+    
+    <!-- Affiliate Routing Check - must run early to redirect if needed -->
+    <script>
+        (function() {
+            'use strict';
+            
+            // Configuration
+            var KV_API = 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore';
+            var CONFIG_KEY = 'museumcheck-affiliate-config';
+            
+            // Get affiliate from URL
+            var params = new URLSearchParams(window.location.search);
+            var affiliate = params.get('affiliate');
+            
+            // Skip check if no affiliate parameter
+            if (!affiliate) {
+                return;
+            }
+            
+            affiliate = affiliate.toUpperCase();
+            
+            // Check affiliate routing configuration from KV store
+            var sortKey = 'affiliate-' + affiliate;
+            var url = KV_API + '?key=' + encodeURIComponent(CONFIG_KEY) + '&sortKey=' + encodeURIComponent(sortKey);
+            
+            // Use synchronous XHR to block page load until we know where to go
+            // This prevents flash of content before redirect
+            try {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, false); // false = synchronous
+                xhr.timeout = 3000; // 3 second timeout
+                xhr.send(null);
+                
+                if (xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response && response.value) {
+                        var config = JSON.parse(response.value);
+                        // Check if this affiliate should redirect to simple.html
+                        if (config && config.target === 'simple' && config.active !== false) {
+                            // Redirect to simple.html with same query parameters
+                            var newUrl = 'simple.html' + window.location.search;
+                            window.location.replace(newUrl);
+                            // Stop script execution
+                            throw new Error('Redirecting to simple.html');
+                        }
+                    }
+                }
+            } catch (e) {
+                // If redirect was thrown, let it propagate
+                if (e.message === 'Redirecting to simple.html') {
+                    throw e;
+                }
+                // Otherwise, continue with normal page load (network error, timeout, etc.)
+                console.log('[AffiliateRouting] Config check failed, using default:', e.message);
+            }
+        })();
+    </script>
 </head>
 <body>
     <!-- Under Construction Message (shown when no affiliate parameter) -->
@@ -500,6 +557,15 @@
                         </button>
                     </div>
                     <div class="settings-hint">打开排行榜管理后台，可查看、编辑、导出、删除全网排行榜数据</div>
+                </div>
+                <div class="settings-item">
+                    <label class="settings-label">网站管理后台：</label>
+                    <div class="settings-input-group">
+                        <button id="openAdminButton" class="settings-button">
+                            🛠️ 网站管理
+                        </button>
+                    </div>
+                    <div class="settings-hint">打开网站管理后台，可配置 affiliate 路由规则，控制不同来源显示的页面内容</div>
                 </div>
                 <div class="settings-item">
                     <label class="settings-label">清空所有数据：</label>
