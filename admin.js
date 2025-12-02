@@ -11,7 +11,12 @@
   const CONFIG = {
     API_ENDPOINT: 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore',
     AFFILIATE_CONFIG_KEY: 'museumcheck-affiliate-config',
-    TIMESTAMP_2124: 4866674732  // Far future timestamp in SECONDS (Unix timestamp - year 2124)
+    // Far future timestamp: year 2124 in Unix seconds
+    // Calculated as: new Date('2124-01-01T00:00:00Z').getTime() / 1000 = 4861363200
+    // We use a slightly higher value to ensure data persists indefinitely
+    TIMESTAMP_2124: 4866674732,
+    // Time offset in seconds for marking items as already expired (for deletion)
+    TOMBSTONE_EXPIRE_OFFSET: 60
   };
 
   const qs = new URLSearchParams(location.search);
@@ -146,7 +151,8 @@
         deleted: true, 
         timestamp: Date.now() 
       });
-      const expireAt = Math.floor(Date.now() / 1000) - 60; // Already expired
+      // Set expiration to past to trigger deletion
+      const expireAt = Math.floor(Date.now() / 1000) - CONFIG.TOMBSTONE_EXPIRE_OFFSET;
       
       const res = await fetch(CONFIG.API_ENDPOINT, {
         method: 'POST',
