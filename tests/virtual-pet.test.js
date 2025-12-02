@@ -666,7 +666,8 @@ describe('VirtualPet', () => {
             const pet = new VirtualPet();
             pet.adoptPet('cat');
             
-            const result = pet.feedPet(5); // Less than 10 (new FEED_COST)
+            // Test with 5 points, intentionally less than FEED_COST (10) to verify insufficient points handling
+            const result = pet.feedPet(5);
             expect(result.success).toBe(false);
             expect(result.message).toContain('积分不足');
         });
@@ -786,7 +787,8 @@ describe('VirtualPet', () => {
             pet.adoptPet('cat');
             pet.petData.pet.isDead = true;
             
-            const result = pet.revivePet(25); // Less than 50 (new REVIVE_COST)
+            // Test with 25 points, intentionally less than REVIVE_COST (50) to verify insufficient points handling
+            const result = pet.revivePet(25);
             expect(result.success).toBe(false);
             expect(result.message).toContain('积分不足');
         });
