@@ -3471,8 +3471,9 @@ class LeaderboardManager {
 
     /**
      * Submit user's score to leaderboard
+     * Now includes XP and pet stats for multiple ranking types
      */
-    async submitScore(nickname, visitedCount) {
+    async submitScore(nickname, visitedCount, xp = 0, petStats = null) {
         try {
             const userId = this.getUserId();
             const sortKey = `user-${userId}`;
@@ -3481,7 +3482,10 @@ class LeaderboardManager {
                 nickname: nickname || '小朋友',
                 visitedCount: visitedCount,
                 userId: userId,
-                lastUpdate: Date.now()
+                lastUpdate: Date.now(),
+                // New fields for additional rankings
+                xp: xp || 0,
+                petStats: petStats || null  // { attack, defense, petType, petEmoji }
             };
 
             const response = await fetch(this.apiEndpoint, {
@@ -3605,11 +3609,45 @@ class LeaderboardManager {
 
     /**
      * Check if user should be prompted to update their score
+     * Now checks both visit count AND XP changes to ensure leaderboard is updated for all score changes
      */
     shouldSubmitScore() {
         const lastSubmittedCount = parseInt(localStorage.getItem('lastSubmittedVisitCount') || '0', 10);
         const currentCount = this.app.visitedMuseums.length;
-        return currentCount !== lastSubmittedCount;
+        
+        // Check if visit count changed
+        if (currentCount !== lastSubmittedCount) {
+            return true;
+        }
+        
+        // Also check if XP changed (for XP leaderboard tab)
+        const lastSubmittedXP = parseInt(localStorage.getItem('lastSubmittedXP') || '0', 10);
+        let currentXP = 0;
+        if (this.app.achievementGamification) {
+            const xpData = this.app.achievementGamification.getXPInfo();
+            currentXP = xpData.total || 0;
+        }
+        
+        if (currentXP !== lastSubmittedXP) {
+            return true;
+        }
+        
+        // Also check if pet stats changed (for Pet leaderboard tab)
+        const lastSubmittedPetPower = parseInt(localStorage.getItem('lastSubmittedPetPower') || '0', 10);
+        let currentPetPower = 0;
+        try {
+            if (typeof VirtualPet !== 'undefined') {
+                const petData = JSON.parse(localStorage.getItem('virtualPetData') || '{}');
+                if (petData.adopted && petData.pet && !petData.pet.isDead) {
+                    const pet = petData.pet;
+                    currentPetPower = (pet.attack || 10) + (pet.defense || 10);
+                }
+            }
+        } catch (e) {
+            // Ignore pet data parsing errors
+        }
+        
+        return currentPetPower !== lastSubmittedPetPower;
     }
 
     /**
@@ -3625,6 +3663,7 @@ class LeaderboardManager {
 
     /**
      * Auto-submit score if count changed and return rank change information
+     * Now includes XP and pet stats for multiple ranking types
      * @returns {Object} Result with rank change info: { success, oldRank, newRank, rankChange, totalUsers }
      */
     async autoSubmitScore() {
@@ -3635,6 +3674,35 @@ class LeaderboardManager {
         const nickname = this.app.childNickname || '小朋友';
         const visitedCount = this.app.visitedMuseums.length;
         const userId = this.getUserId();
+        
+        // Get XP from achievement gamification system
+        let xp = 0;
+        if (this.app.achievementGamification) {
+            const xpData = this.app.achievementGamification.getXPInfo();
+            xp = xpData.total || 0;
+        }
+        
+        // Get pet stats from virtual pet system
+        let petStats = null;
+        if (typeof VirtualPet !== 'undefined') {
+            try {
+                const petData = JSON.parse(localStorage.getItem('virtualPetData') || '{}');
+                if (petData.adopted && petData.pet && !petData.pet.isDead) {
+                    const pet = petData.pet;
+                    const petType = VirtualPet.PET_TYPES[pet.type];
+                    petStats = {
+                        attack: pet.attack || 10,
+                        defense: pet.defense || 10,
+                        totalPower: (pet.attack || 10) + (pet.defense || 10),
+                        petType: pet.type,
+                        petEmoji: petType ? petType.emoji : '🐾',
+                        petName: pet.name || petType?.name || '宠物'
+                    };
+                }
+            } catch (e) {
+                console.warn('Failed to get pet stats:', e);
+            }
+        }
         
         // Get old rank before submitting new score
         let oldRank = null;
@@ -3649,14 +3717,19 @@ class LeaderboardManager {
             console.warn('Failed to get old rank:', err);
         }
         
-        // Submit new score
-        const result = await this.submitScore(nickname, visitedCount);
+        // Submit new score with XP and pet stats
+        const result = await this.submitScore(nickname, visitedCount, xp, petStats);
         if (!result.success) {
             return { success: false, error: result.error };
         }
         
         localStorage.setItem('lastSubmittedVisitCount', visitedCount.toString());
-        console.log('Auto-submitted score to leaderboard');
+        localStorage.setItem('lastSubmittedXP', xp.toString());
+        // Save pet power for future comparison to detect pet stats changes
+        if (petStats && petStats.totalPower) {
+            localStorage.setItem('lastSubmittedPetPower', petStats.totalPower.toString());
+        }
+        console.log('Auto-submitted score to leaderboard with XP:', xp, 'petStats:', petStats);
         
         // Get new rank after submitting
         let newRank = null;
@@ -3682,6 +3755,33 @@ class LeaderboardManager {
             totalUsers,
             isNewEntry: !oldRank && newRank
         };
+    }
+    
+    /**
+     * Get user rank for a specific ranking type
+     * @param {Array} entries - Leaderboard entries
+     * @param {string} userId - User ID to find
+     * @param {string} rankingType - 'visits', 'xp', or 'pet'
+     */
+    getUserRankByType(entries, userId, rankingType = 'visits') {
+        // Sort entries by the appropriate field
+        let sortedEntries;
+        switch (rankingType) {
+            case 'xp':
+                sortedEntries = [...entries].sort((a, b) => (b.xp || 0) - (a.xp || 0));
+                break;
+            case 'pet':
+                sortedEntries = [...entries].filter(e => e.petStats && e.petStats.totalPower)
+                    .sort((a, b) => (b.petStats?.totalPower || 0) - (a.petStats?.totalPower || 0));
+                break;
+            case 'visits':
+            default:
+                sortedEntries = [...entries].sort((a, b) => (b.visitedCount || 0) - (a.visitedCount || 0));
+                break;
+        }
+        
+        const userEntry = sortedEntries.findIndex(entry => entry.userId === userId);
+        return userEntry >= 0 ? userEntry + 1 : null;
     }
 }
 
@@ -4875,6 +4975,11 @@ class MuseumCheckApp {
                             'nickname_length': nickname.length,
                             'auto_saved': true
                         });
+                    } else {
+                        // Show error message when nickname is invalid (content safety or length)
+                        alert(result.message);
+                        // Restore the previous valid nickname
+                        nicknameInput.value = savedNickname || '小淘气';
                     }
                 }
             });
@@ -6559,6 +6664,12 @@ class MuseumCheckApp {
 
         const trimmed = nickname.trim();
         
+        // Content safety check - Compliance with China's internet regulations
+        const contentCheck = this.checkNicknameContentSafety(trimmed);
+        if (!contentCheck.isValid) {
+            return contentCheck;
+        }
+        
         // Count Chinese characters and English letters
         const chineseChars = trimmed.match(/[\u4e00-\u9fa5]/g) || [];
         const englishChars = trimmed.match(/[a-zA-Z]/g) || [];
@@ -6570,6 +6681,105 @@ class MuseumCheckApp {
         // Max 5 Chinese chars (10 units) or 10 English chars (10 units)
         if (totalLength > 10) {
             return { isValid: false, message: '昵称过长（最多5个中文字或10个英文字母）' };
+        }
+        
+        return { isValid: true };
+    }
+
+    /**
+     * Check nickname content safety for compliance with China's internet regulations
+     * This includes filtering for:
+     * - Politically sensitive content
+     * - Vulgar/profane language
+     * - Discriminatory terms
+     * - Illegal/violent content references
+     * - Inappropriate or harmful content
+     * @param {string} nickname - The nickname to validate
+     * @returns {Object} - { isValid: boolean, message?: string }
+     */
+    checkNicknameContentSafety(nickname) {
+        if (!nickname) {
+            return { isValid: true };
+        }
+        
+        const normalizedNickname = nickname.toLowerCase().replace(/\s+/g, '');
+        
+        // Empty string after normalization is considered safe (length validation is separate)
+        if (normalizedNickname.length === 0) {
+            return { isValid: true };
+        }
+        
+        // Blocklist of prohibited content patterns (pre-lowercased for performance)
+        // Categories: political, vulgar, discriminatory, violent, illegal, other inappropriate
+        const blockedPatterns = [
+            // Political sensitive terms (simplified for content compliance)
+            '法轮', '轮子功', '反共', '反党', '反华', '台独', '港独', '藏独', '疆独',
+            '邪教', '传销', '六四', '64事件', '天安门事件',
+            
+            // Vulgar/profane language
+            '傻逼', '傻b', 'sb', '操你', '草你', '日你', '妈的', '他妈', '她妈',
+            '狗日', '王八', '婊子', '贱人', '贱货', '骚货', '淫', '色情', '黄色',
+            'fuck', 'shit', 'bitch', 'ass', 'dick', 'pussy', 'cock',
+            '屁眼', '鸡巴', '屌', '逼', '奶子', '胸', '裸', '性爱',
+            
+            // Discriminatory terms
+            '蝗虫', '支那', '鬼子', '死gay', '死基', '变态',
+            
+            // Violence and illegal content
+            '杀人', '自杀', '毒品', '赌博', '枪支', '炸弹', '恐怖',
+            
+            // Other inappropriate content for children's app
+            '诈骗', '骗子', '黑客', 'hack', '病毒', 'virus'
+        ];
+        
+        // Check if nickname contains any blocked patterns
+        for (const pattern of blockedPatterns) {
+            if (normalizedNickname.includes(pattern)) {
+                return { 
+                    isValid: false, 
+                    message: '昵称包含不适当内容，请更换一个健康的昵称' 
+                };
+            }
+        }
+        
+        // Additional regex patterns for common circumvention attempts
+        const regexPatterns = [
+            // Numbers replacing letters in sensitive words
+            /f[u4]ck/i,
+            /sh[i1]t/i,
+            /b[i1]tch/i,
+            /[a4]ss/i,
+            // Mixed Chinese/English inappropriate patterns
+            /傻[bB逼]/,
+            /[操草日艹]你/,
+            /[操草日艹]他/,
+            /[操草日艹]她/,
+            // Common circumvention with special characters
+            /s\.?b\.?/i,
+            /t\.?m\.?d/i,
+            /n\.?m\.?b/i,
+            /w\.?t\.?f/i
+        ];
+        
+        for (const regex of regexPatterns) {
+            if (regex.test(normalizedNickname)) {
+                return { 
+                    isValid: false, 
+                    message: '昵称包含不适当内容，请更换一个健康的昵称' 
+                };
+            }
+        }
+        
+        // Check for excessive special characters or suspicious patterns
+        // Guard against division by zero
+        if (nickname.length > 0) {
+            const specialCharRatio = (nickname.match(/[!@#$%^&*()_+=\[\]{};':"\\|,.<>\/?`~]/g) || []).length / nickname.length;
+            if (specialCharRatio > 0.5) {
+                return { 
+                    isValid: false, 
+                    message: '昵称包含过多特殊字符，请使用正常的昵称' 
+                };
+            }
         }
         
         return { isValid: true };
@@ -8404,6 +8614,16 @@ class MuseumCheckApp {
                         // Award XP for checklist completion (small amount)
                         this.achievementGamification.addXP(5);
                         
+                        // ===== AUTO-SUBMIT TO LEADERBOARD =====
+                        // Submit XP change to leaderboard so user can see their rank in XP tab
+                        if (this.leaderboardManager) {
+                            this.leaderboardManager.autoSubmitScore()
+                                .catch(err => {
+                                    console.warn('Failed to auto-submit leaderboard score after XP gain:', err);
+                                });
+                        }
+                        // ===== END AUTO-SUBMIT TO LEADERBOARD =====
+                        
                         // ===== VIRTUAL PET INTEGRATION =====
                         // Notify virtual pet of task completion
                         VirtualPet.notifyTaskCompleted();
@@ -8661,13 +8881,45 @@ class MuseumCheckApp {
     async showLeaderboardModal() {
         this.modalManager.showModal('leaderboardModal');
         
+        // Initialize current ranking type if not set
+        if (!this.currentRankingType) {
+            this.currentRankingType = 'visits';
+        }
+        
+        // Set up tab click handlers
+        this.setupLeaderboardTabs();
+        
         // Force refresh if score was recently submitted
         const shouldForceRefresh = this.leaderboardManager.shouldForceRefresh();
-        await this.renderLeaderboard(shouldForceRefresh);
+        await this.renderLeaderboard(shouldForceRefresh, this.currentRankingType);
         
         // Track leaderboard view
         this.trackEvent('leaderboard_viewed', {
-            'visited_count': this.visitedMuseums.length
+            'visited_count': this.visitedMuseums.length,
+            'ranking_type': this.currentRankingType
+        });
+    }
+    
+    setupLeaderboardTabs() {
+        const tabs = document.querySelectorAll('.leaderboard-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', async (e) => {
+                const rankingType = e.currentTarget.dataset.rankingType;
+                if (rankingType === this.currentRankingType) return;
+                
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                
+                // Update current ranking type and re-render
+                this.currentRankingType = rankingType;
+                await this.renderLeaderboard(false, rankingType);
+                
+                // Track tab switch
+                this.trackEvent('leaderboard_tab_switched', {
+                    'ranking_type': rankingType
+                });
+            });
         });
     }
 
@@ -8675,8 +8927,19 @@ class MuseumCheckApp {
         this.modalManager.closeModal('leaderboardModal');
     }
 
-    async renderLeaderboard(forceRefresh = false) {
+    async renderLeaderboard(forceRefresh = false, rankingType = 'visits') {
         const listContainer = document.getElementById('leaderboardList');
+        const introContainer = document.getElementById('leaderboardIntro');
+        
+        // Update intro text based on ranking type
+        const introTexts = {
+            visits: '看看谁的博物馆之旅最精彩！参观越多，排名越高！',
+            xp: '看看谁获得的积分最多！完成任务、上传照片可以获取积分！',
+            pet: '看看谁的宠物最强！喂养和训练宠物可以提升能力！'
+        };
+        if (introContainer) {
+            introContainer.innerHTML = `<p>${introTexts[rankingType] || introTexts.visits}</p>`;
+        }
         
         // Show loading state
         listContainer.innerHTML = `
@@ -8702,35 +8965,64 @@ class MuseumCheckApp {
                 
                 // Still render user's local stats even on error
                 const userId = this.leaderboardManager.getUserId();
-                this.renderMyRank(null, [], userId);
+                this.renderMyRank(null, [], userId, rankingType);
                 return;
             }
             
             // Handle empty leaderboard (no users have submitted scores yet)
             if (!result.data || result.data.length === 0) {
                 // Show empty state
+                const emptyMessages = {
+                    visits: { icon: '🏅', title: '排行榜暂无数据', subtitle: '快去参观博物馆，成为第一名吧！' },
+                    xp: { icon: '⭐', title: '积分排行榜暂无数据', subtitle: '完成任务获取积分，成为积分王！' },
+                    pet: { icon: '🐾', title: '宠物排行榜暂无数据', subtitle: '领养并训练宠物，成为最强驯兽师！' }
+                };
+                const msg = emptyMessages[rankingType] || emptyMessages.visits;
                 listContainer.innerHTML = `
                     <div class="leaderboard-empty">
-                        <div class="empty-icon">🏅</div>
-                        <p>排行榜暂无数据</p>
-                        <p>快去参观博物馆，成为第一名吧！</p>
+                        <div class="empty-icon">${msg.icon}</div>
+                        <p>${msg.title}</p>
+                        <p>${msg.subtitle}</p>
                     </div>
                 `;
                 
                 // Still render user's local stats even when leaderboard is empty
                 const userId = this.leaderboardManager.getUserId();
-                this.renderMyRank(null, [], userId);
+                this.renderMyRank(null, [], userId, rankingType);
                 return;
             }
 
-            const entries = result.data;
+            let entries = result.data;
             const userId = this.leaderboardManager.getUserId();
-            const myRank = this.leaderboardManager.getUserRank(entries, userId);
+            
+            // Sort and filter entries based on ranking type
+            entries = this.sortEntriesByRankingType(entries, rankingType);
+            
+            // Get user's rank for this ranking type
+            const myRank = this.leaderboardManager.getUserRankByType(result.data, userId, rankingType);
 
             // Update my rank display
-            this.renderMyRank(myRank, entries, userId);
+            this.renderMyRank(myRank, entries, userId, rankingType);
 
-            // Render leaderboard entries
+            // Check if there are valid entries for this ranking type
+            if (entries.length === 0) {
+                const noDataMessages = {
+                    visits: { icon: '🏅', title: '暂无排行数据', subtitle: '完成任务后将显示排名！' },
+                    xp: { icon: '⭐', title: '暂无积分数据', subtitle: '完成任务获取积分，成为积分王！' },
+                    pet: { icon: '🐾', title: '暂无宠物数据', subtitle: '领养宠物后，你的宠物会出现在这里！' }
+                };
+                const msg = noDataMessages[rankingType] || noDataMessages.visits;
+                listContainer.innerHTML = `
+                    <div class="leaderboard-empty">
+                        <div class="empty-icon">${msg.icon}</div>
+                        <p>${msg.title}</p>
+                        <p>${msg.subtitle}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Render leaderboard entries based on ranking type
             let html = '<div class="leaderboard-entries">';
             
             entries.forEach((entry, index) => {
@@ -8745,13 +9037,15 @@ class MuseumCheckApp {
                 
                 const rankClass = rank <= 3 ? `rank-${rank}` : '';
                 
+                // Generate entry content based on ranking type
+                const entryContent = this.generateEntryContent(entry, rankingType, isMyEntry);
+                
                 html += `
                     <div class="leaderboard-entry ${isTop3 ? 'top-3' : ''} ${isMyEntry ? 'my-entry' : ''}">
                         ${medalHtml}
                         <div class="entry-rank ${rankClass}">${rank}</div>
                         <div class="entry-info">
-                            <div class="entry-nickname">${this.escapeHtml(entry.nickname)}${isMyEntry ? ' (我)' : ''}</div>
-                            <div class="entry-count">参观了 ${entry.visitedCount} 个博物馆</div>
+                            ${entryContent}
                         </div>
                     </div>
                 `;
@@ -8788,22 +9082,124 @@ class MuseumCheckApp {
             
             // Still render user's local stats even on error
             const userId = this.leaderboardManager.getUserId();
-            this.renderMyRank(null, [], userId);
+            this.renderMyRank(null, [], userId, rankingType);
+        }
+    }
+    
+    /**
+     * Sort and filter entries based on ranking type
+     */
+    sortEntriesByRankingType(entries, rankingType) {
+        switch (rankingType) {
+            case 'xp':
+                // Filter entries with XP > 0 and sort by XP
+                return [...entries]
+                    .filter(e => e.xp && e.xp > 0)
+                    .sort((a, b) => (b.xp || 0) - (a.xp || 0));
+            case 'pet':
+                // Filter entries with pet stats and sort by total power
+                return [...entries]
+                    .filter(e => e.petStats && e.petStats.totalPower)
+                    .sort((a, b) => (b.petStats?.totalPower || 0) - (a.petStats?.totalPower || 0));
+            case 'visits':
+            default:
+                // Sort by visited count (already sorted by default)
+                return [...entries].sort((a, b) => (b.visitedCount || 0) - (a.visitedCount || 0));
+        }
+    }
+    
+    /**
+     * Generate entry content HTML based on ranking type
+     */
+    generateEntryContent(entry, rankingType, isMyEntry) {
+        const nickname = this.escapeHtml(entry.nickname) + (isMyEntry ? ' (我)' : '');
+        
+        switch (rankingType) {
+            case 'xp':
+                return `
+                    <div class="entry-nickname">${nickname}</div>
+                    <div class="entry-xp">
+                        <span class="xp-icon">⭐</span>
+                        <span class="xp-value">${entry.xp || 0}</span> 积分
+                    </div>
+                `;
+            case 'pet':
+                const petStats = entry.petStats || {};
+                const petEmoji = petStats.petEmoji || '🐾';
+                return `
+                    <div class="entry-nickname">
+                        <span class="entry-pet-emoji">${petEmoji}</span>
+                        ${nickname}
+                    </div>
+                    <div class="entry-pet-stats">
+                        <span class="entry-pet-stat">
+                            <span class="stat-icon">⚔️</span>
+                            <span class="stat-value">${petStats.attack || 0}</span>
+                        </span>
+                        <span class="entry-pet-stat">
+                            <span class="stat-icon">🛡️</span>
+                            <span class="stat-value">${petStats.defense || 0}</span>
+                        </span>
+                        <span class="entry-pet-stat">
+                            <span class="stat-icon">💪</span>
+                            <span class="stat-value">${petStats.totalPower || 0}</span>
+                        </span>
+                    </div>
+                `;
+            case 'visits':
+            default:
+                return `
+                    <div class="entry-nickname">${nickname}</div>
+                    <div class="entry-count">参观了 ${entry.visitedCount || 0} 个博物馆</div>
+                `;
         }
     }
 
-    renderMyRank(rank, entries, userId) {
+    renderMyRank(rank, entries, userId, rankingType = 'visits') {
         const myRankContainer = document.getElementById('leaderboardMyRank');
         const positionElem = document.getElementById('myRankPosition');
         const nicknameElem = document.getElementById('myRankNickname');
         const countElem = document.getElementById('myRankCount');
 
+        // Get local values based on ranking type
+        let localValue = '';
+        let localValueLabel = '';
+        switch (rankingType) {
+            case 'xp':
+                let xp = 0;
+                if (this.achievementGamification) {
+                    const xpData = this.achievementGamification.getXPInfo();
+                    xp = xpData.total || 0;
+                }
+                localValue = xp;
+                localValueLabel = `${xp} 积分`;
+                break;
+            case 'pet':
+                try {
+                    const petData = JSON.parse(localStorage.getItem('virtualPetData') || '{}');
+                    if (petData.adopted && petData.pet && !petData.pet.isDead) {
+                        const pet = petData.pet;
+                        const totalPower = (pet.attack || 10) + (pet.defense || 10);
+                        localValueLabel = `⚔️${pet.attack || 10} 🛡️${pet.defense || 10} 总战力${totalPower}`;
+                    } else {
+                        localValueLabel = '未领养宠物';
+                    }
+                } catch (e) {
+                    localValueLabel = '未领养宠物';
+                }
+                break;
+            case 'visits':
+            default:
+                localValue = this.visitedMuseums.length;
+                localValueLabel = `${this.visitedMuseums.length}个博物馆`;
+                break;
+        }
+
         if (!rank || !entries || entries.length === 0) {
             // Not ranked yet
             if (positionElem) positionElem.textContent = '-';
-            if (nicknameElem) positionElem.textContent = '-';
             if (nicknameElem) nicknameElem.textContent = this.childNickname || '小朋友';
-            if (countElem) countElem.textContent = `${this.visitedMuseums.length}个博物馆`;
+            if (countElem) countElem.textContent = localValueLabel;
             return;
         }
 
@@ -8818,8 +9214,25 @@ class MuseumCheckApp {
         }
         
         if (countElem) {
-            const count = myEntry ? myEntry.visitedCount : this.visitedMuseums.length;
-            countElem.textContent = `${count}个博物馆`;
+            // Use entry value if available, otherwise use local value
+            switch (rankingType) {
+                case 'xp':
+                    countElem.textContent = myEntry ? `${myEntry.xp || 0} 积分` : localValueLabel;
+                    break;
+                case 'pet':
+                    if (myEntry && myEntry.petStats) {
+                        const ps = myEntry.petStats;
+                        countElem.textContent = `⚔️${ps.attack || 0} 🛡️${ps.defense || 0} 总战力${ps.totalPower || 0}`;
+                    } else {
+                        countElem.textContent = localValueLabel;
+                    }
+                    break;
+                case 'visits':
+                default:
+                    const count = myEntry ? myEntry.visitedCount : this.visitedMuseums.length;
+                    countElem.textContent = `${count}个博物馆`;
+                    break;
+            }
         }
     }
 
@@ -9960,6 +10373,16 @@ class MuseumCheckApp {
                     
                     // Award XP for photo upload
                     this.achievementGamification.addXP(10);
+                    
+                    // ===== AUTO-SUBMIT TO LEADERBOARD =====
+                    // Submit XP change to leaderboard so user can see their rank in XP tab
+                    if (this.leaderboardManager) {
+                        this.leaderboardManager.autoSubmitScore()
+                            .catch(err => {
+                                console.warn('Failed to auto-submit leaderboard score after photo XP gain:', err);
+                            });
+                    }
+                    // ===== END AUTO-SUBMIT TO LEADERBOARD =====
                     
                     // ===== VIRTUAL PET INTEGRATION =====
                     // Notify virtual pet of photo upload (more points than regular task)

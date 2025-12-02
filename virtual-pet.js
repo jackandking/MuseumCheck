@@ -23,12 +23,12 @@
  * - Tank Battle: score/5 XP (min 20, max 30)
  * - Minesweeper: (100-time)*0.3 XP (min 10, max 25)
  * 
- * NEW - Pet Levels:
+ * NEW - Pet Levels (reduced thresholds for better accessibility):
  * - Level 1 (新手): 0 XP spent - basic bounce animation
- * - Level 2 (见习): 100 XP spent - spin animation
- * - Level 3 (熟练): 300 XP spent - glow + spin animation
- * - Level 4 (专家): 600 XP spent - rainbow glow + flip animation
- * - Level 5 (大师): 1000 XP spent - fireworks + dance animation
+ * - Level 2 (见习): 50 XP spent - spin animation
+ * - Level 3 (熟练): 150 XP spent - glow + spin animation
+ * - Level 4 (专家): 300 XP spent - rainbow glow + flip animation
+ * - Level 5 (大师): 500 XP spent - fireworks + dance animation
  */
 
 class VirtualPet {
@@ -37,22 +37,28 @@ class VirtualPet {
         this.isVisible = false;
         this.animationTimeout = null;
         this.celebrationAnimationId = null;
+        this.hungerTimerId = null;
         this.initializeUI();
         
         // Check pet status on load
         this.checkPetStatus();
+        
+        // Start hunger timer to update every minute
+        this.startHungerTimer();
     }
 
     // ===== CONSTANTS =====
     static get HUNGER_DEATH_DAYS() { return 90; } // 3 months = ~90 days
     // Note: XP rewards are configured in script.js achievement system (5 XP for tasks, 10 XP for photos)
     // Pet uses the same XP/points system for feeding and upgrades
-    static get FEED_COST() { return 20; } // Points to feed pet
-    static get ATTACK_UPGRADE_COST() { return 50; } // Points to increase attack
-    static get DEFENSE_UPGRADE_COST() { return 50; } // Points to increase defense
-    static get REVIVE_COST() { return 100; } // Points to revive dead pet
-    static get HUNGER_DECREASE_PER_DAY() { return 1; } // Hunger decreases by 1 per day
+    // Reduced costs to make pet more accessible during a typical museum visit (2-3 hours)
+    static get FEED_COST() { return 10; } // Points to feed pet (reduced from 20)
+    static get ATTACK_UPGRADE_COST() { return 25; } // Points to increase attack (reduced from 50)
+    static get DEFENSE_UPGRADE_COST() { return 25; } // Points to increase defense (reduced from 50)
+    static get REVIVE_COST() { return 50; } // Points to revive dead pet (reduced from 100)
+    static get HUNGER_DECREASE_PER_MINUTE() { return 1; } // Hunger decreases by 1% per minute
     static get MAX_HUNGER() { return 100; }
+    static get HUNGER_GRACE_PERIOD_MINUTES() { return 30; } // Grace period after hunger reaches 0 before death
     static get INTELLIGENCE_PER_TASK() { return 1; } // Intelligence increases by 1 per task
     
     // Game completion XP rewards
@@ -68,13 +74,14 @@ class VirtualPet {
     }
     
     // Pet level thresholds (based on total XP spent)
+    // Reduced thresholds to make progression more achievable during museum visits
     static get PET_LEVELS() {
         return [
             { level: 1, xpRequired: 0, name: '新手', animation: 'bounce' },
-            { level: 2, xpRequired: 100, name: '见习', animation: 'spin' },
-            { level: 3, xpRequired: 300, name: '熟练', animation: 'glow-spin' },
-            { level: 4, xpRequired: 600, name: '专家', animation: 'rainbow-flip' },
-            { level: 5, xpRequired: 1000, name: '大师', animation: 'fireworks-dance' }
+            { level: 2, xpRequired: 50, name: '见习', animation: 'spin' },
+            { level: 3, xpRequired: 150, name: '熟练', animation: 'glow-spin' },
+            { level: 4, xpRequired: 300, name: '专家', animation: 'rainbow-flip' },
+            { level: 5, xpRequired: 500, name: '大师', animation: 'fireworks-dance' }
         ];
     }
     
@@ -162,18 +169,20 @@ class VirtualPet {
         const pet = this.petData.pet;
         if (pet.isDead) return;
 
-        // Calculate hunger decrease since last fed
+        // Calculate hunger decrease since last fed (per minute)
         const now = Date.now();
         const lastFed = pet.lastFed || pet.adoptedAt;
-        const daysSinceLastFed = Math.floor((now - lastFed) / (1000 * 60 * 60 * 24));
+        const minutesSinceLastFed = Math.floor((now - lastFed) / (1000 * 60));
         
-        // Calculate expected hunger based on days since last fed
-        // Hunger starts at MAX_HUNGER when fed, decreases by HUNGER_DECREASE_PER_DAY per day
-        const expectedHunger = VirtualPet.MAX_HUNGER - (daysSinceLastFed * VirtualPet.HUNGER_DECREASE_PER_DAY);
+        // Calculate expected hunger based on minutes since last fed
+        // Hunger starts at MAX_HUNGER when fed, decreases by HUNGER_DECREASE_PER_MINUTE per minute
+        const expectedHunger = VirtualPet.MAX_HUNGER - (minutesSinceLastFed * VirtualPet.HUNGER_DECREASE_PER_MINUTE);
         pet.hunger = Math.max(0, expectedHunger);
         
-        // Check if pet has starved (hunger = 0 for long enough)
-        if (pet.hunger <= 0 && daysSinceLastFed >= VirtualPet.HUNGER_DEATH_DAYS) {
+        // Check if pet has starved (hunger = 0 for long enough - now checked based on minutes)
+        // Pet dies after reaching 0 hunger plus grace period
+        const deathThresholdMinutes = VirtualPet.MAX_HUNGER + VirtualPet.HUNGER_GRACE_PERIOD_MINUTES;
+        if (pet.hunger <= 0 && minutesSinceLastFed >= deathThresholdMinutes) {
             pet.isDead = true;
             pet.deathDate = now;
             this.onPetDeath();
@@ -181,6 +190,27 @@ class VirtualPet {
 
         this.savePetData();
         this.updateUI();
+    }
+
+    // Start a timer that updates hunger every minute
+    startHungerTimer() {
+        // Clear any existing timer
+        if (this.hungerTimerId) {
+            clearInterval(this.hungerTimerId);
+        }
+        
+        // Update hunger every minute (60000 ms)
+        this.hungerTimerId = setInterval(() => {
+            this.checkPetStatus();
+        }, 60000);
+    }
+
+    // Stop the hunger timer (for cleanup)
+    stopHungerTimer() {
+        if (this.hungerTimerId) {
+            clearInterval(this.hungerTimerId);
+            this.hungerTimerId = null;
+        }
     }
 
     // ===== PET ACTIONS =====
@@ -765,9 +795,19 @@ class VirtualPet {
             ? 100 
             : Math.round(((levelInfo.xpSpent - (VirtualPet.PET_LEVELS[levelInfo.level - 1]?.xpRequired || 0)) / 
                          (levelInfo.nextLevelXP - (VirtualPet.PET_LEVELS[levelInfo.level - 1]?.xpRequired || 0))) * 100);
+        
+        // Get current points
+        const currentPoints = this.getCurrentPoints();
 
         return `
             <div class="pet-alive">
+                <!-- Points Display -->
+                <div class="pet-points-display">
+                    <span class="points-icon">⭐</span>
+                    <span class="points-value">${currentPoints}</span>
+                    <span class="points-label">积分</span>
+                </div>
+                
                 <div class="pet-display">
                     <span class="pet-main-emoji ${this.isVisible ? 'pet-bounce' : ''}">${petEmoji}</span>
                     <div class="pet-name-display">${pet.name}</div>
@@ -911,16 +951,27 @@ class VirtualPet {
         const floating = document.getElementById('petFloating');
         if (!floating) return;
 
+        const currentPoints = this.getCurrentPoints();
+
         if (this.hasPet() && this.isPetAlive()) {
-            // Use level-based emoji
+            // Use level-based emoji and show points
             const petEmoji = this.getPetEmoji();
-            floating.innerHTML = `<span class="floating-pet-emoji">${petEmoji}</span>`;
+            floating.innerHTML = `
+                <span class="floating-pet-emoji">${petEmoji}</span>
+                <span class="floating-pet-points">${currentPoints}</span>
+            `;
             floating.style.display = 'block';
         } else if (this.hasPet() && !this.isPetAlive()) {
-            floating.innerHTML = `<span class="floating-pet-emoji dead">😢</span>`;
+            floating.innerHTML = `
+                <span class="floating-pet-emoji dead">😢</span>
+                <span class="floating-pet-points">${currentPoints}</span>
+            `;
             floating.style.display = 'block';
         } else {
-            floating.innerHTML = `<span class="floating-pet-emoji">🐾</span>`;
+            floating.innerHTML = `
+                <span class="floating-pet-emoji">🐾</span>
+                <span class="floating-pet-points">${currentPoints}</span>
+            `;
             floating.style.display = 'block';
         }
     }
@@ -1064,6 +1115,118 @@ class VirtualPet {
         }
         
         return false;
+    }
+
+    // ===== PET ADOPTION PROMPT =====
+    // Show a prompt to encourage pet adoption
+    showPetAdoptionPrompt(reason = 'general') {
+        // Only show if user doesn't have a pet
+        if (this.hasPet()) return;
+        
+        // Don't show prompt too frequently - use sessionStorage to track
+        const lastPromptKey = 'virtualPetPromptShown';
+        const lastPromptTime = sessionStorage.getItem(lastPromptKey);
+        const now = Date.now();
+        const cooldownMs = 5 * 60 * 1000; // 5 minute cooldown between prompts
+        
+        if (lastPromptTime && (now - parseInt(lastPromptTime)) < cooldownMs) {
+            return; // Skip if shown recently
+        }
+        
+        // Create prompt message based on reason
+        let message = '';
+        let title = '🐾 来领养一只宠物吧！';
+        
+        switch (reason) {
+            case 'checkin':
+                message = '完成任务可以获得积分，用积分养一只可爱的小宠物陪你一起探索博物馆吧！';
+                break;
+            case 'xp_gain':
+                message = '你刚刚获得了积分！领养一只宠物，用积分喂养它，看它成长吧！';
+                break;
+            default:
+                message = '领养一只宠物，完成任务获得积分来喂养它，让它陪你一起探索博物馆！';
+        }
+        
+        // Create and show the prompt modal
+        this.showAdoptionPromptModal(title, message);
+        
+        // Record that we showed the prompt
+        sessionStorage.setItem(lastPromptKey, now.toString());
+    }
+    
+    showAdoptionPromptModal(title, message) {
+        // Remove any existing prompt
+        const existingPrompt = document.getElementById('pet-adoption-prompt');
+        if (existingPrompt) {
+            existingPrompt.remove();
+        }
+        
+        // Escape HTML to prevent XSS (even though title/message are hardcoded, this is best practice)
+        const escapeHtml = (str) => {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        };
+        
+        // Create the prompt element
+        const prompt = document.createElement('div');
+        prompt.id = 'pet-adoption-prompt';
+        prompt.className = 'pet-adoption-prompt';
+        prompt.innerHTML = `
+            <div class="pet-adoption-prompt-content">
+                <button class="pet-adoption-prompt-close" aria-label="关闭">×</button>
+                <div class="pet-adoption-prompt-icon">🐾</div>
+                <div class="pet-adoption-prompt-title">${escapeHtml(title)}</div>
+                <div class="pet-adoption-prompt-message">${escapeHtml(message)}</div>
+                <div class="pet-adoption-prompt-buttons">
+                    <button class="pet-adoption-prompt-btn primary" id="petAdoptNowBtn">去领养</button>
+                    <button class="pet-adoption-prompt-btn secondary" id="petAdoptLaterBtn">稍后再说</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(prompt);
+        
+        // Show with animation
+        setTimeout(() => {
+            prompt.classList.add('show');
+        }, 10);
+        
+        // Bind events - elements are guaranteed to exist since we just created them
+        const adoptNowBtn = document.getElementById('petAdoptNowBtn');
+        const adoptLaterBtn = document.getElementById('petAdoptLaterBtn');
+        const closeBtn = prompt.querySelector('.pet-adoption-prompt-close');
+        
+        const closePrompt = () => {
+            prompt.classList.remove('show');
+            setTimeout(() => {
+                prompt.remove();
+            }, 300);
+        };
+        
+        adoptNowBtn.addEventListener('click', () => {
+            closePrompt();
+            // Open the pet panel to show adoption options
+            this.showPetPanel();
+        });
+        
+        adoptLaterBtn.addEventListener('click', closePrompt);
+        closeBtn.addEventListener('click', closePrompt);
+        
+        // Click outside to close
+        prompt.addEventListener('click', (e) => {
+            if (e.target === prompt) {
+                closePrompt();
+            }
+        });
+    }
+    
+    // Static method to show pet adoption prompt (for external calls)
+    static showAdoptionPromptIfNeeded(reason = 'general') {
+        if (window.virtualPet) {
+            window.virtualPet.showPetAdoptionPrompt(reason);
+        }
     }
 
     // ===== PUBLIC API FOR INTEGRATION =====

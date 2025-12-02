@@ -143,6 +143,75 @@
         ]
     }
     </script>
+    
+    <!-- 
+      Affiliate Routing Check - TEMPORARILY DISABLED to reduce latency
+      
+      IMPORTANT: Synchronous XHR is used intentionally here despite being deprecated.
+      The requirement is to check the affiliate routing configuration BEFORE any page
+      content is rendered, to prevent a flash of index.html content before redirecting
+      to simple.html. Using async fetch would require hiding all content initially and
+      showing it after the routing decision, which would add complexity and still cause
+      a delay in page rendering.
+      
+      Browser default timeouts will prevent the check from blocking indefinitely.
+      If the request fails or times out, the page falls back to showing index.html.
+    
+    <script>
+        (function() {
+            'use strict';
+            
+            // Configuration
+            var KV_API = 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore';
+            var CONFIG_KEY = 'museumcheck-affiliate-config';
+            
+            // Get affiliate from URL
+            var params = new URLSearchParams(window.location.search);
+            var affiliate = params.get('affiliate');
+            
+            // Skip check if no affiliate parameter
+            if (!affiliate) {
+                return;
+            }
+            
+            affiliate = affiliate.toUpperCase();
+            
+            // Check affiliate routing configuration from KV store
+            var sortKey = 'affiliate-' + affiliate;
+            var url = KV_API + '?key=' + encodeURIComponent(CONFIG_KEY) + '&sortKey=' + encodeURIComponent(sortKey);
+            
+            // Use synchronous XHR to block page load until we know where to go
+            // This prevents flash of content before redirect (see comment above for rationale)
+            try {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, false); // false = synchronous (intentional, see comment above)
+                xhr.send(null);
+                
+                if (xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response && response.value) {
+                        var config = JSON.parse(response.value);
+                        // Check if this affiliate should redirect to simple.html
+                        if (config && config.target === 'simple' && config.active !== false) {
+                            // Redirect to simple.html with same query parameters
+                            var newUrl = 'simple.html' + window.location.search;
+                            window.location.replace(newUrl);
+                            // Stop script execution
+                            throw new Error('Redirecting to simple.html');
+                        }
+                    }
+                }
+            } catch (e) {
+                // If redirect was thrown, let it propagate
+                if (e.message === 'Redirecting to simple.html') {
+                    throw e;
+                }
+                // Otherwise, continue with normal page load (network error, timeout, etc.)
+                console.log('[AffiliateRouting] Config check failed, using default:', e.message);
+            }
+        })();
+    </script>
+    -->
 </head>
 <body>
     <!-- Under Construction Message (shown when no affiliate parameter) -->
@@ -814,7 +883,24 @@
         <div class="modal-content leaderboard-content">
             <span class="close">&times;</span>
             <h2>🏅 全网排行榜</h2>
-            <div class="leaderboard-intro">
+            
+            <!-- Ranking Type Tabs -->
+            <div class="leaderboard-tabs">
+                <button class="leaderboard-tab active" data-ranking-type="visits">
+                    <span class="tab-icon">🏛️</span>
+                    <span class="tab-text">博物馆</span>
+                </button>
+                <button class="leaderboard-tab" data-ranking-type="xp">
+                    <span class="tab-icon">⭐</span>
+                    <span class="tab-text">积分</span>
+                </button>
+                <button class="leaderboard-tab" data-ranking-type="pet">
+                    <span class="tab-icon">🐾</span>
+                    <span class="tab-text">宠物</span>
+                </button>
+            </div>
+            
+            <div class="leaderboard-intro" id="leaderboardIntro">
                 <p>看看谁的博物馆之旅最精彩！参观越多，排名越高！</p>
             </div>
             <div class="leaderboard-my-rank" id="leaderboardMyRank">

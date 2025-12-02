@@ -56,12 +56,13 @@ class VirtualPet {
     }
 
     static get HUNGER_DEATH_DAYS() { return 90; }
-    static get FEED_COST() { return 20; }
-    static get ATTACK_UPGRADE_COST() { return 50; }
-    static get DEFENSE_UPGRADE_COST() { return 50; }
-    static get REVIVE_COST() { return 100; }
-    static get HUNGER_DECREASE_PER_DAY() { return 1; }
+    static get FEED_COST() { return 10; }
+    static get ATTACK_UPGRADE_COST() { return 25; }
+    static get DEFENSE_UPGRADE_COST() { return 25; }
+    static get REVIVE_COST() { return 50; }
+    static get HUNGER_DECREASE_PER_MINUTE() { return 1; }
     static get MAX_HUNGER() { return 100; }
+    static get HUNGER_GRACE_PERIOD_MINUTES() { return 30; }
     static get INTELLIGENCE_PER_TASK() { return 1; }
     
     // Game completion XP rewards
@@ -80,10 +81,10 @@ class VirtualPet {
     static get PET_LEVELS() {
         return [
             { level: 1, xpRequired: 0, name: '新手', animation: 'bounce' },
-            { level: 2, xpRequired: 100, name: '见习', animation: 'spin' },
-            { level: 3, xpRequired: 300, name: '熟练', animation: 'glow-spin' },
-            { level: 4, xpRequired: 600, name: '专家', animation: 'rainbow-flip' },
-            { level: 5, xpRequired: 1000, name: '大师', animation: 'fireworks-dance' }
+            { level: 2, xpRequired: 50, name: '见习', animation: 'spin' },
+            { level: 3, xpRequired: 150, name: '熟练', animation: 'glow-spin' },
+            { level: 4, xpRequired: 300, name: '专家', animation: 'rainbow-flip' },
+            { level: 5, xpRequired: 500, name: '大师', animation: 'fireworks-dance' }
         ];
     }
     
@@ -134,16 +135,16 @@ class VirtualPet {
 
         const now = Date.now();
         const lastFed = pet.lastFed || pet.adoptedAt;
-        const daysSinceLastFed = Math.floor((now - lastFed) / (1000 * 60 * 60 * 24));
+        const minutesSinceLastFed = Math.floor((now - lastFed) / (1000 * 60));
         
-        const hungerDecrease = daysSinceLastFed * VirtualPet.HUNGER_DECREASE_PER_DAY;
+        const hungerDecrease = minutesSinceLastFed * VirtualPet.HUNGER_DECREASE_PER_MINUTE;
         pet.hunger = Math.max(0, VirtualPet.MAX_HUNGER - hungerDecrease);
         
-        if (pet.hunger <= 0) {
-            if (daysSinceLastFed >= VirtualPet.HUNGER_DEATH_DAYS) {
-                pet.isDead = true;
-                pet.deathDate = now;
-            }
+        // Pet dies after reaching 0 hunger plus grace period
+        const deathThresholdMinutes = VirtualPet.MAX_HUNGER + VirtualPet.HUNGER_GRACE_PERIOD_MINUTES;
+        if (pet.hunger <= 0 && minutesSinceLastFed >= deathThresholdMinutes) {
+            pet.isDead = true;
+            pet.deathDate = now;
         }
 
         this.savePetData();
@@ -417,6 +418,38 @@ class VirtualPet {
     static isChildModeActive() {
         return document.body.classList.contains('child-mode');
     }
+    
+    // Pet adoption prompt methods
+    showPetAdoptionPrompt(reason = 'general') {
+        // Only show if user doesn't have a pet
+        if (this.hasPet()) return;
+        
+        // For testing, we skip the cooldown check in unit tests
+        // Create prompt message based on reason
+        let message = '';
+        let title = '🐾 来领养一只宠物吧！';
+        
+        switch (reason) {
+            case 'checkin':
+                message = '完成任务可以获得积分，用积分养一只可爱的小宠物陪你一起探索博物馆吧！';
+                break;
+            case 'xp_gain':
+                message = '你刚刚获得了积分！领养一只宠物，用积分喂养它，看它成长吧！';
+                break;
+            default:
+                message = '领养一只宠物，完成任务获得积分来喂养它，让它陪你一起探索博物馆！';
+        }
+        
+        // Return the prompt data for testing (in real code, this creates DOM elements)
+        return { title, message, reason };
+    }
+    
+    static showAdoptionPromptIfNeeded(reason = 'general') {
+        if (window.virtualPet) {
+            return window.virtualPet.showPetAdoptionPrompt(reason);
+        }
+        return null;
+    }
 }
 
 beforeEach(() => {
@@ -431,20 +464,92 @@ describe('VirtualPet', () => {
             expect(VirtualPet.HUNGER_DEATH_DAYS).toBe(90);
         });
 
-        test('should have feed cost defined', () => {
-            expect(VirtualPet.FEED_COST).toBe(20);
+        test('should have feed cost defined (reduced for accessibility)', () => {
+            expect(VirtualPet.FEED_COST).toBe(10);
         });
 
-        test('should have attack upgrade cost defined', () => {
-            expect(VirtualPet.ATTACK_UPGRADE_COST).toBe(50);
+        test('should have attack upgrade cost defined (reduced for accessibility)', () => {
+            expect(VirtualPet.ATTACK_UPGRADE_COST).toBe(25);
         });
 
-        test('should have defense upgrade cost defined', () => {
-            expect(VirtualPet.DEFENSE_UPGRADE_COST).toBe(50);
+        test('should have defense upgrade cost defined (reduced for accessibility)', () => {
+            expect(VirtualPet.DEFENSE_UPGRADE_COST).toBe(25);
         });
 
-        test('should have revive cost defined', () => {
-            expect(VirtualPet.REVIVE_COST).toBe(100);
+        test('should have revive cost defined (reduced for accessibility)', () => {
+            expect(VirtualPet.REVIVE_COST).toBe(50);
+        });
+        
+        test('should have hunger decrease per minute defined as 1%', () => {
+            expect(VirtualPet.HUNGER_DECREASE_PER_MINUTE).toBe(1);
+        });
+    });
+    
+    describe('Per-Minute Hunger System', () => {
+        test('pet hunger should decrease by 1% per minute', () => {
+            const pet = new VirtualPet();
+            pet.adoptPet('cat');
+            
+            // Simulate 10 minutes passing
+            const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
+            pet.petData.pet.lastFed = tenMinutesAgo;
+            pet.checkPetStatus();
+            
+            // Hunger should be 100 - 10 = 90
+            expect(pet.petData.pet.hunger).toBe(90);
+        });
+        
+        test('pet hunger should reach 0 after 100 minutes', () => {
+            const pet = new VirtualPet();
+            pet.adoptPet('cat');
+            
+            // Simulate 100 minutes passing
+            const hundredMinutesAgo = Date.now() - (100 * 60 * 1000);
+            pet.petData.pet.lastFed = hundredMinutesAgo;
+            pet.checkPetStatus();
+            
+            // Hunger should be 0 (100 - 100 = 0)
+            expect(pet.petData.pet.hunger).toBe(0);
+        });
+        
+        test('pet should not be dead immediately after hunger reaches 0', () => {
+            const pet = new VirtualPet();
+            pet.adoptPet('cat');
+            
+            // Simulate 100 minutes passing (hunger at 0 but not dead yet)
+            const hundredMinutesAgo = Date.now() - (100 * 60 * 1000);
+            pet.petData.pet.lastFed = hundredMinutesAgo;
+            pet.checkPetStatus();
+            
+            // Pet should still be alive
+            expect(pet.isPetAlive()).toBe(true);
+        });
+        
+        test('pet should die after 130 minutes (100 to reach 0 + 30 grace period)', () => {
+            const pet = new VirtualPet();
+            pet.adoptPet('cat');
+            
+            // Simulate 130 minutes passing
+            const minutesAgo = Date.now() - (130 * 60 * 1000);
+            pet.petData.pet.lastFed = minutesAgo;
+            pet.checkPetStatus();
+            
+            // Pet should be dead
+            expect(pet.isPetAlive()).toBe(false);
+            expect(pet.petData.pet.isDead).toBe(true);
+        });
+        
+        test('hunger should not go below 0', () => {
+            const pet = new VirtualPet();
+            pet.adoptPet('cat');
+            
+            // Simulate 200 minutes passing
+            const twoHundredMinutesAgo = Date.now() - (200 * 60 * 1000);
+            pet.petData.pet.lastFed = twoHundredMinutesAgo;
+            pet.checkPetStatus();
+            
+            // Hunger should be 0, not negative
+            expect(pet.petData.pet.hunger).toBe(0);
         });
     });
 
@@ -561,7 +666,8 @@ describe('VirtualPet', () => {
             const pet = new VirtualPet();
             pet.adoptPet('cat');
             
-            const result = pet.feedPet(10);
+            // Test with 5 points, intentionally less than FEED_COST (10) to verify insufficient points handling
+            const result = pet.feedPet(5);
             expect(result.success).toBe(false);
             expect(result.message).toContain('积分不足');
         });
@@ -681,7 +787,8 @@ describe('VirtualPet', () => {
             pet.adoptPet('cat');
             pet.petData.pet.isDead = true;
             
-            const result = pet.revivePet(50);
+            // Test with 25 points, intentionally less than REVIVE_COST (50) to verify insufficient points handling
+            const result = pet.revivePet(25);
             expect(result.success).toBe(false);
             expect(result.message).toContain('积分不足');
         });
@@ -778,20 +885,20 @@ describe('VirtualPet', () => {
             const pet = new VirtualPet();
             pet.adoptPet('dragon');
             
-            // Spend 100+ XP to reach level 2
-            pet.petData.pet.totalXPSpent = 100;
+            // Spend 50+ XP to reach level 2
+            pet.petData.pet.totalXPSpent = 50;
             expect(pet.getPetLevel()).toBe(2);
             
-            // Spend 300+ XP to reach level 3
-            pet.petData.pet.totalXPSpent = 300;
+            // Spend 150+ XP to reach level 3
+            pet.petData.pet.totalXPSpent = 150;
             expect(pet.getPetLevel()).toBe(3);
             
-            // Spend 600+ XP to reach level 4
-            pet.petData.pet.totalXPSpent = 600;
+            // Spend 300+ XP to reach level 4
+            pet.petData.pet.totalXPSpent = 300;
             expect(pet.getPetLevel()).toBe(4);
             
-            // Spend 1000+ XP to reach level 5
-            pet.petData.pet.totalXPSpent = 1000;
+            // Spend 500+ XP to reach level 5
+            pet.petData.pet.totalXPSpent = 500;
             expect(pet.getPetLevel()).toBe(5);
         });
         
@@ -803,14 +910,14 @@ describe('VirtualPet', () => {
             expect(levelInfo.level).toBe(1);
             expect(levelInfo.name).toBe('新手');
             expect(levelInfo.animation).toBe('bounce');
-            expect(levelInfo.xpToNextLevel).toBe(100);
+            expect(levelInfo.xpToNextLevel).toBe(50);
             expect(levelInfo.isMaxLevel).toBe(false);
         });
         
         test('level 5 should be max level', () => {
             const pet = new VirtualPet();
             pet.adoptPet('cat');
-            pet.petData.pet.totalXPSpent = 1000;
+            pet.petData.pet.totalXPSpent = 500;
             
             const levelInfo = pet.getPetLevelInfo();
             expect(levelInfo.level).toBe(5);
@@ -827,19 +934,19 @@ describe('VirtualPet', () => {
             expect(pet.getPetEmoji()).toBe('🐲');
             
             // Level 2
-            pet.petData.pet.totalXPSpent = 100;
+            pet.petData.pet.totalXPSpent = 50;
             expect(pet.getPetEmoji()).toBe('🐉');
             
             // Level 3
-            pet.petData.pet.totalXPSpent = 300;
+            pet.petData.pet.totalXPSpent = 150;
             expect(pet.getPetEmoji()).toBe('🔥');
             
             // Level 4
-            pet.petData.pet.totalXPSpent = 600;
+            pet.petData.pet.totalXPSpent = 300;
             expect(pet.getPetEmoji()).toBe('⚡');
             
             // Level 5
-            pet.petData.pet.totalXPSpent = 1000;
+            pet.petData.pet.totalXPSpent = 500;
             expect(pet.getPetEmoji()).toBe('🌟');
         });
         
@@ -848,7 +955,7 @@ describe('VirtualPet', () => {
             pet.adoptPet('cat');
             
             pet.feedPet(100);
-            expect(pet.petData.pet.totalXPSpent).toBe(20);
+            expect(pet.petData.pet.totalXPSpent).toBe(10);
         });
         
         test('upgrading attack should increase totalXPSpent', () => {
@@ -856,7 +963,7 @@ describe('VirtualPet', () => {
             pet.adoptPet('cat');
             
             pet.upgradeAttack(100);
-            expect(pet.petData.pet.totalXPSpent).toBe(50);
+            expect(pet.petData.pet.totalXPSpent).toBe(25);
         });
         
         test('upgrading defense should increase totalXPSpent', () => {
@@ -864,7 +971,7 @@ describe('VirtualPet', () => {
             pet.adoptPet('cat');
             
             pet.upgradeDefense(100);
-            expect(pet.petData.pet.totalXPSpent).toBe(50);
+            expect(pet.petData.pet.totalXPSpent).toBe(25);
         });
     });
     
@@ -996,6 +1103,59 @@ describe('VirtualPet', () => {
                 expect(level.name).toBeDefined();
                 expect(level.animation).toBeDefined();
             });
+        });
+    });
+    
+    describe('Pet Adoption Prompt', () => {
+        test('showPetAdoptionPrompt should return null if pet is already adopted', () => {
+            const pet = new VirtualPet();
+            pet.adoptPet('dragon');
+            
+            const result = pet.showPetAdoptionPrompt('checkin');
+            expect(result).toBeUndefined();
+        });
+        
+        test('showPetAdoptionPrompt should return prompt data for checkin reason', () => {
+            const pet = new VirtualPet();
+            
+            const result = pet.showPetAdoptionPrompt('checkin');
+            expect(result).toBeDefined();
+            expect(result.title).toContain('领养');
+            expect(result.message).toContain('积分');
+            expect(result.reason).toBe('checkin');
+        });
+        
+        test('showPetAdoptionPrompt should return prompt data for xp_gain reason', () => {
+            const pet = new VirtualPet();
+            
+            const result = pet.showPetAdoptionPrompt('xp_gain');
+            expect(result).toBeDefined();
+            expect(result.message).toContain('获得了积分');
+            expect(result.reason).toBe('xp_gain');
+        });
+        
+        test('showPetAdoptionPrompt should return prompt data for general reason', () => {
+            const pet = new VirtualPet();
+            
+            const result = pet.showPetAdoptionPrompt('general');
+            expect(result).toBeDefined();
+            expect(result.message).toContain('领养');
+            expect(result.reason).toBe('general');
+        });
+        
+        test('showAdoptionPromptIfNeeded static method should work when virtualPet exists', () => {
+            window.virtualPet = new VirtualPet();
+            
+            const result = VirtualPet.showAdoptionPromptIfNeeded('checkin');
+            expect(result).toBeDefined();
+            expect(result.reason).toBe('checkin');
+        });
+        
+        test('showAdoptionPromptIfNeeded static method should return null when virtualPet does not exist', () => {
+            window.virtualPet = null;
+            
+            const result = VirtualPet.showAdoptionPromptIfNeeded('checkin');
+            expect(result).toBeNull();
         });
     });
 });
