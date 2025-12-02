@@ -2422,6 +2422,8 @@
   const DEFAULT_TREASURE_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNlZWUiLz48dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtc2l6ZT0iMzAiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPvCfj7o8L3RleHQ+PC9zdmc+';
   const KV_STORE_ENDPOINT = 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore';
   const MUSEUM_DATA_KEY_PREFIX = 'museum-data-';
+  // Far future expiration timestamp (Unix timestamp in SECONDS - year 2124)
+  const KV_STORE_FAR_FUTURE_EXPIRATION = 4866674732;
   
   let wikiSearchInstance = null;
   let selectedWikiImageUrl = null;
@@ -2705,7 +2707,7 @@
         key: key,
         sortKey: 'museum',
         value: JSON.stringify(museumData),
-        expireAt: 4866674732 // Far future expiration
+        expireAt: KV_STORE_FAR_FUTURE_EXPIRATION
       })
     });
     
@@ -2830,7 +2832,7 @@
                   key: key,
                   sortKey: 'museum',
                   value: JSON.stringify(museumData),
-                  expireAt: 4866674732
+                  expireAt: KV_STORE_FAR_FUTURE_EXPIRATION
                 })
               });
             }
@@ -2961,9 +2963,12 @@
         wikiSearchInstance = new window.WikimediaImageSearch();
       }
       
+      // Get museum name for better search context
+      const museumName = state.selectedMuseum?.name || '';
+      
       let results = [];
       if (wikiSearchInstance) {
-        results = await wikiSearchInstance.searchTreasurePhotos('', query);
+        results = await wikiSearchInstance.searchTreasurePhotos(museumName, query);
       } else {
         // Fallback: direct Wikimedia Commons API call
         results = await searchWikimediaDirectly(query);
