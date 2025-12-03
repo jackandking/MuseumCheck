@@ -16,6 +16,16 @@ const surveyConfig = {
 };
 
 /**
+ * Fallback image for when treasure images fail to load
+ */
+const FALLBACK_IMAGE = 'data:image/svg+xml,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">' +
+    '<rect fill="#f0f0f0" width="100" height="100"/>' +
+    '<text x="50" y="50" text-anchor="middle" dy=".3em" fill="#999" font-size="12">图片加载失败</text>' +
+    '</svg>'
+);
+
+/**
  * Application state
  */
 let currentQuestion = 1;
@@ -313,7 +323,7 @@ function generateTreasureOptions(container) {
         img.alt = treasure.name;
         img.className = 'treasure-image';
         img.onerror = function() {
-            this.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23f0f0f0" width="100" height="100"/><text x="50" y="50" text-anchor="middle" dy=".3em" fill="%23999">图片加载失败</text></svg>';
+            this.src = FALLBACK_IMAGE;
         };
         
         const nameLabel = document.createElement('p');
@@ -403,7 +413,8 @@ function processVote(selectedName, isCorrect) {
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 /**
- * Navigation Functions - Mini-program specific
+ * Navigation Functions
+ * Supports both mini-program (Kuaishou) and web browser environments
  */
 
 /**
