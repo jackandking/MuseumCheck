@@ -55,7 +55,9 @@ class BaiduImageSearch {
     this.resetProxy();
     
     // Build Baidu image search URL
-    const baiduUrl = `https://image.baidu.com/search/acjson?tn=resultjson_com&word=${encodeURIComponent(query)}&pn=0&rn=${limit * 2}&face=0`;
+    // Request double the limit because some results may be filtered out as ads/placeholders
+    const requestCount = limit * 2;
+    const baiduUrl = `https://image.baidu.com/search/acjson?tn=resultjson_com&word=${encodeURIComponent(query)}&pn=0&rn=${requestCount}&face=0`;
     
     while (true) {
       const proxy = this.getCurrentProxy();
@@ -193,10 +195,19 @@ class BaiduImageSearch {
 
   /**
    * Check if URL is an ad or placeholder image
+   * Filters out common Baidu UI elements and low-quality thumbnails
    * @param {string} url - Image URL
    * @returns {boolean} - Whether it's an ad image
    */
   isAdImage(url) {
+    // Patterns to filter out non-content images from Baidu search results:
+    // - emoji.cdn.bcebos.com: Baidu emoji CDN
+    // - ns-strategy: Baidu strategy/ad images
+    // - baseimg: Base UI elements
+    // - yunque: Baidu cloud service images
+    // - logo/icon/placeholder: Generic UI elements
+    // - data:image: Inline data URLs (usually small icons)
+    // - size=f60/w60/f40: Very small thumbnails (60px or 40px)
     const adPatterns = [
       'emoji.cdn.bcebos.com',
       'ns-strategy',
