@@ -233,8 +233,7 @@
    * @param {number} requiredTreasures - Number of treasures to discover (default: 3)
    * @returns {Object} Workflow object
    */
-  function generateTreasureContributorWorkflow(museum, requiredTreasures) {
-    requiredTreasures = requiredTreasures || 3;
+  function generateTreasureContributorWorkflow(museum, requiredTreasures = 3) {
     const museumName = museum.name || '博物馆';
     
     // Build tasks array
@@ -255,7 +254,7 @@
     const tasks = [gatePhotoTask];
 
     // Add "discover treasure" tasks
-    for (var i = 0; i < requiredTreasures; i++) {
+    for (let i = 0; i < requiredTreasures; i++) {
       tasks.push({
         id: 'add-treasure-' + (i + 1),
         role: 'child',
@@ -324,9 +323,9 @@
       return;
     }
 
-    var generatedCount = 0;
-    var contributorCount = 0;
-    var existingCount = 0;
+    let generatedCount = 0;
+    let contributorCount = 0;
+    let existingCount = 0;
 
     window.MUSEUMS.forEach(function(museum) {
       if (!museum || !museum.id) return;
@@ -339,13 +338,11 @@
       }
 
       // Check if museum already has a treasure discovery workflow
-      var hasTreasureWorkflow = museum.workflows.some(function(wf) { 
-        return wf.id === 'treasure-discovery'; 
-      });
+      const hasTreasureWorkflow = museum.workflows.some(wf => wf.id === 'treasure-discovery');
 
       if (!hasTreasureWorkflow) {
         // Generate and add treasure hunt workflow
-        var workflow = generateTreasureHuntWorkflow(museum);
+        const workflow = generateTreasureHuntWorkflow(museum);
         museum.workflows.push(workflow);
         generatedCount++;
       } else {
@@ -355,12 +352,10 @@
       // For museums WITHOUT collections, also add contributor workflow
       // This allows children to discover and add their own treasures
       if (!hasCollections(museum)) {
-        var hasContributorWorkflow = museum.workflows.some(function(wf) {
-          return wf.id === 'treasure-contributor';
-        });
+        const hasContributorWorkflow = museum.workflows.some(wf => wf.id === 'treasure-contributor');
         
         if (!hasContributorWorkflow) {
-          var contributorWorkflow = generateTreasureContributorWorkflow(museum, 3);
+          const contributorWorkflow = generateTreasureContributorWorkflow(museum, 3);
           museum.workflows.push(contributorWorkflow);
           contributorCount++;
         }

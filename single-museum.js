@@ -1425,7 +1425,7 @@
         };
         
         // File upload button (using letmetry.cloud API)
-        var uploadBtn = document.createElement('button');
+        const uploadBtn = document.createElement('button');
         uploadBtn.type = 'button';
         uploadBtn.className = 'sg-btn sg-btn-secondary';
         uploadBtn.style.flex = '1';
@@ -1433,19 +1433,19 @@
         uploadBtn.innerHTML = '⬆️ 上传图片';
         uploadBtn.onclick = function() {
           // Create a hidden file input for upload
-          var uploadInput = document.createElement('input');
+          const uploadInput = document.createElement('input');
           uploadInput.type = 'file';
           uploadInput.accept = 'image/*';
           uploadInput.style.display = 'none';
           document.body.appendChild(uploadInput);
           
           uploadInput.onchange = async function(e) {
-            var file = e.target.files && e.target.files[0];
+            const file = e.target.files && e.target.files[0];
             if(!file) return;
             
             try {
               showToast('⏳ 正在上传图片...');
-              var uploadedUrl = await uploadFileToLetmetry(file);
+              const uploadedUrl = await uploadFileToLetmetry(file);
               if(uploadedUrl) {
                 hiddenUrlInput.value = uploadedUrl;
                 updateTreasurePreview(idx, uploadedUrl);
@@ -1469,13 +1469,13 @@
         treasureSection.appendChild(photoMethods);
         
         // Hidden input to store image URL
-        var hiddenUrlInput = document.createElement('input');
+        const hiddenUrlInput = document.createElement('input');
         hiddenUrlInput.type = 'hidden';
         hiddenUrlInput.id = 'add-treasure-url-' + idx;
         treasureSection.appendChild(hiddenUrlInput);
         
         // Preview container
-        var previewContainer = document.createElement('div');
+        const previewContainer = document.createElement('div');
         previewContainer.id = 'add-treasure-preview-' + idx;
         previewContainer.style.minHeight = '100px';
         previewContainer.style.border = '2px dashed #d1d5db';
@@ -1522,11 +1522,11 @@
         section.appendChild(treasureSection);
         
         // Submit button
-        var submitActions = document.createElement('div');
+        const submitActions = document.createElement('div');
         submitActions.className = 'sg-actions';
         submitActions.style.marginTop = '16px';
         
-        var submitBtn = document.createElement('button');
+        const submitBtn = document.createElement('button');
         submitBtn.className = 'sg-btn sg-btn-primary';
         submitBtn.style.width = '100%';
         submitBtn.style.fontSize = '18px';
@@ -1534,8 +1534,8 @@
         submitBtn.style.padding = '16px';
         submitBtn.innerHTML = '✨ 添加这个宝藏';
         submitBtn.onclick = async function() {
-          var treasureName = nameInput.value.trim();
-          var imageUrl = hiddenUrlInput.value || '';
+          const treasureName = nameInput.value.trim();
+          const imageUrl = hiddenUrlInput.value || '';
           
           if(!treasureName){
             showToast('请输入宝藏名称');
@@ -1545,14 +1545,14 @@
           }
           
           // Get current museum
-          var museumId = state.selectedMuseum ? state.selectedMuseum.id : null;
+          const museumId = state.selectedMuseum ? state.selectedMuseum.id : null;
           if(!museumId){
             showToast('请先选择博物馆');
             return;
           }
           
           // Create treasure object
-          var newTreasure = {
+          const newTreasure = {
             name: treasureName,
             imageUrl: imageUrl || '',
             description: '由小探险家发现并添加',
@@ -1562,7 +1562,7 @@
           
           try {
             // Save to localStorage
-            var userTreasures = getUserTreasuresForMuseum(museumId);
+            const userTreasures = getUserTreasuresForMuseum(museumId);
             userTreasures.push(newTreasure);
             saveUserTreasuresForMuseum(museumId, userTreasures);
             
@@ -2761,12 +2761,12 @@
    * @param {string} imageUrl - The image URL to display
    */
   function updateTreasurePreview(idx, imageUrl) {
-    var previewContainer = document.getElementById('add-treasure-preview-' + idx);
+    const previewContainer = document.getElementById('add-treasure-preview-' + idx);
     if (!previewContainer) return;
     
     if (imageUrl) {
       previewContainer.innerHTML = '';
-      var img = document.createElement('img');
+      const img = document.createElement('img');
       img.src = imageUrl;
       img.alt = '宝藏图片预览';
       img.style.width = '100%';
