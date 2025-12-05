@@ -5330,6 +5330,8 @@
             }
             
             // Sync treasure name to image search input and validate for duplicates
+            // Use debouncing to avoid excessive validation calls during rapid typing
+            let modalNameValidationTimeout = null;
             if (modalTreasureNameInput) {
                 modalTreasureNameInput.addEventListener('input', () => {
                     const treasureName = modalTreasureNameInput.value.trim();
@@ -5337,8 +5339,13 @@
                         ? '点击搜索按钮查找图片' 
                         : '输入名称后点击搜索';
                     
-                    // Validate for duplicate names and show visual feedback
-                    validateModalTreasureName(treasureName);
+                    // Debounce validation to avoid excessive DOM operations
+                    if (modalNameValidationTimeout) {
+                        clearTimeout(modalNameValidationTimeout);
+                    }
+                    modalNameValidationTimeout = setTimeout(() => {
+                        validateModalTreasureName(treasureName);
+                    }, 150);
                 });
             }
             
@@ -6146,6 +6153,8 @@
             }
             
             if (!name || !name.trim()) {
+                // Empty name is not a duplicate error, just reset visual state
+                // Return false to indicate the name is not valid for use (needs input)
                 nameInput.style.borderColor = '';
                 errorEl.style.display = 'none';
                 return false;
