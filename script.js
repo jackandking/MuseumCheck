@@ -85,7 +85,10 @@ const APP_CONFIG = {
         REQUIRED_TREASURES: 3,              // Default number of treasures required to complete
         FILE_UPLOAD_ENDPOINT: 'https://letmetry.cloud/file/upload',  // File upload API
         MAX_FILE_SIZE_MB: 10                // Maximum file size in MB
-    }
+    },
+    
+    // Internationalization
+    LOCALE: 'zh-CN'                         // Default locale for date formatting
 };
 
 // ===== UTILITY FUNCTIONS =====
@@ -9000,6 +9003,8 @@ class MuseumCheckApp {
     
     /**
      * Search Wikimedia Commons for images
+     * @param {string} query - Search query (treasure name)
+     * @returns {Promise<Array>} Array of image objects with url, thumbnailUrl, and name
      */
     async searchWikimediaImages(query) {
         const searchTerms = [
@@ -9036,7 +9041,7 @@ class MuseumCheckApp {
                     }
                 }
             } catch (error) {
-                console.warn(`Wikimedia search failed for "${term}":`, error);
+                console.warn('Wikimedia search failed for "' + term + '":', error);
             }
             
             // Stop if we have enough results
@@ -9066,9 +9071,9 @@ class MuseumCheckApp {
         
         if (!file) return;
         
-        // Validate file
-        const maxSize = APP_CONFIG.TREASURE_CONTRIBUTOR.MAX_FILE_SIZE_MB * 1024 * 1024;
-        if (file.size > maxSize) {
+        // Validate file size
+        const maxSizeBytes = APP_CONFIG.TREASURE_CONTRIBUTOR.MAX_FILE_SIZE_MB * 1024 * 1024;
+        if (file.size > maxSizeBytes) {
             alert(`文件太大，最大支持 ${APP_CONFIG.TREASURE_CONTRIBUTOR.MAX_FILE_SIZE_MB}MB`);
             return;
         }
@@ -9171,7 +9176,7 @@ class MuseumCheckApp {
         const treasure = {
             name: treasureName,
             imageUrl: imageUrl,
-            description: `由亲子探索者发现于${new Date().toLocaleDateString('zh-CN')}`
+            description: `由亲子探索者发现于${new Date().toLocaleDateString(APP_CONFIG.LOCALE)}`
         };
         
         this.saveContributedTreasure(museumId, treasureIndex, treasure);
