@@ -1205,6 +1205,16 @@
         // XP reward for photo contribution
         const PHOTO_CONTRIBUTION_XP = 20;
         
+        // HTML escape function to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // XP reward for photo contribution
+        const PHOTO_CONTRIBUTION_XP = 20;
+        
         // Initialize achievement gamification system
         let achievementGamification = null;
         if (typeof AchievementGamification !== 'undefined') {
