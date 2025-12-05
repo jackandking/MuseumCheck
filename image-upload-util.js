@@ -192,13 +192,16 @@ class ImageUploader {
                 resolve(null);
             });
             
-            // Also handle window focus to detect cancel
+            // Also handle window focus to detect cancel.
+            // We use a short delay after focus to allow time for the file selection
+            // to be populated if user selected a file vs cancelled the dialog.
+            const FOCUS_DELAY_MS = 300;
             const handleFocus = () => {
                 setTimeout(() => {
                     if (!input.files || input.files.length === 0) {
                         resolve(null);
                     }
-                }, 300);
+                }, FOCUS_DELAY_MS);
                 window.removeEventListener('focus', handleFocus);
             };
             
@@ -252,7 +255,8 @@ class ImageUploader {
     }
 }
 
-// Create global instance
+// Create global instance with default config for convenience.
+// Consumers can create their own instances with custom config if needed.
 const imageUploader = new ImageUploader();
 
 // Export for module systems

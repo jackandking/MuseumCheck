@@ -59,7 +59,8 @@ describe('Image Upload Utility', () => {
 
     describe('File size validation', () => {
         test('should reject files larger than maxFileSizeMB', async () => {
-            const largeFile = new Blob(['x'.repeat(11 * 1024 * 1024)], { type: 'image/jpeg' });
+            // Create a minimal blob and mock its size property for memory efficiency
+            const largeFile = new Blob(['test'], { type: 'image/jpeg' });
             Object.defineProperty(largeFile, 'size', { value: 11 * 1024 * 1024 });
             
             await expect(imageUploader.uploadImage(largeFile)).rejects.toThrow('文件太大');
