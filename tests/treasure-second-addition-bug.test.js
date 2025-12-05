@@ -78,6 +78,33 @@ describe('Treasure Second Addition Bug', () => {
         }
     }
 
+    // Simulate saveMuseumWithUserTreasuresToRemote function (extracted from museum-checkin.html)
+    async function saveMuseumWithUserTreasuresToRemote() {
+        if (!window.museumDataLoader || !currentMuseum) {
+            return false;
+        }
+        
+        try {
+            // Prepare museum data with user-added treasures
+            const museumData = { ...currentMuseum };
+            
+            // Mark user-added treasures
+            if (museumData.collections) {
+                museumData.collections = museumData.collections.map(t => ({
+                    ...t,
+                    isUserAdded: t.isUserAdded || false
+                }));
+            }
+            
+            // Save to KV store
+            const success = await window.museumDataLoader.saveToKVStore(museumId, museumData);
+            return success;
+        } catch (error) {
+            console.error('Failed to save museum with user treasures:', error);
+            return false;
+        }
+    }
+
     // Simulate saveContributedTreasure function (extracted from museum-checkin.html)
     async function saveContributedTreasure(taskIndex, treasureData) {
         try {
@@ -114,10 +141,8 @@ describe('Treasure Second Addition Bug', () => {
                         saveUserAddedTreasures(userTreasures);
                     }
 
-                    // Save to KV store (remote persistence)
-                    if (window.museumDataLoader) {
-                        await window.museumDataLoader.saveToKVStore(museumId, currentMuseum);
-                    }
+                    // Save to KV store (remote persistence) using the actual function pattern
+                    await saveMuseumWithUserTreasuresToRemote();
                 }
             }
         } catch (e) {
