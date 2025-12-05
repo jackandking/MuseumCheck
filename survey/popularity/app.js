@@ -4,6 +4,8 @@
  * 
  * Users are shown 5 random museums and asked to vote for the one they think
  * is most popular. Results are aggregated to help determine default museum ordering.
+ * 
+ * Dependencies: ../util.js (provides getConfig, updateConfig functions)
  */
 
 /**
@@ -16,6 +18,18 @@ const surveyConfig = {
     museumsPerRound: 5,
     kvStoreEndpoint: "https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore"
 };
+
+/**
+ * Check if util.js functions are available
+ * @returns {boolean} True if utility functions are available
+ */
+function checkUtilFunctions() {
+    if (typeof getConfig !== 'function' || typeof updateConfig !== 'function') {
+        console.error('Required utility functions (getConfig, updateConfig) are not available. Ensure util.js is loaded.');
+        return false;
+    }
+    return true;
+}
 
 /**
  * Fallback image for when museum images fail to load
@@ -87,7 +101,7 @@ async function loadMuseumsData() {
             }
         }
     } catch (error) {
-        console.log('Failed to fetch museums-meta.js:', error);
+        console.error('Failed to fetch museums-meta.js:', error);
     }
     
     // Fallback: use a default set of popular museums
@@ -274,6 +288,14 @@ function selectMuseum(index) {
  * @param {string} museumName - The selected museum name
  */
 function processVote(museumId, museumName) {
+    // Check if utility functions are available
+    if (!checkUtilFunctions()) {
+        // Still update local vote data even if remote storage unavailable
+        voteData[museumId] = (voteData[museumId] || 0) + 1;
+        console.log('Vote recorded locally:', museumName, '(' + museumId + ')');
+        return;
+    }
+    
     // Read current voting results
     getConfig(surveyConfig.storageKey, (data) => {
         try {
@@ -333,6 +355,13 @@ function showResultsDirectly() {
     if (introElement) introElement.style.display = 'none';
     if (showResultBtn) showResultBtn.style.display = 'none';
     if (result) result.style.display = 'block';
+    
+    // Check if utility functions are available
+    if (!checkUtilFunctions()) {
+        // Show local vote data
+        showResult(voteData);
+        return;
+    }
     
     // Load and display results
     getConfig(surveyConfig.storageKey, (data) => {
@@ -528,6 +557,17 @@ function handleResultDisplay() {
             if (questionnaire) questionnaire.style.display = 'none';
             if (introElement) introElement.style.display = 'none';
             if (result) result.style.display = 'block';
+            
+            // Check if utility functions are available
+            if (!checkUtilFunctions()) {
+                // Show local vote data if available
+                if (Object.keys(voteData).length > 0) {
+                    showResult(voteData);
+                } else {
+                    console.warn('No vote data available for results');
+                }
+                return;
+            }
             
             // Load and display results
             getConfig(surveyConfig.storageKey, (data) => {
