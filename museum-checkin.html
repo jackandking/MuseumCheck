@@ -5011,6 +5011,8 @@
         // ===== Museum Entrance Photo Contributor Functions =====
         
         // Local storage key for contributed museum photos
+        // NOTE: This key must match APP_CONFIG.LOCAL_STORAGE_KEYS.CONTRIBUTED_MUSEUM_PHOTOS in script.js
+        // Duplicated here since museum-checkin.html is a standalone page that doesn't import script.js config
         const CONTRIBUTED_MUSEUM_PHOTOS_KEY = 'contributedMuseumPhotos';
         
         // Get contributed museum entrance photo
@@ -5058,15 +5060,17 @@
             }
             
             if (source === 'wiki') {
-                // Use WikiMedia search
+                // Use existing Wiki search modal pattern
                 try {
-                    const results = await searchWikimediaImages(query);
-                    if (results && results.length > 0) {
-                        // Show first result as preview
-                        showMuseumPhotoPreview(results[0].imageUrl || results[0].url);
-                    } else {
-                        alert('未找到图片，请尝试其他关键词');
+                    // Set callback context for wiki search
+                    window.currentImageInputId = null;  // Not using input field
+                    window.currentPreviewId = 'modalMuseumPhotoPreview';
+                    // Copy name to search input
+                    const wikiSearchInput = document.getElementById('wikiSearchInput');
+                    if (wikiSearchInput) {
+                        wikiSearchInput.value = query;
                     }
+                    openWikiSearch();
                 } catch (e) {
                     console.error('Wiki search error:', e);
                     alert('搜索失败，请重试');
@@ -6860,6 +6864,14 @@
                     img.alt = '预览';
                     preview.textContent = '';
                     preview.appendChild(img);
+                    // Store image URL for museum photo submission
+                    preview.dataset.imageUrl = imageUrl;
+                    
+                    // Show museum photo submit button if this is museum photo preview
+                    if (previewId === 'modalMuseumPhotoPreview') {
+                        const submitBtn = document.getElementById('modalMuseumPhotoSubmitBtn');
+                        if (submitBtn) submitBtn.style.display = 'block';
+                    }
                 }
                 // Also update settings modal preview if we're using that one
                 if (inputId === 'newTreasureImage') {

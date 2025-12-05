@@ -9480,13 +9480,20 @@ class MuseumCheckApp {
                         </a>
                         <p style="margin-top: 10px;">找到合适的图片后，右键复制图片地址，然后粘贴到下方：</p>
                         <input type="text" id="baiduImageUrl" class="treasure-search-input" 
-                               placeholder="粘贴图片URL" style="margin-top: 10px;">
-                        <button onclick="app.selectMuseumPhotoFromUrl('${museumId}')" 
-                                class="treasure-search-action-btn" style="margin-top: 10px;">
+                               placeholder="粘贴图片URL" style="margin-top: 10px;" data-museum-id="${museumId}">
+                        <button id="baiduUrlSubmitBtn" class="treasure-search-action-btn" style="margin-top: 10px;" data-museum-id="${museumId}">
                             使用此图片
                         </button>
                     </div>
                 `;
+                
+                // Add event listener for the Baidu URL submit button
+                const baiduUrlSubmitBtn = resultsContainer.querySelector('#baiduUrlSubmitBtn');
+                if (baiduUrlSubmitBtn) {
+                    baiduUrlSubmitBtn.addEventListener('click', () => {
+                        this.selectMuseumPhotoFromUrl(baiduUrlSubmitBtn.dataset.museumId);
+                    });
+                }
                 return;
             }
             
@@ -9495,18 +9502,42 @@ class MuseumCheckApp {
                 return;
             }
             
+            // Create a safe HTML escape function
+            const escapeHtml = (str) => {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            };
+            
             resultsContainer.innerHTML = `
                 <div class="treasure-image-grid">
-                    ${images.map(img => `
-                        <div class="treasure-image-item" data-url="${img.url || img.imageUrl}">
-                            <img src="${img.thumbnailUrl || img.url || img.imageUrl}" alt="${query}" loading="lazy">
-                            <button class="treasure-image-select" onclick="app.selectMuseumPhotoImage('${museumId}', '${(img.url || img.imageUrl).replace(/'/g, "\\'")}')">
-                                选择
-                            </button>
-                        </div>
-                    `).join('')}
+                    ${images.map(img => {
+                        const imageUrl = escapeHtml(img.url || img.imageUrl);
+                        const thumbUrl = escapeHtml(img.thumbnailUrl || img.url || img.imageUrl);
+                        return `
+                            <div class="treasure-image-item museum-photo-result" data-url="${imageUrl}" data-museum-id="${escapeHtml(museumId)}">
+                                <img src="${thumbUrl}" alt="${escapeHtml(query)}" loading="lazy">
+                                <button class="treasure-image-select museum-photo-select-btn">
+                                    选择
+                                </button>
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
             `;
+            
+            // Add event delegation for image selection
+            resultsContainer.querySelectorAll('.museum-photo-select-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const item = btn.closest('.museum-photo-result');
+                    if (item) {
+                        const url = item.dataset.url;
+                        const musId = item.dataset.museumId;
+                        this.selectMuseumPhotoImage(musId, url);
+                    }
+                });
+            });
         } catch (error) {
             console.error('Error searching museum photo images:', error);
             resultsContainer.innerHTML = '<div class="treasure-search-empty">搜索出错，请重试</div>';
