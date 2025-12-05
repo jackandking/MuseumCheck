@@ -4266,7 +4266,12 @@
                     treasureNameInput.value = savedTreasureData.name || '';
                     if (savedTreasureData.imageUrl) {
                         treasureImageInput.value = savedTreasureData.imageUrl;
-                        treasurePreview.innerHTML = `<img src="${savedTreasureData.imageUrl}" class="image-preview-thumb" alt="预览" />`;
+                        const img = document.createElement('img');
+                        img.src = savedTreasureData.imageUrl;
+                        img.className = 'image-preview-thumb';
+                        img.alt = '预览';
+                        treasurePreview.innerHTML = '';
+                        treasurePreview.appendChild(img);
                     }
                 }
             } else {
@@ -5286,9 +5291,15 @@
                     const url = modalTreasureImageInput.value.trim();
                     const preview = document.getElementById('modalTreasurePreview');
                     if (url) {
-                        preview.innerHTML = `<img src="${url}" class="image-preview-thumb" alt="预览" onerror="this.parentElement.innerHTML='❌'" />`;
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.className = 'image-preview-thumb';
+                        img.alt = '预览';
+                        img.onerror = function() { preview.textContent = '❌'; };
+                        preview.innerHTML = '';
+                        preview.appendChild(img);
                     } else {
-                        preview.innerHTML = '📷';
+                        preview.textContent = '📷';
                         preview.className = 'image-preview-placeholder';
                     }
                 });
@@ -6347,6 +6358,9 @@
 
         /**
          * Select an image from wiki search results
+         * Note: Uses window.currentImageInputId and window.currentPreviewId for target element IDs
+         * This allows the same selectWikiImage function to work with both the settings modal
+         * and the task modal treasure contributor section.
          */
         function selectWikiImage(imageUrl) {
             // Use configurable input ID (for task modal or settings modal)
@@ -6359,10 +6373,15 @@
                 imageInput.value = imageUrl;
             }
             
-            // Update preview
+            // Update preview using DOM methods to prevent XSS
             const preview = document.getElementById(previewId);
             if (preview) {
-                preview.innerHTML = `<img src="${imageUrl}" class="image-preview-thumb" alt="预览" />`;
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.className = 'image-preview-thumb';
+                img.alt = '预览';
+                preview.innerHTML = '';
+                preview.appendChild(img);
             }
             // Also update settings modal preview if we're using that one
             if (inputId === 'newTreasureImage') {
