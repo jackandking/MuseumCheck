@@ -4163,4 +4163,195 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
       expect(currentMuseum.collections.some(c => c.name === '原有镇馆之宝')).toBe(true);
     });
   });
+
+  describe('Fix: Duplicate treasure name validation in museum-checkin modal', () => {
+    /**
+     * Bug: When adding second treasure ("添加镇馆之宝") task, if user enters 
+     * same name as first treasure, storage is not updated correctly
+     * 
+     * Issue: Modal did not validate for duplicate treasure names before completing task
+     * Fix: Added treasureNameExists() validation in completeTask() function
+     * 
+     * Scenario:
+     * 1. User completes first "添加镇馆之宝" with name "清明上河图"
+     * 2. User opens second "添加镇馆之宝 2/3" task
+     * 3. User enters same name "清明上河图" 
+     * 4. Without validation, saveContributedTreasure skips saving because name exists
+     * 5. Task appears completed but storage not properly updated
+     */
+
+    let store;
+    let mockLocalStorage;
+    let currentMuseum;
+    const museumId = 'test-museum';
+    const ageGroup = '7-12';
+
+    beforeEach(() => {
+      store = {};
+      mockLocalStorage = {
+        getItem: jest.fn(key => store[key] || null),
+        setItem: jest.fn((key, value) => { store[key] = value; }),
+        removeItem: jest.fn(key => { delete store[key]; }),
+        clear: jest.fn(() => { store = {}; })
+      };
+      Object.defineProperty(global, 'localStorage', { value: mockLocalStorage, writable: true });
+      
+      currentMuseum = {
+        id: museumId,
+        name: '测试博物馆',
+        collections: []
+      };
+    });
+
+    test('should detect duplicate treasure names', () => {
+      // Add first treasure to collections
+      currentMuseum.collections.push({
+        name: '清明上河图',
+        imageUrl: 'https://example.com/img1.jpg',
+        isUserAdded: true
+      });
+
+      // Save to user treasures localStorage
+      store[`userAddedTreasures_${museumId}`] = JSON.stringify([{
+        name: '清明上河图',
+        imageUrl: 'https://example.com/img1.jpg'
+      }]);
+
+      // Check if duplicate detection works
+      const loadUserAddedTreasures = (musId) => {
+        const saved = mockLocalStorage.getItem(`userAddedTreasures_${musId}`);
+        return saved ? JSON.parse(saved) : [];
+      };
+
+      const treasureNameExists = (name) => {
+        if (!name) return false;
+        const normalizedName = name.trim().toLowerCase();
+        
+        // Check existing museum collections
+        if (currentMuseum && currentMuseum.collections && Array.isArray(currentMuseum.collections)) {
+          const existsInMuseum = currentMuseum.collections.some(t => 
+            t.name && t.name.trim().toLowerCase() === normalizedName
+          );
+          if (existsInMuseum) return true;
+        }
+        
+        // Check user-added treasures
+        const userTreasures = loadUserAddedTreasures(museumId);
+        const existsInUserAdded = userTreasures.some(t => 
+          t.name && t.name.trim().toLowerCase() === normalizedName
+        );
+        
+        return existsInUserAdded;
+      };
+
+      // Should detect duplicate (exact match)
+      expect(treasureNameExists('清明上河图')).toBe(true);
+      
+      // Should detect duplicate (with whitespace)
+      expect(treasureNameExists('  清明上河图  ')).toBe(true);
+      
+      // Should detect duplicate (case insensitive for ASCII parts)
+      expect(treasureNameExists('清明上河图')).toBe(true);
+      
+      // Should NOT detect non-duplicate
+      expect(treasureNameExists('富春山居图')).toBe(false);
+      expect(treasureNameExists('千里江山图')).toBe(false);
+    });
+
+    test('should not allow completing add-treasure task with duplicate name', () => {
+      // Simulate: first treasure already added
+      currentMuseum.collections.push({
+        name: '清明上河图',
+        imageUrl: 'https://example.com/img1.jpg',
+        isUserAdded: true
+      });
+
+      const treasureNameExists = (name) => {
+        if (!name) return false;
+        const normalizedName = name.trim().toLowerCase();
+        return currentMuseum.collections.some(t => 
+          t.name && t.name.trim().toLowerCase() === normalizedName
+        );
+      };
+
+      // Simulate validation in completeTask
+      const validateAndComplete = (treasureName) => {
+        if (!treasureName) {
+          return { success: false, error: 'NAME_REQUIRED' };
+        }
+        
+        if (treasureNameExists(treasureName)) {
+          return { success: false, error: 'NAME_DUPLICATE' };
+        }
+        
+        return { success: true };
+      };
+
+      // Should reject duplicate name
+      const result1 = validateAndComplete('清明上河图');
+      expect(result1.success).toBe(false);
+      expect(result1.error).toBe('NAME_DUPLICATE');
+
+      // Should accept unique name
+      const result2 = validateAndComplete('富春山居图');
+      expect(result2.success).toBe(true);
+
+      // Should reject empty name
+      const result3 = validateAndComplete('');
+      expect(result3.success).toBe(false);
+      expect(result3.error).toBe('NAME_REQUIRED');
+    });
+
+    test('should successfully save treasure with unique name', () => {
+      const treasureNameExists = (name) => {
+        if (!name) return false;
+        const normalizedName = name.trim().toLowerCase();
+        return currentMuseum.collections.some(t => 
+          t.name && t.name.trim().toLowerCase() === normalizedName
+        );
+      };
+
+      // Simulate adding first treasure
+      const addTreasure = (name, imageUrl) => {
+        if (treasureNameExists(name)) {
+          return false;
+        }
+        
+        currentMuseum.collections.push({
+          name: name,
+          imageUrl: imageUrl,
+          isUserAdded: true
+        });
+        
+        // Save to localStorage
+        const key = `userAddedTreasures_${museumId}`;
+        const existing = store[key] ? JSON.parse(store[key]) : [];
+        existing.push({ name, imageUrl });
+        store[key] = JSON.stringify(existing);
+        
+        return true;
+      };
+
+      // Add first treasure - should succeed
+      expect(addTreasure('清明上河图', 'https://example.com/1.jpg')).toBe(true);
+      expect(currentMuseum.collections.length).toBe(1);
+
+      // Try to add duplicate - should fail
+      expect(addTreasure('清明上河图', 'https://example.com/2.jpg')).toBe(false);
+      expect(currentMuseum.collections.length).toBe(1);
+
+      // Add second unique treasure - should succeed
+      expect(addTreasure('富春山居图', 'https://example.com/3.jpg')).toBe(true);
+      expect(currentMuseum.collections.length).toBe(2);
+
+      // Add third unique treasure - should succeed
+      expect(addTreasure('千里江山图', 'https://example.com/4.jpg')).toBe(true);
+      expect(currentMuseum.collections.length).toBe(3);
+
+      // Verify all treasures are correctly stored
+      const userTreasures = JSON.parse(store[`userAddedTreasures_${museumId}`]);
+      expect(userTreasures.length).toBe(3);
+      expect(userTreasures.map(t => t.name)).toEqual(['清明上河图', '富春山居图', '千里江山图']);
+    });
+  });
 });

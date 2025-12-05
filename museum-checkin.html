@@ -4303,6 +4303,13 @@
                     return;
                 }
                 
+                // Validate: treasure name must be unique (prevent duplicates)
+                if (treasureNameExists(treasureName)) {
+                    alert('该镇馆之宝名称已存在，请使用不同的名称！');
+                    document.getElementById('modalTreasureName').focus();
+                    return;
+                }
+                
                 // Save the contributed treasure data (also saves to KV store)
                 await saveContributedTreasure(currentTaskIndex, {
                     name: treasureName,
@@ -5322,12 +5329,16 @@
                 };
             }
             
-            // Sync treasure name to image search input
+            // Sync treasure name to image search input and validate for duplicates
             if (modalTreasureNameInput) {
                 modalTreasureNameInput.addEventListener('input', () => {
-                    modalTreasureImageInput.placeholder = modalTreasureNameInput.value.trim() 
+                    const treasureName = modalTreasureNameInput.value.trim();
+                    modalTreasureImageInput.placeholder = treasureName 
                         ? '点击搜索按钮查找图片' 
                         : '输入名称后点击搜索';
+                    
+                    // Validate for duplicate names and show visual feedback
+                    validateModalTreasureName(treasureName);
                 });
             }
             
@@ -6108,6 +6119,46 @@
             nameInput.classList.remove('error');
             errorEl.classList.remove('show');
             addBtn.disabled = false;
+            return true;
+        }
+
+        /**
+         * Validate modal treasure name and show error if duplicate
+         * Used in the task completion modal for "添加镇馆之宝" tasks
+         * @param {string} name - Treasure name to validate
+         * @returns {boolean} True if valid
+         */
+        function validateModalTreasureName(name) {
+            const nameInput = document.getElementById('modalTreasureName');
+            const completeBtn = document.getElementById('completeButton');
+            
+            if (!nameInput || !completeBtn) return true;
+            
+            // Create or find error message element
+            let errorEl = document.getElementById('modalTreasureNameError');
+            if (!errorEl) {
+                errorEl = document.createElement('div');
+                errorEl.id = 'modalTreasureNameError';
+                errorEl.className = 'add-treasure-error';
+                errorEl.textContent = '⚠️ 名称已存在，请使用不同的名称';
+                errorEl.style.display = 'none';
+                nameInput.parentNode.insertBefore(errorEl, nameInput.nextSibling);
+            }
+            
+            if (!name || !name.trim()) {
+                nameInput.style.borderColor = '';
+                errorEl.style.display = 'none';
+                return false;
+            }
+            
+            if (treasureNameExists(name)) {
+                nameInput.style.borderColor = '#dc2626';
+                errorEl.style.display = 'block';
+                return false;
+            }
+            
+            nameInput.style.borderColor = '';
+            errorEl.style.display = 'none';
             return true;
         }
 
