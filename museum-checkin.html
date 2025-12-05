@@ -11,21 +11,29 @@
     <!-- Deferred Baidu Analytics - Load after page becomes interactive -->
     <script>
         // Performance optimization: Defer analytics loading
-        var _hmt = window._hmt = window._hmt || [];
-        
-        // Load Baidu Analytics after page becomes interactive
-        function loadBaiduAnalytics() {
-            var hm = document.createElement('script');
-            hm.src = 'https://hm.baidu.com/hm.js?10856afa2ea23687b7e8f5b901795c57';
-            hm.async = true;
-            document.head.appendChild(hm);
-        }
-        
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(loadBaiduAnalytics, { timeout: 3000 });
-        } else {
-            setTimeout(loadBaiduAnalytics, 1500);
-        }
+        (function() {
+            'use strict';
+            
+            // Timing constants for analytics loading (in milliseconds)
+            var IDLE_CALLBACK_TIMEOUT = 3000;  // Maximum wait time for requestIdleCallback
+            var FALLBACK_LOAD_DELAY = 1500;    // Delay when requestIdleCallback not available
+            
+            var _hmt = window._hmt = window._hmt || [];
+            
+            // Load Baidu Analytics after page becomes interactive
+            function loadBaiduAnalytics() {
+                var hm = document.createElement('script');
+                hm.src = 'https://hm.baidu.com/hm.js?10856afa2ea23687b7e8f5b901795c57';
+                hm.async = true;
+                document.head.appendChild(hm);
+            }
+            
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(loadBaiduAnalytics, { timeout: IDLE_CALLBACK_TIMEOUT });
+            } else {
+                setTimeout(loadBaiduAnalytics, FALLBACK_LOAD_DELAY);
+            }
+        })();
     </script>
     
     <!-- Critical CSS - Minimal styles for fast first paint -->
@@ -54,9 +62,8 @@
         @media (max-width: 768px) { .task-grid { grid-template-columns: repeat(2, 1fr); } .title { font-size: 28px; } }
     </style>
     
-    <!-- Non-critical CSS - Loaded after critical content -->
+    <!-- Additional CSS - Styles for task cards, modals, and other UI components -->
     <style>
-        /* Additional styles for task cards, modals, and other UI components */
         .task-card {
             background: white;
             border-radius: 20px;

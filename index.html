@@ -67,11 +67,15 @@
         (function() {
             'use strict';
             
+            // Timing constants for analytics loading (in milliseconds)
+            var IDLE_CALLBACK_TIMEOUT = 3000;  // Maximum wait time for requestIdleCallback
+            var FALLBACK_LOAD_DELAY = 1500;    // Delay when requestIdleCallback not available
+            var HOTJAR_EXTRA_DELAY = 2000;     // Additional delay for Hotjar (least critical)
+            
             // Google Analytics 4 Configuration (pre-define to prevent errors)
             window.GA_MEASUREMENT_ID = 'G-YHF52B1NMH';
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
-            window.gtag = gtag;
             gtag('js', new Date());
             gtag('config', window.GA_MEASUREMENT_ID);
             
@@ -101,15 +105,15 @@
                         r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
                         o.head.appendChild(r);
                     })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
-                }, 2000); // Delay Hotjar by additional 2 seconds
+                }, HOTJAR_EXTRA_DELAY);
             }
             
             // Use requestIdleCallback if available, otherwise use setTimeout
             if ('requestIdleCallback' in window) {
-                requestIdleCallback(loadAnalytics, { timeout: 3000 });
+                requestIdleCallback(loadAnalytics, { timeout: IDLE_CALLBACK_TIMEOUT });
             } else {
                 // Fallback: load after first paint using setTimeout
-                setTimeout(loadAnalytics, 1500);
+                setTimeout(loadAnalytics, FALLBACK_LOAD_DELAY);
             }
         })();
     </script>
