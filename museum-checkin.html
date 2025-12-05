@@ -4257,7 +4257,7 @@
                 // Clear previous values
                 treasureNameInput.value = '';
                 treasureImageInput.value = '';
-                treasurePreview.innerHTML = '📷';
+                treasurePreview.textContent = '📷';
                 treasurePreview.className = 'image-preview-placeholder';
                 
                 // Load previously saved treasure data for this task if exists
@@ -6367,41 +6367,43 @@
             const inputId = window.currentImageInputId || 'newTreasureImage';
             const previewId = window.currentPreviewId || 'newTreasurePreview';
             
-            // Update input field
-            const imageInput = document.getElementById(inputId);
-            if (imageInput) {
-                imageInput.value = imageUrl;
-            }
-            
-            // Update preview using DOM methods to prevent XSS
-            const preview = document.getElementById(previewId);
-            if (preview) {
-                const img = document.createElement('img');
-                img.src = imageUrl;
-                img.className = 'image-preview-thumb';
-                img.alt = '预览';
-                preview.innerHTML = '';
-                preview.appendChild(img);
-            }
-            // Also update settings modal preview if we're using that one
-            if (inputId === 'newTreasureImage') {
-                updateNewTreasurePreview(imageUrl);
-            }
-            
-            // Highlight selected item
-            document.querySelectorAll('.wiki-search-result-item').forEach(item => {
-                item.classList.remove('selected');
-                if (item.dataset.url === imageUrl) {
-                    item.classList.add('selected');
+            try {
+                // Update input field
+                const imageInput = document.getElementById(inputId);
+                if (imageInput) {
+                    imageInput.value = imageUrl;
                 }
-            });
-            
-            // Clear the configurable IDs after use
-            window.currentImageInputId = null;
-            window.currentPreviewId = null;
-            
-            // Close modal after short delay
-            setTimeout(() => closeWikiSearch(), 300);
+                
+                // Update preview using DOM methods to prevent XSS
+                const preview = document.getElementById(previewId);
+                if (preview) {
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    img.className = 'image-preview-thumb';
+                    img.alt = '预览';
+                    preview.textContent = '';
+                    preview.appendChild(img);
+                }
+                // Also update settings modal preview if we're using that one
+                if (inputId === 'newTreasureImage') {
+                    updateNewTreasurePreview(imageUrl);
+                }
+                
+                // Highlight selected item
+                document.querySelectorAll('.wiki-search-result-item').forEach(item => {
+                    item.classList.remove('selected');
+                    if (item.dataset.url === imageUrl) {
+                        item.classList.add('selected');
+                    }
+                });
+                
+                // Close modal after short delay
+                setTimeout(() => closeWikiSearch(), 300);
+            } finally {
+                // Always clear the configurable IDs after use
+                window.currentImageInputId = null;
+                window.currentPreviewId = null;
+            }
         }
 
         // ===== Baidu Image Search Functions =====
