@@ -2236,6 +2236,43 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
+        /* Upload button style matching the search buttons */
+        .upload-photo-btn {
+            padding: 10px 14px;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .upload-photo-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+        }
+
+        .upload-photo-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .upload-photo-btn input[type="file"] {
+            display: none;
+        }
+
+        .upload-photo-btn.uploading {
+            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+            pointer-events: none;
+        }
+
         /* Baidu search buttons for inline use in JS templates */
         .baidu-search-inline-btn {
             padding: 8px 16px;
@@ -3046,7 +3083,7 @@
                     <div class="add-treasure-input-group">
                         <label for="modalTreasureImage">🔍 搜索图片（可选）</label>
                         <div class="input-with-action">
-                            <input type="text" id="modalTreasureImage" placeholder="输入名称后点击搜索">
+                            <input type="text" id="modalTreasureImage" placeholder="点击搜索按钮查找图片">
                             <div class="search-buttons-container">
                                 <button type="button" class="search-wiki-btn" id="modalSearchWikiBtn">Wiki</button>
                                 <button type="button" class="search-baidu-btn" id="modalSearchBaiduBtn">百度</button>
@@ -3055,6 +3092,16 @@
                         <div class="image-preview-container">
                             <div id="modalTreasurePreview" class="image-preview-placeholder">📷</div>
                             <span class="add-treasure-hint">搜索或上传照片</span>
+                        </div>
+                    </div>
+                    
+                    <div class="add-treasure-input-group">
+                        <label>📤 上传照片（可选）</label>
+                        <div class="search-buttons-container">
+                            <label class="upload-photo-btn" id="modalTreasureUploadLabel">
+                                📤 选择文件
+                                <input type="file" id="modalTreasureUpload" accept="image/*">
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -3189,18 +3236,28 @@
                         </div>
                         
                         <div class="add-treasure-input-group">
-                            <label for="newTreasureImage">图片URL</label>
+                            <label for="newTreasureImage">🔍 搜索图片（可选）</label>
                             <div class="input-with-action">
-                                <input type="text" id="newTreasureImage" placeholder="图片链接（可选）">
+                                <input type="text" id="newTreasureImage" placeholder="点击搜索按钮查找图片">
                                 <div class="search-buttons-container">
-                                    <button type="button" class="search-wiki-btn" id="searchWikiBtn">🔍 Wiki</button>
-                                    <button type="button" class="search-baidu-btn" id="searchBaiduBtn">🔍 百度</button>
+                                    <button type="button" class="search-wiki-btn" id="searchWikiBtn">Wiki</button>
+                                    <button type="button" class="search-baidu-btn" id="searchBaiduBtn">百度</button>
                                     <button type="button" class="search-baidu-btn secondary" id="openBaiduBtn">↗️ 去百度</button>
                                 </div>
                             </div>
                             <div class="image-preview-container">
                                 <div id="newTreasurePreview" class="image-preview-placeholder">📷</div>
-                                <span class="add-treasure-hint">无图片时将使用默认图片</span>
+                                <span class="add-treasure-hint">搜索或上传照片</span>
+                            </div>
+                        </div>
+                        
+                        <div class="add-treasure-input-group">
+                            <label>📤 上传照片（可选）</label>
+                            <div class="search-buttons-container">
+                                <label class="upload-photo-btn" id="newTreasureUploadLabel">
+                                    📤 选择文件
+                                    <input type="file" id="newTreasureUpload" accept="image/*">
+                                </label>
                             </div>
                         </div>
                         
@@ -3469,6 +3526,8 @@
     <script src="virtual-pet.js"></script>
     <!-- Baidu Image Search for treasure photos -->
     <script src="baidu-image-search.js"></script>
+    <!-- Image Upload Utility for uploading photos to letmetry.cloud -->
+    <script src="image-upload-util.js"></script>
     
     <script>
         // Configuration
