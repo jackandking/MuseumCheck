@@ -143,6 +143,8 @@ describe('Image Upload Utility', () => {
                 { filename: '../../../malicious.png', expected: 'malicious.png' },
                 { filename: '..\\..\\..\\malicious.png', expected: 'malicious.png' },
                 { filename: '....//malicious.png', expected: 'malicious.png' },
+                { filename: '......//malicious.png', expected: 'malicious.png' },  // Triple nested
+                { filename: '........//malicious.png', expected: 'malicious.png' }, // Quadruple nested
                 { filename: '/etc/passwd/../malicious.png', expected: 'malicious.png' },
                 { filename: 'subdir/../../malicious.png', expected: 'malicious.png' },
                 { filename: 'test..', expected: 'test' },  // Edge case: '..' at end

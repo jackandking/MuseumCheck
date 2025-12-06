@@ -165,8 +165,15 @@ class ImageUploader {
             } catch (e) {
                 sanitizedFilename = data.filename;
             }
-            // 2. Remove any path traversal patterns (../, ..\, ..../, .., etc.)
-            sanitizedFilename = sanitizedFilename.replace(/\.\.[\/\\]|\.\.$/g, '');
+            // 2. Remove any path traversal patterns repeatedly until none remain
+            // (handles nested patterns like ....// -> ../ -> sanitized)
+            let previousFilename;
+            do {
+                previousFilename = sanitizedFilename;
+                // Remove ../ and ..\ patterns, and clean up remaining dots
+                sanitizedFilename = sanitizedFilename.replace(/\.\.[\/\\]/g, '');
+                sanitizedFilename = sanitizedFilename.replace(/\.{2,}/g, ''); // Remove any remaining double+ dots
+            } while (previousFilename !== sanitizedFilename);
             // 3. Remove leading slashes and backslashes
             sanitizedFilename = sanitizedFilename.replace(/^[\/\\]+/, '');
             // 4. Extract only the filename (remove any remaining path components)
