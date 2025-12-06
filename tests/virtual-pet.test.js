@@ -64,6 +64,8 @@ class VirtualPet {
     static get HUNGER_DECREASE_PER_MINUTE() { return 0.1; }
     static get MAX_HUNGER() { return 100; }
     static get HUNGER_GRACE_PERIOD_MINUTES() { return 30; }
+    // Cached calculation: minutes needed for hunger to reach 0
+    static get MINUTES_TO_ZERO_HUNGER() { return 1000; } // 100 / 0.1 = 1000 minutes
     static get INTELLIGENCE_PER_TASK() { return 1; }
     
     // Daily check-in task XP rewards
@@ -165,7 +167,7 @@ class VirtualPet {
 
     getTodayDateString() {
         const now = new Date();
-        return now.toISOString().split('T')[0];
+        return now.toLocaleDateString('en-CA'); // YYYY-MM-DD format
     }
 
     hasCheckedInToday() {
@@ -185,7 +187,7 @@ class VirtualPet {
         if (lastCheckin) {
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            const yesterdayStr = yesterday.toLocaleDateString('en-CA'); // YYYY-MM-DD format
             if (lastCheckin === yesterdayStr) {
                 this.dailyCheckinData.streak++;
             } else {
@@ -295,9 +297,8 @@ class VirtualPet {
         pet.hunger = Math.max(0, VirtualPet.MAX_HUNGER - hungerDecrease);
         
         // Pet dies after reaching 0 hunger plus grace period
-        // Minutes to reach 0 hunger = MAX_HUNGER / HUNGER_DECREASE_PER_MINUTE
-        const minutesToZeroHunger = VirtualPet.MAX_HUNGER / VirtualPet.HUNGER_DECREASE_PER_MINUTE;
-        const deathThresholdMinutes = minutesToZeroHunger + VirtualPet.HUNGER_GRACE_PERIOD_MINUTES;
+        // Use cached constant for minutes to zero hunger
+        const deathThresholdMinutes = VirtualPet.MINUTES_TO_ZERO_HUNGER + VirtualPet.HUNGER_GRACE_PERIOD_MINUTES;
         if (pet.hunger <= 0 && minutesSinceLastFed >= deathThresholdMinutes) {
             pet.isDead = true;
             pet.deathDate = now;
