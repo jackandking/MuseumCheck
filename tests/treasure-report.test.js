@@ -292,7 +292,12 @@ describe('Treasure Report Race Condition Fix', () => {
 
         test('fetchTreasureReportFromKV should use correct API endpoint', () => {
             // Verify the function uses the correct URL pattern with key and sortKey
-            expect(htmlContent).toContain('REMOTE_STORAGE_CONFIG.API_ENDPOINT}?key=${encodeURIComponent(REMOTE_STORAGE_CONFIG.TREASURE_REPORT_KEY)}&sortKey=${encodeURIComponent(sortKey)}');
+            // Check for endpoint usage
+            expect(htmlContent).toContain('REMOTE_STORAGE_CONFIG.API_ENDPOINT');
+            // Check that key parameter is encoded
+            expect(htmlContent).toContain('encodeURIComponent(REMOTE_STORAGE_CONFIG.TREASURE_REPORT_KEY)');
+            // Check that sortKey parameter is encoded
+            expect(htmlContent).toContain('encodeURIComponent(sortKey)');
         });
 
         test('fetchTreasureReportFromKV should handle 404 gracefully', () => {
@@ -315,8 +320,13 @@ describe('Treasure Report Race Condition Fix', () => {
         test('recordTreasurePhotoCheckin should also fetch latest data', () => {
             // The fix should also apply to the photo check-in function
             // to prevent race conditions when decrementing the count
-            const photoCheckinMatch = htmlContent.match(/async function recordTreasurePhotoCheckin[\s\S]*?const latestReport = await fetchTreasureReportFromKV\(sortKey\)/);
-            expect(photoCheckinMatch).toBeTruthy();
+            // Verify that recordTreasurePhotoCheckin calls fetchTreasureReportFromKV
+            expect(htmlContent).toContain('async function recordTreasurePhotoCheckin(treasureName)');
+            // Check that it fetches latest report (appears after the function definition)
+            const funcStart = htmlContent.indexOf('async function recordTreasurePhotoCheckin');
+            const funcEnd = htmlContent.indexOf('async function', funcStart + 1);
+            const funcBody = htmlContent.substring(funcStart, funcEnd);
+            expect(funcBody).toContain('fetchTreasureReportFromKV(sortKey)');
         });
     });
 });

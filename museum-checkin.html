@@ -3866,7 +3866,9 @@
          */
         async function fetchTreasureReportFromKV(sortKey) {
             try {
-                const url = `${REMOTE_STORAGE_CONFIG.API_ENDPOINT}?key=${encodeURIComponent(REMOTE_STORAGE_CONFIG.TREASURE_REPORT_KEY)}&sortKey=${encodeURIComponent(sortKey)}`;
+                const keyParam = encodeURIComponent(REMOTE_STORAGE_CONFIG.TREASURE_REPORT_KEY);
+                const sortKeyParam = encodeURIComponent(sortKey);
+                const url = `${REMOTE_STORAGE_CONFIG.API_ENDPOINT}?key=${keyParam}&sortKey=${sortKeyParam}`;
                 const response = await fetch(url);
                 
                 if (!response.ok) {
