@@ -132,7 +132,7 @@ describe('Image Upload Utility', () => {
             });
             
             const result = await imageUploader.uploadImage(file, { compress: false });
-            expect(result).toBe('https://letmetry.cloud/aaa.png');
+            expect(result).toBe('https://letmetry.cloud/images/aaa.png');
         });
 
         test('should sanitize malicious filenames to prevent path traversal', async () => {
@@ -161,7 +161,7 @@ describe('Image Upload Utility', () => {
                 });
                 
                 const result = await imageUploader.uploadImage(file, { compress: false });
-                expect(result).toBe(`https://letmetry.cloud/${expected}`);
+                expect(result).toBe(`https://letmetry.cloud/images/${expected}`);
                 
                 // Verify no path traversal is possible (no slashes in final filename)
                 const resultFilename = result.split('/').pop();
@@ -182,7 +182,7 @@ describe('Image Upload Utility', () => {
             });
             
             const result = await imageUploader.uploadImage(file, { compress: false });
-            expect(result).toBe('https://letmetry.cloud/malicious.png');
+            expect(result).toBe('https://letmetry.cloud/images/malicious.png');
             expect(result).not.toContain('..');
         });
 
@@ -198,7 +198,7 @@ describe('Image Upload Utility', () => {
             });
             
             const result = await imageUploader.uploadImage(file, { compress: false });
-            expect(result).toBe('https://letmetry.cloud/test.png');
+            expect(result).toBe('https://letmetry.cloud/images/test.png');
         });
 
         test('should handle malformed URI encoding gracefully', async () => {
@@ -214,7 +214,7 @@ describe('Image Upload Utility', () => {
             
             const result = await imageUploader.uploadImage(file, { compress: false });
             // Should fallback to original filename and still sanitize
-            expect(result).toBe('https://letmetry.cloud/test%ZZ%invalid.png');
+            expect(result).toBe('https://letmetry.cloud/images/test%ZZ%invalid.png');
         });
 
         test('should preserve legitimate filenames with multiple dots', async () => {
@@ -236,7 +236,7 @@ describe('Image Upload Utility', () => {
                 });
                 
                 const result = await imageUploader.uploadImage(file, { compress: false });
-                expect(result).toBe(`https://letmetry.cloud/${expected}`);
+                expect(result).toBe(`https://letmetry.cloud/images/${expected}`);
             }
         });
 

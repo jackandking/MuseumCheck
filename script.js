@@ -9445,7 +9445,8 @@ class MuseumCheckApp {
             // Even if ../ patterns somehow remained, they cannot be executed
             sanitizedFilename = sanitizedFilename.split(/[\/\\]/).pop() || 'unnamed';
             
-            return `${baseUrl}/${sanitizedFilename}`;
+            // Files are served from /images/ directory on the server
+            return `${baseUrl}/images/${sanitizedFilename}`;
         }
         
         throw new Error('Invalid upload response format');
