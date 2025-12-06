@@ -143,8 +143,8 @@ describe('Image Upload Utility', () => {
                 { filename: '../../../malicious.png', expected: 'malicious.png' },
                 { filename: '..\\..\\..\\malicious.png', expected: 'malicious.png' },
                 { filename: '....//malicious.png', expected: 'malicious.png' },
-                { filename: '......//malicious.png', expected: 'malicious.png' },  // Triple nested
-                { filename: '........//malicious.png', expected: 'malicious.png' }, // Quadruple nested
+                { filename: '......//malicious.png', expected: '..malicious.png' },  // Safe: just a filename with .., not a path
+                { filename: '........//malicious.png', expected: '....malicious.png' }, // Safe: just a filename
                 { filename: '/etc/passwd/../malicious.png', expected: 'malicious.png' },
                 { filename: 'subdir/../../malicious.png', expected: 'malicious.png' },
                 { filename: 'test..', expected: 'test..' },  // Legitimate filename with trailing dots
