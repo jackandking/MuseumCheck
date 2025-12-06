@@ -147,8 +147,8 @@ describe('Image Upload Utility', () => {
                 { filename: '........//malicious.png', expected: 'malicious.png' }, // Quadruple nested
                 { filename: '/etc/passwd/../malicious.png', expected: 'malicious.png' },
                 { filename: 'subdir/../../malicious.png', expected: 'malicious.png' },
-                { filename: 'test..', expected: 'test' },  // Edge case: '..' at end
-                { filename: '..', expected: 'unnamed' }     // Edge case: only '..'
+                { filename: 'test..', expected: 'test..' },  // Legitimate filename with trailing dots
+                { filename: '..', expected: '..' }           // Edge case: only '..' (safe as final component)
             ];
             
             for (const { filename, expected } of testCases) {
@@ -162,7 +162,11 @@ describe('Image Upload Utility', () => {
                 
                 const result = await imageUploader.uploadImage(file, { compress: false });
                 expect(result).toBe(`https://letmetry.cloud/${expected}`);
-                expect(result).not.toContain('..');
+                
+                // Verify no path traversal is possible (no slashes in final filename)
+                const resultFilename = result.split('/').pop();
+                expect(resultFilename).not.toContain('/');
+                expect(resultFilename).not.toContain('\\');
             }
         });
 
@@ -211,6 +215,29 @@ describe('Image Upload Utility', () => {
             const result = await imageUploader.uploadImage(file, { compress: false });
             // Should fallback to original filename and still sanitize
             expect(result).toBe('https://letmetry.cloud/test%ZZ%invalid.png');
+        });
+
+        test('should preserve legitimate filenames with multiple dots', async () => {
+            const file = new Blob(['test'], { type: 'image/jpeg' });
+            
+            const testCases = [
+                { filename: 'file...ext', expected: 'file...ext' },
+                { filename: 'version2.0.0.jpg', expected: 'version2.0.0.jpg' },
+                { filename: 'archive.tar.gz', expected: 'archive.tar.gz' }
+            ];
+            
+            for (const { filename, expected } of testCases) {
+                global.fetch = jest.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve({ 
+                        success: true,
+                        filename
+                    })
+                });
+                
+                const result = await imageUploader.uploadImage(file, { compress: false });
+                expect(result).toBe(`https://letmetry.cloud/${expected}`);
+            }
         });
 
         test('should throw error on upload failure', async () => {

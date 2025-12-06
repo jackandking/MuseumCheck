@@ -9430,18 +9430,13 @@ class MuseumCheckApp {
             } catch (e) {
                 sanitizedFilename = data.filename;
             }
-            // 2. Remove any path traversal patterns repeatedly until none remain
-            // (handles nested patterns like ....// -> ../ -> sanitized)
-            let previousFilename;
-            do {
-                previousFilename = sanitizedFilename;
-                // Remove ../ and ..\ patterns, and clean up remaining dots
-                sanitizedFilename = sanitizedFilename.replace(/\.\.[\/\\]/g, '');
-                sanitizedFilename = sanitizedFilename.replace(/\.{2,}/g, ''); // Remove any remaining double+ dots
-            } while (previousFilename !== sanitizedFilename);
+            // 2. Remove any path traversal patterns (../ and ..\)
+            // Note: We don't need to remove all dots, as step 4 extracts only the filename
+            sanitizedFilename = sanitizedFilename.replace(/\.\.[\/\\]/g, '');
             // 3. Remove leading slashes and backslashes
             sanitizedFilename = sanitizedFilename.replace(/^[\/\\]+/, '');
             // 4. Extract only the filename (remove any remaining path components)
+            // This is the key security step - ensures no path traversal is possible
             sanitizedFilename = sanitizedFilename.split(/[\/\\]/).pop() || 'unnamed';
             
             return `${baseUrl}/${sanitizedFilename}`;
