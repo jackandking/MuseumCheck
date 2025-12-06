@@ -9416,6 +9416,12 @@ class MuseumCheckApp {
             return data.fileUrl;
         } else if (data.data && data.data.url) {
             return data.data.url;
+        } else if (data.success && data.filename) {
+            // Handle letmetry.cloud response format: {success: true, filename: "...", path: "...", destination: "..."}
+            // Extract base URL from endpoint (e.g., "https://letmetry.cloud/file/upload" -> "https://letmetry.cloud")
+            const url = new URL(APP_CONFIG.TREASURE_CONTRIBUTOR.FILE_UPLOAD_ENDPOINT);
+            const baseUrl = `${url.protocol}//${url.host}`;
+            return `${baseUrl}/${data.filename}`;
         }
         
         throw new Error('Invalid upload response format');

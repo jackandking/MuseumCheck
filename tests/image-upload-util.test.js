@@ -117,6 +117,24 @@ describe('Image Upload Utility', () => {
             expect(result).toBe('https://letmetry.cloud/files/test.jpg');
         });
 
+        test('should handle letmetry.cloud response format with filename', async () => {
+            const file = new Blob(['test'], { type: 'image/jpeg' });
+            
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ 
+                    success: true,
+                    filename: 'aaa.png',
+                    originalname: 'aaa.png',
+                    path: '/usr/share/nginx/html/aaa.png',
+                    destination: '/usr/share/nginx/html/'
+                })
+            });
+            
+            const result = await imageUploader.uploadImage(file, { compress: false });
+            expect(result).toBe('https://letmetry.cloud/aaa.png');
+        });
+
         test('should throw error on upload failure', async () => {
             const file = new Blob(['test'], { type: 'image/jpeg' });
             
@@ -128,7 +146,7 @@ describe('Image Upload Utility', () => {
             await expect(imageUploader.uploadImage(file, { compress: false })).rejects.toThrow('上传失败: 500');
         });
 
-        test('should throw error on invalid response format', async () => {
+        test('should throw error on invalid response format without url or filename', async () => {
             const file = new Blob(['test'], { type: 'image/jpeg' });
             
             global.fetch = jest.fn().mockResolvedValue({

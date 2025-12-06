@@ -151,6 +151,12 @@ class ImageUploader {
             return data.fileUrl;
         } else if (data.data && data.data.url) {
             return data.data.url;
+        } else if (data.success && data.filename) {
+            // Handle letmetry.cloud response format: {success: true, filename: "...", path: "...", destination: "..."}
+            // Extract base URL from endpoint (e.g., "https://letmetry.cloud/file/upload" -> "https://letmetry.cloud")
+            const url = new URL(this.config.endpoint);
+            const baseUrl = `${url.protocol}//${url.host}`;
+            return `${baseUrl}/${data.filename}`;
         }
         
         throw new Error('上传响应格式无效');
