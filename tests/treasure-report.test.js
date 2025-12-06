@@ -480,7 +480,7 @@ describe('Auto-Delete Treasures with 5+ Reports (Issue: 纠错)', () => {
     describe('Usage Documentation Updates', () => {
         test('admin page should document auto-delete in usage instructions', () => {
             expect(adminHtmlContent).toContain('自动删除');
-            expect(adminHtmlContent).toContain('报告数达到5个时');
+            expect(adminHtmlContent).toContain('报告数达到5个或以上时');
             expect(adminHtmlContent).toContain('自动从博物馆数据中删除');
         });
     });

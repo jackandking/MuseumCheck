@@ -4079,9 +4079,14 @@
                 localStorage.setItem('myTreasureReports', JSON.stringify(localReports));
                 
                 // AUTO-DELETE: If report count reaches threshold (5+), automatically delete treasure
+                // Note: If deletion fails, the report count is still saved (correct behavior).
+                // The treasure will be attempted for deletion again on the next report.
                 if (newReportCount >= TREASURE_UNAVAILABLE_THRESHOLD) {
                     console.log(`Auto-deleting treasure "${treasureName}" - report count: ${newReportCount}`);
-                    await autoDeleteTreasure(treasureName);
+                    const deletionSuccess = await autoDeleteTreasure(treasureName);
+                    if (!deletionSuccess) {
+                        console.warn(`Auto-delete failed for "${treasureName}", but report was saved. Will retry on next report.`);
+                    }
                 }
                 
                 console.log('Treasure reported as not found:', treasureName, updatedReport);
