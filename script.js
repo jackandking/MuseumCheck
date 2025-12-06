@@ -9423,7 +9423,14 @@ class MuseumCheckApp {
             const baseUrl = `${url.protocol}//${url.host}`;
             
             // Sanitize filename to prevent path traversal attacks
-            const sanitizedFilename = data.filename.replace(/\.\.\//g, '').replace(/^\/+/, '');
+            // 1. Decode URL-encoded sequences
+            let sanitizedFilename = decodeURIComponent(data.filename);
+            // 2. Remove any path traversal patterns (../, ..\, ..../, etc.)
+            sanitizedFilename = sanitizedFilename.replace(/\.\.+[\/\\]/g, '');
+            // 3. Remove leading slashes and backslashes
+            sanitizedFilename = sanitizedFilename.replace(/^[\/\\]+/, '');
+            // 4. Extract only the filename (remove any remaining path components)
+            sanitizedFilename = sanitizedFilename.split(/[\/\\]/).pop() || 'unnamed';
             
             return `${baseUrl}/${sanitizedFilename}`;
         }

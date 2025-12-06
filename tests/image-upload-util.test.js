@@ -138,16 +138,42 @@ describe('Image Upload Utility', () => {
         test('should sanitize malicious filenames to prevent path traversal', async () => {
             const file = new Blob(['test'], { type: 'image/jpeg' });
             
+            // Test various path traversal patterns
+            const testCases = [
+                { filename: '../../../malicious.png', expected: 'malicious.png' },
+                { filename: '..\\..\\..\\malicious.png', expected: 'malicious.png' },
+                { filename: '....//malicious.png', expected: 'malicious.png' },
+                { filename: '/etc/passwd/../malicious.png', expected: 'malicious.png' },
+                { filename: 'subdir/../../malicious.png', expected: 'malicious.png' }
+            ];
+            
+            for (const { filename, expected } of testCases) {
+                global.fetch = jest.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve({ 
+                        success: true,
+                        filename
+                    })
+                });
+                
+                const result = await imageUploader.uploadImage(file, { compress: false });
+                expect(result).toBe(`https://letmetry.cloud/${expected}`);
+                expect(result).not.toContain('..');
+            }
+        });
+
+        test('should handle URL-encoded path traversal attempts', async () => {
+            const file = new Blob(['test'], { type: 'image/jpeg' });
+            
             global.fetch = jest.fn().mockResolvedValue({
                 ok: true,
                 json: () => Promise.resolve({ 
                     success: true,
-                    filename: '../../../malicious.png'
+                    filename: '..%2F..%2Fmalicious.png'
                 })
             });
             
             const result = await imageUploader.uploadImage(file, { compress: false });
-            // Should remove '../' path traversal attempts
             expect(result).toBe('https://letmetry.cloud/malicious.png');
             expect(result).not.toContain('..');
         });
