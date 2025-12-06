@@ -135,6 +135,38 @@ describe('Image Upload Utility', () => {
             expect(result).toBe('https://letmetry.cloud/aaa.png');
         });
 
+        test('should sanitize malicious filenames to prevent path traversal', async () => {
+            const file = new Blob(['test'], { type: 'image/jpeg' });
+            
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ 
+                    success: true,
+                    filename: '../../../malicious.png'
+                })
+            });
+            
+            const result = await imageUploader.uploadImage(file, { compress: false });
+            // Should remove '../' path traversal attempts
+            expect(result).toBe('https://letmetry.cloud/malicious.png');
+            expect(result).not.toContain('..');
+        });
+
+        test('should remove leading slashes from filenames', async () => {
+            const file = new Blob(['test'], { type: 'image/jpeg' });
+            
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ 
+                    success: true,
+                    filename: '///test.png'
+                })
+            });
+            
+            const result = await imageUploader.uploadImage(file, { compress: false });
+            expect(result).toBe('https://letmetry.cloud/test.png');
+        });
+
         test('should throw error on upload failure', async () => {
             const file = new Blob(['test'], { type: 'image/jpeg' });
             

@@ -9421,7 +9421,11 @@ class MuseumCheckApp {
             // Extract base URL from endpoint (e.g., "https://letmetry.cloud/file/upload" -> "https://letmetry.cloud")
             const url = new URL(APP_CONFIG.TREASURE_CONTRIBUTOR.FILE_UPLOAD_ENDPOINT);
             const baseUrl = `${url.protocol}//${url.host}`;
-            return `${baseUrl}/${data.filename}`;
+            
+            // Sanitize filename to prevent path traversal attacks
+            const sanitizedFilename = data.filename.replace(/\.\.\//g, '').replace(/^\/+/, '');
+            
+            return `${baseUrl}/${sanitizedFilename}`;
         }
         
         throw new Error('Invalid upload response format');

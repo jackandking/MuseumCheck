@@ -156,7 +156,11 @@ class ImageUploader {
             // Extract base URL from endpoint (e.g., "https://letmetry.cloud/file/upload" -> "https://letmetry.cloud")
             const url = new URL(this.config.endpoint);
             const baseUrl = `${url.protocol}//${url.host}`;
-            return `${baseUrl}/${data.filename}`;
+            
+            // Sanitize filename to prevent path traversal attacks
+            const sanitizedFilename = data.filename.replace(/\.\.\//g, '').replace(/^\/+/, '');
+            
+            return `${baseUrl}/${sanitizedFilename}`;
         }
         
         throw new Error('上传响应格式无效');
