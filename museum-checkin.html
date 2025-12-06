@@ -3377,18 +3377,21 @@
                             
                             <!-- AI Treasure Name Suggestions -->
                             <div class="ai-suggestion-section" id="aiSuggestionSection">
-                                <button type="button" class="ai-suggest-btn" id="aiSuggestBtn" title="让AI推荐3个镇馆之宝名称">
-                                    <span class="ai-btn-icon">🤖</span>
+                                <button type="button" class="ai-suggest-btn" id="aiSuggestBtn" 
+                                        title="让AI推荐3个镇馆之宝名称"
+                                        aria-label="AI推荐镇馆之宝名称"
+                                        aria-describedby="aiSuggestionHint">
+                                    <span class="ai-btn-icon" aria-hidden="true">🤖</span>
                                     <span class="ai-btn-text">AI推荐</span>
                                 </button>
-                                <div class="ai-suggestions-container" id="aiSuggestionsContainer">
+                                <div class="ai-suggestions-container" id="aiSuggestionsContainer" role="listbox" aria-label="AI推荐的镇馆之宝">
                                     <!-- Suggestions will be rendered here -->
                                 </div>
-                                <div class="ai-suggestion-loading" id="aiSuggestionLoading">
-                                    <span class="loading-spinner"></span>
+                                <div class="ai-suggestion-loading" id="aiSuggestionLoading" aria-live="polite">
+                                    <span class="loading-spinner" aria-hidden="true"></span>
                                     <span>AI 正在推荐...</span>
                                 </div>
-                                <div class="ai-suggestion-error" id="aiSuggestionError">
+                                <div class="ai-suggestion-error" id="aiSuggestionError" role="alert" aria-live="assertive">
                                     <!-- Error message will be shown here -->
                                 </div>
                                 <div class="ai-suggestion-hint" id="aiSuggestionHint">
@@ -7336,8 +7339,23 @@
         // AI Treasure Name Suggestions Feature
         // =====================================================
         
-        // Cache for AI suggestions to avoid repeated API calls
+        // Cache for AI suggestions to avoid repeated API calls (max 20 museums)
         const aiSuggestionsCache = {};
+        const AI_CACHE_MAX_SIZE = 20;
+        
+        /**
+         * Add item to cache with size limit (LRU-style eviction)
+         * @param {string} key - Museum name
+         * @param {Array} value - Treasure suggestions
+         */
+        function addToAICache(key, value) {
+            const keys = Object.keys(aiSuggestionsCache);
+            if (keys.length >= AI_CACHE_MAX_SIZE) {
+                // Remove oldest entry (first key)
+                delete aiSuggestionsCache[keys[0]];
+            }
+            aiSuggestionsCache[key] = value;
+        }
         
         /**
          * Load DeepSeek API script dynamically
@@ -7403,7 +7421,12 @@
                 // Check if API key is configured
                 const deepseekAPI = new DeepSeekAPI();
                 if (!deepseekAPI.hasApiKey()) {
-                    throw new Error('请先在主页设置中配置 DeepSeek API Key');
+                    throw new Error('请先在主页设置中配置 DeepSeek API Key（点击主页右上角设置按钮）');
+                }
+                
+                // Validate museum name
+                if (!museumName.trim() || museumName.length > 100) {
+                    throw new Error('博物馆名称无效');
                 }
                 
                 console.log('[AI Suggestions] Fetching suggestions for:', museumName);
@@ -7411,8 +7434,8 @@
                 // Call the API to generate treasures
                 const treasures = await deepseekAPI.generateTreasures(museumName);
                 
-                // Cache the results
-                aiSuggestionsCache[museumName] = treasures;
+                // Cache the results with size limit
+                addToAICache(museumName, treasures);
                 
                 // Display suggestions
                 displayAISuggestions(treasures);
