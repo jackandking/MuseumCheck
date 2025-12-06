@@ -144,7 +144,9 @@ describe('Image Upload Utility', () => {
                 { filename: '..\\..\\..\\malicious.png', expected: 'malicious.png' },
                 { filename: '....//malicious.png', expected: 'malicious.png' },
                 { filename: '/etc/passwd/../malicious.png', expected: 'malicious.png' },
-                { filename: 'subdir/../../malicious.png', expected: 'malicious.png' }
+                { filename: 'subdir/../../malicious.png', expected: 'malicious.png' },
+                { filename: 'test..', expected: 'test' },  // Edge case: '..' at end
+                { filename: '..', expected: 'unnamed' }     // Edge case: only '..'
             ];
             
             for (const { filename, expected } of testCases) {
@@ -191,6 +193,22 @@ describe('Image Upload Utility', () => {
             
             const result = await imageUploader.uploadImage(file, { compress: false });
             expect(result).toBe('https://letmetry.cloud/test.png');
+        });
+
+        test('should handle malformed URI encoding gracefully', async () => {
+            const file = new Blob(['test'], { type: 'image/jpeg' });
+            
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ 
+                    success: true,
+                    filename: 'test%ZZ%invalid.png'  // Invalid URI encoding
+                })
+            });
+            
+            const result = await imageUploader.uploadImage(file, { compress: false });
+            // Should fallback to original filename and still sanitize
+            expect(result).toBe('https://letmetry.cloud/test%ZZ%invalid.png');
         });
 
         test('should throw error on upload failure', async () => {

@@ -158,10 +158,15 @@ class ImageUploader {
             const baseUrl = `${url.protocol}//${url.host}`;
             
             // Sanitize filename to prevent path traversal attacks
-            // 1. Decode URL-encoded sequences
-            let sanitizedFilename = decodeURIComponent(data.filename);
-            // 2. Remove any path traversal patterns (../, ..\, ..../, etc.)
-            sanitizedFilename = sanitizedFilename.replace(/\.\.+[\/\\]/g, '');
+            // 1. Decode URL-encoded sequences (with error handling for malformed URIs)
+            let sanitizedFilename;
+            try {
+                sanitizedFilename = decodeURIComponent(data.filename);
+            } catch (e) {
+                sanitizedFilename = data.filename;
+            }
+            // 2. Remove any path traversal patterns (../, ..\, ..../, .., etc.)
+            sanitizedFilename = sanitizedFilename.replace(/\.\.[\/\\]|\.\.$/g, '');
             // 3. Remove leading slashes and backslashes
             sanitizedFilename = sanitizedFilename.replace(/^[\/\\]+/, '');
             // 4. Extract only the filename (remove any remaining path components)
