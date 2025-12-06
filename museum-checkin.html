@@ -4,13 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>孩子任务 - 博物馆打卡</title>
+    
+    <!-- Performance: Preconnect to analytics domains -->
+    <link rel="dns-prefetch" href="//hm.baidu.com">
+    
+    <!-- Deferred Baidu Analytics - Load after page becomes interactive -->
+    <script>
+        // Performance optimization: Defer analytics loading
+        (function() {
+            'use strict';
+            
+            // Timing constants for analytics loading (in milliseconds)
+            var IDLE_CALLBACK_TIMEOUT = 3000;  // Maximum wait time for requestIdleCallback
+            var FALLBACK_LOAD_DELAY = 1500;    // Delay when requestIdleCallback not available
+            
+            var _hmt = window._hmt = window._hmt || [];
+            
+            // Load Baidu Analytics after page becomes interactive
+            function loadBaiduAnalytics() {
+                var hm = document.createElement('script');
+                hm.src = 'https://hm.baidu.com/hm.js?10856afa2ea23687b7e8f5b901795c57';
+                hm.async = true;
+                document.head.appendChild(hm);
+            }
+            
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(loadBaiduAnalytics, { timeout: IDLE_CALLBACK_TIMEOUT });
+            } else {
+                setTimeout(loadBaiduAnalytics, FALLBACK_LOAD_DELAY);
+            }
+        })();
+    </script>
+    
+    <!-- Critical CSS - Minimal styles for fast first paint -->
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* Critical CSS for immediate paint - shows loading state quickly */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
             background: linear-gradient(135deg, #a8d8ea 0%, #7fc8dc 50%, #5ab4d1 100%);
@@ -20,69 +49,21 @@
             flex-direction: column;
             align-items: center;
         }
-
-        .header {
-            width: 100%;
-            max-width: 800px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .menu-button {
-            width: 44px;
-            height: 44px;
-            background: white;
-            border: none;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .settings-button {
-            width: 44px;
-            height: 44px;
-            background: white;
-            border: none;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .title {
-            font-size: 32px;
-            font-weight: bold;
-            color: white;
-            text-align: center;
-            margin: 20px 0 30px 0;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .museum-name {
-            font-size: 18px;
-            color: rgba(255, 255, 255, 0.9);
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .task-grid {
-            width: 100%;
-            max-width: 800px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 20px;
-            padding-bottom: 20px;
-        }
-
+        .loading { text-align: center; color: white; font-size: 18px; padding: 40px; }
+        .loading-spinner { display: inline-block; width: 40px; height: 40px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s linear infinite; margin-bottom: 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .header { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .menu-button, .settings-button { width: 44px; height: 44px; background: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+        .menu-button { font-size: 24px; }
+        .settings-button { font-size: 20px; }
+        .title { font-size: 32px; font-weight: bold; color: white; text-align: center; margin: 20px 0 30px 0; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+        .museum-name { font-size: 18px; color: rgba(255, 255, 255, 0.9); text-align: center; margin-bottom: 30px; }
+        .task-grid { width: 100%; max-width: 800px; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding-bottom: 20px; }
+        @media (max-width: 768px) { .task-grid { grid-template-columns: repeat(2, 1fr); } .title { font-size: 28px; } }
+    </style>
+    
+    <!-- Additional CSS - Styles for task cards, modals, and other UI components -->
+    <style>
         .task-card {
             background: white;
             border-radius: 20px;
@@ -2226,6 +2207,95 @@
             box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
         }
 
+        .search-baidu-btn {
+            padding: 10px 14px;
+            background: linear-gradient(135deg, #de3f4f 0%, #f48a8a 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .search-baidu-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(222, 63, 79, 0.4);
+        }
+
+        .search-baidu-btn.secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .search-baidu-btn.secondary:hover {
+            background: #e5e5e5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Upload button style matching the search buttons */
+        .upload-photo-btn {
+            padding: 10px 14px;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .upload-photo-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+        }
+
+        .upload-photo-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .upload-photo-btn input[type="file"] {
+            display: none;
+        }
+
+        .upload-photo-btn.uploading {
+            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+            pointer-events: none;
+        }
+
+        /* Baidu search buttons for inline use in JS templates */
+        .baidu-search-inline-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #de3f4f 0%, #f48a8a 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .baidu-search-inline-btn.secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .search-buttons-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
         .image-preview-container {
             display: flex;
             align-items: center;
@@ -2312,8 +2382,238 @@
             margin-top: 4px;
         }
 
+        /* Treasure Contributor Section in Task Modal */
+        .treasure-contributor-section {
+            margin: 20px 0;
+            padding: 16px;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-radius: 12px;
+            border: 1px solid #fbbf24;
+        }
+
+        .treasure-contributor-section .add-treasure-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .treasure-contributor-section .add-treasure-input-group label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #92400e;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .treasure-contributor-section input[type="text"] {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #fbbf24;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            box-sizing: border-box;
+        }
+
+        .treasure-contributor-section input[type="text"]:focus {
+            outline: none;
+            border-color: #d97706;
+            box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+        }
+
+        .treasure-contributor-section input[type="text"]::placeholder {
+            color: #d4a574;
+        }
+
+        .treasure-contributor-section .input-with-action {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .treasure-contributor-section .search-buttons-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .treasure-contributor-section .search-wiki-btn,
+        .treasure-contributor-section .search-baidu-btn {
+            padding: 10px 16px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .treasure-contributor-section .image-preview-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .treasure-contributor-section .image-preview-placeholder,
+        .treasure-contributor-section .image-preview-thumb {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 2px dashed #fbbf24;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #d97706;
+        }
+
+        .treasure-contributor-section .image-preview-thumb {
+            border-style: solid;
+        }
+
         .user-added-treasures-list {
             margin-top: 16px;
+        }
+
+        /* Museum Entrance Photo Contributor Section */
+        .museum-photo-contributor-modal {
+            margin: 16px 0;
+            padding: 16px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-radius: 12px;
+            border: 1px solid #86efac;
+            text-align: center;
+        }
+
+        .museum-photo-contributor-hint {
+            margin-bottom: 16px;
+        }
+
+        .museum-photo-contributor-hint .hint-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+            opacity: 0.7;
+        }
+
+        .museum-photo-contributor-hint .hint-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #166534;
+            margin-bottom: 4px;
+        }
+
+        .museum-photo-contributor-hint .hint-subtext {
+            font-size: 13px;
+            color: #15803d;
+        }
+
+        .museum-photo-contributor-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .add-museum-photo-input-group label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #166534;
+            display: block;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+
+        .museum-photo-contributor-form .input-with-action {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .museum-photo-contributor-form input[type="text"] {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #86efac;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            box-sizing: border-box;
+        }
+
+        .museum-photo-contributor-form input[type="text"]:focus {
+            outline: none;
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+
+        .museum-photo-contributor-form .search-buttons-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .museum-photo-contributor-form .image-preview-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .museum-photo-contributor-form .image-preview-placeholder {
+            width: 200px;
+            height: 120px;
+            border-radius: 12px;
+            border: 2px dashed #86efac;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #22c55e;
+            cursor: pointer;
+        }
+
+        .museum-photo-contributor-form .image-preview-placeholder:hover {
+            border-color: #22c55e;
+            background: #f0fdf4;
+        }
+
+        .museum-photo-contributor-form .image-preview-thumb {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 2px solid #22c55e;
+        }
+
+        .museum-photo-submit-btn {
+            width: 100%;
+            max-width: 250px;
+            margin: 8px auto 0;
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .museum-photo-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        .museum-photo-contributed-badge {
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+            color: #166534;
+            border: 1px solid #22c55e;
         }
 
         .user-added-treasure-item {
@@ -2450,6 +2750,16 @@
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
+        }
+
+        .wiki-search-input-group button.baidu-primary {
+            background: linear-gradient(135deg, #de3f4f 0%, #f48a8a 100%);
+        }
+
+        .wiki-search-input-group button.baidu-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
         }
 
         .wiki-search-results {
@@ -2684,9 +2994,13 @@
             }
         }
     </style>
-    <!-- Virtual Pet and Achievement Gamification Styles -->
-    <link rel="stylesheet" href="virtual-pet.css">
-    <link rel="stylesheet" href="achievement-gamification.css">
+    <!-- Virtual Pet and Achievement Gamification Styles - Load asynchronously -->
+    <link rel="stylesheet" href="virtual-pet.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="achievement-gamification.css" media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="virtual-pet.css">
+        <link rel="stylesheet" href="achievement-gamification.css">
+    </noscript>
 </head>
 <!-- child-mode class is intentionally hardcoded because this page is specifically for kids' tasks -->
 <body class="child-mode">
@@ -2724,9 +3038,84 @@
             </div>
             <div class="task-detail-icon" id="modalIcon"></div>
             <img id="modalImage" class="task-image" style="display: none;" />
+            
+            <!-- Museum Entrance Photo Contributor Section (when no museum image exists) -->
+            <div class="museum-photo-contributor-modal" id="museumPhotoContributorSection" style="display: none;">
+                <div class="museum-photo-contributor-hint">
+                    <div class="hint-icon">🏛️</div>
+                    <div class="hint-text">暂无博物馆门口照片</div>
+                    <div class="hint-subtext">帮助其他家长，添加一张博物馆门口的照片吧！</div>
+                </div>
+                <div class="museum-photo-contributor-form">
+                    <div class="add-museum-photo-input-group">
+                        <label>🔍 搜索图片</label>
+                        <div class="input-with-action">
+                            <input type="text" id="modalMuseumPhotoSearch" placeholder="输入博物馆名称搜索">
+                            <div class="search-buttons-container">
+                                <button type="button" class="search-wiki-btn" id="modalMuseumPhotoSearchWikiBtn">Wiki</button>
+                                <button type="button" class="search-baidu-btn" id="modalMuseumPhotoSearchBaiduBtn">百度</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="add-museum-photo-input-group">
+                        <label>📤 上传照片（可选）</label>
+                        <div class="search-buttons-container">
+                            <label class="upload-photo-btn" id="modalMuseumPhotoUploadLabel">
+                                📤 选择文件
+                                <input type="file" id="modalMuseumPhotoUpload" accept="image/*">
+                            </label>
+                        </div>
+                    </div>
+                    <div class="image-preview-container">
+                        <div id="modalMuseumPhotoPreview" class="image-preview-placeholder">📷 添加博物馆门口照片</div>
+                    </div>
+                    <button type="button" class="museum-photo-submit-btn" id="modalMuseumPhotoSubmitBtn" style="display: none;">
+                        ✅ 确认添加照片
+                    </button>
+                    <div class="museum-photo-contributed-badge" id="museumPhotoContributedBadge" style="display: none;">
+                        📸 感谢您贡献的照片
+                    </div>
+                </div>
+            </div>
+            
             <h3 class="task-detail-title" id="modalTaskTitle"></h3>
             <div class="task-detail-description" id="modalDescription"></div>
             
+            <!-- Treasure Contributor Section (only for add-treasure tasks) -->
+            <div class="treasure-contributor-section" id="treasureContributorSection" style="display: none;">
+                <div class="add-treasure-form">
+                    <div class="add-treasure-input-group">
+                        <label for="modalTreasureName">🏺 镇馆之宝名称 <span style="color: #dc2626;">*</span></label>
+                        <input type="text" id="modalTreasureName" placeholder="例如：唐三彩骆驼载乐俑" maxlength="50">
+                    </div>
+                    
+                    <div class="add-treasure-input-group">
+                        <label for="modalTreasureImage">🔍 搜索图片（可选）</label>
+                        <div class="input-with-action">
+                            <input type="text" id="modalTreasureImage" placeholder="点击搜索按钮查找图片">
+                            <div class="search-buttons-container">
+                                <button type="button" class="search-wiki-btn" id="modalSearchWikiBtn">Wiki</button>
+                                <button type="button" class="search-baidu-btn" id="modalSearchBaiduBtn">百度</button>
+                            </div>
+                        </div>
+                        <div class="image-preview-container">
+                            <div id="modalTreasurePreview" class="image-preview-placeholder">📷</div>
+                            <span class="add-treasure-hint">搜索或上传照片</span>
+                        </div>
+                    </div>
+                    
+                    <div class="add-treasure-input-group">
+                        <label>📤 上传照片（可选）</label>
+                        <div class="search-buttons-container">
+                            <label class="upload-photo-btn" id="modalTreasureUploadLabel">
+                                📤 选择文件
+                                <input type="file" id="modalTreasureUpload" accept="image/*">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Photo capture section -->
             <div class="photo-section" id="photoSection">
                 <label class="photo-label">📸 上传照片（可选）</label>
@@ -2856,14 +3245,28 @@
                         </div>
                         
                         <div class="add-treasure-input-group">
-                            <label for="newTreasureImage">图片URL</label>
+                            <label for="newTreasureImage">🔍 搜索图片（可选）</label>
                             <div class="input-with-action">
-                                <input type="text" id="newTreasureImage" placeholder="图片链接（可选）">
-                                <button type="button" class="search-wiki-btn" id="searchWikiBtn">🔍 Wiki搜索</button>
+                                <input type="text" id="newTreasureImage" placeholder="点击搜索按钮查找图片">
+                                <div class="search-buttons-container">
+                                    <button type="button" class="search-wiki-btn" id="searchWikiBtn">Wiki</button>
+                                    <button type="button" class="search-baidu-btn" id="searchBaiduBtn">百度</button>
+                                    <button type="button" class="search-baidu-btn secondary" id="openBaiduBtn">↗️ 去百度</button>
+                                </div>
                             </div>
                             <div class="image-preview-container">
                                 <div id="newTreasurePreview" class="image-preview-placeholder">📷</div>
-                                <span class="add-treasure-hint">无图片时将使用默认图片</span>
+                                <span class="add-treasure-hint">搜索或上传照片</span>
+                            </div>
+                        </div>
+                        
+                        <div class="add-treasure-input-group">
+                            <label>📤 上传照片（可选）</label>
+                            <div class="search-buttons-container">
+                                <label class="upload-photo-btn" id="newTreasureUploadLabel">
+                                    📤 选择文件
+                                    <input type="file" id="newTreasureUpload" accept="image/*">
+                                </label>
                             </div>
                         </div>
                         
@@ -3130,6 +3533,10 @@
     <script src="achievement-gamification.js"></script>
     <!-- Virtual Pet System for child mode -->
     <script src="virtual-pet.js"></script>
+    <!-- Baidu Image Search for treasure photos -->
+    <script src="baidu-image-search.js"></script>
+    <!-- Image Upload Utility for uploading photos to letmetry.cloud -->
+    <script src="image-upload-util.js"></script>
     
     <script>
         // Configuration
@@ -3541,6 +3948,26 @@
                 return;
             }
 
+            // Merge user-added treasures from localStorage into currentMuseum.collections
+            // This ensures user-added treasures are available even if KV store save failed
+            const userTreasures = loadUserAddedTreasures(museumId);
+            if (userTreasures && userTreasures.length > 0) {
+                if (!currentMuseum.collections) {
+                    currentMuseum.collections = [];
+                }
+                // Add user treasures if not already in collections
+                userTreasures.forEach(ut => {
+                    const exists = currentMuseum.collections.some(c => c.name === ut.name);
+                    if (!exists) {
+                        currentMuseum.collections.push({
+                            ...ut,
+                            isUserAdded: true
+                        });
+                    }
+                });
+                console.debug(`Merged ${userTreasures.length} user-added treasures into museum collections`);
+            }
+
             document.getElementById('museumName').textContent = currentMuseum.name;
             
             // Get child tasks for the age group
@@ -3562,20 +3989,27 @@
             // Treasure hunt workflow pattern for ALL museums with collections (门口打卡 + 找镇馆之宝 + 亲子合影)
             // Automatically applied to any museum that has collections data
             // Uses selected treasures from configuration, defaults to first 3
-            if (Array.isArray(currentMuseum.collections) && currentMuseum.collections.length > 0) {
+            const totalTreasuresNeeded = 3;
+            const collections = currentMuseum.collections || [];
+            
+            if (Array.isArray(collections) && collections.length >= totalTreasuresNeeded) {
+                // Museum has 3+ treasures - use standard treasure hunt workflow
                 // Get selected treasures from configuration (defaults to first 3)
                 const selectedTreasureNames = getSelectedTreasuresForMuseum();
-                const selectedCollections = currentMuseum.collections.filter(c => selectedTreasureNames.includes(c.name));
+                const selectedCollections = collections.filter(c => selectedTreasureNames.includes(c.name));
                 
                 // If no valid selections, fall back to first 3
                 const colls = selectedCollections.length >= MIN_TREASURES_REQUIRED 
                     ? selectedCollections 
-                    : currentMuseum.collections.slice(0, Math.min(3, currentMuseum.collections.length));
+                    : collections.slice(0, Math.min(3, collections.length));
                 
-                const start = '📸 门口打卡：家长给孩子在博物馆门口拍一张照片';
-                const collTasks = colls.map(c => `🏺 镇馆之宝：找到「${c && c.name ? c.name : '镇馆之宝'}」并合影`);
-                const end = '📸 亲子合影：和家长比心/拥抱/击掌等动作合影';
-                childTasks = [start].concat(collTasks, [end]);
+                // Use the shared helper with selected collections
+                childTasks = buildTreasureWorkflowTasks(colls);
+            } else {
+                // Museum has 0-2 treasures - show mix of treasure tasks and "add treasure" tasks
+                // This allows incremental discovery: as users add treasures, tasks update
+                // Use the shared helper to build the task list
+                childTasks = buildTreasureWorkflowTasks(collections);
             }
 
             renderTasks();
@@ -3952,6 +4386,9 @@
             document.getElementById('modalTaskTitle').textContent = title;
             document.getElementById('modalDescription').textContent = subtitle || '完成这个有趣的任务吧！';
             
+            // Get museum photo contributor section
+            const museumPhotoSection = document.getElementById('museumPhotoContributorSection');
+            
             // Try show collection image
             try {
                 const imgEl = document.getElementById('modalImage');
@@ -3959,7 +4396,9 @@
                 let matchedUrl = '';
                 
                 // Check if this is a 门口打卡 task - use museum image
-                if (title && title.includes('门口打卡') && m && m.image) {
+                const isDoorCheckinTask = title && title.includes('门口打卡');
+                
+                if (isDoorCheckinTask && m && m.image) {
                     matchedUrl = m.image;
                 }
                 // Otherwise, try to match collection images for treasure hunt tasks
@@ -3971,10 +4410,49 @@
                 }
                 
                 if (imgEl) {
-                    if (matchedUrl) { imgEl.src = matchedUrl; imgEl.style.display = 'block'; }
-                    else { imgEl.removeAttribute('src'); imgEl.style.display = 'none'; }
+                    if (matchedUrl) { 
+                        imgEl.src = matchedUrl; 
+                        imgEl.style.display = 'block'; 
+                        if (museumPhotoSection) museumPhotoSection.style.display = 'none';
+                    } else { 
+                        imgEl.removeAttribute('src'); 
+                        imgEl.style.display = 'none'; 
+                        
+                        // Show museum photo contributor section for 门口打卡 task when no image
+                        if (isDoorCheckinTask && museumPhotoSection) {
+                            // Check if user already contributed a photo
+                            const contributedPhoto = getContributedMuseumPhoto(m.id);
+                            if (contributedPhoto && contributedPhoto.imageUrl) {
+                                // Show the contributed photo instead
+                                imgEl.src = contributedPhoto.imageUrl;
+                                imgEl.style.display = 'block';
+                                museumPhotoSection.style.display = 'none';
+                            } else {
+                                // Show the contributor section
+                                museumPhotoSection.style.display = 'block';
+                                // Initialize search input with museum name
+                                const searchInput = document.getElementById('modalMuseumPhotoSearch');
+                                if (searchInput) searchInput.value = m.name + ' 门口 外观';
+                                // Reset preview
+                                const preview = document.getElementById('modalMuseumPhotoPreview');
+                                if (preview) {
+                                    preview.innerHTML = '📷 添加博物馆门口照片';
+                                    preview.classList.remove('image-preview-thumb');
+                                    preview.classList.add('image-preview-placeholder');
+                                    delete preview.dataset.imageUrl;
+                                }
+                                // Hide submit button and badge
+                                document.getElementById('modalMuseumPhotoSubmitBtn').style.display = 'none';
+                                document.getElementById('museumPhotoContributedBadge').style.display = 'none';
+                            }
+                        } else {
+                            if (museumPhotoSection) museumPhotoSection.style.display = 'none';
+                        }
+                    }
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.error('Error in openTaskDetail image handling:', e);
+            }
 
             // Initialize photo preview for this task
             const photoPreview = document.getElementById('photoPreview');
@@ -4052,12 +4530,73 @@
                 reportSection.classList.remove('show');
             }
 
+            // Handle treasure contributor section visibility (for "添加镇馆之宝" tasks)
+            const contributorSection = document.getElementById('treasureContributorSection');
+            const treasureNameInput = document.getElementById('modalTreasureName');
+            const treasureImageInput = document.getElementById('modalTreasureImage');
+            const treasurePreview = document.getElementById('modalTreasurePreview');
+            
+            const isAddTreasureTask = title && title.includes('添加镇馆之宝');
+            
+            if (isAddTreasureTask) {
+                contributorSection.style.display = 'block';
+                // Clear previous values
+                treasureNameInput.value = '';
+                treasureImageInput.value = '';
+                treasurePreview.textContent = '📷';
+                treasurePreview.className = 'image-preview-placeholder';
+                
+                // Load previously saved treasure data for this task if exists
+                const savedTreasureData = getContributedTreasureForTask(index);
+                if (savedTreasureData) {
+                    treasureNameInput.value = savedTreasureData.name || '';
+                    if (savedTreasureData.imageUrl) {
+                        treasureImageInput.value = savedTreasureData.imageUrl;
+                        const img = document.createElement('img');
+                        img.src = savedTreasureData.imageUrl;
+                        img.className = 'image-preview-thumb';
+                        img.alt = '预览';
+                        treasurePreview.innerHTML = '';
+                        treasurePreview.appendChild(img);
+                    }
+                }
+            } else {
+                contributorSection.style.display = 'none';
+            }
+
             document.getElementById('taskModal').classList.add('show');
         }
 
         // Complete a task
-        function completeTask() {
+        async function completeTask() {
             if (currentTaskIndex === null) return;
+
+            // Check if this is an "添加镇馆之宝" task and validate/save data
+            const task = childTasks[currentTaskIndex];
+            const { title, subtitle } = parseTaskString(task);
+            const isAddTreasureTask = title && title.includes('添加镇馆之宝');
+            
+            if (isAddTreasureTask) {
+                const treasureName = document.getElementById('modalTreasureName').value.trim();
+                const treasureImage = document.getElementById('modalTreasureImage').value.trim();
+                
+                // Validate: treasure name is required
+                if (!treasureName) {
+                    alert('请输入镇馆之宝的名称！');
+                    document.getElementById('modalTreasureName').focus();
+                    return;
+                }
+                
+                // Save the contributed treasure data (also saves to KV store)
+                await saveContributedTreasure(currentTaskIndex, {
+                    name: treasureName,
+                    imageUrl: treasureImage || '',
+                    taskIndex: currentTaskIndex,
+                    museumId: museumId,
+                    museumName: currentMuseum ? currentMuseum.name : '',
+                    timestamp: Date.now()
+                });
+            }
 
             // Check if game should be shown (has photo and setting enabled)
             const hasPhoto = !!taskPhotos[currentTaskIndex];
@@ -4103,9 +4642,14 @@
             // Show fireworks celebration
             celebrateWithFireworks();
             
-            // Re-render tasks
-            renderTasks();
-            updateProgress();
+            // If this was an "add treasure" task, regenerate task list to show the new treasure
+            if (isAddTreasureTask) {
+                regenerateTasksWithNewTreasures();
+            } else {
+                // Just re-render existing tasks
+                renderTasks();
+                updateProgress();
+            }
 
             // Upload firework to remote
             uploadFireworkEvent(currentTaskIndex);
@@ -4355,7 +4899,7 @@
             }
         }
 
-        // Compress photo to reduce size (reuse logic from single-museum.js)
+        // Compress photo to reduce size
         async function compressPhoto(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -4437,6 +4981,462 @@
                 savePhotos();
             }
         }
+
+        // ===== Contributed Treasures Storage Functions =====
+        
+        // Get the storage key for contributed treasures
+        function getContributedTreasuresKey() {
+            return `contributedTreasures_${museumId}_${ageGroup}`;
+        }
+        
+        // Save a contributed treasure for a specific task
+        async function saveContributedTreasure(taskIndex, treasureData) {
+            try {
+                const key = getContributedTreasuresKey();
+                const allTreasures = JSON.parse(localStorage.getItem(key) || '{}');
+                allTreasures[taskIndex] = treasureData;
+                localStorage.setItem(key, JSON.stringify(allTreasures));
+                
+                // Also save to the global contributed treasures list
+                saveToGlobalContributedTreasures(treasureData);
+                
+                // Add to current museum's collections and save to KV store (Tier 2)
+                // This ensures the treasure is persisted remotely like the settings page does
+                if (currentMuseum && treasureData.name) {
+                    const newTreasure = {
+                        name: treasureData.name,
+                        imageUrl: treasureData.imageUrl || '',
+                        description: '用户添加的镇馆之宝',
+                        isUserAdded: true,
+                        addedAt: treasureData.timestamp || Date.now()
+                    };
+                    
+                    // Initialize collections if not exists
+                    if (!currentMuseum.collections) {
+                        currentMuseum.collections = [];
+                    }
+                    
+                    // Check if treasure already exists in collections
+                    const existsInCollections = currentMuseum.collections.some(c => c.name === newTreasure.name);
+                    if (!existsInCollections) {
+                        currentMuseum.collections.push(newTreasure);
+                        
+                        // Also save to user treasures localStorage (for user-specific tracking)
+                        const userTreasures = loadUserAddedTreasures(museumId);
+                        const existsInUserTreasures = userTreasures.some(t => t.name === newTreasure.name);
+                        if (!existsInUserTreasures) {
+                            userTreasures.push(newTreasure);
+                            saveUserAddedTreasures(userTreasures);
+                        }
+                        
+                        // Save to KV store (remote persistence)
+                        const saveSuccess = await saveMuseumWithUserTreasuresToRemote();
+                        if (saveSuccess) {
+                            console.log(`Contributed treasure "${treasureData.name}" saved to KV store`);
+                        } else {
+                            console.warn(`Contributed treasure "${treasureData.name}" saved locally only (KV store unavailable)`);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error saving contributed treasure:', e);
+            }
+        }
+        
+        // Get contributed treasure for a specific task
+        function getContributedTreasureForTask(taskIndex) {
+            try {
+                const key = getContributedTreasuresKey();
+                const allTreasures = JSON.parse(localStorage.getItem(key) || '{}');
+                return allTreasures[taskIndex] || null;
+            } catch (e) {
+                console.error('Error loading contributed treasure:', e);
+                return null;
+            }
+        }
+        
+        // Save to global list of contributed treasures (for potential future sync)
+        function saveToGlobalContributedTreasures(treasureData) {
+            try {
+                const globalKey = 'allContributedTreasures';
+                const allTreasures = JSON.parse(localStorage.getItem(globalKey) || '[]');
+                
+                // Add new treasure if not already exists
+                const exists = allTreasures.some(t => 
+                    t.museumId === treasureData.museumId && 
+                    t.name === treasureData.name
+                );
+                
+                if (!exists) {
+                    allTreasures.push(treasureData);
+                    localStorage.setItem(globalKey, JSON.stringify(allTreasures));
+                }
+            } catch (e) {
+                console.error('Error saving to global contributed treasures:', e);
+            }
+        }
+
+        // ===== Museum Entrance Photo Contributor Functions =====
+        
+        // Local storage key for contributed museum photos
+        // NOTE: This key must match APP_CONFIG.LOCAL_STORAGE_KEYS.CONTRIBUTED_MUSEUM_PHOTOS in script.js
+        // Duplicated here since museum-checkin.html is a standalone page that doesn't import script.js config
+        const CONTRIBUTED_MUSEUM_PHOTOS_KEY = 'contributedMuseumPhotos';
+        
+        // Get contributed museum entrance photo
+        function getContributedMuseumPhoto(musId) {
+            try {
+                const all = JSON.parse(localStorage.getItem(CONTRIBUTED_MUSEUM_PHOTOS_KEY) || '{}');
+                return all[musId] || null;
+            } catch (e) {
+                console.error('Error getting contributed museum photo:', e);
+                return null;
+            }
+        }
+        
+        // Save contributed museum entrance photo
+        function saveContributedMuseumPhoto(musId, photoData) {
+            try {
+                const all = JSON.parse(localStorage.getItem(CONTRIBUTED_MUSEUM_PHOTOS_KEY) || '{}');
+                all[musId] = {
+                    ...photoData,
+                    contributedAt: Date.now()
+                };
+                localStorage.setItem(CONTRIBUTED_MUSEUM_PHOTOS_KEY, JSON.stringify(all));
+                console.log('Museum photo contributed successfully:', musId);
+                
+                // Also update currentMuseum.image so it shows immediately
+                if (currentMuseum && currentMuseum.id === musId) {
+                    currentMuseum.image = photoData.imageUrl;
+                }
+                
+                return true;
+            } catch (e) {
+                console.error('Error saving contributed museum photo:', e);
+                return false;
+            }
+        }
+        
+        // Handle museum photo search (wiki or baidu)
+        async function handleMuseumPhotoSearch(source) {
+            const searchInput = document.getElementById('modalMuseumPhotoSearch');
+            const query = searchInput ? searchInput.value.trim() : '';
+            
+            if (!query) {
+                alert('请输入搜索关键词');
+                return;
+            }
+            
+            if (source === 'wiki') {
+                // Use existing Wiki search modal pattern
+                try {
+                    // Set callback context for wiki search
+                    window.currentImageInputId = null;  // Not using input field
+                    window.currentPreviewId = 'modalMuseumPhotoPreview';
+                    // Copy name to search input
+                    const wikiSearchInput = document.getElementById('wikiSearchInput');
+                    if (wikiSearchInput) {
+                        wikiSearchInput.value = query;
+                    }
+                    openWikiSearch();
+                } catch (e) {
+                    console.error('Wiki search error:', e);
+                    alert('搜索失败，请重试');
+                }
+            } else if (source === 'baidu') {
+                // Open Baidu image search in new tab
+                window.open(`https://image.baidu.com/search/index?tn=baiduimage&word=${encodeURIComponent(query)}`, '_blank');
+                // Show prompt to paste URL
+                const url = prompt('在百度图片中找到合适的图片后，右键复制图片地址并粘贴到此处：');
+                if (url && url.trim()) {
+                    showMuseumPhotoPreview(url.trim());
+                }
+            }
+        }
+        
+        // Show museum photo preview
+        function showMuseumPhotoPreview(imageUrl) {
+            const preview = document.getElementById('modalMuseumPhotoPreview');
+            if (!preview || !imageUrl) return;
+            
+            // Replace placeholder with image
+            preview.innerHTML = `<img src="${imageUrl}" alt="博物馆门口" class="image-preview-thumb">`;
+            preview.classList.remove('image-preview-placeholder');
+            preview.classList.add('image-preview-thumb');
+            preview.dataset.imageUrl = imageUrl;
+            
+            // Show submit button
+            document.getElementById('modalMuseumPhotoSubmitBtn').style.display = 'block';
+        }
+        
+        // Handle museum photo submit
+        function handleMuseumPhotoSubmit() {
+            const preview = document.getElementById('modalMuseumPhotoPreview');
+            if (!preview) return;
+            
+            const imageUrl = preview.dataset.imageUrl;
+            if (!imageUrl) {
+                alert('请先添加博物馆门口照片');
+                return;
+            }
+            
+            // Save the photo
+            const success = saveContributedMuseumPhoto(museumId, {
+                imageUrl: imageUrl,
+                description: `由亲子探索者贡献于${new Date().toLocaleDateString('zh-CN')}`
+            });
+            
+            if (success) {
+                // Hide contributor section, show the photo
+                document.getElementById('museumPhotoContributorSection').style.display = 'none';
+                const imgEl = document.getElementById('modalImage');
+                if (imgEl) {
+                    imgEl.src = imageUrl;
+                    imgEl.style.display = 'block';
+                }
+                
+                // Show success badge briefly
+                document.getElementById('museumPhotoContributedBadge').style.display = 'block';
+                
+                // Update the task card on the main page
+                updateTaskCardImage(0, imageUrl);
+                
+                // Play celebration sound if available
+                if (typeof playSuccessSound === 'function') playSuccessSound();
+            }
+        }
+        
+        // Update task card image after contribution
+        function updateTaskCardImage(taskIndex, imageUrl) {
+            const taskCards = document.querySelectorAll('.task-card');
+            if (taskCards[taskIndex]) {
+                const card = taskCards[taskIndex];
+                const visualContainer = card.querySelector('.task-visual-container');
+                if (visualContainer) {
+                    const iconDiv = visualContainer.querySelector('.task-icon');
+                    let imgEl = visualContainer.querySelector('.task-card-image');
+                    if (!imgEl) {
+                        imgEl = document.createElement('img');
+                        imgEl.className = 'task-card-image';
+                        visualContainer.insertBefore(imgEl, iconDiv);
+                    }
+                    imgEl.src = imageUrl;
+                    imgEl.style.display = 'block';
+                    if (iconDiv) iconDiv.style.display = 'none';
+                }
+            }
+        }
+        
+        // ===== End Museum Entrance Photo Contributor Functions =====
+        
+        // ===== Photo Upload Handler Functions =====
+        // Constants for upload UI
+        const UPLOAD_BUTTON_TEXT = '📤 选择文件';
+        const MAX_FILE_SIZE_MB = 10;
+        const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+        
+        /**
+         * Validate image file for upload
+         * @param {File} file - File to validate
+         * @returns {boolean} - True if valid, false otherwise
+         */
+        function validateImageFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('请选择图片文件');
+                return false;
+            }
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                alert(`图片文件太大，请选择小于${MAX_FILE_SIZE_MB}MB的图片`);
+                return false;
+            }
+            return true;
+        }
+        
+        /**
+         * Set upload button to uploading state
+         * @param {HTMLElement} uploadLabel - The upload button label element
+         */
+        function setUploadingState(uploadLabel) {
+            if (uploadLabel) {
+                const inputHtml = uploadLabel.querySelector('input') ? uploadLabel.querySelector('input').outerHTML : '';
+                uploadLabel.classList.add('uploading');
+                uploadLabel.innerHTML = '<span>⏳ 上传中...</span>' + inputHtml;
+            }
+        }
+        
+        /**
+         * Reset upload button to default state
+         * @param {HTMLElement} uploadLabel - The upload button label element
+         * @param {Function} changeHandler - Event handler for the file input change event
+         */
+        function resetUploadButton(uploadLabel, changeHandler) {
+            if (uploadLabel) {
+                const inputHtml = uploadLabel.querySelector('input') ? uploadLabel.querySelector('input').outerHTML : '';
+                uploadLabel.classList.remove('uploading');
+                uploadLabel.innerHTML = UPLOAD_BUTTON_TEXT + inputHtml;
+                // Re-attach the input event handler
+                const newInput = uploadLabel.querySelector('input');
+                if (newInput && changeHandler) {
+                    newInput.addEventListener('change', changeHandler);
+                }
+            }
+        }
+        
+        /**
+         * Update preview element with progress message
+         * @param {HTMLElement} preview - Preview element
+         * @param {string} stage - Upload stage ('compressing' or 'uploading')
+         */
+        function updateUploadProgress(preview, stage) {
+            if (preview) {
+                if (stage === 'compressing') {
+                    preview.innerHTML = '<span class="upload-progress">🗜️ 压缩中...</span>';
+                } else if (stage === 'uploading') {
+                    preview.innerHTML = '<span class="upload-progress">⬆️ 上传中...</span>';
+                }
+            }
+        }
+        
+        /**
+         * Handle photo upload and compression using ImageUploader
+         * @param {Event} e - File input change event
+         * @param {string} imageInputId - ID of the text input to store the URL
+         * @param {string} previewId - ID of the preview element
+         */
+        async function handlePhotoUpload(e, imageInputId, previewId) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            
+            const preview = document.getElementById(previewId);
+            const imageInput = document.getElementById(imageInputId);
+            const uploadLabel = e.target.parentElement;
+            
+            // Validate file
+            if (!validateImageFile(file)) return;
+            
+            // Show uploading state
+            setUploadingState(uploadLabel);
+            
+            // Show loading in preview
+            if (preview) {
+                preview.innerHTML = '<span class="upload-progress">⏳ 压缩上传中...</span>';
+                preview.className = 'image-preview-placeholder';
+            }
+            
+            try {
+                // Use ImageUploader if available
+                if (typeof imageUploader !== 'undefined') {
+                    const url = await imageUploader.uploadImage(file, {
+                        compress: true,
+                        onProgress: (stage, progress) => updateUploadProgress(preview, stage)
+                    });
+                    
+                    // Update the image input with the URL
+                    if (imageInput) {
+                        imageInput.value = url;
+                        // Trigger input event to update any dependent UI
+                        imageInput.dispatchEvent(new Event('input'));
+                    }
+                    
+                    // Update preview with the uploaded image
+                    if (preview) {
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.className = 'image-preview-thumb';
+                        img.alt = '已上传';
+                        preview.innerHTML = '';
+                        preview.className = 'image-preview-container';
+                        preview.appendChild(img);
+                    }
+                    
+                    console.log('✅ 图片上传成功:', url);
+                } else {
+                    throw new Error('图片上传服务不可用');
+                }
+            } catch (error) {
+                console.error('图片上传失败:', error);
+                alert('图片上传失败：' + (error.message || '未知错误'));
+                
+                // Reset preview
+                if (preview) {
+                    preview.innerHTML = '📷';
+                    preview.className = 'image-preview-placeholder';
+                }
+            } finally {
+                // Reset upload button state
+                resetUploadButton(uploadLabel, (ev) => handlePhotoUpload(ev, imageInputId, previewId));
+                // Reset file input to allow re-uploading the same file
+                e.target.value = '';
+            }
+        }
+        
+        /**
+         * Handle museum entrance photo upload
+         * @param {Event} e - File input change event
+         */
+        async function handleMuseumPhotoUploadChange(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            
+            const preview = document.getElementById('modalMuseumPhotoPreview');
+            const submitBtn = document.getElementById('modalMuseumPhotoSubmitBtn');
+            const uploadLabel = e.target.parentElement;
+            
+            // Validate file
+            if (!validateImageFile(file)) return;
+            
+            // Show uploading state
+            setUploadingState(uploadLabel);
+            
+            // Show loading in preview
+            if (preview) {
+                preview.innerHTML = '<span class="upload-progress">⏳ 压缩上传中...</span>';
+            }
+            
+            try {
+                // Use ImageUploader if available
+                if (typeof imageUploader !== 'undefined') {
+                    const url = await imageUploader.uploadImage(file, {
+                        compress: true,
+                        onProgress: (stage, progress) => updateUploadProgress(preview, stage)
+                    });
+                    
+                    // Update preview with the uploaded image
+                    if (preview) {
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.className = 'image-preview-thumb';
+                        img.alt = '博物馆门口照片';
+                        preview.innerHTML = '';
+                        preview.appendChild(img);
+                        preview.dataset.imageUrl = url;
+                    }
+                    
+                    // Show submit button
+                    if (submitBtn) {
+                        submitBtn.style.display = 'block';
+                    }
+                    
+                    console.log('✅ 博物馆照片上传成功:', url);
+                } else {
+                    throw new Error('图片上传服务不可用');
+                }
+            } catch (error) {
+                console.error('博物馆照片上传失败:', error);
+                alert('图片上传失败：' + (error.message || '未知错误'));
+                
+                // Reset preview
+                if (preview) {
+                    preview.innerHTML = '📷 添加博物馆门口照片';
+                }
+            } finally {
+                // Reset upload button state
+                resetUploadButton(uploadLabel, handleMuseumPhotoUploadChange);
+                // Reset file input
+                e.target.value = '';
+            }
+        }
+        // ===== End Photo Upload Handler Functions =====
 
         // Helper function: Draw Minecraft-style corner decorations
         function drawMinecraftCorners(ctx, width, height) {
@@ -4921,6 +5921,119 @@
             document.getElementById('taskPhotoInput').onchange = handlePhotoCapture;
 
             document.getElementById('retakeButton').onclick = clearPhotoPreview;
+
+            // Modal treasure contributor search buttons
+            const modalSearchWikiBtn = document.getElementById('modalSearchWikiBtn');
+            const modalSearchBaiduBtn = document.getElementById('modalSearchBaiduBtn');
+            const modalTreasureNameInput = document.getElementById('modalTreasureName');
+            const modalTreasureImageInput = document.getElementById('modalTreasureImage');
+            
+            if (modalSearchWikiBtn) {
+                modalSearchWikiBtn.onclick = () => {
+                    const treasureName = modalTreasureNameInput.value.trim();
+                    if (!treasureName) {
+                        alert('请先输入镇馆之宝名称');
+                        modalTreasureNameInput.focus();
+                        return;
+                    }
+                    // Copy name to search input and open wiki search modal
+                    const wikiSearchInput = document.getElementById('wikiSearchInput');
+                    if (wikiSearchInput) {
+                        wikiSearchInput.value = treasureName;
+                    }
+                    // Set callback for wiki search to update modal image input
+                    window.currentImageInputId = 'modalTreasureImage';
+                    window.currentPreviewId = 'modalTreasurePreview';
+                    openWikiSearch();
+                };
+            }
+            
+            if (modalSearchBaiduBtn) {
+                modalSearchBaiduBtn.onclick = () => {
+                    const treasureName = modalTreasureNameInput.value.trim();
+                    if (!treasureName) {
+                        alert('请先输入镇馆之宝名称');
+                        modalTreasureNameInput.focus();
+                        return;
+                    }
+                    // Set callback context for baidu search
+                    window.currentImageInputId = 'modalTreasureImage';
+                    window.currentPreviewId = 'modalTreasurePreview';
+                    // Copy name to search input and perform baidu search
+                    const wikiSearchInput = document.getElementById('wikiSearchInput');
+                    if (wikiSearchInput) {
+                        wikiSearchInput.value = treasureName;
+                    }
+                    performBaiduSearch();
+                };
+            }
+            
+            // Sync treasure name to image search input
+            if (modalTreasureNameInput) {
+                modalTreasureNameInput.addEventListener('input', () => {
+                    modalTreasureImageInput.placeholder = modalTreasureNameInput.value.trim() 
+                        ? '点击搜索按钮查找图片' 
+                        : '输入名称后点击搜索';
+                });
+            }
+            
+            // Update preview when image URL is entered
+            if (modalTreasureImageInput) {
+                modalTreasureImageInput.addEventListener('input', () => {
+                    const url = modalTreasureImageInput.value.trim();
+                    const preview = document.getElementById('modalTreasurePreview');
+                    if (url) {
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.className = 'image-preview-thumb';
+                        img.alt = '预览';
+                        img.onerror = function() { preview.textContent = '❌'; };
+                        preview.innerHTML = '';
+                        preview.appendChild(img);
+                    } else {
+                        preview.textContent = '📷';
+                        preview.className = 'image-preview-placeholder';
+                    }
+                });
+            }
+
+            // ===== Museum Entrance Photo Contributor Event Listeners =====
+            const museumPhotoSearchWikiBtn = document.getElementById('modalMuseumPhotoSearchWikiBtn');
+            const museumPhotoSearchBaiduBtn = document.getElementById('modalMuseumPhotoSearchBaiduBtn');
+            const museumPhotoSubmitBtn = document.getElementById('modalMuseumPhotoSubmitBtn');
+            
+            if (museumPhotoSearchWikiBtn) {
+                museumPhotoSearchWikiBtn.onclick = () => handleMuseumPhotoSearch('wiki');
+            }
+            
+            if (museumPhotoSearchBaiduBtn) {
+                museumPhotoSearchBaiduBtn.onclick = () => handleMuseumPhotoSearch('baidu');
+            }
+            
+            if (museumPhotoSubmitBtn) {
+                museumPhotoSubmitBtn.onclick = handleMuseumPhotoSubmit;
+            }
+            // ===== End Museum Photo Contributor Event Listeners =====
+            
+            // ===== Photo Upload Event Listeners =====
+            // Handler for modal treasure photo upload
+            const modalTreasureUpload = document.getElementById('modalTreasureUpload');
+            if (modalTreasureUpload) {
+                modalTreasureUpload.addEventListener('change', (e) => handlePhotoUpload(e, 'modalTreasureImage', 'modalTreasurePreview'));
+            }
+            
+            // Handler for new treasure photo upload (settings page)
+            const newTreasureUpload = document.getElementById('newTreasureUpload');
+            if (newTreasureUpload) {
+                newTreasureUpload.addEventListener('change', (e) => handlePhotoUpload(e, 'newTreasureImage', 'newTreasurePreview'));
+            }
+            
+            // Handler for museum entrance photo upload
+            const modalMuseumPhotoUpload = document.getElementById('modalMuseumPhotoUpload');
+            if (modalMuseumPhotoUpload) {
+                modalMuseumPhotoUpload.addEventListener('change', (e) => handleMuseumPhotoUploadChange(e));
+            }
+            // ===== End Photo Upload Event Listeners =====
 
             // Celebration close button
             document.getElementById('closeCelebration').onclick = () => {
@@ -5473,6 +6586,54 @@
         }
 
         /**
+         * Build treasure workflow task list based on available collections
+         * @param {Array} collections - Array of treasure/collection objects
+         * @returns {Array} Array of task strings
+         */
+        function buildTreasureWorkflowTasks(collections) {
+            const totalTreasuresNeeded = 3;
+            const start = '📸 门口打卡：家长给孩子在博物馆门口拍一张照片';
+            const end = '📸 亲子合影：和家长比心/拥抱/击掌等动作合影';
+            
+            if (collections.length >= totalTreasuresNeeded) {
+                // All 3 treasures available - standard treasure hunt
+                const colls = collections.slice(0, totalTreasuresNeeded);
+                const treasureTasks = colls.map(c => `🏺 镇馆之宝：找到「${c && c.name ? c.name : '镇馆之宝'}」并合影`);
+                return [start].concat(treasureTasks, [end]);
+            } else {
+                // Mix of treasure hunt and "add treasure" tasks
+                const existingTreasureCount = collections.length;
+                const addTreasuresNeeded = totalTreasuresNeeded - existingTreasureCount;
+                
+                // Create treasure hunt tasks for existing treasures
+                const treasureTasks = collections.slice(0, existingTreasureCount).map(c => 
+                    `🏺 镇馆之宝：找到「${c && c.name ? c.name : '镇馆之宝'}」并合影`
+                );
+                
+                // Create "add treasure" tasks for remaining slots
+                const addTreasureTasks = Array.from({length: addTreasuresNeeded}, (_, i) => 
+                    `✨ 添加镇馆之宝 ${existingTreasureCount + i + 1}/${totalTreasuresNeeded}：找到你最喜欢的展品，拍照并记录名称`
+                );
+                
+                return [start].concat(treasureTasks, addTreasureTasks, [end]);
+            }
+        }
+
+        /**
+         * Regenerate task list after adding a new treasure
+         * Creates a mix of treasure hunt tasks and "add treasure" tasks based on available treasures
+         */
+        function regenerateTasksWithNewTreasures() {
+            if (!currentMuseum) return;
+            
+            const collections = currentMuseum.collections || [];
+            childTasks = buildTreasureWorkflowTasks(collections);
+            
+            renderTasks();
+            updateProgress();
+        }
+
+        /**
          * Update the selected treasure count display
          */
         function updateSelectedTreasureCountV2() {
@@ -5935,7 +7096,22 @@
                 }
                 
                 if (results.length === 0) {
-                    resultsEl.innerHTML = '<div class="wiki-search-empty">未找到相关图片，请尝试其他关键词</div>';
+                    resultsEl.innerHTML = `
+                        <div class="wiki-search-empty">
+                            <div>Wiki未找到相关图片</div>
+                            <div style="margin-top: 8px; font-size: 13px; color: #666;">
+                                Wiki的中国文物图片较少，推荐使用百度搜索
+                            </div>
+                            <div style="margin-top: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                                <button class="baidu-search-inline-btn" onclick="performBaiduSearch()">
+                                    🔍 搜索百度图片
+                                </button>
+                                <button class="baidu-search-inline-btn secondary" onclick="openBaiduImagePage()">
+                                    ↗️ 去百度搜索
+                                </button>
+                            </div>
+                        </div>
+                    `;
                     return;
                 }
                 
@@ -5954,31 +7130,201 @@
                 
             } catch (error) {
                 console.error('Wiki search failed:', error);
-                resultsEl.innerHTML = '<div class="wiki-search-empty">搜索失败，请重试</div>';
+                resultsEl.innerHTML = '<div class="wiki-search-empty">搜索失败，请重试。您可以尝试使用百度搜索。</div>';
             }
         }
 
         /**
          * Select an image from wiki search results
+         * Note: Uses window.currentImageInputId and window.currentPreviewId for target element IDs
+         * This allows the same selectWikiImage function to work with both the settings modal
+         * and the task modal treasure contributor section.
          */
         function selectWikiImage(imageUrl) {
-            // Update input field
-            const imageInput = document.getElementById('newTreasureImage');
-            imageInput.value = imageUrl;
+            // Use configurable input ID (for task modal or settings modal)
+            const inputId = window.currentImageInputId || 'newTreasureImage';
+            const previewId = window.currentPreviewId || 'newTreasurePreview';
             
-            // Update preview
-            updateNewTreasurePreview(imageUrl);
-            
-            // Highlight selected item
-            document.querySelectorAll('.wiki-search-result-item').forEach(item => {
-                item.classList.remove('selected');
-                if (item.dataset.url === imageUrl) {
-                    item.classList.add('selected');
+            try {
+                // Update input field
+                const imageInput = document.getElementById(inputId);
+                if (imageInput) {
+                    imageInput.value = imageUrl;
                 }
-            });
+                
+                // Update preview using DOM methods to prevent XSS
+                const preview = document.getElementById(previewId);
+                if (preview) {
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    img.className = 'image-preview-thumb';
+                    img.alt = '预览';
+                    preview.textContent = '';
+                    preview.appendChild(img);
+                    // Store image URL for museum photo submission
+                    preview.dataset.imageUrl = imageUrl;
+                    
+                    // Show museum photo submit button if this is museum photo preview
+                    if (previewId === 'modalMuseumPhotoPreview') {
+                        const submitBtn = document.getElementById('modalMuseumPhotoSubmitBtn');
+                        if (submitBtn) submitBtn.style.display = 'block';
+                    }
+                }
+                // Also update settings modal preview if we're using that one
+                if (inputId === 'newTreasureImage') {
+                    updateNewTreasurePreview(imageUrl);
+                }
+                
+                // Highlight selected item
+                document.querySelectorAll('.wiki-search-result-item').forEach(item => {
+                    item.classList.remove('selected');
+                    if (item.dataset.url === imageUrl) {
+                        item.classList.add('selected');
+                    }
+                });
+                
+                // Close modal after short delay
+                setTimeout(() => closeWikiSearch(), 300);
+            } finally {
+                // Always clear the configurable IDs after use
+                window.currentImageInputId = null;
+                window.currentPreviewId = null;
+            }
+        }
+
+        // ===== Baidu Image Search Functions =====
+        
+        /**
+         * Perform Baidu inline image search
+         * Uses the BaiduImageSearch library to fetch images directly
+         */
+        async function performBaiduSearch() {
+            const treasureNameInput = document.getElementById('newTreasureName');
+            const resultsEl = document.getElementById('wikiSearchResults');
+            const searchInput = document.getElementById('wikiSearchInput');
             
-            // Close modal after short delay
-            setTimeout(() => closeWikiSearch(), 300);
+            // Get search query from treasure name input first, then from search modal input
+            const treasureName = treasureNameInput ? treasureNameInput.value.trim() : '';
+            const modalSearchQuery = searchInput ? searchInput.value.trim() : '';
+            const searchQuery = modalSearchQuery || treasureName;
+            
+            if (!searchQuery) {
+                alert('请先输入镇馆之宝名称');
+                return;
+            }
+            
+            // Open the wiki modal for results display
+            const modal = document.getElementById('wikiSearchModal');
+            modal.classList.add('show');
+            
+            // Set search input value to the treasure name if it's empty
+            if (searchInput && !modalSearchQuery) {
+                searchInput.value = treasureName;
+            }
+            
+            // Update modal title for Baidu search
+            const modalTitle = modal.querySelector('.wiki-search-title');
+            if (modalTitle) {
+                modalTitle.textContent = '🔍 百度图片搜索';
+            }
+            
+            // Show loading
+            resultsEl.innerHTML = `
+                <div class="wiki-search-loading">正在从百度搜索图片...</div>
+                <div style="text-align: center; margin-top: 8px; color: #666; font-size: 13px;">
+                    如果加载较慢，可点击"去百度搜索"手动查找
+                </div>
+            `;
+            
+            try {
+                // Use BaiduImageSearch library
+                if (typeof BaiduImageSearch === 'undefined') {
+                    throw new Error('百度图片搜索库未加载');
+                }
+                
+                const baiduSearcher = new BaiduImageSearch();
+                const museumNameForSearch = (currentMuseum && currentMuseum.name) || '';
+                const results = await baiduSearcher.searchTreasurePhotos(museumNameForSearch, searchQuery);
+                
+                if (!results || results.length === 0) {
+                    resultsEl.innerHTML = `
+                        <div class="wiki-search-empty">
+                            <div>百度未找到相关图片</div>
+                            <div style="margin-top: 8px; font-size: 13px; color: #666;">
+                                尝试使用不同的关键词，或点击下方按钮手动搜索
+                            </div>
+                            <button class="baidu-search-inline-btn" style="margin-top: 12px;" onclick="openBaiduImagePage()">
+                                ↗️ 去百度搜索
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Display copyright warning and results
+                let html = `
+                    <div style="margin-bottom: 12px; padding: 8px 12px; background: #fff3cd; border-left: 3px solid #ffc107; border-radius: 4px; font-size: 12px;">
+                        ⚠️ <strong>百度图片搜索结果</strong> - 点击图片即可使用
+                    </div>
+                `;
+                
+                results.forEach(img => {
+                    html += `
+                        <div class="wiki-search-result-item" data-url="${escapeHtml(img.url)}" onclick="selectWikiImage('${escapeHtml(img.url)}')">
+                            <img src="${escapeHtml(img.thumbnailUrl || img.url)}" alt="${escapeHtml(img.name)}" loading="lazy" onerror="this.style.display='none'">
+                            <div class="result-name">${escapeHtml(img.name || '百度图片')}</div>
+                        </div>
+                    `;
+                });
+                
+                resultsEl.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Baidu search failed:', error);
+                resultsEl.innerHTML = `
+                    <div class="wiki-search-empty">
+                        <div>百度搜索失败</div>
+                        <div style="margin-top: 8px; font-size: 13px; color: #666;">
+                            ${escapeHtml(error.message)}
+                        </div>
+                        <button class="baidu-search-inline-btn" style="margin-top: 12px;" onclick="openBaiduImagePage()">
+                            ↗️ 去百度搜索
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        /**
+         * Open Baidu Image search in a new tab
+         * Allows user to manually search and copy image URLs
+         */
+        function openBaiduImagePage() {
+            const treasureNameInput = document.getElementById('newTreasureName');
+            const searchInput = document.getElementById('wikiSearchInput');
+            
+            // Get search query from treasure name input first, then from search modal input
+            const treasureName = treasureNameInput ? treasureNameInput.value.trim() : '';
+            const modalSearchQuery = searchInput ? searchInput.value.trim() : '';
+            const searchQuery = modalSearchQuery || treasureName;
+            
+            if (!searchQuery) {
+                alert('请先输入镇馆之宝名称');
+                return;
+            }
+            
+            // Build optimized search query
+            const museumName = (currentMuseum && currentMuseum.name) || '';
+            const optimizedQuery = museumName 
+                ? `${searchQuery} ${museumName} 文物 高清`
+                : `${searchQuery} 文物 高清`;
+            
+            // Generate Baidu image search URL
+            const encodedQuery = encodeURIComponent(optimizedQuery);
+            const baiduUrl = `https://image.baidu.com/search/index?tn=baiduimage&word=${encodedQuery}`;
+            
+            // Open in new tab
+            window.open(baiduUrl, '_blank');
         }
 
         /**
@@ -6013,6 +7359,18 @@
                 searchWikiBtn.addEventListener('click', openWikiSearch);
             }
             
+            // Baidu search button - performs inline search
+            const searchBaiduBtn = document.getElementById('searchBaiduBtn');
+            if (searchBaiduBtn) {
+                searchBaiduBtn.addEventListener('click', performBaiduSearch);
+            }
+            
+            // Open Baidu button - opens Baidu in new tab
+            const openBaiduBtn = document.getElementById('openBaiduBtn');
+            if (openBaiduBtn) {
+                openBaiduBtn.addEventListener('click', openBaiduImagePage);
+            }
+            
             // Wiki search modal
             const closeWikiSearchBtn = document.getElementById('closeWikiSearch');
             if (closeWikiSearchBtn) {
@@ -6022,6 +7380,18 @@
             const wikiSearchBtn = document.getElementById('wikiSearchBtn');
             if (wikiSearchBtn) {
                 wikiSearchBtn.addEventListener('click', performWikiSearch);
+            }
+            
+            // Baidu search button inside modal
+            const baiduSearchBtn = document.getElementById('baiduSearchBtn');
+            if (baiduSearchBtn) {
+                baiduSearchBtn.addEventListener('click', performBaiduSearch);
+            }
+            
+            // Open Baidu button inside modal
+            const openBaiduInModalBtn = document.getElementById('openBaiduInModalBtn');
+            if (openBaiduInModalBtn) {
+                openBaiduInModalBtn.addEventListener('click', openBaiduImagePage);
             }
             
             const wikiSearchInput = document.getElementById('wikiSearchInput');
@@ -8673,7 +10043,14 @@
             <div class="wiki-search-body">
                 <div class="wiki-search-input-group">
                     <input type="text" id="wikiSearchInput" placeholder="输入文物名称搜索...">
-                    <button id="wikiSearchBtn">搜索</button>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <button id="wikiSearchBtn">Wiki</button>
+                        <button id="baiduSearchBtn" class="baidu-primary">百度</button>
+                        <button id="openBaiduInModalBtn" class="baidu-secondary">↗️ 去百度</button>
+                    </div>
+                </div>
+                <div style="margin: 8px 0 12px 0; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; font-size: 12px; color: #666;">
+                    💡 <strong>提示：</strong>Wiki图片免费授权，百度图片更丰富
                 </div>
                 <div id="wikiSearchResults" class="wiki-search-results">
                     <!-- Search results will be displayed here -->

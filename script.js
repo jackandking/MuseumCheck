@@ -68,7 +68,9 @@ const APP_CONFIG = {
         ASSESSMENT_HISTORY: 'museumCheckAssessmentHistory',
         SHARING_STATE: 'museumCheckSharingState',
         SORT_PREFERENCE: 'museumSortPreference',
-        FAVORITE_MUSEUMS: 'favoriteMuseums'
+        FAVORITE_MUSEUMS: 'favoriteMuseums',
+        CONTRIBUTED_TREASURES: 'contributedTreasures',  // User-contributed treasures
+        CONTRIBUTED_MUSEUM_PHOTOS: 'contributedMuseumPhotos'  // User-contributed museum entrance photos
     },
     
     AGE_GROUPS: ['3-6', '7-12', '13-18'],   // Supported age groups
@@ -77,7 +79,17 @@ const APP_CONFIG = {
     SEARCH: {
         MIN_QUERY_LENGTH: 0,                // Minimum characters to trigger search
         DEBOUNCE_DELAY: 300                 // Search input debounce delay (ms)
-    }
+    },
+    
+    // Treasure Contributor Configuration
+    TREASURE_CONTRIBUTOR: {
+        REQUIRED_TREASURES: 3,              // Default number of treasures required to complete
+        FILE_UPLOAD_ENDPOINT: 'https://letmetry.cloud/file/upload',  // File upload API
+        MAX_FILE_SIZE_MB: 10                // Maximum file size in MB
+    },
+    
+    // Internationalization
+    LOCALE: 'zh-CN'                         // Default locale for date formatting
 };
 
 // ===== UTILITY FUNCTIONS =====
@@ -1956,11 +1968,41 @@ class ChecklistManager {
             return [];
         }
         
+        // Check if museum has collections (either existing or user-contributed)
+        const hasExistingCollections = Array.isArray(museum.collections) && museum.collections.length > 0;
+        const contributedTreasures = this.getContributedTreasures(museumId);
+        const hasContributedTreasures = contributedTreasures && contributedTreasures.length > 0;
+        const effectiveCollections = hasExistingCollections ? museum.collections : contributedTreasures;
+        
         // Pinghu-specific: child checklist reduced to 3 tasks
         if (museum.id === 'pinghu-museum' && checklistType === 'child') {
             const colls = Array.isArray(museum.collections) ? museum.collections : [];
             const start = '📸 门口打卡：家长给孩子在博物馆门口拍一张照片';
             const collTasks = colls.map(c => `🏺 镇馆之宝：找到「${c && c.name ? c.name : '镇馆之宝'}」并合影`);
+            const end = '📸 亲子合影：和家长比心/拥抱/击掌等动作合影';
+            return [start].concat(collTasks, [end]);
+        }
+
+        // For museums WITHOUT collections: generate treasure contributor checklist
+        if (checklistType === 'child' && !hasExistingCollections && !hasContributedTreasures) {
+            const requiredTreasures = APP_CONFIG.TREASURE_CONTRIBUTOR.REQUIRED_TREASURES;
+            const start = '📸 门口打卡：家长给孩子在博物馆门口拍一张照片';
+            const treasureTasks = [];
+            for (let i = 0; i < requiredTreasures; i++) {
+                treasureTasks.push({
+                    text: `🌟 发现镇馆之宝 ${i + 1}/${requiredTreasures}：找到一件珍贵展品，记录名称并拍照`,
+                    type: 'add-treasure',
+                    index: i
+                });
+            }
+            const end = '📸 亲子合影：和家长比心/拥抱/击掌等动作合影';
+            return [start].concat(treasureTasks, [end]);
+        }
+        
+        // For museums WITH contributed treasures: use them like existing collections
+        if (checklistType === 'child' && hasContributedTreasures && !hasExistingCollections) {
+            const start = '📸 门口打卡：家长给孩子在博物馆门口拍一张照片';
+            const collTasks = contributedTreasures.slice(0, 3).map(c => `🏺 镇馆之宝：找到「${c.name}」并合影`);
             const end = '📸 亲子合影：和家长比心/拥抱/击掌等动作合影';
             return [start].concat(collTasks, [end]);
         }
@@ -1975,6 +2017,82 @@ class ChecklistManager {
             return [].concat(base, extras);
         }
         return base;
+    }
+    
+    /**
+     * Get user-contributed treasures for a museum
+     * @param {string} museumId - Museum ID
+     * @returns {Array} Array of contributed treasure objects
+     */
+    getContributedTreasures(museumId) {
+        try {
+            const allContributed = JSON.parse(localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.CONTRIBUTED_TREASURES) || '{}');
+            return allContributed[museumId] || [];
+        } catch (error) {
+            console.warn('Error loading contributed treasures:', error);
+            return [];
+        }
+    }
+    
+    /**
+     * Save a user-contributed treasure for a museum
+     * @param {string} museumId - Museum ID
+     * @param {Object} treasure - Treasure object with name and imageUrl
+     * @returns {boolean} Success status
+     */
+    saveContributedTreasure(museumId, treasure) {
+        try {
+            const allContributed = JSON.parse(localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.CONTRIBUTED_TREASURES) || '{}');
+            if (!allContributed[museumId]) {
+                allContributed[museumId] = [];
+            }
+            // Add treasure with timestamp
+            allContributed[museumId].push({
+                ...treasure,
+                contributedAt: Date.now()
+            });
+            localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.CONTRIBUTED_TREASURES, JSON.stringify(allContributed));
+            return true;
+        } catch (error) {
+            console.warn('Error saving contributed treasure:', error);
+            return false;
+        }
+    }
+    
+    /**
+     * Get user-contributed museum entrance photo
+     * @param {string} museumId - Museum ID
+     * @returns {Object|null} Contributed photo object with imageUrl, or null if not found
+     */
+    getContributedMuseumPhoto(museumId) {
+        try {
+            const allContributed = JSON.parse(localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.CONTRIBUTED_MUSEUM_PHOTOS) || '{}');
+            return allContributed[museumId] || null;
+        } catch (error) {
+            console.warn('Error loading contributed museum photo:', error);
+            return null;
+        }
+    }
+    
+    /**
+     * Save a user-contributed museum entrance photo
+     * @param {string} museumId - Museum ID
+     * @param {Object} photo - Photo object with imageUrl
+     * @returns {boolean} Success status
+     */
+    saveContributedMuseumPhoto(museumId, photo) {
+        try {
+            const allContributed = JSON.parse(localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.CONTRIBUTED_MUSEUM_PHOTOS) || '{}');
+            allContributed[museumId] = {
+                ...photo,
+                contributedAt: Date.now()
+            };
+            localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.CONTRIBUTED_MUSEUM_PHOTOS, JSON.stringify(allContributed));
+            return true;
+        } catch (error) {
+            console.warn('Error saving contributed museum photo:', error);
+            return false;
+        }
     }
     
     loadChecklistProgress(museumId, checklistType, ageGroup) {
@@ -7105,7 +7223,6 @@ class MuseumCheckApp {
                                 ${museum.name}
                                 <button class="museum-fireworks-button" data-museum="${museum.id}" title="查看本馆烟花墙" style="display: none;">🎆</button>
                                 <button class="museum-checkin-button" data-museum="${museum.id}" title="进入打卡页面">🔗 打卡</button>
-                                ${hasCollections ? `<button class="museum-v3-button" title="进入导览模式">🧭 导览</button>` : ''}
                                 <button class="museum-manage-button" data-museum="${museum.id}" title="管理博物馆数据">🔧 管理</button>
                                 ${isVisited && !this.assessmentHidden 
                                     ? (hasAssessment 
@@ -7128,7 +7245,6 @@ class MuseumCheckApp {
                         !e.target.classList.contains('museum-fireworks-button') &&
                         !e.target.classList.contains('museum-checkin-button') &&
                         !e.target.classList.contains('museum-manage-button') &&
-                        !e.target.classList.contains('museum-v3-button') &&
                         !e.target.classList.contains('favorite-button')) {
                         // Navigate to v2 check-in page (museum-checkin.html)
                         const checkedRadio = document.querySelector('input[name="ageGroup"]:checked');
@@ -7202,14 +7318,6 @@ class MuseumCheckApp {
                             'museum_name': museum.name,
                             'age_group': ageGroup
                         });
-                    });
-                }
-                // Bind v3 single-museum button if present (rendered inline for supported museums)
-                const v3Btn = card.querySelector('.museum-v3-button');
-                if (v3Btn) {
-                    v3Btn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        window.location.href = `single-museum.html?museum=${museum.id}`;
                     });
                 }
 
@@ -8145,6 +8253,59 @@ class MuseumCheckApp {
     }
 
     /**
+     * Generate museum image section HTML
+     * Shows existing image, contributed image, or photo contributor UI if no image exists
+     * @param {Object} museum - Museum object
+     * @param {string|null} effectiveImage - Image URL (from museum data or contributed)
+     * @param {Object|null} contributedPhoto - Contributed photo object if exists
+     * @returns {string} HTML for the museum image section
+     */
+    generateMuseumImageSection(museum, effectiveImage, contributedPhoto) {
+        // If we have an image (either from museum data or contributed), show it
+        if (effectiveImage) {
+            return `<div class="museum-image-section">
+                <img src="${effectiveImage}"
+                     alt="${museum.name}"
+                     class="museum-image"
+                     loading="lazy" decoding="async"
+                     width="360" height="200"
+                     style="aspect-ratio: 18/10; object-fit: cover;" />
+                ${contributedPhoto ? '<div class="museum-photo-contributed-badge">📸 感谢您贡献的照片</div>' : ''}
+            </div>`;
+        }
+        
+        // No image available - show photo contributor UI
+        return `<div class="museum-image-section museum-photo-contributor-section" data-museum-id="${museum.id}">
+            <div class="museum-photo-placeholder">
+                <div class="placeholder-icon">🏛️</div>
+                <div class="placeholder-text">暂无博物馆门口照片</div>
+                <div class="placeholder-hint">帮助其他家长，添加一张博物馆门口的照片吧！</div>
+            </div>
+            <div class="museum-photo-upload-section">
+                <div class="museum-photo-preview" id="museum-photo-preview-${museum.id}">
+                    <span class="preview-placeholder">📷 点击添加博物馆门口照片</span>
+                </div>
+                <div class="museum-photo-actions">
+                    <button class="museum-photo-search-btn" data-museum-id="${museum.id}" data-museum-name="${museum.name}">
+                        🔍 搜索图片
+                    </button>
+                    <label class="museum-photo-upload-btn">
+                        📤 上传照片
+                        <input type="file" class="museum-photo-file-input" 
+                               data-museum-id="${museum.id}"
+                               accept="image/*" style="display:none;">
+                    </label>
+                </div>
+                <button class="museum-photo-submit-btn" 
+                        data-museum-id="${museum.id}"
+                        style="display:none;">
+                    ✅ 确认添加照片
+                </button>
+            </div>
+        </div>`;
+    }
+
+    /**
      * Render museum modal content
      * Extracted from openMuseumModal to support async data loading
      */
@@ -8171,6 +8332,13 @@ class MuseumCheckApp {
             ? childByAge[preferredAge]
             : (Object.values(childByAge).find(arr => Array.isArray(arr) && arr.length) || []);
 
+        // Check for contributed museum entrance photo
+        const contributedPhoto = this.checklistManager ? this.checklistManager.getContributedMuseumPhoto(museum.id) : null;
+        const effectiveImage = museum.image || (contributedPhoto ? contributedPhoto.imageUrl : null);
+        
+        // Generate museum image section HTML
+        const museumImageSectionHtml = this.generateMuseumImageSection(museum, effectiveImage, contributedPhoto);
+
         content.innerHTML = `
             <div class="checklist-tabs">
                 <button class="tab-button ${activeTab === 'expert' ? 'active' : ''}" data-target="expert">👨‍👩‍👧 专家指导</button>
@@ -8178,14 +8346,7 @@ class MuseumCheckApp {
                 <button class="tab-button ${activeTab === 'child' ? 'active' : ''}" data-target="child">孩子任务</button>
                 <button class="tab-button ${activeTab === 'share' ? 'active' : ''}" data-target="share">生成海报</button>
             </div>
-            ${museum.image ? `<div class="museum-image-section">
-                <img src="${museum.image}"
-                     alt="${museum.name}"
-                     class="museum-image"
-                     loading="lazy" decoding="async"
-                     width="360" height="200"
-                     style="aspect-ratio: 18/10; object-fit: cover;" />
-            </div>` : ''}
+            ${museumImageSectionHtml}
             
             <div id="expertGuidance" class="checklist-content expert-guidance" ${activeTab !== 'expert' ? 'style="display: none;"' : ''}>
                 <div class="expert-header">
@@ -8452,6 +8613,14 @@ class MuseumCheckApp {
             const hasPhoto = this.taskPhotos[photoKey];
             const isCustom = customItems && customItems[index] && customItems[index].isCustom;
             
+            // Check if this is an "add-treasure" task type (for museums without collections)
+            const isAddTreasureTask = typeof item === 'object' && item.type === 'add-treasure';
+            const itemText = isAddTreasureTask ? item.text : item;
+            const treasureIndex = isAddTreasureTask ? item.index : null;
+            
+            // Get contributed treasure data for this task if already completed
+            const contributedTreasure = isAddTreasureTask ? this.getContributedTreasureForTask(museumId, treasureIndex) : null;
+            
             let photoUpload = '';
             if (type === 'child' && isCompleted) {
                 photoUpload = `
@@ -8466,17 +8635,75 @@ class MuseumCheckApp {
                 `;
             }
             
+            // Special UI for add-treasure tasks
+            let treasureInputUI = '';
+            if (isAddTreasureTask) {
+                const treasureKey = `${museumId}-treasure-${treasureIndex}`;
+                treasureInputUI = `
+                    <div class="add-treasure-section" data-museum-id="${museumId}" data-treasure-index="${treasureIndex}">
+                        <div class="treasure-input-group">
+                            <input type="text" class="treasure-name-input" 
+                                   id="treasure-name-${treasureKey}"
+                                   placeholder="输入展品名称（如：青铜鼎）"
+                                   value="${contributedTreasure ? contributedTreasure.name : ''}"
+                                   ${isCompleted ? 'readonly' : ''}>
+                        </div>
+                        <div class="treasure-image-section">
+                            <div class="treasure-image-preview" id="treasure-preview-${treasureKey}">
+                                ${contributedTreasure && contributedTreasure.imageUrl ? 
+                                    `<img src="${contributedTreasure.imageUrl}" alt="${contributedTreasure.name}" class="treasure-preview-img">` : 
+                                    '<span class="preview-placeholder">📷 添加展品照片</span>'}
+                            </div>
+                            <div class="treasure-image-actions">
+                                <button class="treasure-search-btn" data-treasure-key="${treasureKey}" ${isCompleted ? 'disabled' : ''}>
+                                    🔍 搜索图片
+                                </button>
+                                <label class="treasure-upload-btn" ${isCompleted ? 'style="pointer-events:none;opacity:0.5;"' : ''}>
+                                    📤 上传照片
+                                    <input type="file" class="treasure-file-input" 
+                                           data-treasure-key="${treasureKey}"
+                                           data-museum-id="${museumId}"
+                                           data-treasure-index="${treasureIndex}"
+                                           accept="image/*" style="display:none;" 
+                                           ${isCompleted ? 'disabled' : ''}>
+                                </label>
+                            </div>
+                        </div>
+                        <button class="treasure-submit-btn" 
+                                data-museum-id="${museumId}" 
+                                data-treasure-index="${treasureIndex}"
+                                data-checklist-key="${checklistKey}"
+                                data-item-index="${index}"
+                                ${isCompleted ? 'disabled style="display:none;"' : ''}>
+                            ✅ 完成任务
+                        </button>
+                        ${contributedTreasure ? `
+                            <div class="treasure-contributed-badge">
+                                🎉 已贡献！感谢你发现这件宝藏
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
             return `
-                <div class="checklist-item ${isCompleted ? 'completed' : ''}" data-checklist-key="${checklistKey}" data-item-index="${index}">
+                <div class="checklist-item ${isCompleted ? 'completed' : ''} ${isAddTreasureTask ? 'add-treasure-item' : ''}" 
+                     data-checklist-key="${checklistKey}" 
+                     data-item-index="${index}"
+                     data-is-add-treasure="${isAddTreasureTask}">
                     <input type="checkbox" id="${itemId}" ${isCompleted ? 'checked' : ''} 
                            ${this.readonlyCheckboxes ? 'disabled' : ''}
+                           ${isAddTreasureTask ? 'disabled class="add-treasure-checkbox"' : ''}
                            data-checklist="${checklistKey}" data-index="${index}">
-                    <label for="${itemId}" class="checklist-label" data-original-text="${item}">${item}</label>
+                    <label for="${itemId}" class="checklist-label" data-original-text="${itemText}">${itemText}</label>
+                    ${!isAddTreasureTask ? `
                     <div class="checklist-controls">
                         <button class="edit-item-btn" title="编辑">✏️</button>
                         <button class="delete-item-btn" title="删除" ${!isCustom && !customItems ? 'disabled' : ''}>🗑️</button>
                     </div>
-                    ${photoUpload}
+                    ` : ''}
+                    ${treasureInputUI}
+                    ${!isAddTreasureTask ? photoUpload : ''}
                 </div>
             `;
         }).join('');
@@ -8489,6 +8716,23 @@ class MuseumCheckApp {
         `;
 
         return checklistItems + addButton;
+    }
+    
+    /**
+     * Get contributed treasure data for a specific task
+     * @param {string} museumId - Museum ID
+     * @param {number} treasureIndex - Index of the treasure task
+     * @returns {Object|null} Contributed treasure object or null
+     */
+    getContributedTreasureForTask(museumId, treasureIndex) {
+        try {
+            const allContributed = JSON.parse(localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.CONTRIBUTED_TREASURES) || '{}');
+            const museumTreasures = allContributed[museumId] || [];
+            return museumTreasures[treasureIndex] || null;
+        } catch (error) {
+            console.warn('Error getting contributed treasure for task:', error);
+            return null;
+        }
     }
 
     addChecklistEventListeners() {
@@ -8638,6 +8882,22 @@ class MuseumCheckApp {
                     e.stopPropagation();
                     const museumId = e.target.dataset.museum;
                     this.clearChildChecklistData(museumId, this.currentAge);
+                } else if (e.target.classList.contains('treasure-search-btn')) {
+                    // Handle treasure image search
+                    e.stopPropagation();
+                    this.handleTreasureImageSearch(e.target);
+                } else if (e.target.classList.contains('treasure-submit-btn')) {
+                    // Handle treasure contribution submission
+                    e.stopPropagation();
+                    this.handleTreasureSubmit(e.target);
+                } else if (e.target.classList.contains('museum-photo-search-btn')) {
+                    // Handle museum entrance photo search
+                    e.stopPropagation();
+                    this.handleMuseumPhotoSearch(e.target);
+                } else if (e.target.classList.contains('museum-photo-submit-btn')) {
+                    // Handle museum photo contribution submission
+                    e.stopPropagation();
+                    this.handleMuseumPhotoSubmit(e.target);
                 }
             };
             
@@ -8652,6 +8912,12 @@ class MuseumCheckApp {
             this.handlePhotoUploadDelegate = (e) => {
                 if (e.target.classList.contains('photo-input')) {
                     this.handlePhotoUpload(e);
+                } else if (e.target.classList.contains('treasure-file-input')) {
+                    // Handle treasure file upload
+                    this.handleTreasureFileUpload(e);
+                } else if (e.target.classList.contains('museum-photo-file-input')) {
+                    // Handle museum entrance photo file upload
+                    this.handleMuseumPhotoFileUpload(e);
                 }
             };
             
@@ -8672,6 +8938,763 @@ class MuseumCheckApp {
     closeModal() {
         this.modalManager.closeModal('museumModal');
     }
+
+    // ===== TREASURE CONTRIBUTOR METHODS =====
+    
+    /**
+     * Handle treasure image search button click
+     * Opens a search modal to find images from wiki or Baidu
+     */
+    handleTreasureImageSearch(button) {
+        const treasureKey = button.dataset.treasureKey;
+        const section = button.closest('.add-treasure-section');
+        const nameInput = section.querySelector('.treasure-name-input');
+        const treasureName = nameInput.value.trim();
+        
+        if (!treasureName) {
+            alert('请先输入展品名称，再搜索图片');
+            nameInput.focus();
+            return;
+        }
+        
+        // Show image search modal
+        this.showTreasureImageSearchModal(treasureName, treasureKey);
+    }
+    
+    /**
+     * Show a modal with image search results from wiki/Baidu
+     */
+    async showTreasureImageSearchModal(treasureName, treasureKey) {
+        // Create search modal if it doesn't exist
+        let searchModal = document.getElementById('treasureImageSearchModal');
+        if (!searchModal) {
+            searchModal = document.createElement('div');
+            searchModal.id = 'treasureImageSearchModal';
+            searchModal.className = 'modal hidden';
+            searchModal.innerHTML = `
+                <div class="modal-content treasure-search-modal-content">
+                    <span class="close treasure-search-close">&times;</span>
+                    <h2>🔍 搜索展品图片</h2>
+                    <div class="treasure-search-query">
+                        <input type="text" id="treasureSearchInput" class="treasure-search-input" placeholder="输入关键词搜索...">
+                        <button id="treasureSearchBtn" class="treasure-search-action-btn">搜索</button>
+                    </div>
+                    <div class="treasure-search-tabs">
+                        <button class="treasure-tab active" data-source="wikimedia">维基百科</button>
+                        <button class="treasure-tab" data-source="baidu">百度图片</button>
+                    </div>
+                    <div class="treasure-search-results" id="treasureSearchResults">
+                        <div class="treasure-search-loading" style="display:none;">
+                            <div class="loading-spinner"></div>
+                            <p>正在搜索图片...</p>
+                        </div>
+                        <div class="treasure-search-empty">
+                            <p>输入关键词开始搜索</p>
+                        </div>
+                        <div class="treasure-image-grid" id="treasureImageGrid" style="display:none;"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(searchModal);
+            
+            // Setup close button
+            searchModal.querySelector('.treasure-search-close').addEventListener('click', () => {
+                searchModal.classList.add('hidden');
+            });
+            
+            // Setup tab switching
+            searchModal.querySelectorAll('.treasure-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    searchModal.querySelectorAll('.treasure-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                });
+            });
+        }
+        
+        // Store the treasure key for use when selecting an image
+        searchModal.dataset.treasureKey = treasureKey;
+        
+        // Pre-fill search input with treasure name
+        const searchInput = searchModal.querySelector('#treasureSearchInput');
+        searchInput.value = treasureName;
+        
+        // Setup search button handler
+        const searchBtn = searchModal.querySelector('#treasureSearchBtn');
+        searchBtn.onclick = async () => {
+            const query = searchInput.value.trim();
+            if (!query) return;
+            
+            const activeTab = searchModal.querySelector('.treasure-tab.active');
+            const source = activeTab.dataset.source;
+            
+            await this.performTreasureImageSearch(query, source, searchModal);
+        };
+        
+        // Show modal
+        searchModal.classList.remove('hidden');
+        
+        // Auto-search with the treasure name
+        await this.performTreasureImageSearch(treasureName, 'wikimedia', searchModal);
+    }
+    
+    /**
+     * Perform image search from the specified source
+     */
+    async performTreasureImageSearch(query, source, modal) {
+        const resultsContainer = modal.querySelector('#treasureSearchResults');
+        const loadingEl = resultsContainer.querySelector('.treasure-search-loading');
+        const emptyEl = resultsContainer.querySelector('.treasure-search-empty');
+        const gridEl = resultsContainer.querySelector('#treasureImageGrid');
+        
+        // Show loading
+        loadingEl.style.display = 'block';
+        emptyEl.style.display = 'none';
+        gridEl.style.display = 'none';
+        
+        try {
+            let images = [];
+            
+            if (source === 'wikimedia') {
+                // Use Wikimedia Commons search
+                images = await this.searchWikimediaImages(query);
+            } else {
+                // Use Baidu Image search via letmetry.cloud
+                if (typeof BaiduImageSearch !== 'undefined') {
+                    const searcher = new BaiduImageSearch();
+                    images = await searcher.searchTreasurePhotos(null, query);
+                } else {
+                    throw new Error('Baidu search not available');
+                }
+            }
+            
+            // Display results
+            loadingEl.style.display = 'none';
+            
+            if (images.length === 0) {
+                emptyEl.innerHTML = '<p>未找到相关图片，请尝试其他关键词</p>';
+                emptyEl.style.display = 'block';
+                return;
+            }
+            
+            gridEl.innerHTML = images.map(img => `
+                <div class="treasure-image-item" data-url="${img.url || img.imageUrl}">
+                    <img src="${img.thumbnailUrl || img.url || img.imageUrl}" alt="${query}" loading="lazy">
+                    <div class="treasure-image-select">选择</div>
+                </div>
+            `).join('');
+            
+            gridEl.style.display = 'grid';
+            
+            // Handle image selection
+            gridEl.querySelectorAll('.treasure-image-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const imageUrl = item.dataset.url;
+                    this.selectTreasureImage(modal.dataset.treasureKey, imageUrl);
+                    modal.classList.add('hidden');
+                });
+            });
+            
+        } catch (error) {
+            console.error('Treasure image search failed:', error);
+            loadingEl.style.display = 'none';
+            emptyEl.innerHTML = `<p>搜索失败：${error.message}</p><p>请尝试上传本地照片</p>`;
+            emptyEl.style.display = 'block';
+        }
+    }
+    
+    /**
+     * Search Wikimedia Commons for images
+     * @param {string} query - Search query (treasure name)
+     * @returns {Promise<Array>} Array of image objects with url, thumbnailUrl, and name
+     */
+    async searchWikimediaImages(query) {
+        const searchTerms = [
+            query,
+            `${query} 文物`,
+            `${query} museum`
+        ];
+        
+        const allResults = [];
+        
+        for (const term of searchTerms) {
+            try {
+                const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(term)}&srnamespace=6&srlimit=5&format=json&origin=*`;
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                
+                if (data.query && data.query.search) {
+                    for (const result of data.query.search) {
+                        // Get image info
+                        const imageInfoUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(result.title)}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=400&format=json&origin=*`;
+                        const infoResponse = await fetch(imageInfoUrl);
+                        const infoData = await infoResponse.json();
+                        
+                        const pages = infoData.query.pages;
+                        const pageId = Object.keys(pages)[0];
+                        if (pages[pageId] && pages[pageId].imageinfo) {
+                            const imageInfo = pages[pageId].imageinfo[0];
+                            allResults.push({
+                                url: imageInfo.url,
+                                thumbnailUrl: imageInfo.thumburl || imageInfo.url,
+                                name: result.title
+                            });
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('Wikimedia search failed for "' + term + '":', error);
+            }
+            
+            // Stop if we have enough results
+            if (allResults.length >= 10) break;
+        }
+        
+        return allResults.slice(0, 10);
+    }
+    
+    /**
+     * Select an image for the treasure
+     */
+    selectTreasureImage(treasureKey, imageUrl) {
+        const preview = document.getElementById(`treasure-preview-${treasureKey}`);
+        if (preview) {
+            preview.innerHTML = `<img src="${imageUrl}" alt="展品图片" class="treasure-preview-img">`;
+            preview.dataset.imageUrl = imageUrl;
+        }
+    }
+    
+    /**
+     * Handle treasure file upload
+     */
+    async handleTreasureFileUpload(event) {
+        const input = event.target;
+        const file = input.files[0];
+        
+        if (!file) return;
+        
+        // Validate file size
+        const maxSizeBytes = APP_CONFIG.TREASURE_CONTRIBUTOR.MAX_FILE_SIZE_MB * 1024 * 1024;
+        if (file.size > maxSizeBytes) {
+            alert(`文件太大，最大支持 ${APP_CONFIG.TREASURE_CONTRIBUTOR.MAX_FILE_SIZE_MB}MB`);
+            return;
+        }
+        
+        const treasureKey = input.dataset.treasureKey;
+        const preview = document.getElementById(`treasure-preview-${treasureKey}`);
+        
+        // Show loading state
+        if (preview) {
+            preview.innerHTML = '<span class="preview-placeholder">📤 上传中...</span>';
+        }
+        
+        try {
+            // Upload to letmetry.cloud
+            const imageUrl = await this.uploadFileToLetMeTry(file);
+            
+            // Update preview
+            if (preview) {
+                preview.innerHTML = `<img src="${imageUrl}" alt="展品图片" class="treasure-preview-img">`;
+                preview.dataset.imageUrl = imageUrl;
+            }
+            
+        } catch (error) {
+            console.error('File upload failed:', error);
+            
+            // Fallback: use local data URL
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+                if (preview) {
+                    preview.innerHTML = `<img src="${dataUrl}" alt="展品图片" class="treasure-preview-img">`;
+                    preview.dataset.imageUrl = dataUrl;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    /**
+     * Upload file to letmetry.cloud
+     * @param {File} file - File to upload
+     * @returns {Promise<string>} URL of uploaded file
+     */
+    async uploadFileToLetMeTry(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch(APP_CONFIG.TREASURE_CONTRIBUTOR.FILE_UPLOAD_ENDPOINT, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Upload failed: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Handle different response formats
+        if (data.url) {
+            return data.url;
+        } else if (data.fileUrl) {
+            return data.fileUrl;
+        } else if (data.data && data.data.url) {
+            return data.data.url;
+        }
+        
+        throw new Error('Invalid upload response format');
+    }
+    
+    /**
+     * Handle treasure contribution submission
+     */
+    handleTreasureSubmit(button) {
+        const museumId = button.dataset.museumId;
+        const treasureIndex = parseInt(button.dataset.treasureIndex);
+        const checklistKey = button.dataset.checklistKey;
+        const itemIndex = parseInt(button.dataset.itemIndex);
+        
+        const section = button.closest('.add-treasure-section');
+        const nameInput = section.querySelector('.treasure-name-input');
+        const preview = section.querySelector('.treasure-image-preview');
+        
+        const treasureName = nameInput.value.trim();
+        const imageUrl = preview.dataset.imageUrl || '';
+        
+        // Validate
+        if (!treasureName) {
+            alert('请输入展品名称');
+            nameInput.focus();
+            return;
+        }
+        
+        if (!imageUrl) {
+            alert('请添加展品照片（搜索或上传）');
+            return;
+        }
+        
+        // Save the contributed treasure
+        const treasure = {
+            name: treasureName,
+            imageUrl: imageUrl,
+            description: `由亲子探索者发现于${new Date().toLocaleDateString(APP_CONFIG.LOCALE)}`
+        };
+        
+        this.saveContributedTreasure(museumId, treasureIndex, treasure);
+        
+        // Mark the task as completed
+        if (!this.museumChecklists[checklistKey]) {
+            this.museumChecklists[checklistKey] = [];
+        }
+        if (!this.museumChecklists[checklistKey].includes(itemIndex)) {
+            this.museumChecklists[checklistKey].push(itemIndex);
+        }
+        this.saveMuseumChecklists();
+        
+        // Update UI
+        const checklistItem = section.closest('.checklist-item');
+        checklistItem.classList.add('completed');
+        
+        const checkbox = checklistItem.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+            checkbox.checked = true;
+        }
+        
+        // Disable inputs
+        nameInput.readOnly = true;
+        section.querySelectorAll('button').forEach(btn => btn.disabled = true);
+        section.querySelector('.treasure-upload-btn').style.pointerEvents = 'none';
+        section.querySelector('.treasure-upload-btn').style.opacity = '0.5';
+        
+        // Show success badge
+        let badge = section.querySelector('.treasure-contributed-badge');
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.className = 'treasure-contributed-badge';
+            badge.innerHTML = '🎉 已贡献！感谢你发现这件宝藏';
+            section.appendChild(badge);
+        }
+        
+        // Hide submit button
+        button.style.display = 'none';
+        
+        // Trigger celebration
+        this.triggerSmallRocket();
+        
+        // Track analytics
+        this.trackEvent('treasure_contributed', {
+            'museum_id': museumId,
+            'treasure_name': treasureName,
+            'treasure_index': treasureIndex
+        });
+        
+        // Gamification
+        if (this.achievementGamification) {
+            this.achievementGamification.addXP(20); // More XP for contributing a treasure
+        }
+        
+        // Check auto check-in
+        const museum = MUSEUMS.find(m => m.id === museumId);
+        if (museum) {
+            this.checkAutoCheckin(museumId, museum, this.currentAge);
+        }
+    }
+    
+    /**
+     * Save a user-contributed treasure for a museum
+     * @param {string} museumId - Museum ID
+     * @param {number} index - Treasure index
+     * @param {Object} treasure - Treasure object with name and imageUrl
+     */
+    saveContributedTreasure(museumId, index, treasure) {
+        try {
+            const allContributed = JSON.parse(localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.CONTRIBUTED_TREASURES) || '{}');
+            if (!allContributed[museumId]) {
+                allContributed[museumId] = [];
+            }
+            // Store at the specific index
+            allContributed[museumId][index] = {
+                ...treasure,
+                contributedAt: Date.now()
+            };
+            localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.CONTRIBUTED_TREASURES, JSON.stringify(allContributed));
+            
+            console.log('Treasure contributed successfully:', museumId, index, treasure.name);
+        } catch (error) {
+            console.warn('Error saving contributed treasure:', error);
+        }
+    }
+    // ===== END TREASURE CONTRIBUTOR METHODS =====
+
+    // ===== MUSEUM ENTRANCE PHOTO CONTRIBUTOR METHODS =====
+    
+    /**
+     * Handle museum entrance photo search button click
+     * Opens a search modal to find images from wiki or Baidu
+     */
+    handleMuseumPhotoSearch(button) {
+        const museumId = button.dataset.museumId;
+        const museumName = button.dataset.museumName;
+        
+        if (!museumName) {
+            console.warn('Museum name not found for photo search');
+            return;
+        }
+        
+        // Show image search modal using existing treasure search modal pattern
+        this.showMuseumPhotoSearchModal(museumName, museumId);
+    }
+    
+    /**
+     * Show museum photo search modal
+     * @param {string} museumName - Museum name to search for
+     * @param {string} museumId - Museum ID for storing the result
+     */
+    showMuseumPhotoSearchModal(museumName, museumId) {
+        // Create or get search modal
+        let modal = document.getElementById('museumPhotoSearchModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'museumPhotoSearchModal';
+            modal.className = 'modal treasure-search-modal';
+            modal.innerHTML = `
+                <div class="modal-content treasure-search-modal-content">
+                    <span class="close" onclick="document.getElementById('museumPhotoSearchModal').classList.add('hidden')">&times;</span>
+                    <h3>🔍 搜索博物馆门口照片</h3>
+                    <div class="treasure-search-query">
+                        <input type="text" id="museumPhotoSearchInput" class="treasure-search-input" 
+                               placeholder="输入搜索关键词" value="${museumName} 门口 外观">
+                        <button id="museumPhotoSearchBtn" class="treasure-search-action-btn">搜索</button>
+                    </div>
+                    <div class="treasure-search-tabs">
+                        <button class="treasure-tab active" data-source="wikimedia">维基百科</button>
+                        <button class="treasure-tab" data-source="baidu">百度图片</button>
+                    </div>
+                    <div id="museumPhotoSearchResults" class="treasure-search-results">
+                        <div class="treasure-search-empty">输入关键词并点击搜索</div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Add search button handler
+            modal.querySelector('#museumPhotoSearchBtn').addEventListener('click', () => {
+                const query = modal.querySelector('#museumPhotoSearchInput').value.trim();
+                const activeTab = modal.querySelector('.treasure-tab.active');
+                const source = activeTab ? activeTab.dataset.source : 'wikimedia';
+                this.searchMuseumPhotoImages(query, source, museumId);
+            });
+            
+            // Add tab switching
+            modal.querySelectorAll('.treasure-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    modal.querySelectorAll('.treasure-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                });
+            });
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        } else {
+            // Update search input with museum name
+            modal.querySelector('#museumPhotoSearchInput').value = `${museumName} 门口 外观`;
+        }
+        
+        // Store museum ID for later use
+        modal.dataset.museumId = museumId;
+        
+        // Show modal
+        modal.classList.remove('hidden');
+    }
+    
+    /**
+     * Search for museum entrance photos
+     * @param {string} query - Search query
+     * @param {string} source - Image source (wikimedia or baidu)
+     * @param {string} museumId - Museum ID
+     */
+    async searchMuseumPhotoImages(query, source, museumId) {
+        const resultsContainer = document.getElementById('museumPhotoSearchResults');
+        if (!resultsContainer) return;
+        
+        resultsContainer.innerHTML = '<div class="treasure-search-loading">🔍 搜索中...</div>';
+        
+        try {
+            let images = [];
+            
+            if (source === 'wikimedia') {
+                images = await this.searchWikimediaImages(query);
+            } else {
+                // For Baidu, show instruction
+                resultsContainer.innerHTML = `
+                    <div class="treasure-search-empty">
+                        <p>请访问百度图片搜索：</p>
+                        <a href="https://image.baidu.com/search/index?tn=baiduimage&word=${encodeURIComponent(query)}" 
+                           target="_blank" 
+                           style="color: var(--primary-color); text-decoration: underline;">
+                           点击打开百度图片
+                        </a>
+                        <p style="margin-top: 10px;">找到合适的图片后，右键复制图片地址，然后粘贴到下方：</p>
+                        <input type="text" id="baiduImageUrl" class="treasure-search-input" 
+                               placeholder="粘贴图片URL" style="margin-top: 10px;" data-museum-id="${museumId}">
+                        <button id="baiduUrlSubmitBtn" class="treasure-search-action-btn" style="margin-top: 10px;" data-museum-id="${museumId}">
+                            使用此图片
+                        </button>
+                    </div>
+                `;
+                
+                // Add event listener for the Baidu URL submit button
+                const baiduUrlSubmitBtn = resultsContainer.querySelector('#baiduUrlSubmitBtn');
+                if (baiduUrlSubmitBtn) {
+                    baiduUrlSubmitBtn.addEventListener('click', () => {
+                        this.selectMuseumPhotoFromUrl(baiduUrlSubmitBtn.dataset.museumId);
+                    });
+                }
+                return;
+            }
+            
+            if (images.length === 0) {
+                resultsContainer.innerHTML = '<div class="treasure-search-empty">未找到图片，请尝试其他关键词</div>';
+                return;
+            }
+            
+            // Create a safe HTML escape function
+            const escapeHtml = (str) => {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            };
+            
+            resultsContainer.innerHTML = `
+                <div class="treasure-image-grid">
+                    ${images.map(img => {
+                        const imageUrl = escapeHtml(img.url || img.imageUrl);
+                        const thumbUrl = escapeHtml(img.thumbnailUrl || img.url || img.imageUrl);
+                        return `
+                            <div class="treasure-image-item museum-photo-result" data-url="${imageUrl}" data-museum-id="${escapeHtml(museumId)}">
+                                <img src="${thumbUrl}" alt="${escapeHtml(query)}" loading="lazy">
+                                <button class="treasure-image-select museum-photo-select-btn">
+                                    选择
+                                </button>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            
+            // Add event delegation for image selection
+            resultsContainer.querySelectorAll('.museum-photo-select-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const item = btn.closest('.museum-photo-result');
+                    if (item) {
+                        const url = item.dataset.url;
+                        const musId = item.dataset.museumId;
+                        this.selectMuseumPhotoImage(musId, url);
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Error searching museum photo images:', error);
+            resultsContainer.innerHTML = '<div class="treasure-search-empty">搜索出错，请重试</div>';
+        }
+    }
+    
+    /**
+     * Select a museum photo image from search results
+     * @param {string} museumId - Museum ID
+     * @param {string} imageUrl - Selected image URL
+     */
+    selectMuseumPhotoImage(museumId, imageUrl) {
+        // Update the preview in the main modal
+        const preview = document.getElementById(`museum-photo-preview-${museumId}`);
+        if (preview) {
+            preview.innerHTML = `<img src="${imageUrl}" alt="博物馆门口" class="treasure-preview-img">`;
+            preview.dataset.imageUrl = imageUrl;
+            
+            // Show submit button
+            const submitBtn = document.querySelector(`.museum-photo-submit-btn[data-museum-id="${museumId}"]`);
+            if (submitBtn) {
+                submitBtn.style.display = 'block';
+            }
+        }
+        
+        // Close search modal
+        const searchModal = document.getElementById('museumPhotoSearchModal');
+        if (searchModal) {
+            searchModal.classList.add('hidden');
+        }
+    }
+    
+    /**
+     * Select museum photo from pasted URL (for Baidu)
+     * @param {string} museumId - Museum ID
+     */
+    selectMuseumPhotoFromUrl(museumId) {
+        const input = document.getElementById('baiduImageUrl');
+        if (!input) return;
+        
+        const imageUrl = input.value.trim();
+        if (!imageUrl) {
+            alert('请粘贴图片URL');
+            return;
+        }
+        
+        this.selectMuseumPhotoImage(museumId, imageUrl);
+    }
+    
+    /**
+     * Handle museum entrance photo file upload
+     * @param {Event} e - Change event from file input
+     */
+    async handleMuseumPhotoFileUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const museumId = e.target.dataset.museumId;
+        const preview = document.getElementById(`museum-photo-preview-${museumId}`);
+        
+        if (!preview) {
+            console.warn('Preview element not found for museum:', museumId);
+            return;
+        }
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('请选择图片文件');
+            return;
+        }
+        
+        // Validate file size (max 10MB)
+        if (file.size > APP_CONFIG.TREASURE_CONTRIBUTOR.MAX_FILE_SIZE_MB * 1024 * 1024) {
+            alert(`文件大小不能超过${APP_CONFIG.TREASURE_CONTRIBUTOR.MAX_FILE_SIZE_MB}MB`);
+            return;
+        }
+        
+        try {
+            // Read file as data URL
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const dataUrl = event.target.result;
+                preview.innerHTML = `<img src="${dataUrl}" alt="博物馆门口" class="treasure-preview-img">`;
+                preview.dataset.imageUrl = dataUrl;
+                
+                // Show submit button
+                const submitBtn = document.querySelector(`.museum-photo-submit-btn[data-museum-id="${museumId}"]`);
+                if (submitBtn) {
+                    submitBtn.style.display = 'block';
+                }
+            };
+            reader.readAsDataURL(file);
+        } catch (error) {
+            console.error('Error uploading museum photo:', error);
+            alert('上传失败，请重试');
+        }
+    }
+    
+    /**
+     * Handle museum photo contribution submission
+     * @param {HTMLElement} button - Submit button element
+     */
+    handleMuseumPhotoSubmit(button) {
+        const museumId = button.dataset.museumId;
+        const preview = document.getElementById(`museum-photo-preview-${museumId}`);
+        
+        if (!preview) {
+            console.warn('Preview element not found');
+            return;
+        }
+        
+        const imageUrl = preview.dataset.imageUrl;
+        
+        if (!imageUrl) {
+            alert('请先添加博物馆门口照片');
+            return;
+        }
+        
+        // Save the contributed museum photo
+        const photo = {
+            imageUrl: imageUrl,
+            description: `由亲子探索者贡献于${new Date().toLocaleDateString(APP_CONFIG.LOCALE)}`
+        };
+        
+        if (this.checklistManager) {
+            this.checklistManager.saveContributedMuseumPhoto(museumId, photo);
+        }
+        
+        // Update UI - replace the entire section with the photo
+        const section = button.closest('.museum-photo-contributor-section');
+        if (section) {
+            section.innerHTML = `
+                <img src="${imageUrl}"
+                     alt="博物馆门口"
+                     class="museum-image"
+                     loading="lazy" decoding="async"
+                     width="360" height="200"
+                     style="aspect-ratio: 18/10; object-fit: cover;" />
+                <div class="museum-photo-contributed-badge">📸 感谢您贡献的照片</div>
+            `;
+            section.classList.remove('museum-photo-contributor-section');
+        }
+        
+        // Trigger celebration
+        this.triggerSmallRocket();
+        
+        // Track analytics
+        this.trackEvent('museum_photo_contributed', {
+            'museum_id': museumId
+        });
+        
+        // Gamification
+        if (this.achievementGamification) {
+            this.achievementGamification.addXP(15); // XP for contributing a museum photo
+        }
+    }
+    // ===== END MUSEUM ENTRANCE PHOTO CONTRIBUTOR METHODS =====
 
     showAchievementModal() {
         this.renderAchievements();
