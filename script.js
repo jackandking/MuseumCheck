@@ -2717,6 +2717,9 @@ class EventWallService {
      */
     async sendEventToKVStore(event) {
         try {
+            // Calculate expiration time: current time + 1 day (in seconds)
+            const expireAt = Math.floor(Date.now() / 1000) + this.eventTTL;
+            
             const response = await fetch(this.kvStoreEndpoint, {
                 method: 'POST',
                 headers: {
@@ -2726,7 +2729,7 @@ class EventWallService {
                     key: this.eventKey,
                     sortKey: event.id,
                     value: JSON.stringify(event),
-                    ttl: this.eventTTL  // 1 day TTL - events auto-delete after 24 hours
+                    expireAt: expireAt  // Absolute expiration timestamp in seconds (not TTL)
                 })
             });
             
