@@ -6541,7 +6541,7 @@
                 // Show uploading indicator
                 const uploadLabel = document.getElementById('modalTreasurePhotoUploadLabel');
                 if (uploadLabel) {
-                    uploadLabel.textContent = '⏳ 上传中...';
+                    setUploadingState(uploadLabel);
                 }
                 
                 // Upload image
@@ -6556,9 +6556,9 @@
                     showTreasurePhotoPreview(imageUrl);
                 }
                 
-                // Reset upload button text
+                // Reset upload button
                 if (uploadLabel) {
-                    uploadLabel.textContent = '📤 选择文件';
+                    resetUploadButton(uploadLabel, (e) => handleTreasurePhotoUploadChange(e));
                 }
             } catch (error) {
                 console.error('Upload error:', error);
@@ -6567,7 +6567,7 @@
                 // Reset upload button
                 const uploadLabel = document.getElementById('modalTreasurePhotoUploadLabel');
                 if (uploadLabel) {
-                    uploadLabel.textContent = '📤 选择文件';
+                    resetUploadButton(uploadLabel, (e) => handleTreasurePhotoUploadChange(e));
                 }
             }
         }
