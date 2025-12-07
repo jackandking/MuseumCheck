@@ -4403,14 +4403,15 @@
             /**
              * Track individual task completion event
              */
-            trackTaskComplete(museumId, museumName, taskDescription, ageGroup) {
+            trackTaskComplete(museumId, museumName, checklistType, taskDescription, ageGroup) {
                 this.recordEvent(
                     'task',
                     '完成任务',
-                    `完成 ${museumName} 的任务: ${taskDescription}`,
+                    `完成 ${museumName} 的${checklistType === 'parent' ? '家长准备' : '孩子任务'}: ${taskDescription}`,
                     {
                         museumId: museumId,
                         museumName: museumName,
+                        checklistType: checklistType,
                         taskDescription: taskDescription,
                         ageGroup: ageGroup
                     }
@@ -5934,6 +5935,7 @@
                 eventWallService.trackTaskComplete(
                     museumId,
                     currentMuseum.name,
+                    'child',  // museum-checkin.html only has child tasks
                     taskDescription,
                     ageGroup
                 );
