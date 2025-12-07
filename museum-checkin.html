@@ -12012,6 +12012,12 @@
         const PA_OBSTACLE_MIN_HEIGHT = 40;
         const PA_OBSTACLE_MAX_HEIGHT = 80;
         const PA_COLLECTIBLE_SIZE = 25;
+        const PA_OBSTACLE_EMOJIS = ['🌵', '🪨', '🗿'];
+        const PA_COLLECTIBLE_EMOJIS = ['🏺', '🗿', '📜', '👑', '💎'];
+        const PA_DIFFICULTY_DISTANCE_THRESHOLD = 1000;
+        const PA_MAX_SPEED = 6;
+        const PA_BASE_SPEED = 3;
+        const PA_SPEED_INCREASE_RATE = 0.3;
         
         function initPetAdventureGame(taskIndex = 0) {
             // Show overlay
@@ -12066,7 +12072,7 @@
             paCollectibles = [];
             paScore = 0;
             paLives = 3;
-            paGameSpeed = 3;
+            paGameSpeed = PA_BASE_SPEED;
             paSpawnTimer = 0;
             paDistance = 0;
             
@@ -12162,7 +12168,7 @@
                         y: PA_GROUND_Y - height,
                         width: PA_OBSTACLE_WIDTH,
                         height: height,
-                        emoji: ['🌵', '🪨', '🗿'][Math.floor(Math.random() * 3)]
+                        emoji: PA_OBSTACLE_EMOJIS[Math.floor(Math.random() * PA_OBSTACLE_EMOJIS.length)]
                     });
                 } else {
                     // Spawn collectible (museum artifact)
@@ -12171,7 +12177,7 @@
                         x: paCanvas.width,
                         y: y,
                         size: PA_COLLECTIBLE_SIZE,
-                        emoji: ['🏺', '🗿', '📜', '👑', '💎'][Math.floor(Math.random() * 5)]
+                        emoji: PA_COLLECTIBLE_EMOJIS[Math.floor(Math.random() * PA_COLLECTIBLE_EMOJIS.length)]
                     });
                 }
             }
@@ -12210,8 +12216,8 @@
             });
             
             // Increase difficulty over time
-            if (paDistance > 1000) {
-                paGameSpeed = Math.min(6, 3 + Math.floor(paDistance / 1000) * 0.3);
+            if (paDistance > PA_DIFFICULTY_DISTANCE_THRESHOLD) {
+                paGameSpeed = Math.min(PA_MAX_SPEED, PA_BASE_SPEED + Math.floor(paDistance / PA_DIFFICULTY_DISTANCE_THRESHOLD) * PA_SPEED_INCREASE_RATE);
             }
         }
         
