@@ -12013,11 +12013,13 @@
         const PA_OBSTACLE_MAX_HEIGHT = 80;
         const PA_COLLECTIBLE_SIZE = 25;
         const PA_OBSTACLE_EMOJIS = ['🌵', '🪨', '🗿'];
-        const PA_COLLECTIBLE_EMOJIS = ['🏺', '🗿', '📜', '👑', '💎'];
+        const PA_COLLECTIBLE_EMOJIS = ['🏺', '⚱️', '📜', '👑', '💎'];
         const PA_DIFFICULTY_DISTANCE_THRESHOLD = 1000;
         const PA_MAX_SPEED = 6;
         const PA_BASE_SPEED = 3;
         const PA_SPEED_INCREASE_RATE = 0.3;
+        const PA_DEFAULT_CANVAS_WIDTH = 600;
+        const PA_CANVAS_ASPECT_RATIO = 2 / 3;
         
         function initPetAdventureGame(taskIndex = 0) {
             // Show overlay
@@ -12034,9 +12036,9 @@
             // Set canvas size for mobile responsiveness - with null check
             if (paCanvas.parentElement) {
                 const containerWidth = paCanvas.parentElement.offsetWidth;
-                if (containerWidth < 600) {
+                if (containerWidth < PA_DEFAULT_CANVAS_WIDTH) {
                     paCanvas.width = containerWidth;
-                    paCanvas.height = Math.floor(containerWidth * 2 / 3);
+                    paCanvas.height = Math.floor(containerWidth * PA_CANVAS_ASPECT_RATIO);
                 }
             }
             
