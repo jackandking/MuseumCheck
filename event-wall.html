@@ -443,7 +443,6 @@
         const CONFIG = {
             KV_STORE_ENDPOINT: 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore',
             EVENT_KEY: 'museumcheck-events',
-            REFRESH_INTERVAL: 10000, // 10 seconds
             EVENT_TYPE_ICONS: {
                 'visit': '🏛️',
                 'checklist': '✅',
@@ -463,7 +462,6 @@
         // State
         let allEvents = [];
         let currentFilter = 'all';
-        let refreshTimer = null;
 
         // Fetch events from KV store
         async function fetchEvents() {
@@ -690,35 +688,6 @@
             });
         }
 
-        // Start auto-refresh
-        function startAutoRefresh() {
-            if (refreshTimer) {
-                clearInterval(refreshTimer);
-            }
-            
-            refreshTimer = setInterval(() => {
-                loadEvents();
-            }, CONFIG.REFRESH_INTERVAL);
-        }
-
-        // Stop auto-refresh
-        function stopAutoRefresh() {
-            if (refreshTimer) {
-                clearInterval(refreshTimer);
-                refreshTimer = null;
-            }
-        }
-
-        // Pause auto-refresh when page is hidden
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                stopAutoRefresh();
-            } else {
-                startAutoRefresh();
-                loadEvents(); // Refresh immediately when page becomes visible
-            }
-        });
-
         // Initialize
         async function init() {
             console.log('Initializing Event Wall...');
@@ -727,7 +696,6 @@
             setupRefresh();
             
             await loadEvents();
-            startAutoRefresh();
         }
 
         // Start when page loads
