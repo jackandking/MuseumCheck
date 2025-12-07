@@ -12262,8 +12262,14 @@
             document.getElementById('paFinalScore').textContent = paScore;
             document.getElementById('petAdventureCompleteMessage').classList.add('show');
             
-            // Calculate XP reward (10-25 XP based on score)
-            const gameXP = Math.max(10, Math.min(25, Math.floor(paScore / 10)));
+            // Award XP for game completion - use VirtualPet constants if available
+            let gameXP = 10;
+            if (typeof VirtualPet !== 'undefined' && VirtualPet.GAME_XP_REWARDS && VirtualPet.GAME_XP_REWARDS['pet-adventure']) {
+                const reward = VirtualPet.GAME_XP_REWARDS['pet-adventure'];
+                gameXP = Math.max(reward.min, Math.min(reward.max, Math.floor(paScore / reward.divisor)));
+            } else {
+                gameXP = Math.max(10, Math.min(25, Math.floor(paScore / 10)));
+            }
             
             // Add XP to achievement system
             if (window.achievementGamification) {
@@ -12271,6 +12277,11 @@
                 setTimeout(() => {
                     window.achievementGamification.showXPGainNotification(gameXP, '宠物冒险完成');
                 }, 500);
+            }
+            
+            // Show pet adoption prompt if user hasn't adopted a pet (when XP gained)
+            if (typeof VirtualPet !== 'undefined') {
+                VirtualPet.showAdoptionPromptIfNeeded('xp_gain');
             }
             
             // Notify virtual pet about game completion
