@@ -5504,9 +5504,9 @@
                                 document.getElementById('modalMuseumPhotoSubmitBtn').style.display = 'none';
                                 document.getElementById('museumPhotoContributedBadge').style.display = 'none';
                             }
-                        } 
-                        // Show treasure photo contributor section for treasure tasks when no image
+                        }
                         else if (isTreasureTask && treasureName) {
+                            // Show treasure photo contributor section for treasure tasks when no image
                             const treasurePhotoSection = document.getElementById('treasurePhotoContributorSection');
                             if (treasurePhotoSection) {
                                 // Check if user already contributed a photo for this treasure
@@ -6474,8 +6474,15 @@
                 return;
             }
             
+            // Get museum ID (use currentMuseum.id if available, fallback to global museumId)
+            const musId = (currentMuseum && currentMuseum.id) || museumId;
+            if (!musId) {
+                alert('无法获取博物馆信息');
+                return;
+            }
+            
             // Save the photo
-            const success = saveContributedTreasurePhoto(museumId, treasureName, {
+            const success = saveContributedTreasurePhoto(musId, treasureName, {
                 imageUrl: imageUrl,
                 description: `由亲子探索者贡献于${new Date().toLocaleDateString('zh-CN')}`
             });
@@ -6548,7 +6555,7 @@
                 
                 // Reset upload button text
                 if (uploadLabel) {
-                    uploadLabel.textContent = UPLOAD_BUTTON_TEXT;
+                    uploadLabel.textContent = '📤 选择文件';
                 }
             } catch (error) {
                 console.error('Upload error:', error);
@@ -6557,7 +6564,7 @@
                 // Reset upload button
                 const uploadLabel = document.getElementById('modalTreasurePhotoUploadLabel');
                 if (uploadLabel) {
-                    uploadLabel.textContent = UPLOAD_BUTTON_TEXT;
+                    uploadLabel.textContent = '📤 选择文件';
                 }
             }
         }
