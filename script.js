@@ -2787,6 +2787,24 @@ class EventWallService {
     }
     
     /**
+     * Track individual task completion event
+     */
+    trackTaskComplete(museumId, museumName, checklistType, taskDescription, ageGroup) {
+        this.recordEvent(
+            'task',
+            '完成任务',
+            `完成 ${museumName} 的${checklistType === 'parent' ? '家长准备' : '孩子任务'}: ${taskDescription}`,
+            {
+                museumId: museumId,
+                museumName: museumName,
+                checklistType: checklistType,
+                taskDescription: taskDescription,
+                ageGroup: ageGroup
+            }
+        );
+    }
+    
+    /**
      * Track achievement unlock event
      */
     trackAchievementUnlock(achievementId, achievementName) {
@@ -9093,14 +9111,26 @@ class MuseumCheckApp {
                     'completed': e.target.checked
                 });
                 
-                // ===== EVENT WALL TRACKING: Checklist Completion =====
-                // Track to event wall when a checklist is fully completed
+                // ===== EVENT WALL TRACKING: Task & Checklist Completion =====
+                // Track individual task completion and full checklist completion to event wall
                 if (e.target.checked && museum) {
+                    // Track individual task completion
+                    if (this.eventWallService && itemText) {
+                        this.eventWallService.trackTaskComplete(
+                            museumId,
+                            museum.name,
+                            checklistType,
+                            itemText,
+                            fullAgeGroup
+                        );
+                    }
+                    
+                    // Also track when a full checklist is completed
                     const fullChecklist = this.getMuseumChecklist(museumId, checklistType, fullAgeGroup);
                     const completedCount = completed.length;
                     const totalCount = fullChecklist.length;
                     
-                    // If all items are now completed, track to event wall
+                    // If all items are now completed, track full checklist completion
                     if (completedCount === totalCount && totalCount > 0) {
                         if (this.eventWallService) {
                             this.eventWallService.trackChecklistComplete(
