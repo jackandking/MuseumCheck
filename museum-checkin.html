@@ -6402,6 +6402,8 @@
         }
         
         // Save contributed treasure photo
+        // NOTE: This function has a side effect - it updates currentMuseum.collections
+        // to ensure the newly contributed photo is immediately visible in the UI
         function saveContributedTreasurePhoto(musId, treasureName, photoData) {
             try {
                 const all = JSON.parse(localStorage.getItem(CONTRIBUTED_TREASURE_PHOTOS_KEY) || '{}');
@@ -6415,7 +6417,8 @@
                 localStorage.setItem(CONTRIBUTED_TREASURE_PHOTOS_KEY, JSON.stringify(all));
                 console.log('Treasure photo contributed successfully:', musId, treasureName);
                 
-                // Also update currentMuseum.collections so it shows immediately
+                // Side effect: Update currentMuseum.collections for immediate UI update
+                // This allows the photo to be displayed without page reload
                 if (currentMuseum && currentMuseum.id === musId) {
                     if (!currentMuseum.collections) {
                         currentMuseum.collections = [];
@@ -6505,9 +6508,9 @@
                 }
                 
                 // Award XP using achievement gamification system
-                if (typeof achievementGamification !== 'undefined' && achievementGamification) {
-                    achievementGamification.addXP(20);
-                    achievementGamification.showXPGainNotification(20, `贡献「${treasureName}」照片`);
+                if (typeof window.achievementGamification !== 'undefined' && window.achievementGamification) {
+                    window.achievementGamification.addXP(20);
+                    window.achievementGamification.showXPGainNotification(20, `贡献「${treasureName}」照片`);
                 } else {
                     // Fallback: show simple notification
                     showNotification('✅ 照片贡献成功！获得 +20 XP', 3000);
