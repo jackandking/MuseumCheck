@@ -12017,15 +12017,21 @@
             // Show overlay
             document.getElementById('petAdventureOverlay').classList.add('show');
             
-            // Get canvas
+            // Get canvas - with null check
             paCanvas = document.getElementById('petAdventureCanvas');
+            if (!paCanvas) {
+                console.error('Pet adventure canvas not found');
+                return;
+            }
             paCtx = paCanvas.getContext('2d');
             
-            // Set canvas size for mobile responsiveness
-            const containerWidth = paCanvas.parentElement.offsetWidth;
-            if (containerWidth < 600) {
-                paCanvas.width = containerWidth;
-                paCanvas.height = Math.floor(containerWidth * 2 / 3);
+            // Set canvas size for mobile responsiveness - with null check
+            if (paCanvas.parentElement) {
+                const containerWidth = paCanvas.parentElement.offsetWidth;
+                if (containerWidth < 600) {
+                    paCanvas.width = containerWidth;
+                    paCanvas.height = Math.floor(containerWidth * 2 / 3);
+                }
             }
             
             // Initialize game state
@@ -12068,6 +12074,9 @@
         }
         
         function bindPetAdventureControls() {
+            // Remove existing keyboard listener first to prevent duplicates
+            document.removeEventListener('keydown', handlePetAdventureKeyPress);
+            
             // Remove existing listeners to avoid duplicates
             const jumpBtn = document.getElementById('paJumpBtn');
             const restartBtn = document.getElementById('restartPetAdventure');
@@ -12093,7 +12102,7 @@
             });
             newExitBtn.addEventListener('click', cleanupPetAdventureGame);
             
-            // Keyboard controls
+            // Keyboard controls - add fresh listener after removing old one
             document.addEventListener('keydown', handlePetAdventureKeyPress);
         }
         
