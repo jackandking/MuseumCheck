@@ -9093,6 +9093,27 @@ class MuseumCheckApp {
                     'completed': e.target.checked
                 });
                 
+                // ===== EVENT WALL TRACKING: Checklist Completion =====
+                // Track to event wall when a checklist is fully completed
+                if (e.target.checked && museum) {
+                    const fullChecklist = this.getMuseumChecklist(museumId, checklistType, fullAgeGroup);
+                    const completedCount = completed.length;
+                    const totalCount = fullChecklist.length;
+                    
+                    // If all items are now completed, track to event wall
+                    if (completedCount === totalCount && totalCount > 0) {
+                        if (this.eventWallService) {
+                            this.eventWallService.trackChecklistComplete(
+                                museumId, 
+                                museum.name, 
+                                checklistType, 
+                                totalCount
+                            );
+                        }
+                    }
+                }
+                // ===== END EVENT WALL TRACKING =====
+                
                 // Update visual state and add/remove photo upload section
                 const item = e.target.closest('.checklist-item');
                 if (e.target.checked) {
