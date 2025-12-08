@@ -49,6 +49,9 @@ function getTaskCard(page: Page, index: number) {
 
 // Helper function to open task modal
 async function openTaskModal(page: Page, taskIndex: number): Promise<void> {
+  // Dismiss any blocking prompts first
+  await dismissPetAdoptionPrompt(page);
+  
   const taskCard = getTaskCard(page, taskIndex);
   await taskCard.click();
   await page.waitForSelector('#taskModal.show', { timeout: 5000 });
@@ -63,6 +66,24 @@ async function closeTaskModal(page: Page): Promise<void> {
   await page.waitForSelector('#taskModal:not(.show)', { timeout: 5000 });
 }
 
+// Helper function to dismiss pet adoption prompt if it appears
+async function dismissPetAdoptionPrompt(page: Page): Promise<void> {
+  const petPrompt = page.locator('#pet-adoption-prompt, .pet-adoption-prompt');
+  const isVisible = await petPrompt.isVisible({ timeout: 1000 }).catch(() => false);
+  if (isVisible) {
+    // Try to close it
+    const closeBtn = petPrompt.locator('button:has-text("暂不领养"), button:has-text("关闭"), .close-button').first();
+    if (await closeBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+      await closeBtn.click();
+      await page.waitForTimeout(500);
+    } else {
+      // Click outside the prompt
+      await page.mouse.click(10, 10);
+      await page.waitForTimeout(500);
+    }
+  }
+}
+
 // Helper function to complete a task
 async function completeTask(page: Page, skipGame: boolean = true): Promise<void> {
   const completeBtn = page.locator('#completeButton');
@@ -71,6 +92,9 @@ async function completeTask(page: Page, skipGame: boolean = true): Promise<void>
   
   // Wait for modal to close
   await expect(page.locator('#taskModal')).not.toHaveClass(/show/, { timeout: 5000 });
+  
+  // Dismiss pet adoption prompt if it appears
+  await dismissPetAdoptionPrompt(page);
   
   // If game modal appears and we want to skip it
   if (skipGame) {
