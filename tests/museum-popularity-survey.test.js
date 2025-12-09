@@ -119,6 +119,109 @@ describe('Museum Popularity Survey', () => {
             const uniqueIds = new Set(selectedMuseums.map(m => m.id));
             expect(uniqueIds.size).toBe(selectedMuseums.length);
         });
+        
+        test('should prioritize museums with images for voting', () => {
+            // Setup museums with some having images
+            window.MUSEUMS_META = [
+                { id: 'museum1', name: '博物馆1', location: '城市1', image: 'http://example.com/image1.jpg' },
+                { id: 'museum2', name: '博物馆2', location: '城市2', image: 'http://example.com/image2.jpg' },
+                { id: 'museum3', name: '博物馆3', location: '城市3', image: 'http://example.com/image3.jpg' },
+                { id: 'museum4', name: '博物馆4', location: '城市4', image: '' },
+                { id: 'museum5', name: '博物馆5', location: '城市5', image: '' },
+                { id: 'museum6', name: '博物馆6', location: '城市6', image: '' },
+                { id: 'museum7', name: '博物馆7', location: '城市7', image: '' }
+            ];
+            
+            const allMuseums = window.MUSEUMS_META;
+            const museumsWithImages = allMuseums.filter(m => m.image && m.image.trim() !== '');
+            const museumsWithoutImages = allMuseums.filter(m => !m.image || m.image.trim() === '');
+            
+            // Verify separation works correctly
+            expect(museumsWithImages.length).toBe(3);
+            expect(museumsWithoutImages.length).toBe(4);
+            
+            // Simulate prioritized selection (5 museums needed)
+            const museumsPerRound = 5;
+            const shuffleArray = (array) => {
+                const shuffled = [...array];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled;
+            };
+            
+            const shuffledWithImages = shuffleArray(museumsWithImages);
+            const shuffledWithoutImages = shuffleArray(museumsWithoutImages);
+            
+            const withImagesCount = Math.min(shuffledWithImages.length, museumsPerRound);
+            const withoutImagesCount = museumsPerRound - withImagesCount;
+            
+            const selectedMuseums = [
+                ...shuffledWithImages.slice(0, withImagesCount),
+                ...shuffledWithoutImages.slice(0, withoutImagesCount)
+            ];
+            
+            // Verify selection prioritizes images
+            expect(selectedMuseums.length).toBe(5);
+            const selectedWithImages = selectedMuseums.filter(m => m.image && m.image.trim() !== '');
+            expect(selectedWithImages.length).toBe(3); // All 3 museums with images should be selected
+        });
+        
+        test('should handle case when all museums have images', () => {
+            window.MUSEUMS_META = [
+                { id: 'museum1', name: '博物馆1', location: '城市1', image: 'http://example.com/1.jpg' },
+                { id: 'museum2', name: '博物馆2', location: '城市2', image: 'http://example.com/2.jpg' },
+                { id: 'museum3', name: '博物馆3', location: '城市3', image: 'http://example.com/3.jpg' },
+                { id: 'museum4', name: '博物馆4', location: '城市4', image: 'http://example.com/4.jpg' },
+                { id: 'museum5', name: '博物馆5', location: '城市5', image: 'http://example.com/5.jpg' },
+                { id: 'museum6', name: '博物馆6', location: '城市6', image: 'http://example.com/6.jpg' }
+            ];
+            
+            const allMuseums = window.MUSEUMS_META;
+            const museumsWithImages = allMuseums.filter(m => m.image && m.image.trim() !== '');
+            
+            expect(museumsWithImages.length).toBe(6);
+            
+            // All selected should have images
+            const shuffled = [...museumsWithImages];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            const selectedMuseums = shuffled.slice(0, 5);
+            
+            expect(selectedMuseums.length).toBe(5);
+            expect(selectedMuseums.every(m => m.image && m.image.trim() !== '')).toBe(true);
+        });
+        
+        test('should handle case when no museums have images', () => {
+            window.MUSEUMS_META = [
+                { id: 'museum1', name: '博物馆1', location: '城市1', image: '' },
+                { id: 'museum2', name: '博物馆2', location: '城市2', image: '' },
+                { id: 'museum3', name: '博物馆3', location: '城市3', image: '' },
+                { id: 'museum4', name: '博物馆4', location: '城市4', image: '' },
+                { id: 'museum5', name: '博物馆5', location: '城市5', image: '' },
+                { id: 'museum6', name: '博物馆6', location: '城市6', image: '' }
+            ];
+            
+            const allMuseums = window.MUSEUMS_META;
+            const museumsWithImages = allMuseums.filter(m => m.image && m.image.trim() !== '');
+            const museumsWithoutImages = allMuseums.filter(m => !m.image || m.image.trim() === '');
+            
+            expect(museumsWithImages.length).toBe(0);
+            expect(museumsWithoutImages.length).toBe(6);
+            
+            // Should still select museums even without images
+            const shuffled = [...museumsWithoutImages];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            const selectedMuseums = shuffled.slice(0, 5);
+            
+            expect(selectedMuseums.length).toBe(5);
+        });
     });
 
     describe('Vote Processing', () => {
