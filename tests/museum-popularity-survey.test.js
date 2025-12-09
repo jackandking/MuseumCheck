@@ -7,6 +7,20 @@
  * Tests the voting feature for museum popularity ranking
  */
 
+/**
+ * Test utility: Fisher-Yates shuffle algorithm
+ * @param {Array} array - Array to shuffle
+ * @returns {Array} Shuffled copy of the array
+ */
+function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
 describe('Museum Popularity Survey', () => {
     let mockFetch;
     let mockLocalStorage;
@@ -83,12 +97,8 @@ describe('Museum Popularity Survey', () => {
             const allMuseums = window.MUSEUMS_META;
             expect(allMuseums.length).toBeGreaterThan(5);
             
-            // Simulate selection logic
-            const shuffled = [...allMuseums];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
+            // Simulate selection logic using shared utility
+            const shuffled = shuffleArray(allMuseums);
             const selectedMuseums = shuffled.slice(0, 5);
             
             expect(selectedMuseums.length).toBe(5);
@@ -109,11 +119,7 @@ describe('Museum Popularity Survey', () => {
         
         test('should have unique museums in selection', () => {
             const allMuseums = window.MUSEUMS_META;
-            const shuffled = [...allMuseums];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
+            const shuffled = shuffleArray(allMuseums);
             const selectedMuseums = shuffled.slice(0, 5);
             
             const uniqueIds = new Set(selectedMuseums.map(m => m.id));
@@ -140,17 +146,8 @@ describe('Museum Popularity Survey', () => {
             expect(museumsWithImages.length).toBe(3);
             expect(museumsWithoutImages.length).toBe(4);
             
-            // Simulate prioritized selection (5 museums needed)
+            // Simulate prioritized selection (5 museums needed) using shared utility
             const museumsPerRound = 5;
-            const shuffleArray = (array) => {
-                const shuffled = [...array];
-                for (let i = shuffled.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-                }
-                return shuffled;
-            };
-            
             const shuffledWithImages = shuffleArray(museumsWithImages);
             const shuffledWithoutImages = shuffleArray(museumsWithoutImages);
             
@@ -183,12 +180,8 @@ describe('Museum Popularity Survey', () => {
             
             expect(museumsWithImages.length).toBe(6);
             
-            // All selected should have images
-            const shuffled = [...museumsWithImages];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
+            // All selected should have images - use shared utility
+            const shuffled = shuffleArray(museumsWithImages);
             const selectedMuseums = shuffled.slice(0, 5);
             
             expect(selectedMuseums.length).toBe(5);
@@ -212,12 +205,8 @@ describe('Museum Popularity Survey', () => {
             expect(museumsWithImages.length).toBe(0);
             expect(museumsWithoutImages.length).toBe(6);
             
-            // Should still select museums even without images
-            const shuffled = [...museumsWithoutImages];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
+            // Should still select museums even without images - use shared utility
+            const shuffled = shuffleArray(museumsWithoutImages);
             const selectedMuseums = shuffled.slice(0, 5);
             
             expect(selectedMuseums.length).toBe(5);
