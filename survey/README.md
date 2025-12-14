@@ -83,7 +83,7 @@ const surveyConfig = {
 
 **功能描述**:
 - 展示特定博物馆（默认：首都博物馆）的图片
-- 用户从 4 个选项中猜测哪个是该博物馆的镇馆之宝
+- 用户从 4 个选项（1个正确答案 + 3个干扰项）中猜测哪个是该博物馆的镇馆之宝
 - 显示全网用户的答题统计和正确答案
 
 **用户流程**:
@@ -391,7 +391,7 @@ const guessData: GuessData = {
 
 ### Treasure Survey 的 3-Tier 加载策略
 
-Treasure Survey 使用分层数据加载策略:
+Treasure Survey 使用分层数据加载策略，按优先级顺序依次尝试:
 
 **Tier 1 (优先级最高)**: KV Store 动态数据
 ```javascript
@@ -400,12 +400,12 @@ const sortKey = 'museum';
 const url = `${kvStoreEndpoint}?key=${encodeURIComponent(key)}&sortKey=${encodeURIComponent(sortKey)}`;
 ```
 
-**Tier 2**: 静态 JSON 文件
+**Tier 2 (次优先)**: 静态 JSON 文件
 ```javascript
 const response = await fetch(`/museums/${museumId}.json`);
 ```
 
-**Tier 3 (兜底)**: 内置默认数据
+**Tier 3 (兜底方案)**: 内置默认数据
 ```javascript
 const museumData = getDefaultMuseumData();
 ```
