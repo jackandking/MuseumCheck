@@ -412,21 +412,23 @@ const museumData = getDefaultMuseumData();
 
 ### Popularity Survey 的数据来源
 
-**优先使用**: `window.MUSEUMS_META` (来自 `/museums-meta.js`)
+Popularity Survey 按优先级顺序依次尝试加载博物馆数据:
+
+**优先使用 (优先级最高)**: `window.MUSEUMS_META` (来自 `/museums-meta.js`)
 ```javascript
 if (typeof window !== 'undefined' && window.MUSEUMS_META) {
     allMuseums = window.MUSEUMS_META.filter(m => m && m.id && m.name);
 }
 ```
 
-**动态获取**: 尝试 fetch `/museums-meta.js`
+**动态获取 (次优先)**: 尝试 fetch `/museums-meta.js`
 ```javascript
 const response = await fetch('/museums-meta.js');
 const text = await response.text();
 const match = text.match(/window\.MUSEUMS_META\s*=\s*(\[[\s\S]*?\]);/);
 ```
 
-**兜底方案**: 使用内置的 15 个热门博物馆列表
+**兜底方案 (最低优先级)**: 使用内置的 15 个热门博物馆列表
 
 ## 小程序集成
 
