@@ -83,7 +83,7 @@ const surveyConfig = {
 
 **功能描述**:
 - 展示特定博物馆（默认：首都博物馆）的图片
-- 用户从 4 个选项（1个正确答案 + 3个干扰项）中猜测哪个是该博物馆的镇馆之宝
+- 用户从 4 个藏品选项（1个正确答案 + 3个其他博物馆的藏品作为干扰项）中猜测哪个是该博物馆的镇馆之宝
 - 显示全网用户的答题统计和正确答案
 
 **用户流程**:
@@ -393,6 +393,8 @@ const guessData: GuessData = {
 
 Treasure Survey 使用分层数据加载策略，按优先级顺序依次尝试:
 
+> **注意**: 以下 Tier 编号表示实际执行的优先级顺序（Tier 1 最先尝试），与代码注释中的 Tier 编号不同。
+
 **Tier 1 (优先级最高)**: KV Store 动态数据
 ```javascript
 const key = `museum-data-${museumId}`;
@@ -476,8 +478,10 @@ if (urlParams.get('finishedAd') === 'true') {
 ### 本地运行
 
 ```bash
-# 启动本地服务器（在项目根目录下执行）
-cd <project-root>
+# 进入项目根目录
+cd {项目根目录}
+
+# 启动本地服务器
 python3 -m http.server 8000
 
 # 访问调查页面
