@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试结果页面</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="../util.js"></script>
+    <script src="app.js"></script>
+</head>
+<body>
+    <div class="survey-container">
+        <div class="result" id="result" style="display:block;">
+            <p>正在加载测试数据...</p>
+        </div>
+    </div>
+    <script>
+        // Wait for app.js to load, then inject mock data
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const mockData = {
+                    totalResponses: 150,
+                    countDistribution: {
+                        '0': 20,
+                        '1': 15,
+                        '2': 25,
+                        '3': 30,
+                        '4': 20,
+                        '5': 15,
+                        '6': 10,
+                        '7': 8,
+                        '8': 4,
+                        '9': 2,
+                        '10': 1
+                    },
+                    treasureViews: {
+                        'qingming-scroll': { name: '《清明上河图》', museum: '故宫博物院', count: 85 },
+                        'terracotta-warriors': { name: '兵马俑', museum: '秦始皇帝陵博物院', count: 95 },
+                        'houmuwu-ding': { name: '后母戊鼎', museum: '中国国家博物馆', count: 65 },
+                        'zenghouyi-bells': { name: '曾侯乙编钟', museum: '湖北省博物馆', count: 45 },
+                        'goujian-sword': { name: '越王勾践剑', museum: '湖北省博物馆', count: 50 },
+                        'jadeite-cabbage': { name: '翠玉白菜', museum: '故宫博物院', count: 70 },
+                        'dake-ding': { name: '大克鼎', museum: '上海博物馆', count: 40 },
+                        'agate-cup': { name: '镶金兽首玛瑙杯', museum: '陕西历史博物馆', count: 35 },
+                        'tri-color-camel': { name: '唐三彩骆驼载乐俑', museum: '中国国家博物馆', count: 55 },
+                        'jade-burial-suit': { name: '金缕玉衣', museum: '河北博物院', count: 38 }
+                    }
+                };
+                
+                console.log('Injecting mock data...');
+                if (typeof showResult === 'function') {
+                    showResult(mockData);
+                    console.log('Results displayed!');
+                } else {
+                    console.error('showResult function not found');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
