@@ -476,8 +476,8 @@ if (urlParams.get('finishedAd') === 'true') {
 ### 本地运行
 
 ```bash
-# 启动本地服务器
-cd /home/runner/work/MuseumCheck/MuseumCheck
+# 启动本地服务器（在项目根目录下执行）
+cd /path/to/MuseumCheck
 python3 -m http.server 8000
 
 # 访问调查页面
