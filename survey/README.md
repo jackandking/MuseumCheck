@@ -74,8 +74,8 @@ const surveyConfig = {
 ```
 
 **数据来源**:
-- 优先使用 `MUSEUMS_META` (来自 `/museums-meta.js`)
-- 回退使用内置的默认博物馆列表
+- **优先使用 (最高优先级)**: `MUSEUMS_META` (来自 `/museums-meta.js`)
+- **兜底方案**: 内置的默认博物馆列表
 
 ### 2. Treasure Survey (镇馆之宝猜测游戏)
 
@@ -129,9 +129,9 @@ const surveyConfig = {
 
 **数据来源**:
 - **优先级顺序**:
-  1. KV Store (动态数据): `museum-data-{museumId}` with sortKey `museum`
-  2. 静态文件: `/museums/{museumId}.json`
-  3. 内置默认数据
+  1. **最高优先级**: KV Store (动态数据): `museum-data-{museumId}` with sortKey `museum`
+  2. **次优先**: 静态文件: `/museums/{museumId}.json`
+  3. **兜底方案**: 内置默认数据
 
 **干扰项来源**:
 - 从其他知名博物馆加载镇馆之宝作为干扰项
@@ -477,7 +477,7 @@ if (urlParams.get('finishedAd') === 'true') {
 
 ```bash
 # 启动本地服务器（在项目根目录下执行）
-cd /path/to/MuseumCheck
+cd <project-root>
 python3 -m http.server 8000
 
 # 访问调查页面
