@@ -8,8 +8,8 @@
  */
 const surveyConfig = {
     title: "中国十大国宝，你见过几件？",
-    storageKey: "nationalTreasures.survey.data",
-    kvStoreEndpoint: "https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore"
+    storageKey: "nationalTreasures.survey.data"
+    // Note: KV store endpoint is managed by util.js functions (updateConfig/getConfig)
 };
 
 /**
@@ -265,9 +265,8 @@ function toggleTreasureSelection(treasureId) {
  * Handles form submission
  */
 function handleSubmit() {
-    if (selectedTreasures.length === 0) {
-        alert('请至少选择一件你见过的国宝，如果一件都没见过，可以不选直接提交。');
-    }
+    // Allow submission with 0 selections (user hasn't seen any treasures)
+    // No alert needed - this is a valid choice
     
     try {
         // Process the submission
@@ -559,21 +558,54 @@ function createPopularityRanking(data) {
             rankCard.classList.add(`rank-${rank}`);
         }
         
+        // Rank number
+        const rankNumber = document.createElement("div");
+        rankNumber.className = "rank-number";
+        rankNumber.textContent = rank;
+        rankCard.appendChild(rankNumber);
+        
         // Find treasure data for image
         const treasureData = NATIONAL_TREASURES.find(t => t.id === item.id);
+        if (treasureData) {
+            const img = document.createElement("img");
+            img.src = treasureData.imageUrl;
+            img.alt = item.name;
+            img.className = "rank-thumbnail";
+            img.onerror = function() { this.style.display = 'none'; };
+            rankCard.appendChild(img);
+        }
         
-        rankCard.innerHTML = `
-            <div class="rank-number">${rank}</div>
-            ${treasureData ? `<img src="${treasureData.imageUrl}" alt="${item.name}" class="rank-thumbnail" onerror="this.style.display='none'">` : ''}
-            <div class="rank-info">
-                <p class="rank-name">${item.name}</p>
-                <p class="rank-museum">${item.museum}</p>
-            </div>
-            <div class="rank-stats">
-                <span class="rank-count">${item.count}人</span>
-                <span class="rank-percentage">${percentage}%</span>
-            </div>
-        `;
+        // Rank info
+        const rankInfo = document.createElement("div");
+        rankInfo.className = "rank-info";
+        
+        const rankName = document.createElement("p");
+        rankName.className = "rank-name";
+        rankName.textContent = item.name;
+        rankInfo.appendChild(rankName);
+        
+        const rankMuseum = document.createElement("p");
+        rankMuseum.className = "rank-museum";
+        rankMuseum.textContent = item.museum;
+        rankInfo.appendChild(rankMuseum);
+        
+        rankCard.appendChild(rankInfo);
+        
+        // Rank stats
+        const rankStats = document.createElement("div");
+        rankStats.className = "rank-stats";
+        
+        const rankCount = document.createElement("span");
+        rankCount.className = "rank-count";
+        rankCount.textContent = `${item.count}人`;
+        rankStats.appendChild(rankCount);
+        
+        const rankPercentage = document.createElement("span");
+        rankPercentage.className = "rank-percentage";
+        rankPercentage.textContent = `${percentage}%`;
+        rankStats.appendChild(rankPercentage);
+        
+        rankCard.appendChild(rankStats);
         
         rankingList.appendChild(rankCard);
     });
