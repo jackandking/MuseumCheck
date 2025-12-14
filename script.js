@@ -2618,6 +2618,8 @@ class EventWallService {
         try {
             // Get user ID from localStorage
             const userId = localStorage.getItem('user_id') || 'anonymous';
+            // Get child nickname from localStorage
+            const childNickname = localStorage.getItem('childNickname') || '';
             
             // Create event object
             const event = {
@@ -2628,6 +2630,7 @@ class EventWallService {
                 description: description,
                 parameters: parameters,
                 userId: userId,
+                childNickname: childNickname,
                 timestamp: Date.now(),
                 version: '1.0'
             };
@@ -5277,6 +5280,11 @@ class MuseumCheckApp {
         // Leaderboard button
         document.getElementById('leaderboardButton').addEventListener('click', () => {
             this.showLeaderboardModal();
+        });
+
+        // National Treasures Survey button
+        document.getElementById('nationalTreasuresButton').addEventListener('click', () => {
+            window.open('survey/national-treasures/index.html', '_blank');
         });
 
         // Event Wall button
