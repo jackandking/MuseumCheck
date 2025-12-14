@@ -135,7 +135,11 @@ async function initializeApp() {
 function showError(message) {
     const gridContainer = document.getElementById('treasuresGrid');
     if (gridContainer) {
-        gridContainer.innerHTML = `<p class="error-text">${message}</p>`;
+        gridContainer.innerHTML = '';
+        const errorPara = document.createElement('p');
+        errorPara.className = 'error-text';
+        errorPara.textContent = message;
+        gridContainer.appendChild(errorPara);
     }
 }
 
@@ -441,10 +445,16 @@ function showResult(data) {
     // Add header
     const header = document.createElement('div');
     header.className = 'result-header';
-    header.innerHTML = `
-        <h2>🎯 全网用户统计结果</h2>
-        <p class="result-subtitle">共有 ${data.totalResponses || 0} 人参与调查</p>
-    `;
+    
+    const h2 = document.createElement('h2');
+    h2.textContent = '🎯 全网用户统计结果';
+    header.appendChild(h2);
+    
+    const subtitle = document.createElement('p');
+    subtitle.className = 'result-subtitle';
+    subtitle.textContent = `共有 ${data.totalResponses || 0} 人参与调查`;
+    header.appendChild(subtitle);
+    
     resultDiv.appendChild(header);
 
     // Create distribution chart
@@ -629,19 +639,50 @@ function addSummary(container, data) {
     
     const summarySection = document.createElement("div");
     summarySection.className = "summary-section";
-    summarySection.innerHTML = `
-        <div class="summary-stats">
-            <div class="summary-card">
-                <span class="summary-number">${data.totalResponses || 0}</span>
-                <span class="summary-label">总参与人数</span>
-            </div>
-            <div class="summary-card highlight">
-                <span class="summary-number">${average}</span>
-                <span class="summary-label">平均见过件数</span>
-            </div>
-        </div>
-        <p class="summary-timestamp">统计时间: ${new Date().toLocaleString('zh-CN')}</p>
-    `;
+    
+    // Summary stats container
+    const summaryStats = document.createElement("div");
+    summaryStats.className = "summary-stats";
+    
+    // Total participants card
+    const totalCard = document.createElement("div");
+    totalCard.className = "summary-card";
+    
+    const totalNumber = document.createElement("span");
+    totalNumber.className = "summary-number";
+    totalNumber.textContent = data.totalResponses || 0;
+    totalCard.appendChild(totalNumber);
+    
+    const totalLabel = document.createElement("span");
+    totalLabel.className = "summary-label";
+    totalLabel.textContent = "总参与人数";
+    totalCard.appendChild(totalLabel);
+    
+    summaryStats.appendChild(totalCard);
+    
+    // Average card
+    const avgCard = document.createElement("div");
+    avgCard.className = "summary-card highlight";
+    
+    const avgNumber = document.createElement("span");
+    avgNumber.className = "summary-number";
+    avgNumber.textContent = average;
+    avgCard.appendChild(avgNumber);
+    
+    const avgLabel = document.createElement("span");
+    avgLabel.className = "summary-label";
+    avgLabel.textContent = "平均见过件数";
+    avgCard.appendChild(avgLabel);
+    
+    summaryStats.appendChild(avgCard);
+    summarySection.appendChild(summaryStats);
+    
+    // Timestamp
+    const timestamp = document.createElement("p");
+    timestamp.className = "summary-timestamp";
+    timestamp.textContent = `统计时间: ${new Date().toLocaleString('zh-CN')}`;
+    summarySection.appendChild(timestamp);
+    
     container.appendChild(summarySection);
 }
 
