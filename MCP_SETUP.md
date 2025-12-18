@@ -110,7 +110,7 @@ node museum-mcp-server.js
     "museum-search": {
       "command": "node",
       "args": [
-        "/home/runner/work/MuseumCheck/MuseumCheck/museum-mcp-server.js"
+        "museum-mcp-server.js"
       ],
       "env": {
         "KV_STORE_ENDPOINT": "https://letmetry.cloud/kv"
@@ -120,6 +120,8 @@ node museum-mcp-server.js
   }
 }
 ```
+
+**注意：** 配置文件使用相对路径，确保从项目根目录运行。如需使用绝对路径，请根据您的系统调整路径。
 
 ## 使用场景
 
