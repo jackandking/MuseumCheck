@@ -69,8 +69,10 @@ const APP_CONFIG = {
         SHARING_STATE: 'museumCheckSharingState',
         SORT_PREFERENCE: 'museumSortPreference',
         FAVORITE_MUSEUMS: 'favoriteMuseums',
+        BROWSED_MUSEUMS: 'browsedMuseums',  // Museums the user has viewed (with timestamps)
         CONTRIBUTED_TREASURES: 'contributedTreasures',  // User-contributed treasures
-        CONTRIBUTED_MUSEUM_PHOTOS: 'contributedMuseumPhotos'  // User-contributed museum entrance photos
+        CONTRIBUTED_MUSEUM_PHOTOS: 'contributedMuseumPhotos',  // User-contributed museum entrance photos
+        MUSEUM_POSTERS: 'museumPosters'  // Generated museum check-in posters
     },
     
     AGE_GROUPS: ['3-6', '7-12', '13-18'],   // Supported age groups
@@ -4194,6 +4196,7 @@ class MuseumCheckApp {
         this.readonlyCheckboxes = false; // Default to interactive checkboxes
         this.isDouyinAffiliate = false; // Flag to track Douyin affiliate mode
         this.favoriteMuseums = this.loadFavoriteMuseums(); // Load favorite museums
+        this.browsedMuseums = this.loadBrowsedMuseums(); // Load browsed museums with timestamps
         
         // Initialize specialized modules
         this.modalManager = new ModalManager();
@@ -4268,6 +4271,9 @@ class MuseumCheckApp {
         
         // Request user location for better sorting (optional, non-blocking)
         this.requestUserLocation();
+        
+        // Apply default filtering (show visited/favorited/browsed museums when no search)
+        this.filterMuseums();
         
         this.renderMuseums();
         this.updateStats();
@@ -5267,9 +5273,9 @@ class MuseumCheckApp {
             }
         });
         
-        // Achievement button
+        // Achievement button - Navigate to new achievements page
         document.getElementById('achievementButton').addEventListener('click', () => {
-            this.showAchievementModal();
+            window.location.href = 'achievements.html';
         });
 
         // Assessment history button
@@ -5297,10 +5303,12 @@ class MuseumCheckApp {
             this.showSettingsModal();
         });
 
-        // Achievement modal close
+        // Achievement modal close - DISABLED (now using separate achievements.html page)
+        /* Commented out - achievement modal removed
         document.querySelector('#achievementModal .close').addEventListener('click', () => {
             this.closeAchievementModal();
         });
+        */
 
         // Assessment history modal close
         document.querySelector('#assessmentHistoryModal .close').addEventListener('click', () => {
@@ -5311,13 +5319,40 @@ class MuseumCheckApp {
         document.querySelector('#leaderboardModal .close').addEventListener('click', () => {
             this.closeLeaderboardModal();
         });
+        
+        // Poster viewer modal close
+        const posterViewerClose = document.querySelector('#posterViewerModal .close');
+        if (posterViewerClose) {
+            posterViewerClose.addEventListener('click', () => {
+                this.closePosterViewer();
+            });
+        }
+        
+        // Poster viewer modal download button
+        const downloadViewedPosterBtn = document.getElementById('downloadViewedPoster');
+        if (downloadViewedPosterBtn) {
+            downloadViewedPosterBtn.addEventListener('click', () => {
+                this.downloadViewedPoster();
+            });
+        }
+        
+        // Poster viewer modal share button
+        const shareViewedPosterBtn = document.getElementById('shareViewedPoster');
+        if (shareViewedPosterBtn) {
+            shareViewedPosterBtn.addEventListener('click', () => {
+                this.shareViewedPoster();
+            });
+        }
 
         // Click outside achievement modal to close
+        // Achievement modal click outside - DISABLED (now using separate achievements.html page)
+        /* Commented out - achievement modal removed
         document.getElementById('achievementModal').addEventListener('click', (e) => {
             if (e.target.id === 'achievementModal') {
                 this.closeAchievementModal();
             }
         });
+        */
 
         // Click outside assessment history modal to close
         document.getElementById('assessmentHistoryModal').addEventListener('click', (e) => {
@@ -5332,6 +5367,16 @@ class MuseumCheckApp {
                 this.closeLeaderboardModal();
             }
         });
+        
+        // Click outside poster viewer modal to close
+        const posterViewerModal = document.getElementById('posterViewerModal');
+        if (posterViewerModal) {
+            posterViewerModal.addEventListener('click', (e) => {
+                if (e.target.id === 'posterViewerModal') {
+                    this.closePosterViewer();
+                }
+            });
+        }
 
         // Settings icon click
         document.getElementById('settingsIcon').addEventListener('click', () => {
@@ -5729,25 +5774,32 @@ class MuseumCheckApp {
         this.initializeTreasureCheckinConfig();
 
         // Achievement poster generation button
+        // Generate achievement poster button - DISABLED (now using separate achievements.html page)
+        /* Commented out - achievement modal removed
         document.getElementById('generateAchievementPoster').addEventListener('click', () => {
             this.generateAchievementPoster();
         });
+        */
 
-        // Achievement poster download button
+        // Achievement poster download button - DISABLED (now using separate achievements.html page)
+        /* Commented out - achievement modal removed
         const downloadAchievementBtn = document.getElementById('downloadAchievementPoster');
         if (downloadAchievementBtn) {
             downloadAchievementBtn.addEventListener('click', () => {
                 this.downloadAchievementPoster();
             });
         }
+        */
 
-        // Achievement poster share button
+        // Achievement poster share button - DISABLED (now using separate achievements.html page)
+        /* Commented out - achievement modal removed
         const shareAchievementBtn = document.getElementById('shareAchievementPoster');
         if (shareAchievementBtn) {
             shareAchievementBtn.addEventListener('click', () => {
                 this.shareAchievementPoster();
             });
         }
+        */
 
         // Fireworks button - opens fireworks wall page showing all museum achievements
         document.getElementById('fireworksButton').addEventListener('click', () => {
@@ -5833,30 +5885,59 @@ class MuseumCheckApp {
 
     // Search functionality methods
     filterMuseums() {
-        if (!this.searchQuery) {
+        // If there's a search query, filter museums by search criteria (all museums)
+        if (this.searchQuery) {
+            const query = this.searchQuery.toLowerCase();
+            this.filteredMuseums = MUSEUMS.filter(museum => {
+                // Safety check for undefined values
+                const name = museum.name || '';
+                const location = museum.location || '';
+                const description = museum.description || '';
+                const tags = museum.tags || [];
+                
+                return name.toLowerCase().includes(query) ||
+                       location.toLowerCase().includes(query) ||
+                       description.toLowerCase().includes(query) ||
+                       tags.some(tag => (tag || '').toLowerCase().includes(query));
+            });
+            return;
+        }
+        
+        // No search query - show only visited/favorited/browsed museums
+        // Get IDs of museums to display
+        const relevantMuseumIds = new Set();
+        
+        // Add visited museums
+        this.visitedMuseums.forEach(id => relevantMuseumIds.add(id));
+        
+        // Add favorited museums
+        this.favoriteMuseums.forEach(id => relevantMuseumIds.add(id));
+        
+        // Add browsed museums
+        Object.keys(this.browsedMuseums).forEach(id => relevantMuseumIds.add(id));
+        
+        // If user has no relevant museums, show all museums
+        if (relevantMuseumIds.size === 0) {
             this.filteredMuseums = MUSEUMS;
             return;
         }
         
-        const query = this.searchQuery.toLowerCase();
-        this.filteredMuseums = MUSEUMS.filter(museum => {
-            // Safety check for undefined values
-            const name = museum.name || '';
-            const location = museum.location || '';
-            const description = museum.description || '';
-            const tags = museum.tags || [];
-            
-            return name.toLowerCase().includes(query) ||
-                   location.toLowerCase().includes(query) ||
-                   description.toLowerCase().includes(query) ||
-                   tags.some(tag => (tag || '').toLowerCase().includes(query));
+        // Filter to only show relevant museums
+        this.filteredMuseums = MUSEUMS.filter(museum => relevantMuseumIds.has(museum.id));
+        
+        // Sort by recency (most recently browsed first)
+        this.filteredMuseums.sort((a, b) => {
+            const timeA = this.browsedMuseums[a.id] || 0;
+            const timeB = this.browsedMuseums[b.id] || 0;
+            return timeB - timeA; // Most recent first
         });
     }
     
     clearSearch() {
         this.searchQuery = '';
         document.getElementById('museumSearch').value = '';
-        this.filteredMuseums = MUSEUMS;
+        // Apply default filtering (shows visited/favorited/browsed museums)
+        this.filterMuseums();
         this.renderMuseums();
         this.toggleClearButton();
     }
@@ -5909,6 +5990,38 @@ class MuseumCheckApp {
         } catch (error) {
             console.error('Failed to save favorite museums:', error);
         }
+    }
+
+    loadBrowsedMuseums() {
+        try {
+            const saved = localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.BROWSED_MUSEUMS);
+            // Returns object with museum IDs as keys and timestamps as values
+            // e.g., { "forbidden-city": 1640000000000, "shanghai-museum": 1640000001000 }
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            console.error('Failed to load browsed museums:', error);
+            return {};
+        }
+    }
+
+    saveBrowsedMuseums() {
+        try {
+            localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.BROWSED_MUSEUMS, JSON.stringify(this.browsedMuseums));
+        } catch (error) {
+            console.error('Failed to save browsed museums:', error);
+        }
+    }
+
+    /**
+     * Mark a museum as browsed (viewed by user)
+     * @param {string} museumId - The museum ID to mark as browsed
+     */
+    markMuseumAsBrowsed(museumId) {
+        if (!museumId) return;
+        
+        // Record current timestamp for this museum
+        this.browsedMuseums[museumId] = Date.now();
+        this.saveBrowsedMuseums();
     }
 
     loadMuseumChecklists() {
@@ -7523,6 +7636,9 @@ class MuseumCheckApp {
                         !e.target.classList.contains('museum-checkin-button') &&
                         !e.target.classList.contains('museum-manage-button') &&
                         !e.target.classList.contains('favorite-button')) {
+                        // Mark museum as browsed
+                        this.markMuseumAsBrowsed(museum.id);
+                        
                         // Navigate to v2 check-in page (museum-checkin.html)
                         const checkedRadio = document.querySelector('input[name="ageGroup"]:checked');
                         const ageGroup = checkedRadio ? checkedRadio.value : (this.currentAge || APP_CONFIG.DEFAULT_AGE);
@@ -7584,6 +7700,9 @@ class MuseumCheckApp {
                 if (checkinButton) {
                     checkinButton.addEventListener('click', (e) => {
                         e.stopPropagation();
+                        // Mark museum as browsed
+                        this.markMuseumAsBrowsed(museum.id);
+                        
                         // Navigate to museum-checkin.html with museum ID and age group
                         const checkedRadio = document.querySelector('input[name="ageGroup"]:checked');
                         const ageGroup = checkedRadio ? checkedRadio.value : this.currentAge;
@@ -7659,6 +7778,8 @@ class MuseumCheckApp {
         if (index > -1) {
             this.visitedMuseums.splice(index, 1);
             this.saveVisitedMuseums();
+            // Re-filter museums to update display (in case no search is active)
+            this.filterMuseums();
             this.renderMuseums();
             
             // Track museum visit toggle
@@ -7762,6 +7883,8 @@ class MuseumCheckApp {
         // Trigger large rocket animation for museum visit (same as manual check-in)
         this.triggerLargeRocket();
         this.saveVisitedMuseums();
+        // Re-filter museums to update display (in case no search is active)
+        this.filterMuseums();
         this.renderMuseums();
         
         // Auto-submit score to leaderboard (same as manual check-in) and show rank change
@@ -7877,6 +8000,8 @@ class MuseumCheckApp {
             // Remove from favorites
             this.favoriteMuseums.splice(index, 1);
             this.saveFavoriteMuseums();
+            // Re-filter museums to update display (in case no search is active)
+            this.filterMuseums();
             this.renderMuseums();
             
             // Track favorite toggle
@@ -7889,6 +8014,8 @@ class MuseumCheckApp {
             // Add to favorites
             this.favoriteMuseums.push(museumId);
             this.saveFavoriteMuseums();
+            // Re-filter museums to update display (in case no search is active)
+            this.filterMuseums();
             this.renderMuseums();
             
             // Track favorite toggle
@@ -11139,6 +11266,9 @@ class MuseumCheckApp {
         
         // 生成个性化成就建议
         this.generatePersonalizedSuggestions(visitedCount, assessmentQuality, achievements);
+        
+        // Render museum posters gallery
+        this.renderMuseumPostersGallery();
     }
 
     // 新增方法：渲染融合的成就概览
@@ -11555,6 +11685,167 @@ class MuseumCheckApp {
 
         // 存储建议供其他组件使用
         this.personalizedSuggestions = suggestions;
+    }
+
+    // Render museum posters gallery
+    renderMuseumPostersGallery() {
+        const gallery = document.getElementById('museumPostersGallery');
+        const grid = document.getElementById('posterGalleryGrid');
+        
+        if (!gallery || !grid) return;
+        
+        // Load posters from localStorage
+        const postersData = this.loadMuseumPosters();
+        const posterEntries = Object.entries(postersData);
+        
+        // Show/hide gallery based on whether there are posters
+        if (posterEntries.length === 0) {
+            gallery.style.display = 'none';
+            return;
+        }
+        
+        gallery.style.display = 'block';
+        
+        // Clear existing content
+        grid.innerHTML = '';
+        
+        // Sort posters by timestamp (newest first)
+        posterEntries.sort((a, b) => b[1].timestamp - a[1].timestamp);
+        
+        // Render each poster
+        posterEntries.forEach(([museumId, posterInfo]) => {
+            const posterItem = document.createElement('div');
+            posterItem.className = 'poster-gallery-item';
+            posterItem.innerHTML = `
+                <img src="${posterInfo.dataURL}" alt="${posterInfo.museumName}" class="poster-thumbnail">
+                <div class="poster-info">
+                    <div class="poster-museum-name">${posterInfo.museumName}</div>
+                    <div class="poster-date">${posterInfo.date}</div>
+                </div>
+            `;
+            
+            // Add click event to open full-size viewer
+            posterItem.addEventListener('click', () => {
+                this.showPosterViewer(posterInfo);
+            });
+            
+            grid.appendChild(posterItem);
+        });
+    }
+    
+    // Load museum posters from localStorage
+    loadMuseumPosters() {
+        try {
+            const data = localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.MUSEUM_POSTERS);
+            return data ? JSON.parse(data) : {};
+        } catch (error) {
+            console.error('Error loading museum posters:', error);
+            return {};
+        }
+    }
+    
+    // Show poster viewer modal
+    showPosterViewer(posterInfo) {
+        const modal = document.getElementById('posterViewerModal');
+        const image = document.getElementById('posterViewerImage');
+        const title = document.getElementById('posterViewerTitle');
+        const date = document.getElementById('posterViewerDate');
+        
+        if (!modal || !image || !title || !date) return;
+        
+        // Set poster information
+        image.src = posterInfo.dataURL;
+        title.textContent = posterInfo.museumName;
+        date.textContent = `生成于 ${posterInfo.date}`;
+        
+        // Store current poster info for download/share
+        this.currentViewedPoster = posterInfo;
+        
+        // Show modal
+        modal.classList.remove('hidden');
+        
+        // Track event
+        this.trackEvent('museum_poster_viewed', {
+            museum_id: posterInfo.museumId,
+            museum_name: posterInfo.museumName
+        });
+    }
+    
+    // Close poster viewer modal
+    closePosterViewer() {
+        const modal = document.getElementById('posterViewerModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        this.currentViewedPoster = null;
+    }
+    
+    // Download viewed poster
+    downloadViewedPoster() {
+        if (!this.currentViewedPoster) return;
+        
+        const link = document.createElement('a');
+        link.download = `${this.currentViewedPoster.museumName}_打卡海报_${this.currentViewedPoster.date.replace(/\//g, '-')}.png`;
+        link.href = this.currentViewedPoster.dataURL;
+        link.click();
+        
+        // Track event
+        this.trackEvent('museum_poster_downloaded', {
+            museum_id: this.currentViewedPoster.museumId,
+            museum_name: this.currentViewedPoster.museumName
+        });
+    }
+    
+    // Share viewed poster
+    async shareViewedPoster() {
+        if (!this.currentViewedPoster) return;
+        
+        const posterInfo = this.currentViewedPoster;
+        
+        // In WeChat environment, show long-press hint
+        if (UtilityFunctions.isWeChatEnvironment()) {
+            const image = document.getElementById('posterViewerImage');
+            if (image) {
+                image.style.pointerEvents = 'auto';
+                image.style.webkitTouchCallout = 'default';
+            }
+            
+            alert('请长按海报图片保存到相册或分享给好友');
+            
+            this.trackEvent('museum_poster_shared', {
+                museum_id: posterInfo.museumId,
+                museum_name: posterInfo.museumName,
+                method: 'wechat_longpress'
+            });
+            return;
+        }
+        
+        // Standard browser share
+        try {
+            const blob = await (await fetch(posterInfo.dataURL)).blob();
+            const files = [new File([blob], `${posterInfo.museumName}_打卡海报.png`, { type: 'image/png' })];
+            
+            if (navigator.canShare && navigator.canShare({ files })) {
+                await navigator.share({
+                    files,
+                    title: `${posterInfo.museumName}打卡海报`,
+                    text: `我完成了${posterInfo.museumName}的探索任务！`
+                });
+                
+                this.trackEvent('museum_poster_shared', {
+                    museum_id: posterInfo.museumId,
+                    museum_name: posterInfo.museumName,
+                    method: 'native_share'
+                });
+            } else {
+                // Fallback to download
+                this.downloadViewedPoster();
+            }
+        } catch (error) {
+            console.error('Error sharing poster:', error);
+            // Fallback to download
+            this.downloadViewedPoster();
+        }
     }
 
     editChecklistItem(button) {

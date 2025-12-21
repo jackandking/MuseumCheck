@@ -279,7 +279,7 @@
             <section class="museum-list" id="museums">
                 <div class="stats" role="status" aria-live="polite">
                     <div class="progress-display">
-                        <div class="progress-text minecraft-themed">
+                        <div class="progress-text minecraft-themed" style="display: none;">
                             <span class="minecraft-icon">⛏️</span>
                             <span id="visitedCount">0</span>/<span id="totalCount">0</span>
                         </div>
@@ -293,7 +293,7 @@
                             <button id="settingsButton" class="settings-button-icon" title="设置">⚙️</button>
                         </div>
                     </div>
-                    <div class="minecraft-progress-bar">
+                    <div class="minecraft-progress-bar" style="display: none;">
                         <div class="minecraft-progress-fill" id="minecraftProgressFill" style="width: 0%;">
                             <span class="minecraft-progress-blocks" id="minecraftProgressBlocks"></span>
                         </div>
@@ -396,75 +396,23 @@
         </div>
     </div>
 
-    <!-- Achievement Modal -->
-    <div id="achievementModal" class="modal achievement-modal hidden">
-        <div class="modal-content achievement-content">
+    <!-- Achievement Modal - REMOVED, now using separate achievements.html page -->
+    <!-- Old achievement modal code removed - achievement button now navigates to achievements.html -->
+
+    <!-- Full-size Poster Viewer Modal -->
+    <div id="posterViewerModal" class="modal poster-viewer-modal hidden">
+        <div class="modal-content poster-viewer-content">
             <span class="close">&times;</span>
-            <h2>🎖️ 我的成就</h2>
-            
-            <!-- Gamification Stats Cards -->
-            <div class="gamification-stats">
-                <div class="stat-card xp">
-                    <div class="stat-card-icon">⭐</div>
-                    <div class="stat-card-value" id="gamificationXP">0</div>
-                    <div class="stat-card-label">总经验值</div>
-                </div>
-                <div class="stat-card level">
-                    <div class="stat-card-icon">🎖️</div>
-                    <div class="stat-card-value" id="gamificationLevel">1</div>
-                    <div class="stat-card-label">当前等级</div>
-                </div>
-                <div class="stat-card streak">
-                    <div class="stat-card-icon">🔥</div>
-                    <div class="stat-card-value" id="gamificationStreak">0</div>
-                    <div class="stat-card-label">连续打卡</div>
-                </div>
-                <div class="stat-card achievements">
-                    <div class="stat-card-icon">🏆</div>
-                    <div class="stat-card-value" id="totalAchievements">0</div>
-                    <div class="stat-card-label">已解锁成就</div>
-                </div>
+            <div id="posterViewerContainer" class="poster-viewer-container">
+                <img id="posterViewerImage" src="" alt="博物馆海报">
             </div>
-            
-            <!-- XP Progress Bar -->
-            <div class="xp-level-display">
-                <div class="xp-level-info">
-                    <div class="xp-level-label">距离下一等级</div>
-                    <div id="xpProgressText" class="xp-progress-text">0 / 0 XP</div>
-                </div>
-                <div class="xp-progress-bar">
-                    <div class="xp-progress-fill" id="xpProgressFill" style="width: 0%"></div>
-                </div>
+            <div class="poster-viewer-info">
+                <h3 id="posterViewerTitle">博物馆名称</h3>
+                <p id="posterViewerDate">生成日期</p>
             </div>
-            
-            <div class="achievement-summary">
-                <div class="achievement-overview">
-                    <div class="achievement-stat">
-                        <span class="stat-number" id="visitProgress">0</span>
-                        <span class="stat-label">参观进度</span>
-                    </div>
-                </div>
-                <button id="generateAchievementPoster" class="achievement-poster-button">
-                    🎨 生成成就海报
-                </button>
-            </div>
-            
-            <!-- Achievement Hints Section -->
-            <div id="achievementHints" class="achievement-hints" style="display: none;">
-                <div class="achievement-hints-title">💡 即将解锁</div>
-                <div id="achievementHintsList"></div>
-            </div>
-            
-            <div id="achievementList" class="achievement-list">
-                <!-- Achievements will be populated by JavaScript -->
-            </div>
-            <div id="achievementPosterSection" class="achievement-poster-section" style="display: none;">
-                <canvas id="achievementPosterCanvas" style="display: none; max-width: 100%;"></canvas>
-                <div id="achievementPosterPreview" class="poster-preview"></div>
-                <div class="poster-actions">
-                    <button id="downloadAchievementPoster" class="poster-button" style="display: none;">📱 下载成就海报</button>
-                    <button id="shareAchievementPoster" class="poster-button" style="display: none;">📤 分享成就海报</button>
-                </div>
+            <div class="poster-viewer-actions">
+                <button id="downloadViewedPoster" class="poster-button">📱 下载海报</button>
+                <button id="shareViewedPoster" class="poster-button">📤 分享海报</button>
             </div>
         </div>
     </div>
@@ -831,6 +779,8 @@
                         <a href="minecraft-images-demo.html" target="_blank" style="color: #999; font-size: 11px; text-decoration: none;">🎮 资源库</a>
                         <span style="color: #666; margin: 0 8px;">|</span>
                         <a href="space-invaders.html" target="_blank" style="color: #999; font-size: 11px; text-decoration: none;">🐝 小蜜蜂</a>
+                        <span style="color: #666;"> | </span>
+                        <a href="snake-game.html" target="_blank" style="color: #999; font-size: 11px; text-decoration: none;">🐍 贪食蛇</a>
                     </div>
                 </div>
                 </div>

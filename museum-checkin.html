@@ -4185,6 +4185,10 @@
                             <input type="checkbox" id="gameTogglePetAdventure" class="game-toggle" data-game="pet-adventure" checked>
                             <span>🐾 宠物冒险</span>
                         </label>
+                        <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
+                            <input type="checkbox" id="gameToggleSnake" class="game-toggle" data-game="snake" checked>
+                            <span>🐍 贪食蛇</span>
+                        </label>
                     </div>
                     <div class="settings-hint" style="margin-top: 8px;">选择希望奖励的游戏类型，至少选择一个</div>
                 </div>
@@ -4348,7 +4352,7 @@
         <div class="pet-adventure-header">
             <div class="pet-adventure-title">🐾 宠物大冒险 🐾</div>
             <div class="pet-adventure-stats">
-                得分：<span id="paScore">0</span> | 生命：<span id="paLives">❤️❤️❤️</span>
+                得分：<span id="paScore">0</span> | 生命：<span id="paLives">❤️❤️❤️❤️❤️</span>
             </div>
         </div>
         <div class="pet-adventure-container">
@@ -6220,6 +6224,9 @@
                         initTankBattleGame(taskIndexForGame);
                     } else if (gameType === 'pet-adventure') {
                         initPetAdventureGame(taskIndexForGame);
+                    } else if (gameType === 'snake') {
+                        // Open snake game in new window
+                        window.open('snake-game.html', '_blank');
                     } else {
                         // Default to minesweeper
                         initMinesweeperGame(taskIndexForGame);
@@ -7536,8 +7543,12 @@
                         const date = new Date().toLocaleDateString('zh-CN');
                         ctx.fillText(`MuseumCheck · ${date}`, 40, currentY + 50);
                         
-                        // Update preview
-                        preview.innerHTML = `<img src="${canvas.toDataURL('image/png')}" style="max-width:100%;border-radius:12px;">`;
+                        // Update preview and SAVE TO GALLERY
+                        const posterDataURL = canvas.toDataURL('image/png');
+                        preview.innerHTML = `<img src="${posterDataURL}" style="max-width:100%;border-radius:12px;">`;
+                        
+                        // CRITICAL FIX: Save poster to localStorage for gallery view (was missing in async callback)
+                        savePosterToGallery(posterDataURL);
                     };
                     
                     museumImg.onerror = function(){
@@ -7548,8 +7559,12 @@
                         ctx.fillText('期待您拍摄更多精彩瞬间！', 40, currentY);
                         currentY += 40;
                         
-                        // Update preview even if image fails
-                        preview.innerHTML = `<img src="${canvas.toDataURL('image/png')}" style="max-width:100%;border-radius:12px;">`;
+                        // Update preview and SAVE TO GALLERY
+                        const posterDataURL = canvas.toDataURL('image/png');
+                        preview.innerHTML = `<img src="${posterDataURL}" style="max-width:100%;border-radius:12px;">`;
+                        
+                        // CRITICAL FIX: Save poster to localStorage for gallery view (was missing in error callback)
+                        savePosterToGallery(posterDataURL);
                     };
                     
                     museumImg.src = currentMuseum.image;
@@ -7586,7 +7601,11 @@
                 ctx.fillText(`MuseumCheck · ${date}`, 40, currentY + 50);
                 
                 // Display preview - always update, even if no photos
-                preview.innerHTML = `<img src="${canvas.toDataURL('image/png')}" style="max-width:100%;border-radius:12px;">`;
+                const posterDataURL = canvas.toDataURL('image/png');
+                preview.innerHTML = `<img src="${posterDataURL}" style="max-width:100%;border-radius:12px;">`;
+                
+                // Save poster to localStorage for gallery view
+                savePosterToGallery(posterDataURL);
             }).catch(error => {
                 // Fallback: even if everything fails, show a basic poster
                 console.error('Error generating poster:', error);
@@ -7615,8 +7634,68 @@
                 ctx.fillText('🎉 恭喜完成所有任务！', 40, 250);
                 
                 // Display basic poster
-                preview.innerHTML = `<img src="${canvas.toDataURL('image/png')}" style="max-width:100%;border-radius:12px;">`;
+                const posterDataURL = canvas.toDataURL('image/png');
+                preview.innerHTML = `<img src="${posterDataURL}" style="max-width:100%;border-radius:12px;">`;
+                
+                // Save poster to localStorage for gallery view
+                savePosterToGallery(posterDataURL);
             });
+        }
+
+        // Save poster to localStorage for gallery view in main app
+        function savePosterToGallery(posterDataURL) {
+            try {
+                // Load existing posters
+                const postersData = JSON.parse(localStorage.getItem('museumPosters') || '{}');
+                
+                // Get museum name for display
+                const museumName = currentMuseum ? currentMuseum.name : '未知博物馆';
+                
+                // Save poster data with metadata
+                postersData[museumId] = {
+                    dataURL: posterDataURL,
+                    museumId: museumId,
+                    museumName: museumName,
+                    ageGroup: ageGroup,
+                    timestamp: Date.now(),
+                    date: new Date().toLocaleDateString('zh-CN')
+                };
+                
+                // Save to localStorage
+                localStorage.setItem('museumPosters', JSON.stringify(postersData));
+                
+                // Debug logging
+                console.log('✅ Poster saved to gallery for:', museumName);
+                console.log('📊 Total posters in gallery:', Object.keys(postersData).length);
+                console.log('🎨 Poster metadata:', {
+                    museumId: museumId,
+                    museumName: museumName,
+                    ageGroup: ageGroup,
+                    timestamp: new Date().toLocaleString('zh-CN')
+                });
+            } catch (error) {
+                console.error('Error saving poster to gallery:', error);
+                // If localStorage quota exceeded, try to remove old posters
+                if (error.name === 'QuotaExceededError') {
+                    console.warn('Storage quota exceeded, clearing old posters');
+                    // Keep only this poster
+                    const postersData = {};
+                    postersData[museumId] = {
+                        dataURL: posterDataURL,
+                        museumId: museumId,
+                        museumName: currentMuseum ? currentMuseum.name : '未知博物馆',
+                        ageGroup: ageGroup,
+                        timestamp: Date.now(),
+                        date: new Date().toLocaleDateString('zh-CN')
+                    };
+                    try {
+                        localStorage.setItem('museumPosters', JSON.stringify(postersData));
+                        console.log('✅ Poster saved after clearing old data');
+                    } catch (e) {
+                        console.error('Still failed after clearing:', e);
+                    }
+                }
+            }
         }
 
         // Get child nickname
@@ -9680,7 +9759,7 @@
 
         // ===== Individual Game Settings =====
         // All games enabled by default
-        const ALL_GAMES = ['puzzle', 'maze', 'shooting', 'space-invaders', 'tank-battle', 'minesweeper', 'pet-adventure'];
+        const ALL_GAMES = ['puzzle', 'maze', 'shooting', 'space-invaders', 'tank-battle', 'minesweeper', 'pet-adventure', 'snake'];
 
         function loadEnabledGames() {
             try {
@@ -9777,10 +9856,12 @@
                 }
             }
             
-            // Update title based on difficulty
+            // Load pet data and update title with pet
+            const petData = loadPuzzlePetData();
             const titleEl = document.querySelector('.puzzle-title');
             if (titleEl) {
-                titleEl.textContent = currentPuzzleSize === 2 ? '🧩 四宫格挑战' : '🧩 九宫格挑战';
+                const baseTitle = currentPuzzleSize === 2 ? '四宫格挑战' : '九宫格挑战';
+                titleEl.textContent = `${petData.emoji} 🧩 ${baseTitle}`;
             }
             
             // Set reference image
@@ -9805,6 +9886,34 @@
             
             // Show the puzzle overlay
             document.getElementById('puzzleGameOverlay').classList.add('show');
+        }
+
+        // Load pet data for puzzle game
+        function loadPuzzlePetData() {
+            try {
+                const saved = localStorage.getItem('virtualPetData');
+                if (saved) {
+                    const petData = JSON.parse(saved);
+                    if (petData.adopted && petData.pet) {
+                        return {
+                            emoji: petData.pet.emoji,
+                            level: calculatePetLevel(petData.pet.totalXPSpent || 0)
+                        };
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load pet data:', error);
+            }
+            return { emoji: '🐾', level: 1 };
+        }
+
+        // Calculate pet level from XP spent
+        function calculatePetLevel(xpSpent) {
+            if (xpSpent >= 500) return 5;
+            if (xpSpent >= 300) return 4;
+            if (xpSpent >= 150) return 3;
+            if (xpSpent >= 50) return 2;
+            return 1;
         }
 
         // Shuffle puzzle ensuring it's solvable
@@ -9916,8 +10025,13 @@
             const isComplete = puzzleState.every((value, index) => value === index);
             
             if (isComplete) {
-                // Show completion message
-                document.getElementById('puzzleCompleteMessage').classList.add('show');
+                // Load pet data for celebration
+                const petData = loadPuzzlePetData();
+                
+                // Show completion message with pet celebration
+                const completeMsg = document.getElementById('puzzleCompleteMessage');
+                completeMsg.innerHTML = `${petData.emoji} 🎉 恭喜完成！<br><small style="font-size: 14px;">宠物等级 ${petData.level} 为你庆祝</small>`;
+                completeMsg.classList.add('show');
                 
                 // Play sound if available
                 if (typeof playFireworkSound === 'function') {
@@ -10074,14 +10188,12 @@
             fogOfWarEnabled = difficulty.fogEnabled;  // Enable fog for harder difficulty
             visibleRadius = difficulty.fogRadius;      // Set visible radius
             
-            // Update title to reflect difficulty
+            // Load pet data and update title
+            const petData = loadMazePetData();
             const titleEl = document.querySelector('.maze-title');
             if (titleEl) {
-                if (fogOfWarEnabled) {
-                    titleEl.textContent = '🏃 迷宫冒险（迷雾模式）';
-                } else {
-                    titleEl.textContent = '🏃 迷宫冒险（简单）';
-                }
+                const baseTitle = fogOfWarEnabled ? '迷宫冒险（迷雾模式）' : '迷宫冒险（简单）';
+                titleEl.textContent = `${petData.emoji} 🏃 ${baseTitle}`;
             }
             
             generateMaze();
@@ -10098,6 +10210,25 @@
             
             // Setup touch controls for mobile
             setupMazeTouchControls();
+        }
+
+        // Load pet data for maze game
+        function loadMazePetData() {
+            try {
+                const saved = localStorage.getItem('virtualPetData');
+                if (saved) {
+                    const petData = JSON.parse(saved);
+                    if (petData.adopted && petData.pet) {
+                        return {
+                            emoji: petData.pet.emoji,
+                            level: calculatePetLevel(petData.pet.totalXPSpent || 0)
+                        };
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load pet data:', error);
+            }
+            return { emoji: '🐾', level: 1 };
         }
 
         // Render the maze on canvas
@@ -10179,8 +10310,14 @@
                 ctx.globalAlpha = 1;
             }
             
-            // Draw player (always fully visible)
-            ctx.fillStyle = '#667eea';
+            // Draw player (always fully visible) - now using pet emoji
+            const petData = loadMazePetData();
+            
+            // Draw player background circle with glow
+            const glowColors = ['#667eea', '#7c8eec', '#9dabf0', '#c0c8f5', '#e0e4fa'];
+            ctx.fillStyle = glowColors[Math.min(petData.level - 1, 4)];
+            ctx.shadowColor = glowColors[Math.min(petData.level - 1, 4)];
+            ctx.shadowBlur = 10 + (petData.level * 2);
             ctx.beginPath();
             ctx.arc(
                 playerPos.x * CELL_SIZE + CELL_SIZE / 2,
@@ -10190,13 +10327,13 @@
                 Math.PI * 2
             );
             ctx.fill();
+            ctx.shadowBlur = 0;
             
-            // Player face
-            ctx.fillStyle = '#fff';
-            ctx.font = '14px Arial';
+            // Draw pet emoji as player
+            ctx.font = `${CELL_SIZE - 8}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('😊', playerPos.x * CELL_SIZE + CELL_SIZE / 2, playerPos.y * CELL_SIZE + CELL_SIZE / 2);
+            ctx.fillText(petData.emoji, playerPos.x * CELL_SIZE + CELL_SIZE / 2, playerPos.y * CELL_SIZE + CELL_SIZE / 2);
             
             // Draw fog gradient overlay for smooth edges (only in fog mode)
             if (fogOfWarEnabled) {
@@ -10313,8 +10450,13 @@
 
         // Check if maze is complete
         function checkMazeComplete() {
-            // Show completion message
-            document.getElementById('mazeCompleteMessage').classList.add('show');
+            // Load pet data for celebration
+            const petData = loadMazePetData();
+            
+            // Show completion message with pet celebration
+            const completeMsg = document.getElementById('mazeCompleteMessage');
+            completeMsg.innerHTML = `${petData.emoji} 🎉 成功脱出！<br><small style="font-size: 14px;">宠物等级 ${petData.level} 为你庆祝</small>`;
+            completeMsg.classList.add('show');
             
             // Play sound if available
             if (typeof playFireworkSound === 'function') {
@@ -12208,7 +12350,7 @@
         // Game constants
         const PA_GRAVITY = 0.8;
         const PA_JUMP_FORCE = -15;
-        const PA_GROUND_Y = 320;
+        let PA_GROUND_Y = 420; // Will be adjusted based on canvas size - increased for better visibility
         const PA_PLAYER_SIZE = 40;
         const PA_OBSTACLE_WIDTH = 30;
         const PA_OBSTACLE_MIN_HEIGHT = 40;
@@ -12217,11 +12359,12 @@
         const PA_OBSTACLE_EMOJIS = ['🌵', '🪨', '🗿'];
         const PA_COLLECTIBLE_EMOJIS = ['🏺', '⚱️', '📜', '👑', '💎'];
         const PA_DIFFICULTY_DISTANCE_THRESHOLD = 1000;
-        const PA_MAX_SPEED = 6;
-        const PA_BASE_SPEED = 3;
-        const PA_SPEED_INCREASE_RATE = 0.3;
+        const PA_MAX_SPEED = 4; // Reduced from 6 to make game less overwhelming
+        const PA_BASE_SPEED = 2; // Reduced from 3 for easier start
+        const PA_SPEED_INCREASE_RATE = 0.2; // Reduced from 0.3 for gentler difficulty curve
         const PA_DEFAULT_CANVAS_WIDTH = 600;
-        const PA_CANVAS_ASPECT_RATIO = 2 / 3;
+        const PA_DEFAULT_CANVAS_HEIGHT = 500; // Increased from 400 to 500 for better jump visibility
+        const PA_CANVAS_ASPECT_RATIO = PA_DEFAULT_CANVAS_HEIGHT / PA_DEFAULT_CANVAS_WIDTH; // Height / Width
         
         function initPetAdventureGame(taskIndex = 0) {
             // Show overlay
@@ -12238,10 +12381,19 @@
             // Set canvas size for mobile responsiveness - with null check
             if (paCanvas.parentElement) {
                 const containerWidth = paCanvas.parentElement.offsetWidth;
-                if (containerWidth < PA_DEFAULT_CANVAS_WIDTH) {
-                    paCanvas.width = containerWidth;
-                    paCanvas.height = Math.floor(containerWidth * PA_CANVAS_ASPECT_RATIO);
-                }
+                const maxWidth = Math.min(containerWidth - 40, PA_DEFAULT_CANVAS_WIDTH); // 40px padding
+                
+                // Always set canvas size based on available space
+                paCanvas.width = maxWidth;
+                paCanvas.height = Math.floor(maxWidth * PA_CANVAS_ASPECT_RATIO);
+                
+                // Adjust ground position to ensure full jump visibility (leaving more space at top)
+                PA_GROUND_Y = paCanvas.height - 80; // 80px from bottom provides proper viewport
+            } else {
+                // Fallback to default size with increased canvas height
+                paCanvas.width = PA_DEFAULT_CANVAS_WIDTH;
+                paCanvas.height = PA_DEFAULT_CANVAS_HEIGHT;
+                PA_GROUND_Y = 420; // Increased from 320 to match new canvas height
             }
             
             // Initialize game state
@@ -12256,6 +12408,9 @@
         }
         
         function resetPetAdventureGame() {
+            // Hide the complete message if it's showing
+            document.getElementById('petAdventureCompleteMessage').classList.remove('show');
+            
             // Get pet emoji from virtual pet if available
             let petEmoji = '🐱';
             if (window.virtualPet && window.virtualPet.hasPet()) {
@@ -12275,7 +12430,7 @@
             paObstacles = [];
             paCollectibles = [];
             paScore = 0;
-            paLives = 3;
+            paLives = 5; // Increased from 3 to make game more forgiving for children
             paGameSpeed = PA_BASE_SPEED;
             paSpawnTimer = 0;
             paDistance = 0;
@@ -12360,11 +12515,11 @@
             paSpawnTimer++;
             paDistance += paGameSpeed;
             
-            if (paSpawnTimer > 80) {
+            if (paSpawnTimer > 100) { // Increased from 80 to give more space between objects
                 paSpawnTimer = 0;
                 
                 // Randomly spawn obstacle or collectible
-                if (Math.random() < 0.7) {
+                if (Math.random() < 0.5) { // Reduced from 0.7 to spawn fewer obstacles, more collectibles
                     // Spawn obstacle
                     const height = PA_OBSTACLE_MIN_HEIGHT + Math.random() * (PA_OBSTACLE_MAX_HEIGHT - PA_OBSTACLE_MIN_HEIGHT);
                     paObstacles.push({
