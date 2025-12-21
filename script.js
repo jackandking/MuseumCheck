@@ -4008,49 +4008,6 @@ class LeaderboardManager {
     }
 
     /**
-     * Check if user should be prompted to update their score
-     * Now checks both visit count AND XP changes to ensure leaderboard is updated for all score changes
-     */
-    shouldSubmitScore() {
-        const lastSubmittedCount = parseInt(localStorage.getItem('lastSubmittedVisitCount') || '0', 10);
-        const currentCount = this.app.visitedMuseums.length;
-        
-        // Check if visit count changed
-        if (currentCount !== lastSubmittedCount) {
-            return true;
-        }
-        
-        // Also check if XP changed (for XP leaderboard tab)
-        const lastSubmittedXP = parseInt(localStorage.getItem('lastSubmittedXP') || '0', 10);
-        let currentXP = 0;
-        if (this.app.achievementGamification) {
-            const xpData = this.app.achievementGamification.getXPInfo();
-            currentXP = xpData.total || 0;
-        }
-        
-        if (currentXP !== lastSubmittedXP) {
-            return true;
-        }
-        
-        // Also check if pet stats changed (for Pet leaderboard tab)
-        const lastSubmittedPetPower = parseInt(localStorage.getItem('lastSubmittedPetPower') || '0', 10);
-        let currentPetPower = 0;
-        try {
-            if (typeof VirtualPet !== 'undefined') {
-                const petData = JSON.parse(localStorage.getItem('virtualPetData') || '{}');
-                if (petData.adopted && petData.pet && !petData.pet.isDead) {
-                    const pet = petData.pet;
-                    currentPetPower = (pet.attack || 10) + (pet.defense || 10);
-                }
-            }
-        } catch (e) {
-            // Ignore pet data parsing errors
-        }
-        
-        return currentPetPower !== lastSubmittedPetPower;
-    }
-
-    /**
      * Check if leaderboard should be force refreshed due to recent score submission
      */
     shouldForceRefresh() {
@@ -4125,6 +4082,10 @@ class LeaderboardManager {
         if (petStats && petStats.totalPower) {
             localStorage.setItem('lastSubmittedPetPower', petStats.totalPower.toString());
         }
+        
+        // Update last submission timestamp for cache refresh logic
+        this.lastScoreSubmitTime = Date.now();
+        
         console.log('Manually submitted score to leaderboard with XP:', xp, 'petStats:', petStats);
         
         // Get new rank after submitting
