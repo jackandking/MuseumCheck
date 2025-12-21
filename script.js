@@ -10386,14 +10386,17 @@ class MuseumCheckApp {
         const listContainer = document.getElementById('leaderboardList');
         const introContainer = document.getElementById('leaderboardIntro');
         
-        // Update intro text based on ranking type
+        // Update intro text based on ranking type with update information
         const introTexts = {
             visits: '看看谁的博物馆之旅最精彩！参观越多，排名越高！',
             xp: '看看谁获得的积分最多！完成任务、上传照片可以获取积分！',
             pet: '看看谁的宠物最强！喂养和训练宠物可以提升能力！'
         };
         if (introContainer) {
-            introContainer.innerHTML = `<p>${introTexts[rankingType] || introTexts.visits}</p>`;
+            const updateHint = forceRefresh 
+                ? '<small style="color: #666; display: block; margin-top: 5px;">📊 正在获取最新排名...</small>' 
+                : '<small style="color: #666; display: block; margin-top: 5px;">💡 打卡后自动更新，或点击刷新按钮查看最新排名</small>';
+            introContainer.innerHTML = `<p>${introTexts[rankingType] || introTexts.visits}${updateHint}</p>`;
         }
         
         // Show loading state
@@ -10509,11 +10512,11 @@ class MuseumCheckApp {
             html += '</div>';
             listContainer.innerHTML = html;
 
-            // Update last update time
+            // Update last update time with enhanced information
             const updateTimeElem = document.getElementById('leaderboardUpdateTime');
             if (updateTimeElem) {
                 const now = new Date();
-                updateTimeElem.textContent = now.toLocaleString('zh-CN', {
+                const timeStr = now.toLocaleString('zh-CN', {
                     month: 'numeric',
                     day: 'numeric',
                     hour: '2-digit',
@@ -10521,7 +10524,25 @@ class MuseumCheckApp {
                 });
                 
                 if (result.fromCache) {
-                    updateTimeElem.textContent += ' (缓存)';
+                    // Show cache status with helpful hint
+                    const cacheExpiry = localStorage.getItem(this.leaderboardManager.cacheExpiryKey);
+                    if (cacheExpiry) {
+                        const expiryTime = parseInt(cacheExpiry, 10);
+                        const remainingMinutes = Math.ceil((expiryTime - Date.now()) / 60000);
+                        if (remainingMinutes > 0) {
+                            updateTimeElem.textContent = `${timeStr} (缓存，${remainingMinutes}分钟后自动更新)`;
+                            updateTimeElem.title = '点击刷新按钮可立即获取最新数据';
+                        } else {
+                            updateTimeElem.textContent = `${timeStr} (缓存已过期)`;
+                            updateTimeElem.title = '点击刷新按钮获取最新数据';
+                        }
+                    } else {
+                        updateTimeElem.textContent = `${timeStr} (缓存)`;
+                        updateTimeElem.title = '点击刷新按钮可立即获取最新数据';
+                    }
+                } else {
+                    updateTimeElem.textContent = `${timeStr} (最新)`;
+                    updateTimeElem.title = '这是从服务器获取的最新数据';
                 }
             }
 

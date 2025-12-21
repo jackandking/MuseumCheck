@@ -8084,6 +8084,19 @@ main[role="main"] {
     color: #999;
 }
 
+.leaderboard-update-info {
+    display: inline-block;
+    margin-left: 5px;
+    cursor: help;
+    font-size: 14px;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.leaderboard-update-info:hover {
+    opacity: 1;
+}
+
 .leaderboard-empty {
     text-align: center;
     padding: 40px 20px;
