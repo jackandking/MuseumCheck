@@ -24,7 +24,7 @@ describe('UUID Generation', () => {
                 if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                     userId = crypto.randomUUID();
                 } else {
-                    userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                    userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
                 }
                 localStorage.setItem('user_id', userId);
             }
@@ -55,7 +55,7 @@ describe('UUID Generation', () => {
                 if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                     userId = crypto.randomUUID();
                 } else {
-                    userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                    userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
                 }
                 localStorage.setItem('user_id', userId);
             }
@@ -89,7 +89,7 @@ describe('UUID Generation', () => {
                 if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                     userId = crypto.randomUUID();
                 } else {
-                    userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                    userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
                 }
                 localStorage.setItem('user_id', userId);
             }
@@ -109,7 +109,7 @@ describe('UUID Generation', () => {
                 if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                     userId = crypto.randomUUID();
                 } else {
-                    userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                    userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
                 }
                 localStorage.setItem('user_id', userId);
             }
@@ -132,7 +132,7 @@ describe('UUID Generation', () => {
                 if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                     userId = crypto.randomUUID();
                 } else {
-                    userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                    userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
                 }
                 localStorage.setItem('user_id', userId);
             }

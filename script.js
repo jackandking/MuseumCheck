@@ -2374,7 +2374,8 @@ class AnalyticsManager {
             if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                 userId = crypto.randomUUID();
             } else {
-                userId = 'user_' + Date.now().toString(36) + Math.random().toString(36).substring(2);
+                // Use consistent format across all managers
+                userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
             }
             localStorage.setItem('user_id', userId);
         }
@@ -3815,7 +3816,8 @@ class LeaderboardManager {
             if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                 userId = crypto.randomUUID();
             } else {
-                userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                // Use consistent format across all managers
+                userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
             }
             localStorage.setItem('user_id', userId);
         }
