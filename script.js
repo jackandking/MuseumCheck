@@ -4382,9 +4382,11 @@ class MuseumCheckApp {
      * Shows a one-time hint that users can click the title to modify their nickname
      */
     setupSimpleNicknameHint() {
+        const HINT_STORAGE_KEY = 'nicknameHintShown';
+        
         try {
             // Check if hint already shown
-            const hintShown = localStorage.getItem('nicknameHintShown') === 'true';
+            const hintShown = localStorage.getItem(HINT_STORAGE_KEY) === 'true';
             if (hintShown) {
                 return;
             }
@@ -4396,7 +4398,7 @@ class MuseumCheckApp {
 
             // If user already configured, don't show hint
             if (hasNickname || hasAgeGroup || hasVisitedMuseums) {
-                localStorage.setItem('nicknameHintShown', 'true');
+                localStorage.setItem(HINT_STORAGE_KEY, 'true');
                 return;
             }
 
@@ -4414,6 +4416,9 @@ class MuseumCheckApp {
      * Show the simple nickname hint
      */
     showNicknameHint() {
+        const HINT_STORAGE_KEY = 'nicknameHintShown';
+        const HINT_TOP_POSITION = '80px'; // Position from top to avoid header overlap
+        
         try {
             const notification = document.createElement('div');
             notification.className = 'nickname-hint';
@@ -4429,7 +4434,7 @@ class MuseumCheckApp {
 
             notification.style.cssText = `
                 position: fixed;
-                top: 80px;
+                top: ${HINT_TOP_POSITION};
                 left: 50%;
                 transform: translateX(-50%);
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -4525,7 +4530,7 @@ class MuseumCheckApp {
                 setTimeout(() => {
                     notification.remove();
                 }, 300);
-                localStorage.setItem('nicknameHintShown', 'true');
+                localStorage.setItem(HINT_STORAGE_KEY, 'true');
             });
 
             // Auto-remove after 8 seconds
@@ -4535,7 +4540,7 @@ class MuseumCheckApp {
                     setTimeout(() => {
                         notification.remove();
                     }, 300);
-                    localStorage.setItem('nicknameHintShown', 'true');
+                    localStorage.setItem(HINT_STORAGE_KEY, 'true');
                 }
             }, 8000);
         } catch (error) {
