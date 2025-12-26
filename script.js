@@ -4021,6 +4021,7 @@ class LeaderboardManager {
     /**
      * Manual submit score and return rank change information
      * Now includes XP and pet stats for multiple ranking types
+     * Uses lifetime XP (历史累计总积分) for ranking to prevent spending from affecting rank
      * @returns {Object} Result with rank change info: { success, oldRank, newRank, rankChange, totalUsers }
      */
     async manualSubmitScore() {
@@ -4029,10 +4030,13 @@ class LeaderboardManager {
         const userId = this.getUserId();
         
         // Get XP from achievement gamification system
+        // Use lifetimeXP for leaderboard ranking (never decreases when spending points)
         let xp = 0;
+        let lifetimeXP = 0;
         if (this.app.achievementGamification) {
             const xpData = this.app.achievementGamification.getXPInfo();
-            xp = xpData.total || 0;
+            xp = xpData.total || 0; // Current XP (can be spent on pet)
+            lifetimeXP = xpData.lifetime || 0; // Lifetime total XP (never decreases)
         }
         
         // Get pet stats from virtual pet system
@@ -4070,14 +4074,14 @@ class LeaderboardManager {
             console.warn('Failed to get old rank:', err);
         }
         
-        // Submit new score with XP and pet stats
-        const result = await this.submitScore(nickname, visitedCount, xp, petStats);
+        // Submit new score with lifetime XP and pet stats
+        const result = await this.submitScore(nickname, visitedCount, lifetimeXP, petStats);
         if (!result.success) {
             return { success: false, error: result.error };
         }
         
         localStorage.setItem('lastSubmittedVisitCount', visitedCount.toString());
-        localStorage.setItem('lastSubmittedXP', xp.toString());
+        localStorage.setItem('lastSubmittedXP', lifetimeXP.toString());
         // Save pet power for future comparison to detect pet stats changes
         if (petStats && petStats.totalPower) {
             localStorage.setItem('lastSubmittedPetPower', petStats.totalPower.toString());
@@ -4086,7 +4090,7 @@ class LeaderboardManager {
         // Update last submission timestamp for cache refresh logic
         this.lastScoreSubmitTime = Date.now();
         
-        console.log('Manually submitted score to leaderboard with XP:', xp, 'petStats:', petStats);
+        console.log('Manually submitted score to leaderboard with lifetime XP:', lifetimeXP, 'current XP:', xp, 'petStats:', petStats);
         
         // Get new rank after submitting
         let newRank = null;
@@ -4116,6 +4120,7 @@ class LeaderboardManager {
     
     /**
      * Get comparison between local data and last submitted data
+     * Uses lifetime XP for accurate comparison (never decreases)
      * @returns {Object} Comparison data with hasChanges flag
      */
     getSubmissionStatus() {
@@ -4123,9 +4128,11 @@ class LeaderboardManager {
         const submittedVisits = parseInt(localStorage.getItem('lastSubmittedVisitCount') || '0', 10);
         
         let localXP = 0;
+        let localLifetimeXP = 0;
         if (this.app.achievementGamification) {
             const xpData = this.app.achievementGamification.getXPInfo();
-            localXP = xpData.total || 0;
+            localXP = xpData.total || 0; // Current XP (for display)
+            localLifetimeXP = xpData.lifetime || 0; // Lifetime XP (for comparison)
         }
         const submittedXP = parseInt(localStorage.getItem('lastSubmittedXP') || '0', 10);
         
@@ -4146,7 +4153,7 @@ class LeaderboardManager {
         return {
             local: {
                 visits: localVisits,
-                xp: localXP,
+                xp: localLifetimeXP, // Use lifetime XP for comparison
                 petPower: localPetPower
             },
             submitted: {
@@ -5275,6 +5282,8 @@ class MuseumCheckApp {
             }
         });
 
+        // Inline nickname editing functionality
+        this.setupInlineNicknameEditing();
 
 
         // Modal close
@@ -6340,11 +6349,127 @@ class MuseumCheckApp {
     }
 
     updateHeaderTitle() {
-        const headerTitle = document.getElementById('headerTitle');
-        if (headerTitle) {
+        const nicknameDisplay = document.getElementById('nicknameDisplay');
+        if (nicknameDisplay) {
             const nickname = this.childNickname || '小淘气';
-            headerTitle.textContent = `${nickname}的博物馆之旅`;
+            nicknameDisplay.textContent = nickname;
         }
+    }
+
+    /**
+     * Setup inline nickname editing functionality
+     * Allows users to click on their nickname in the header to edit it inline
+     */
+    setupInlineNicknameEditing() {
+        const nicknameDisplay = document.getElementById('nicknameDisplay');
+        if (!nicknameDisplay) return;
+
+        nicknameDisplay.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.startInlineNicknameEdit(nicknameDisplay);
+        });
+    }
+
+    /**
+     * Start inline editing of the nickname
+     * @param {HTMLElement} nicknameDisplay - The nickname display element
+     */
+    startInlineNicknameEdit(nicknameDisplay) {
+        // Prevent multiple editing sessions
+        if (nicknameDisplay.querySelector('input')) {
+            return;
+        }
+
+        const currentNickname = nicknameDisplay.textContent.trim();
+        
+        // Create input element
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentNickname;
+        input.maxLength = 10;
+        input.className = 'nickname-editing';
+        
+        // Store original value for cancel
+        const originalNickname = currentNickname;
+        
+        // Replace text with input
+        nicknameDisplay.textContent = '';
+        nicknameDisplay.appendChild(input);
+        
+        // Focus and select text
+        input.focus();
+        input.select();
+        
+        // Handle save on Enter key
+        const handleSave = () => {
+            const newNickname = input.value.trim();
+            
+            if (newNickname === '') {
+                // Restore original if empty
+                nicknameDisplay.textContent = originalNickname;
+                return;
+            }
+            
+            if (newNickname !== originalNickname) {
+                // Validate and save
+                const result = this.saveChildNickname(newNickname);
+                
+                if (result.isValid) {
+                    // Update display
+                    nicknameDisplay.textContent = newNickname;
+                    
+                    // Track event
+                    this.trackEvent('nickname_inline_edit', {
+                        'nickname_length': newNickname.length,
+                        'previous_length': originalNickname.length
+                    });
+                    
+                    // Show brief success feedback
+                    nicknameDisplay.style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
+                    setTimeout(() => {
+                        nicknameDisplay.style.backgroundColor = '';
+                    }, 500);
+                } else {
+                    // Show error and restore original
+                    alert(result.message);
+                    nicknameDisplay.textContent = originalNickname;
+                }
+            } else {
+                // No change, just restore display
+                nicknameDisplay.textContent = originalNickname;
+            }
+        };
+        
+        // Handle cancel on Escape key
+        const handleCancel = () => {
+            nicknameDisplay.textContent = originalNickname;
+        };
+        
+        // Keyboard event handler
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSave();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                handleCancel();
+            }
+        });
+        
+        // Handle blur (lost focus)
+        input.addEventListener('blur', () => {
+            // Small delay to allow button clicks
+            setTimeout(() => {
+                if (nicknameDisplay.contains(input)) {
+                    handleSave();
+                }
+            }, 100);
+        });
+        
+        // Prevent clicks on input from closing
+        input.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
     }
 
     loadFireworksRetentionTime() {
@@ -10856,12 +10981,15 @@ class MuseumCheckApp {
         switch (rankingType) {
             case 'xp':
                 let xp = 0;
+                let lifetimeXP = 0;
                 if (this.achievementGamification) {
                     const xpData = this.achievementGamification.getXPInfo();
                     xp = xpData.total || 0;
+                    lifetimeXP = xpData.lifetime || 0;
                 }
-                localValue = xp;
-                localValueLabel = `${xp} 积分`;
+                localValue = lifetimeXP;
+                // Show lifetime XP for ranking (the value used in leaderboard)
+                localValueLabel = `${lifetimeXP} 积分`;
                 break;
             case 'pet':
                 try {
