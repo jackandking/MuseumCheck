@@ -69,6 +69,7 @@ const APP_CONFIG = {
         SHARING_STATE: 'museumCheckSharingState',
         SORT_PREFERENCE: 'museumSortPreference',
         FAVORITE_MUSEUMS: 'favoriteMuseums',
+        BROWSED_MUSEUMS: 'browsedMuseums',  // Museums the user has viewed (with timestamps)
         CONTRIBUTED_TREASURES: 'contributedTreasures',  // User-contributed treasures
         CONTRIBUTED_MUSEUM_PHOTOS: 'contributedMuseumPhotos',  // User-contributed museum entrance photos
         MUSEUM_POSTERS: 'museumPosters'  // Generated museum check-in posters
@@ -2368,7 +2369,14 @@ class AnalyticsManager {
     getUserId() {
         let userId = localStorage.getItem('user_id');
         if (!userId) {
-            userId = 'user_' + Date.now().toString(36) + Math.random().toString(36).substring(2);
+            // Generate UUID v4 using crypto API (RFC 4122 compliant)
+            // Fallback to timestamp-based ID for older browsers
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                userId = crypto.randomUUID();
+            } else {
+                // Use consistent format across all managers
+                userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
+            }
             localStorage.setItem('user_id', userId);
         }
         return userId;
@@ -3803,7 +3811,14 @@ class LeaderboardManager {
     getUserId() {
         let userId = localStorage.getItem('user_id');
         if (!userId) {
-            userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            // Generate UUID v4 using crypto API (RFC 4122 compliant)
+            // Fallback to timestamp-based ID for older browsers
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                userId = crypto.randomUUID();
+            } else {
+                // Use consistent format across all managers
+                userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
+            }
             localStorage.setItem('user_id', userId);
         }
         return userId;
@@ -3993,49 +4008,6 @@ class LeaderboardManager {
     }
 
     /**
-     * Check if user should be prompted to update their score
-     * Now checks both visit count AND XP changes to ensure leaderboard is updated for all score changes
-     */
-    shouldSubmitScore() {
-        const lastSubmittedCount = parseInt(localStorage.getItem('lastSubmittedVisitCount') || '0', 10);
-        const currentCount = this.app.visitedMuseums.length;
-        
-        // Check if visit count changed
-        if (currentCount !== lastSubmittedCount) {
-            return true;
-        }
-        
-        // Also check if XP changed (for XP leaderboard tab)
-        const lastSubmittedXP = parseInt(localStorage.getItem('lastSubmittedXP') || '0', 10);
-        let currentXP = 0;
-        if (this.app.achievementGamification) {
-            const xpData = this.app.achievementGamification.getXPInfo();
-            currentXP = xpData.total || 0;
-        }
-        
-        if (currentXP !== lastSubmittedXP) {
-            return true;
-        }
-        
-        // Also check if pet stats changed (for Pet leaderboard tab)
-        const lastSubmittedPetPower = parseInt(localStorage.getItem('lastSubmittedPetPower') || '0', 10);
-        let currentPetPower = 0;
-        try {
-            if (typeof VirtualPet !== 'undefined') {
-                const petData = JSON.parse(localStorage.getItem('virtualPetData') || '{}');
-                if (petData.adopted && petData.pet && !petData.pet.isDead) {
-                    const pet = petData.pet;
-                    currentPetPower = (pet.attack || 10) + (pet.defense || 10);
-                }
-            }
-        } catch (e) {
-            // Ignore pet data parsing errors
-        }
-        
-        return currentPetPower !== lastSubmittedPetPower;
-    }
-
-    /**
      * Check if leaderboard should be force refreshed due to recent score submission
      */
     shouldForceRefresh() {
@@ -4047,24 +4019,24 @@ class LeaderboardManager {
     }
 
     /**
-     * Auto-submit score if count changed and return rank change information
+     * Manual submit score and return rank change information
      * Now includes XP and pet stats for multiple ranking types
+     * Uses lifetime XP (历史累计总积分) for ranking to prevent spending from affecting rank
      * @returns {Object} Result with rank change info: { success, oldRank, newRank, rankChange, totalUsers }
      */
-    async autoSubmitScore() {
-        if (!this.shouldSubmitScore()) {
-            return { success: false, reason: 'no_change' };
-        }
-        
+    async manualSubmitScore() {
         const nickname = this.app.childNickname || '小朋友';
         const visitedCount = this.app.visitedMuseums.length;
         const userId = this.getUserId();
         
         // Get XP from achievement gamification system
+        // Use lifetimeXP for leaderboard ranking (never decreases when spending points)
         let xp = 0;
+        let lifetimeXP = 0;
         if (this.app.achievementGamification) {
             const xpData = this.app.achievementGamification.getXPInfo();
-            xp = xpData.total || 0;
+            xp = xpData.total || 0; // Current XP (can be spent on pet)
+            lifetimeXP = xpData.lifetime || 0; // Lifetime total XP (never decreases)
         }
         
         // Get pet stats from virtual pet system
@@ -4102,19 +4074,23 @@ class LeaderboardManager {
             console.warn('Failed to get old rank:', err);
         }
         
-        // Submit new score with XP and pet stats
-        const result = await this.submitScore(nickname, visitedCount, xp, petStats);
+        // Submit new score with lifetime XP and pet stats
+        const result = await this.submitScore(nickname, visitedCount, lifetimeXP, petStats);
         if (!result.success) {
             return { success: false, error: result.error };
         }
         
         localStorage.setItem('lastSubmittedVisitCount', visitedCount.toString());
-        localStorage.setItem('lastSubmittedXP', xp.toString());
+        localStorage.setItem('lastSubmittedXP', lifetimeXP.toString());
         // Save pet power for future comparison to detect pet stats changes
         if (petStats && petStats.totalPower) {
             localStorage.setItem('lastSubmittedPetPower', petStats.totalPower.toString());
         }
-        console.log('Auto-submitted score to leaderboard with XP:', xp, 'petStats:', petStats);
+        
+        // Update last submission timestamp for cache refresh logic
+        this.lastScoreSubmitTime = Date.now();
+        
+        console.log('Manually submitted score to leaderboard with lifetime XP:', lifetimeXP, 'current XP:', xp, 'petStats:', petStats);
         
         // Get new rank after submitting
         let newRank = null;
@@ -4139,6 +4115,54 @@ class LeaderboardManager {
             rankChange,
             totalUsers,
             isNewEntry: !oldRank && newRank
+        };
+    }
+    
+    /**
+     * Get comparison between local data and last submitted data
+     * Uses lifetime XP for accurate comparison (never decreases)
+     * @returns {Object} Comparison data with hasChanges flag
+     */
+    getSubmissionStatus() {
+        const localVisits = this.app.visitedMuseums.length;
+        const submittedVisits = parseInt(localStorage.getItem('lastSubmittedVisitCount') || '0', 10);
+        
+        let localXP = 0;
+        let localLifetimeXP = 0;
+        if (this.app.achievementGamification) {
+            const xpData = this.app.achievementGamification.getXPInfo();
+            localXP = xpData.total || 0; // Current XP (for display)
+            localLifetimeXP = xpData.lifetime || 0; // Lifetime XP (for comparison)
+        }
+        const submittedXP = parseInt(localStorage.getItem('lastSubmittedXP') || '0', 10);
+        
+        let localPetPower = 0;
+        try {
+            if (typeof VirtualPet !== 'undefined') {
+                const petData = JSON.parse(localStorage.getItem('virtualPetData') || '{}');
+                if (petData.adopted && petData.pet && !petData.pet.isDead) {
+                    const pet = petData.pet;
+                    localPetPower = (pet.attack || 10) + (pet.defense || 10);
+                }
+            }
+        } catch (e) {
+            // Ignore pet data parsing errors
+        }
+        const submittedPetPower = parseInt(localStorage.getItem('lastSubmittedPetPower') || '0', 10);
+        
+        return {
+            local: {
+                visits: localVisits,
+                xp: localLifetimeXP, // Use lifetime XP for comparison
+                petPower: localPetPower
+            },
+            submitted: {
+                visits: submittedVisits,
+                xp: submittedXP,
+                petPower: submittedPetPower
+            },
+            hasChanges: localVisits !== submittedVisits || localXP !== submittedXP || localPetPower !== submittedPetPower,
+            isFirstSubmit: submittedVisits === 0 && submittedXP === 0 && submittedPetPower === 0
         };
     }
     
@@ -4195,6 +4219,7 @@ class MuseumCheckApp {
         this.readonlyCheckboxes = false; // Default to interactive checkboxes
         this.isDouyinAffiliate = false; // Flag to track Douyin affiliate mode
         this.favoriteMuseums = this.loadFavoriteMuseums(); // Load favorite museums
+        this.browsedMuseums = this.loadBrowsedMuseums(); // Load browsed museums with timestamps
         
         // Initialize specialized modules
         this.modalManager = new ModalManager();
@@ -4269,6 +4294,9 @@ class MuseumCheckApp {
         
         // Request user location for better sorting (optional, non-blocking)
         this.requestUserLocation();
+        
+        // Apply default filtering (show visited/favorited/browsed museums when no search)
+        this.filterMuseums();
         
         this.renderMuseums();
         this.updateStats();
@@ -5254,6 +5282,8 @@ class MuseumCheckApp {
             }
         });
 
+        // Inline nickname editing functionality
+        this.setupInlineNicknameEditing();
 
 
         // Modal close
@@ -5880,30 +5910,59 @@ class MuseumCheckApp {
 
     // Search functionality methods
     filterMuseums() {
-        if (!this.searchQuery) {
+        // If there's a search query, filter museums by search criteria (all museums)
+        if (this.searchQuery) {
+            const query = this.searchQuery.toLowerCase();
+            this.filteredMuseums = MUSEUMS.filter(museum => {
+                // Safety check for undefined values
+                const name = museum.name || '';
+                const location = museum.location || '';
+                const description = museum.description || '';
+                const tags = museum.tags || [];
+                
+                return name.toLowerCase().includes(query) ||
+                       location.toLowerCase().includes(query) ||
+                       description.toLowerCase().includes(query) ||
+                       tags.some(tag => (tag || '').toLowerCase().includes(query));
+            });
+            return;
+        }
+        
+        // No search query - show only visited/favorited/browsed museums
+        // Get IDs of museums to display
+        const relevantMuseumIds = new Set();
+        
+        // Add visited museums
+        this.visitedMuseums.forEach(id => relevantMuseumIds.add(id));
+        
+        // Add favorited museums
+        this.favoriteMuseums.forEach(id => relevantMuseumIds.add(id));
+        
+        // Add browsed museums
+        Object.keys(this.browsedMuseums).forEach(id => relevantMuseumIds.add(id));
+        
+        // If user has no relevant museums, show all museums
+        if (relevantMuseumIds.size === 0) {
             this.filteredMuseums = MUSEUMS;
             return;
         }
         
-        const query = this.searchQuery.toLowerCase();
-        this.filteredMuseums = MUSEUMS.filter(museum => {
-            // Safety check for undefined values
-            const name = museum.name || '';
-            const location = museum.location || '';
-            const description = museum.description || '';
-            const tags = museum.tags || [];
-            
-            return name.toLowerCase().includes(query) ||
-                   location.toLowerCase().includes(query) ||
-                   description.toLowerCase().includes(query) ||
-                   tags.some(tag => (tag || '').toLowerCase().includes(query));
+        // Filter to only show relevant museums
+        this.filteredMuseums = MUSEUMS.filter(museum => relevantMuseumIds.has(museum.id));
+        
+        // Sort by recency (most recently browsed first)
+        this.filteredMuseums.sort((a, b) => {
+            const timeA = this.browsedMuseums[a.id] || 0;
+            const timeB = this.browsedMuseums[b.id] || 0;
+            return timeB - timeA; // Most recent first
         });
     }
     
     clearSearch() {
         this.searchQuery = '';
         document.getElementById('museumSearch').value = '';
-        this.filteredMuseums = MUSEUMS;
+        // Apply default filtering (shows visited/favorited/browsed museums)
+        this.filterMuseums();
         this.renderMuseums();
         this.toggleClearButton();
     }
@@ -5956,6 +6015,38 @@ class MuseumCheckApp {
         } catch (error) {
             console.error('Failed to save favorite museums:', error);
         }
+    }
+
+    loadBrowsedMuseums() {
+        try {
+            const saved = localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.BROWSED_MUSEUMS);
+            // Returns object with museum IDs as keys and timestamps as values
+            // e.g., { "forbidden-city": 1640000000000, "shanghai-museum": 1640000001000 }
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            console.error('Failed to load browsed museums:', error);
+            return {};
+        }
+    }
+
+    saveBrowsedMuseums() {
+        try {
+            localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.BROWSED_MUSEUMS, JSON.stringify(this.browsedMuseums));
+        } catch (error) {
+            console.error('Failed to save browsed museums:', error);
+        }
+    }
+
+    /**
+     * Mark a museum as browsed (viewed by user)
+     * @param {string} museumId - The museum ID to mark as browsed
+     */
+    markMuseumAsBrowsed(museumId) {
+        if (!museumId) return;
+        
+        // Record current timestamp for this museum
+        this.browsedMuseums[museumId] = Date.now();
+        this.saveBrowsedMuseums();
     }
 
     loadMuseumChecklists() {
@@ -6258,11 +6349,127 @@ class MuseumCheckApp {
     }
 
     updateHeaderTitle() {
-        const headerTitle = document.getElementById('headerTitle');
-        if (headerTitle) {
+        const nicknameDisplay = document.getElementById('nicknameDisplay');
+        if (nicknameDisplay) {
             const nickname = this.childNickname || '小淘气';
-            headerTitle.textContent = `${nickname}的博物馆之旅`;
+            nicknameDisplay.textContent = nickname;
         }
+    }
+
+    /**
+     * Setup inline nickname editing functionality
+     * Allows users to click on their nickname in the header to edit it inline
+     */
+    setupInlineNicknameEditing() {
+        const nicknameDisplay = document.getElementById('nicknameDisplay');
+        if (!nicknameDisplay) return;
+
+        nicknameDisplay.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.startInlineNicknameEdit(nicknameDisplay);
+        });
+    }
+
+    /**
+     * Start inline editing of the nickname
+     * @param {HTMLElement} nicknameDisplay - The nickname display element
+     */
+    startInlineNicknameEdit(nicknameDisplay) {
+        // Prevent multiple editing sessions
+        if (nicknameDisplay.querySelector('input')) {
+            return;
+        }
+
+        const currentNickname = nicknameDisplay.textContent.trim();
+        
+        // Create input element
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentNickname;
+        input.maxLength = 10;
+        input.className = 'nickname-editing';
+        
+        // Store original value for cancel
+        const originalNickname = currentNickname;
+        
+        // Replace text with input
+        nicknameDisplay.textContent = '';
+        nicknameDisplay.appendChild(input);
+        
+        // Focus and select text
+        input.focus();
+        input.select();
+        
+        // Handle save on Enter key
+        const handleSave = () => {
+            const newNickname = input.value.trim();
+            
+            if (newNickname === '') {
+                // Restore original if empty
+                nicknameDisplay.textContent = originalNickname;
+                return;
+            }
+            
+            if (newNickname !== originalNickname) {
+                // Validate and save
+                const result = this.saveChildNickname(newNickname);
+                
+                if (result.isValid) {
+                    // Update display
+                    nicknameDisplay.textContent = newNickname;
+                    
+                    // Track event
+                    this.trackEvent('nickname_inline_edit', {
+                        'nickname_length': newNickname.length,
+                        'previous_length': originalNickname.length
+                    });
+                    
+                    // Show brief success feedback
+                    nicknameDisplay.style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
+                    setTimeout(() => {
+                        nicknameDisplay.style.backgroundColor = '';
+                    }, 500);
+                } else {
+                    // Show error and restore original
+                    alert(result.message);
+                    nicknameDisplay.textContent = originalNickname;
+                }
+            } else {
+                // No change, just restore display
+                nicknameDisplay.textContent = originalNickname;
+            }
+        };
+        
+        // Handle cancel on Escape key
+        const handleCancel = () => {
+            nicknameDisplay.textContent = originalNickname;
+        };
+        
+        // Keyboard event handler
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSave();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                handleCancel();
+            }
+        });
+        
+        // Handle blur (lost focus)
+        input.addEventListener('blur', () => {
+            // Small delay to allow button clicks
+            setTimeout(() => {
+                if (nicknameDisplay.contains(input)) {
+                    handleSave();
+                }
+            }, 100);
+        });
+        
+        // Prevent clicks on input from closing
+        input.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
     }
 
     loadFireworksRetentionTime() {
@@ -7570,6 +7777,9 @@ class MuseumCheckApp {
                         !e.target.classList.contains('museum-checkin-button') &&
                         !e.target.classList.contains('museum-manage-button') &&
                         !e.target.classList.contains('favorite-button')) {
+                        // Mark museum as browsed
+                        this.markMuseumAsBrowsed(museum.id);
+                        
                         // Navigate to v2 check-in page (museum-checkin.html)
                         const checkedRadio = document.querySelector('input[name="ageGroup"]:checked');
                         const ageGroup = checkedRadio ? checkedRadio.value : (this.currentAge || APP_CONFIG.DEFAULT_AGE);
@@ -7631,6 +7841,9 @@ class MuseumCheckApp {
                 if (checkinButton) {
                     checkinButton.addEventListener('click', (e) => {
                         e.stopPropagation();
+                        // Mark museum as browsed
+                        this.markMuseumAsBrowsed(museum.id);
+                        
                         // Navigate to museum-checkin.html with museum ID and age group
                         const checkedRadio = document.querySelector('input[name="ageGroup"]:checked');
                         const ageGroup = checkedRadio ? checkedRadio.value : this.currentAge;
@@ -7706,6 +7919,8 @@ class MuseumCheckApp {
         if (index > -1) {
             this.visitedMuseums.splice(index, 1);
             this.saveVisitedMuseums();
+            // Re-filter museums to update display (in case no search is active)
+            this.filterMuseums();
             this.renderMuseums();
             
             // Track museum visit toggle
@@ -7809,32 +8024,16 @@ class MuseumCheckApp {
         // Trigger large rocket animation for museum visit (same as manual check-in)
         this.triggerLargeRocket();
         this.saveVisitedMuseums();
+        // Re-filter museums to update display (in case no search is active)
+        this.filterMuseums();
         this.renderMuseums();
         
-        // Auto-submit score to leaderboard (same as manual check-in) and show rank change
-        if (this.leaderboardManager) {
-            this.leaderboardManager.autoSubmitScore()
-                .then(result => {
-                    // Show rank change notification after leaderboard update
-                    this.showAutoCheckinNotification(museum, result);
-                })
-                .catch(err => {
-                    console.warn('Failed to auto-submit leaderboard score:', err);
-                    // Still show basic notification on error
-                    UIManager.showNotification(
-                        `🎉 恭喜！完成 ${museum.name} 所有任务，自动打卡成功！`,
-                        4000,
-                        'success'
-                    );
-                });
-        } else {
-            // No leaderboard manager, show basic notification
-            UIManager.showNotification(
-                `🎉 恭喜！完成 ${museum.name} 所有任务，自动打卡成功！`,
-                4000,
-                'success'
-            );
-        }
+        // Show completion notification
+        UIManager.showNotification(
+            `🎉 恭喜！完成 ${museum.name} 所有任务，自动打卡成功！`,
+            4000,
+            'success'
+        );
         
         // Track auto check-in event
         this.trackEvent('museum_auto_checkin', {
@@ -7924,6 +8123,8 @@ class MuseumCheckApp {
             // Remove from favorites
             this.favoriteMuseums.splice(index, 1);
             this.saveFavoriteMuseums();
+            // Re-filter museums to update display (in case no search is active)
+            this.filterMuseums();
             this.renderMuseums();
             
             // Track favorite toggle
@@ -7936,6 +8137,8 @@ class MuseumCheckApp {
             // Add to favorites
             this.favoriteMuseums.push(museumId);
             this.saveFavoriteMuseums();
+            // Re-filter museums to update display (in case no search is active)
+            this.filterMuseums();
             this.renderMuseums();
             
             // Track favorite toggle
@@ -9110,16 +9313,6 @@ class MuseumCheckApp {
                         // Award XP for checklist completion (small amount) with enhanced notification
                         this.achievementGamification.addXP(5);
                         this.achievementGamification.showXPGainNotification(5, '完成任务');
-                        
-                        // ===== AUTO-SUBMIT TO LEADERBOARD =====
-                        // Submit XP change to leaderboard so user can see their rank in XP tab
-                        if (this.leaderboardManager) {
-                            this.leaderboardManager.autoSubmitScore()
-                                .catch(err => {
-                                    console.warn('Failed to auto-submit leaderboard score after XP gain:', err);
-                                });
-                        }
-                        // ===== END AUTO-SUBMIT TO LEADERBOARD =====
                         
                         // ===== VIRTUAL PET INTEGRATION =====
                         // Notify virtual pet of task completion
@@ -10391,6 +10584,12 @@ class MuseumCheckApp {
         // Set up tab click handlers
         this.setupLeaderboardTabs();
         
+        // Set up manual submit button
+        this.setupManualSubmitButton();
+        
+        // Update submission status display
+        this.updateSubmissionStatus();
+        
         // Force refresh if score was recently submitted
         const shouldForceRefresh = this.leaderboardManager.shouldForceRefresh();
         await this.renderLeaderboard(shouldForceRefresh, this.currentRankingType);
@@ -10400,6 +10599,119 @@ class MuseumCheckApp {
             'visited_count': this.visitedMuseums.length,
             'ranking_type': this.currentRankingType
         });
+    }
+    
+    setupManualSubmitButton() {
+        const submitBtn = document.getElementById('submitToLeaderboard');
+        if (!submitBtn) return;
+        
+        // Remove any existing listeners
+        const newBtn = submitBtn.cloneNode(true);
+        submitBtn.parentNode.replaceChild(newBtn, submitBtn);
+        
+        // Add click handler for manual submission
+        newBtn.addEventListener('click', async () => {
+            if (newBtn.disabled) return;
+            
+            const status = this.leaderboardManager.getSubmissionStatus();
+            if (!status.hasChanges && !status.isFirstSubmit) {
+                UIManager.showNotification('数据没有变化，无需更新', 2000, 'info');
+                return;
+            }
+            
+            // Show confirmation dialog
+            const confirmMessage = status.isFirstSubmit 
+                ? '确认首次提交数据到排行榜吗？'
+                : `确认更新数据到排行榜吗？\n\n当前本地：${status.local.visits}个博物馆，${status.local.xp}积分\n已提交：${status.submitted.visits}个博物馆，${status.submitted.xp}积分`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Disable button and show loading
+            newBtn.disabled = true;
+            newBtn.innerHTML = '<span class="btn-icon">⏳</span><span class="btn-text">提交中...</span>';
+            
+            try {
+                const result = await this.leaderboardManager.manualSubmitScore();
+                
+                if (result.success) {
+                    UIManager.showNotification(
+                        `✅ 成功更新到排行榜！${result.newRank ? `当前排名：第${result.newRank}名` : ''}`,
+                        4000,
+                        'success'
+                    );
+                    
+                    // Update submission status display
+                    this.updateSubmissionStatus();
+                    
+                    // Refresh leaderboard to show updated data
+                    await this.renderLeaderboard(true, this.currentRankingType);
+                    
+                    // Track submission event
+                    this.trackEvent('leaderboard_manual_submit', {
+                        'visited_count': this.visitedMuseums.length,
+                        'ranking_type': this.currentRankingType,
+                        'new_rank': result.newRank,
+                        'rank_change': result.rankChange
+                    });
+                } else {
+                    UIManager.showNotification(
+                        `❌ 提交失败：${result.error || '未知错误'}`,
+                        4000,
+                        'error'
+                    );
+                }
+            } catch (error) {
+                console.error('Manual submit error:', error);
+                UIManager.showNotification(
+                    `❌ 提交失败：${error.message}`,
+                    4000,
+                    'error'
+                );
+            } finally {
+                // Re-enable button and restore text
+                newBtn.innerHTML = '<span class="btn-icon">🚀</span><span class="btn-text">更新到排行榜</span>';
+                // Update button state based on current status
+                this.updateSubmissionStatus();
+            }
+        });
+    }
+    
+    updateSubmissionStatus() {
+        const status = this.leaderboardManager.getSubmissionStatus();
+        const submitBtn = document.getElementById('submitToLeaderboard');
+        const localDataElem = document.getElementById('statusLocalData');
+        const submittedDataElem = document.getElementById('statusSubmittedData');
+        const hintElem = document.getElementById('statusHint');
+        
+        if (localDataElem) {
+            localDataElem.textContent = `${status.local.visits}个博物馆, ${status.local.xp}积分${status.local.petPower > 0 ? `, ${status.local.petPower}宠物战力` : ''}`;
+        }
+        
+        if (submittedDataElem) {
+            if (status.isFirstSubmit) {
+                submittedDataElem.textContent = '尚未提交';
+            } else {
+                submittedDataElem.textContent = `${status.submitted.visits}个博物馆, ${status.submitted.xp}积分${status.submitted.petPower > 0 ? `, ${status.submitted.petPower}宠物战力` : ''}`;
+            }
+        }
+        
+        if (submitBtn && hintElem) {
+            if (status.isFirstSubmit) {
+                submitBtn.disabled = false;
+                hintElem.textContent = '首次提交数据到排行榜';
+                hintElem.className = 'status-hint has-changes';
+            } else if (status.hasChanges) {
+                submitBtn.disabled = false;
+                hintElem.textContent = '检测到数据变化，可以更新';
+                hintElem.className = 'status-hint has-changes';
+            } else {
+                submitBtn.disabled = true;
+                hintElem.textContent = '数据无变化';
+                hintElem.className = 'status-hint';
+            }
+        }
     }
     
     setupLeaderboardTabs() {
@@ -10669,12 +10981,15 @@ class MuseumCheckApp {
         switch (rankingType) {
             case 'xp':
                 let xp = 0;
+                let lifetimeXP = 0;
                 if (this.achievementGamification) {
                     const xpData = this.achievementGamification.getXPInfo();
                     xp = xpData.total || 0;
+                    lifetimeXP = xpData.lifetime || 0;
                 }
-                localValue = xp;
-                localValueLabel = `${xp} 积分`;
+                localValue = lifetimeXP;
+                // Show lifetime XP for ranking (the value used in leaderboard)
+                localValueLabel = `${lifetimeXP} 积分`;
                 break;
             case 'pet':
                 try {
@@ -12039,16 +12354,6 @@ class MuseumCheckApp {
                     
                     // Award XP for photo upload
                     this.achievementGamification.addXP(10);
-                    
-                    // ===== AUTO-SUBMIT TO LEADERBOARD =====
-                    // Submit XP change to leaderboard so user can see their rank in XP tab
-                    if (this.leaderboardManager) {
-                        this.leaderboardManager.autoSubmitScore()
-                            .catch(err => {
-                                console.warn('Failed to auto-submit leaderboard score after photo XP gain:', err);
-                            });
-                    }
-                    // ===== END AUTO-SUBMIT TO LEADERBOARD =====
                     
                     // ===== VIRTUAL PET INTEGRATION =====
                     // Notify virtual pet of photo upload (more points than regular task)

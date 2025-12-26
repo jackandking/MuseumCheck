@@ -269,7 +269,7 @@
     <div class="container">
         <header>
             <h1>
-                <span id="settingsIcon" class="settings-icon" title="点击打开设置">🏛️</span> <span id="headerTitle">博物馆之旅</span>
+                <span id="settingsIcon" class="settings-icon" title="点击打开设置">🏛️</span> <span id="headerTitle"><span id="nicknameDisplay" class="nickname-display" title="点击修改昵称">小淘气</span>的博物馆之旅</span>
             </h1>
         </header>
 
@@ -279,7 +279,7 @@
             <section class="museum-list" id="museums">
                 <div class="stats" role="status" aria-live="polite">
                     <div class="progress-display">
-                        <div class="progress-text minecraft-themed">
+                        <div class="progress-text minecraft-themed" style="display: none;">
                             <span class="minecraft-icon">⛏️</span>
                             <span id="visitedCount">0</span>/<span id="totalCount">0</span>
                         </div>
@@ -293,7 +293,7 @@
                             <button id="settingsButton" class="settings-button-icon" title="设置">⚙️</button>
                         </div>
                     </div>
-                    <div class="minecraft-progress-bar">
+                    <div class="minecraft-progress-bar" style="display: none;">
                         <div class="minecraft-progress-fill" id="minecraftProgressFill" style="width: 0%;">
                             <span class="minecraft-progress-blocks" id="minecraftProgressBlocks"></span>
                         </div>
@@ -887,6 +887,34 @@
             <div class="leaderboard-intro" id="leaderboardIntro">
                 <p>看看谁的博物馆之旅最精彩！参观越多，排名越高！</p>
             </div>
+            
+            <!-- Submission Status Section -->
+            <div class="leaderboard-submission-status" id="leaderboardSubmissionStatus">
+                <div class="status-card">
+                    <div class="status-header">
+                        <span class="status-icon">📊</span>
+                        <span class="status-title">我的数据状态</span>
+                    </div>
+                    <div class="status-body">
+                        <div class="status-row">
+                            <span class="status-label">当前本地数据：</span>
+                            <span class="status-value" id="statusLocalData">-</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">已提交数据：</span>
+                            <span class="status-value" id="statusSubmittedData">-</span>
+                        </div>
+                    </div>
+                    <div class="status-actions">
+                        <button id="submitToLeaderboard" class="btn-primary submit-btn" disabled>
+                            <span class="btn-icon">🚀</span>
+                            <span class="btn-text">更新到排行榜</span>
+                        </button>
+                        <p class="status-hint" id="statusHint">数据无变化</p>
+                    </div>
+                </div>
+            </div>
+            
             <div class="leaderboard-my-rank" id="leaderboardMyRank">
                 <div class="my-rank-card">
                     <div class="rank-badge">我的排名</div>
@@ -991,7 +1019,6 @@
             </p>
             <p class="footer-text">
                 <a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=11010802046500" target="_blank" rel="noopener noreferrer" class="footer-link">
-                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAACXBIWXMAAAsTAAALEwEAmpwYAAABMElEQVQokY2SPUvDUBSGn3NvUhNpC0VwcCu4OYiDg5M4+Qf8A/4BwcHRzU1w6ODo6OQguFkHQRDB0UUEwUGxQ0vrV5Jzj0MaLf5ALpd7Off93vOeI8YYVqWUiKpyNBikv79PKIKqksvnCSKGYJUCgKpSLBZZWCgQhks+RERwXZfJiQlarRYiQhAEPD8/45QnJ6nV6rRaLRKJBNlsFtd1SSZTXF9f0ev1mJ2d5fHhgZPLKyYnp0in03Q6HRqNBo1mk0wmi+M4lEol6vU6vV6P+/t7zs7PGRsbp1atoaq0220cx8F1XQYHB8lkMpTLZQYGBnjrdNiam/M9T1V1ZnpGs/8RdV0dlZFRzefz6nkz+vQ0vSwichSGIZ7nEQQB/X6fxcVFPM/j9fWVIPj/W19fX1n++QRxu4HWiVDDaAAAAABJRU5ErkJggg==" alt="公安备案图标" class="footer-icon">
                     京公网安备11010802046500号
                 </a>
             </p>
