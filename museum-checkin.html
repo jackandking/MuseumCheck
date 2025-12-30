@@ -4407,22 +4407,18 @@
         </div>
     </div>
 
+
     <!-- Load dependencies -->
     <script src="museums-data.js"></script>
-    <!-- Museum data loader for dynamic data priority support -->
     <script src="museum-data-loader.js"></script>
-    <!-- Auto-generate treasure hunt workflows for all museums -->
     <script src="treasure-workflow-generator.js"></script>
-    <!-- Museum data loaded from museums-data.js and Tier 1 JSON files via museum-data-loader.js -->
     <script src="firework.js"></script>
-    <!-- Achievement Gamification System for XP/Points -->
     <script src="achievement-gamification.js"></script>
-    <!-- Virtual Pet System for child mode -->
     <script src="virtual-pet.js"></script>
-    <!-- Baidu Image Search for treasure photos -->
     <script src="baidu-image-search.js"></script>
-    <!-- Image Upload Utility for uploading photos to letmetry.cloud -->
     <script src="image-upload-util.js"></script>
+    <!-- Event Wall Service (shared, must come after REMOTE_STORAGE_CONFIG is defined) -->
+    <script src="event-wall-service.js"></script>
     
     <script>
         // Configuration
@@ -4447,189 +4443,9 @@
         const editMode = urlParams.get('edit') === 'true';
 
         // =====================================================
-        // Event Wall Service - Track user activities to event wall
-        // =====================================================
-        
-        class EventWallService {
-            constructor() {
-                this.kvStoreEndpoint = REMOTE_STORAGE_CONFIG.API_ENDPOINT;
-                this.eventKey = 'museumcheck-events';
-                this.eventTTL = 86400; // 1 day in seconds (24 hours)
-                this.batchSize = 10; // Batch events before sending
-                this.pendingEvents = [];
-                this.sendTimer = null;
-                this.sendDelay = 2000; // 2 seconds delay before sending batch
-            }
-            
-            /**
-             * Record an event to the event wall
-             * @param {string} eventType - Type of event (visit, checklist, achievement, assessment)
-             * @param {string} title - Event title
-             * @param {string} description - Event description
-             * @param {Object} parameters - Additional event parameters
-             */
-            recordEvent(eventType, title, description = '', parameters = {}) {
-                try {
-                    // Get user ID from localStorage
-                    const userId = localStorage.getItem('user_id') || 'anonymous';
-                    
-                    // Create event object
-                    const event = {
-                        id: this.generateEventId(),
-                        eventType: eventType,
-                        eventName: title,
-                        title: title,
-                        description: description,
-                        parameters: parameters,
-                        userId: userId,
-                        timestamp: Date.now(),
-                        version: '1.0'
-                    };
-                    
-                    // Add to pending events
-                    this.pendingEvents.push(event);
-                    
-                    // Schedule batch send
-                    this.scheduleBatchSend();
-                    
-                    console.log('Event recorded for event wall:', eventType, title);
-                    
-                } catch (error) {
-                    console.error('Failed to record event:', error);
-                }
-            }
-            
-            /**
-             * Generate unique event ID
-             */
-            generateEventId() {
-                const timestamp = Date.now();
-                const random = Math.random().toString(36).substring(2, 15);
-                return `event-${timestamp}-${random}`;
-            }
-            
-            /**
-             * Schedule batch send of events
-             */
-            scheduleBatchSend() {
-                // Clear existing timer
-                if (this.sendTimer) {
-                    clearTimeout(this.sendTimer);
-                }
-                
-                // If we have enough events, send immediately
-                if (this.pendingEvents.length >= this.batchSize) {
-                    this.sendBatch();
-                    return;
-                }
-                
-                // Otherwise schedule delayed send
-                this.sendTimer = setTimeout(() => {
-                    this.sendBatch();
-                }, this.sendDelay);
-            }
-            
-            /**
-             * Send batch of events to KV store
-             */
-            async sendBatch() {
-                if (this.pendingEvents.length === 0) {
-                    return;
-                }
-                
-                const eventsToSend = [...this.pendingEvents];
-                this.pendingEvents = [];
-                
-                // Send each event individually to KV store
-                const promises = eventsToSend.map(event => this.sendEventToKVStore(event));
-                
-                try {
-                    const results = await Promise.allSettled(promises);
-                    const successful = results.filter(r => r.status === 'fulfilled').length;
-                    const failed = results.filter(r => r.status === 'rejected').length;
-                    
-                    console.log(`Event batch sent: ${successful} successful, ${failed} failed`);
-                    
-                    // Re-queue failed events
-                    if (failed > 0) {
-                        results.forEach((result, index) => {
-                            if (result.status === 'rejected') {
-                                this.pendingEvents.push(eventsToSend[index]);
-                            }
-                        });
-                    }
-                    
-                } catch (error) {
-                    console.error('Failed to send event batch:', error);
-                    // Re-queue all events
-                    this.pendingEvents.push(...eventsToSend);
-                }
-            }
-            
-            /**
-             * Send single event to KV store
-             */
-            async sendEventToKVStore(event) {
-                try {
-                    // Calculate expiration time: current time + 1 day (in seconds)
-                    const expireAt = Math.floor(Date.now() / 1000) + this.eventTTL;
-                    
-                    const response = await fetch(this.kvStoreEndpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            key: this.eventKey,
-                            sortKey: event.id,
-                            value: JSON.stringify(event),
-                            expireAt: expireAt  // Absolute expiration timestamp in seconds (not TTL)
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`KV store returned ${response.status}`);
-                    }
-                    
-                    return await response.json();
-                    
-                } catch (error) {
-                    console.error('Failed to send event to KV store:', error);
-                    throw error;
-                }
-            }
-            
-            /**
-             * Force send all pending events immediately
-             */
-            async flush() {
-                if (this.sendTimer) {
-                    clearTimeout(this.sendTimer);
-                    this.sendTimer = null;
-                }
-                
-                await this.sendBatch();
-            }
-            
-            /**
-             * Track individual task completion event
-             */
-            trackTaskComplete(museumId, museumName, checklistType, taskDescription, ageGroup) {
-                this.recordEvent(
-                    'task',
-                    '完成任务',
-                    `完成 ${museumName} 的${checklistType === 'parent' ? '家长准备' : '孩子任务'}: ${taskDescription}`,
-                    {
-                        museumId: museumId,
-                        museumName: museumName,
-                        checklistType: checklistType,
-                        taskDescription: taskDescription,
-                        ageGroup: ageGroup
-                    }
-                );
-            }
-        }
-        
+        // EventWallService moved to event-wall-service.js (shared module)
+        // Ensure the shared file is loaded before this inline script. Initialize instance below.
+
         // Initialize Event Wall Service
         const eventWallService = new EventWallService();
 
@@ -7646,7 +7462,15 @@
         function savePosterToGallery(posterDataURL) {
             try {
                 // Load existing posters
-                const postersData = JSON.parse(localStorage.getItem('museumPosters') || '{}');
+                const raw = localStorage.getItem('museumPosters');
+                console.debug('[savePosterToGallery] raw localStorage museumPosters:', raw);
+                let postersData;
+                try {
+                    postersData = JSON.parse(raw || '{}');
+                } catch (e) {
+                    console.error('[savePosterToGallery] Failed to parse museumPosters JSON, resetting to {}', e);
+                    postersData = {};
+                }
                 
                 // Get museum name for display
                 const museumName = currentMuseum ? currentMuseum.name : '未知博物馆';
@@ -7662,17 +7486,27 @@
                 };
                 
                 // Save to localStorage
-                localStorage.setItem('museumPosters', JSON.stringify(postersData));
-                
-                // Debug logging
-                console.log('✅ Poster saved to gallery for:', museumName);
-                console.log('📊 Total posters in gallery:', Object.keys(postersData).length);
-                console.log('🎨 Poster metadata:', {
-                    museumId: museumId,
-                    museumName: museumName,
-                    ageGroup: ageGroup,
-                    timestamp: new Date().toLocaleString('zh-CN')
-                });
+                try {
+                    localStorage.setItem('museumPosters', JSON.stringify(postersData));
+                    // Debug logging
+                    console.info('[savePosterToGallery] ✅ Poster saved to gallery for:', museumName);
+                    console.info('[savePosterToGallery] 📊 Total posters in gallery:', Object.keys(postersData).length);
+                    console.info('[savePosterToGallery] 🎨 Poster metadata:', {
+                        museumId: museumId,
+                        museumName: museumName,
+                        ageGroup: ageGroup,
+                        timestamp: new Date().toLocaleString('zh-CN')
+                    });
+                    // Read-back verification
+                    try {
+                        const verify = JSON.parse(localStorage.getItem('museumPosters') || '{}');
+                        console.debug('[savePosterToGallery] verify readback keys:', Object.keys(verify));
+                    } catch (e) {
+                        console.warn('[savePosterToGallery] Readback verification failed', e);
+                    }
+                } catch (e) {
+                    throw e;
+                }
             } catch (error) {
                 console.error('Error saving poster to gallery:', error);
                 // If localStorage quota exceeded, try to remove old posters

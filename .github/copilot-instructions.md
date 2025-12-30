@@ -248,6 +248,56 @@ localStorage.getItem('museumChecklists')
 - **Responsive Design**: Works on desktop and mobile devices
 - **Chinese Language Interface**: Native Chinese UI and content
 
+### Letmetry Web Service API (from /api-docs)
+
+The project integrates with the Letmetry Web Service. The live Swagger UI at `https://letmetry.cloud/api-docs/` documents the available endpoints. Key endpoints and their request/parameter formats (discovered from the embedded OpenAPI document) are summarized below — use these when calling the remote service.
+
+- `POST /mysql/query` (MySQL)
+    - Content-Type: `application/json`
+    - Body schema: `{ "sql": "<SQL string>", "params": [ ... ] }`
+    - `sql` (string, required): SQL statement to execute (e.g., `SELECT * FROM users WHERE id = ?`).
+    - `params` (array, optional): Parameter values for prepared statements.
+    - Responses: `200` → JSON array (rows); `500` → `{ error, sqlMessage, sql }`.
+
+- `POST /mysql/getById`
+    - Body: `{ "table": "<table>", "id": <id> }` → returns single record.
+
+- `POST /mysql/insert` / `POST /mysql/update` / `POST /mysql/delete`
+    - Insert: `{ "table": "<table>", "data": { ... } }` → returns `{ insertId }`.
+    - Update: `{ "table": "<table>", "id": <id>, "data": { ... } }` → returns `{ affectedRows }`.
+    - Delete: `{ "table": "<table>", "id": <id> }` → returns `{ affectedRows }`.
+
+- `POST /ai/chat`
+    - Body: `{ "message": "..." }` → AI chat request; returns JSON object.
+
+- `POST /image/search`
+    - Body: `{ "keyword": "...", "count": <number> }` → returns `{ success, images: [...] }`.
+
+- `POST /image/upload`
+    - Content-Type: `multipart/form-data`
+    - Form field: `file` (binary) — required. Saves to server images directory.
+    - Responses: `200` → `{ success, filename, originalname, path, size }`, `409` on name conflict.
+
+- `POST /file/upload`
+    - Content-Type: `multipart/form-data`
+    - Form field: `file` (binary) — required. General file upload endpoint.
+    - Responses: `200` → `{ success, filename, originalname, path, destination }`.
+
+- `GET /file/list`
+    - Returns: `{ success: true, files: [ { filename, size, created, modified, ... } ] }`.
+
+- `GET /file/info/{filename}` and `GET /file/download/{filename}`
+    - `filename` is a path parameter; used to obtain metadata or download files.
+
+- `POST /museum/search`
+    - Body: `{ "museumName": "..." }` → returns structured museum metadata from external sources.
+
+Notes:
+- The Swagger UI includes all paths under the `swaggerDoc` object; use the `sql` body key for `/mysql/query` (not `query`) when submitting JSON requests.
+- Many endpoints accept JSON request bodies; file uploads use `multipart/form-data` with field name `file`.
+- Error responses often include an object with `error` or `sqlMessage` fields for diagnostics.
+
+
 ## Bug Fix Requirements (MANDATORY PROCESS)
 
 **CRITICAL**: To prevent regression issues where bug fixes break existing functionality, every bug fix must follow this process:
