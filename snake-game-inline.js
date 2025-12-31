@@ -4,12 +4,37 @@
 
   function isDebugMode() {
     try {
-      if (window.__MC_DEBUG) return true;
+      if (window.MC_debugMode) {
+        // logStatus will print details
+        return !!window.MC_debugMode.logStatus('snake-inline isDebugMode check');
+      }
+      if (window.MC_isDebug) {
+        const r = window.MC_isDebug(true);
+        console.debug('snake-inline: MC_isDebug ->', r);
+        return r;
+      }
+      // Fallback detection (logs details)
       const params = new URLSearchParams(window.location.search);
-      if (params.get('debug') === 'true' || params.get('debug') === '1') return true;
-      if (localStorage && localStorage.getItem && localStorage.getItem('mc_debug') === '1') return true;
-    } catch (e) { }
+      const viaParam = params.get('debug') === 'true' || params.get('debug') === '1';
+      const viaStored = (localStorage && localStorage.getItem && localStorage.getItem('mc_debug') === '1');
+      const viaWindow = !!window.__MC_DEBUG;
+      const result = viaParam || viaStored || viaWindow;
+      console.debug('snake-inline fallback debug check', { viaWindow, viaParam, viaStored, result });
+      return result;
+    } catch (e) { console.warn('snake-inline isDebugMode error', e); }
     return false;
+  }
+
+  function debugStatus() {
+    let viaWindow = !!(window && window.__MC_DEBUG);
+    let viaParam = false;
+    let viaStored = false;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      viaParam = params.get('debug') === 'true' || params.get('debug') === '1';
+      viaStored = !!(localStorage && localStorage.getItem && localStorage.getItem('mc_debug') === '1');
+    } catch (e) {}
+    return { viaWindow, viaParam, viaStored, result: (viaWindow || viaParam || viaStored) };
   }
 
   // Create overlay DOM when first needed
@@ -88,6 +113,8 @@
     createOverlay();
     loadPetData();
     overlayElements.overlay.classList.remove('inline-snake-hidden');
+    // Log debug status when opening
+    try { if (window.MC_debugMode) window.MC_debugMode.logStatus('Snake inline opened'); } catch(e) { console.debug('snake-inline log error', e); }
     // resize canvas to fit panel width
     const rect = overlayElements.canvas.getBoundingClientRect();
     const size = Math.min(window.innerWidth*0.8, 560);
@@ -98,6 +125,7 @@
     ctx = overlayElements.canvas.getContext('2d');
     drawIdleScreen();
     configureButtons();
+      console.log('snake-inline debug check', debugStatus());
   }
 
   function configureButtons(){
@@ -193,8 +221,15 @@
       // add to achievementPoints
       const pts = localStorage.getItem('achievementPoints'); let cur = pts?parseInt(pts):0; cur += xp; localStorage.setItem('achievementPoints', String(cur));
     }catch(e){}
-    overlayElements.restartBtn.classList.toggle('inline-snake-hidden', !isDebugMode());
-    overlayElements.startBtn.classList.remove('inline-snake-hidden');
+      // In debug mode allow restarting; otherwise do not show start/restart — user should continue browsing
+      if (isDebugMode()) {
+        overlayElements.restartBtn.classList.remove('inline-snake-hidden');
+        overlayElements.startBtn.classList.add('inline-snake-hidden');
+      } else {
+        overlayElements.restartBtn.classList.add('inline-snake-hidden');
+        overlayElements.startBtn.classList.add('inline-snake-hidden');
+      }
+      console.log('snake-inline endGame debug check', debugStatus());
   }
 
   function restartGame(){
