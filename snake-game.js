@@ -83,8 +83,8 @@ function initGame() {
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     
-    // Touch button controls (for mobile)
-    setupTouchButtons();
+    // Touch button controls (for mobile) — removed in favor of swipe gestures
+    // setupTouchButtons();
     
     // Update start screen with pet info
     updateStartScreen();

@@ -103,7 +103,7 @@
             justify-content: center;
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(10px);
-            z-index: 10;
+            z-index: 50; /* Raised so overlay (start/game over) sits above touch controls */
             border-radius: 12px;
         }
         
@@ -259,7 +259,8 @@
         /* Mobile optimizations */
         @media (max-width: 768px) {
             .touch-controls {
-                display: flex;
+                /* touch button UI removed in favor of swipe controls */
+                display: none !important;
             }
             
             .screen-title {
@@ -296,6 +297,8 @@
                 font-size: 24px;
             }
         }
+        /* Ensure touch button UI stays hidden; swipe on canvas is used instead */
+        .touch-controls { display: none !important; }
     </style>
 </head>
 <body>
