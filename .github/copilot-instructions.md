@@ -1,3 +1,269 @@
+````instructions
+# MuseumCheck - Museum Checklist Web Application
+
+MuseumCheck is a fully functional web application designed to help parents and children track visits to museums in China. The application provides age-appropriate checklists for different museums and uses only local storage for data persistence.
+
+**ALWAYS follow these instructions first and only fallback to additional search and context gathering if the information here is incomplete or found to be in error.**
+
+## Current Repository State
+
+**IMPORTANT**: This is a COMPLETE, FULLY FUNCTIONAL web application. The repository contains:
+- `index.html` - Main application HTML file (4KB)
+- `script.js` - Complete JavaScript application logic (124KB, 3,017 lines, 120 museums with detailed checklists)
+- `style.css` - Complete CSS styling with responsive design (12KB)
+- `README.md` - Comprehensive documentation
+- `CNAME` - GitHub Pages deployment configuration (museumcheck.cn)
+- `.github/copilot-instructions.md` - This file
+- `.github/FUNDING.yml` - GitHub sponsorship configuration
+
+**Live Application**: 
+- **Production**: https://jackandking.github.io/MuseumCheck/ and https://museumcheck.cn
+- **Development**: https://jackandking.github.io/MuseumCheckDev/ (check this during development for current state)
+
+## Development Environment Setup
+
+### Prerequisites
+- Modern web browser (Chrome, Firefox, Safari, Edge)
+- Python 3 (for local HTTP server)
+- Text editor or IDE (VS Code recommended)
+
+### NEVER CANCEL Commands and Timing
+- **HTTP Server startup**: ~1-2 seconds. NEVER CANCEL.
+- **Application loading**: Instantaneous (pure HTML/CSS/JS)
+- **No build processes**: This is a static web application with no compilation steps
+
+### Local Development Server
+Run this EXACT command (validated and working):
+
+```bash
+# Navigate to repository root  
+cd /home/runner/work/MuseumCheck/MuseumCheck
+
+# Start HTTP server (takes 1-2 seconds, NEVER CANCEL)
+python3 -m http.server 8000
+# Access at http://localhost:8000
+```
+
+**Alternative methods (if Python unavailable)**:
+```bash
+# Node.js HTTP Server
+npm install -g http-server
+http-server -p 8000
+
+# VS Code Live Server
+# Install Live Server extension, right-click index.html > "Open with Live Server"
+```
+
+## Build and Test Process
+
+### Current State - AUTOMATED TESTING REQUIRED
+
+**IMPORTANT**: While this application has NO build system, it now has a comprehensive unit testing framework to prevent regression issues.
+
+**Testing Framework**:
+- **Jest** with jsdom for unit tests
+- **Regression tests** for previously fixed bugs  
+- **Core functionality tests** for essential features
+- **Coverage reporting** to track test completeness
+
+**What EXISTS**:
+- Complete HTML/CSS/JavaScript application
+- 120 major Chinese museums with detailed data
+- Age-appropriate content for 3 age groups (3-6, 7-12, 13-18 years)
+- Full localStorage persistence
+- Responsive design
+- Google Analytics integration
+- **Unit test suite with regression tests**
+
+### HTTP Server Test Evidence
+When running `python3 -m http.server 8000`, the application serves with proper HTTP responses:
+
+**Successful Responses (200 OK)**:
+```
+GET / HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/3.12.3
+Content-type: text/html
+Content-Length: 2639
+
+GET /script.js HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/3.12.3  
+Content-type: text/javascript
+Content-Length: 124008
+
+GET /style.css HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/3.12.3
+Content-type: text/css
+Content-Length: 8335
+```
+
+**Error Responses (404 Not Found)**:
+```
+GET /nonexistent HTTP/1.0 404 Not Found
+Server: SimpleHTTP/0.6 Python/3.12.3
+```
+
+**Performance Metrics**:
+- Main page load time: ~0.001s
+- All assets load with correct MIME types
+- No build or compilation errors
+- JavaScript loads and executes properly
+
+### Unit Testing Framework (MANDATORY FOR BUG FIXES)
+
+**CRITICAL**: Every bug fix MUST include corresponding unit tests to prevent regression issues.
+
+#### Testing Infrastructure
+- **Framework**: Jest with jsdom environment
+- **Location**: `/tests/` directory
+- **Setup**: `npm install` then `npm test`
+- **Coverage**: `npm run test:coverage`
+
+#### Mandatory Testing Requirements
+
+**For ALL Bug Fixes**:
+1. **Write Regression Test First**: Create a test that reproduces the bug
+2. **Fix the Bug**: Implement your solution
+3. **Verify Test Passes**: Ensure the fix makes your test pass
+4. **Run Full Test Suite**: Confirm no existing functionality broke
+
+#### Testing Commands
+```bash
+# Install dependencies (first time only)
+npm install
+
+# Run all tests
+npm test
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Run tests in watch mode during development
+npm run test:watch
+```
+
+#### Test Categories
+- **Core Tests** (`tests/core.test.js`): Essential app functionality
+- **Regression Tests** (`tests/regression.test.js`): Previously fixed bugs
+- **Feature Tests**: New functionality as it's added
+
+### Manual Testing Strategy (REQUIRED)
+Manual testing remains important alongside unit tests:
+
+1. **Core Functionality Testing** (ALWAYS do this):
+   - Load application: `python3 -m http.server 8000` then visit http://localhost:8000
+   - Test age group selector (3-6岁, 7-12岁, 13-18岁)
+   - Click museum cards to open detailed checklists (120 museums available)
+   - Test parent preparation vs. child tasks tabs
+   - Check/uncheck checklist items and verify they persist
+   - Mark museums as visited and verify visit counter updates
+
+2. **Data Persistence Testing** (CRITICAL):
+   - Mark several checklist items and museums as visited
+   - Refresh browser (F5) or close/reopen tab
+   - Verify all data persists using DevTools > Application > Local Storage
+   - Check localStorage contains: `visitedMuseums`, `museumChecklists`
+
+3. **Age Group Testing**:
+   - Change age selector and reopen museum modals
+   - Verify content changes appropriately for different age groups
+   - Confirm younger children get simpler tasks, older get complex research projects
+
+## Validation Scenarios
+
+### Complete User Workflows (ALWAYS TEST)
+Execute these FULL scenarios after any changes:
+
+1. **Parent Planning Workflow**:
+   - Open application at http://localhost:8000  
+   - Select child's age group (e.g., "7-12岁 (小学)")
+   - Browse museum list (120 museums should display)
+   - Click "故宫博物院" (Forbidden City) to open modal
+   - Review parent preparation checklist (age-appropriate items)
+   - Check off 2-3 preparation items
+   - Switch to "孩子任务" tab, review child tasks
+   - Close modal, mark museum as visited (checkbox on museum card)
+   - Verify visit counter updates (e.g., "1/120 已参观 (0.8%)")
+   - Refresh browser - confirm all data persists
+
+2. **Progress Tracking Workflow**:
+   - Mark 3 different museums as visited
+   - Verify progress counter shows correct percentage
+   - Test localStorage persistence by refreshing multiple times
+   - Check DevTools > Application > Local Storage for data structure
+
+3. **Age Group Content Validation**:
+   - Test same museum (e.g., 故宫博物院) across all 3 age groups
+   - Verify age 3-6 shows simple observation tasks ("数一数有多少个门")  
+   - Verify age 7-12 shows educational activities ("了解明清两朝历史背景")
+   - Verify age 13-18 shows research projects ("深入研究明清政治制度")
+
+### Browser Compatibility Testing
+Test in these browsers (minimum):
+- **Chrome/Chromium (latest)**: Primary target, full Google Analytics support
+- **Firefox (latest)**: Ensure localStorage works correctly
+- **Safari (macOS)**: Test Chinese font rendering
+- **Edge (Windows)**: Verify Microsoft compatibility
+
+## Technical Architecture
+
+### File Structure (ACTUAL CURRENT STATE)
+```
+/home/runner/work/MuseumCheck/MuseumCheck/
+├── README.md              # Comprehensive documentation  
+├── CNAME                  # GitHub Pages domain (museumcheck.cn)
+├── index.html             # Complete HTML application (4KB)
+├── script.js              # Full JavaScript logic (124KB, 3,017 lines)
+├── style.css              # Complete responsive CSS (12KB)
+├── package.json           # Testing dependencies and scripts
+├── TESTING_GUIDE.md       # Unit testing documentation
+├── .gitignore             # Excludes node_modules, coverage
+├── tests/                 # Unit testing framework
+│   ├── setup.js           # Test configuration and mocks
+│   ├── core.test.js       # Core functionality tests
+│   └── regression.test.js # Tests for previously fixed bugs
+└── .github/
+    ├── copilot-instructions.md  # This file
+    └── FUNDING.yml         # GitHub sponsorship
+```
+
+### Data Architecture
+The application manages two localStorage keys:
+
+```javascript
+// Visited museums array
+localStorage.getItem('visitedMuseums')  
+// Example: ["forbidden-city", "national-museum"]
+
+// Checklist completion tracking  
+localStorage.getItem('museumChecklists')
+// Example: {"forbidden-city-parent-7-12": [0, 2], "forbidden-city-child-7-12": [1]}
+```
+
+### Application Features (FULLY IMPLEMENTED)
+- **120 Major Chinese Museums**: Complete data including locations, descriptions, tags
+- **Age-Appropriate Content**: 3 distinct age groups with different complexity levels
+- **Dual Checklist System**: Parent preparation + child exploration tasks
+- **Progress Tracking**: Visual progress with percentages and counters
+- **localStorage Persistence**: All data saved locally, works offline
+- **Google Analytics**: Event tracking for user interactions  
+- **Responsive Design**: Works on desktop and mobile devices
+- **Chinese Language Interface**: Native Chinese UI and content
+
+### Letmetry Web Service API (from /api-docs)
+
+The project integrates with the Letmetry Web Service. The live Swagger UI at `https://letmetry.cloud/api-docs/` documents the available endpoints. Key endpoints and their request/parameter formats (discovered from the embedded OpenAPI document) are summarized below — use these when calling the remote service.
+
+- `POST /mysql/query` (MySQL)
+    - Content-Type: `application/json`
+    - Body schema: `{ "sql": "<SQL string>", "params": [ ... ] }`
+    - `sql` (string, required): SQL statement to execute (e.g., `SELECT * FROM users WHERE id = ?`).
+    - `params` (array, optional): Parameter values for prepared statements.
+    - Responses: `200` → JSON array (rows); `500` → `{ error, sqlMessage, sql }`.
+
+- `POST /mysql/getById`
+    - Body: `{ "table": "<table>", "id": <id> }` → returns single record.
+
+... (file continues with merged content)
 # MuseumCheck - Museum Checklist Web Application
 
 MuseumCheck is a fully functional web application designed to help parents and children track visits to museums in China. The application provides age-appropriate checklists for different museums and uses only local storage for data persistence.
