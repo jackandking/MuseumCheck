@@ -4415,6 +4415,7 @@
     <script src="firework.js"></script>
     <script src="achievement-gamification.js"></script>
     <script src="virtual-pet.js"></script>
+    <script src="snake-game-inline.js"></script>
     <script src="baidu-image-search.js"></script>
     <script src="image-upload-util.js"></script>
     <!-- Event Wall Service (shared, must come after REMOTE_STORAGE_CONFIG is defined) -->
@@ -6041,8 +6042,13 @@
                     } else if (gameType === 'pet-adventure') {
                         initPetAdventureGame(taskIndexForGame);
                     } else if (gameType === 'snake') {
-                        // Open snake game in new window
-                        window.open('snake-game.html', '_blank');
+                        // Open snake inline overlay instead of new window
+                        if (typeof initSnakeInlineGame === 'function') {
+                            initSnakeInlineGame(taskIndexForGame);
+                        } else {
+                            // Inline snake not available — skip opening new window to keep user in flow
+                            console.warn('initSnakeInlineGame not available');
+                        }
                     } else {
                         // Default to minesweeper
                         initMinesweeperGame(taskIndexForGame);

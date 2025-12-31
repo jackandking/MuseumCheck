@@ -120,6 +120,33 @@ function initGame() {
     
     // Start render loop (for start screen)
     renderLoop();
+    // configure restart/continue buttons according to debug mode
+    configureEndButtons();
+}
+
+function isDebugMode() {
+    try {
+        if (window.__MC_DEBUG) return true;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('debug') === 'true' || params.get('debug') === '1') return true;
+        if (localStorage && localStorage.getItem && localStorage.getItem('mc_debug') === '1') return true;
+    } catch (e) { }
+    return false;
+}
+
+function configureEndButtons() {
+    try {
+        const restart = document.getElementById('restartBtn');
+        const cont = document.getElementById('continueBtn');
+        if (!restart && !cont) return;
+        if (isDebugMode()) {
+            if (restart) restart.classList.remove('hidden');
+            if (cont) cont.classList.add('hidden');
+        } else {
+            if (restart) restart.classList.add('hidden');
+            if (cont) cont.classList.remove('hidden');
+        }
+    } catch (e) { console.warn('configureEndButtons error', e); }
 }
 
 /**
