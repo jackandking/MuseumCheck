@@ -87,7 +87,6 @@
     posters.forEach(poster=>{
       const card=document.createElement('div');
       card.className='poster-card';
-      card.style.position='relative';
       
       // Check if this is user's own poster
       const isOwnPoster = poster.id && userPosterIds.has(poster.id);
@@ -98,9 +97,6 @@
         deleteBtn.className = 'delete-poster-btn';
         deleteBtn.innerHTML = '🗑️';
         deleteBtn.title = '删除我的海报';
-        deleteBtn.style.cssText = 'position:absolute;top:8px;right:8px;background:rgba(255,68,68,0.9);color:white;border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.2);z-index:10;transition:all 0.2s';
-        deleteBtn.onmouseover = () => { deleteBtn.style.transform = 'scale(1.1)'; deleteBtn.style.background = 'rgba(255,68,68,1)'; };
-        deleteBtn.onmouseout = () => { deleteBtn.style.transform = 'scale(1)'; deleteBtn.style.background = 'rgba(255,68,68,0.9)'; };
         deleteBtn.onclick = (e) => {
           e.stopPropagation();
           deletePoster(poster);
