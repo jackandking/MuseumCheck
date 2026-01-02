@@ -563,6 +563,373 @@ Notes:
 - Many endpoints accept JSON request bodies; file uploads use `multipart/form-data` with field name `file`.
 - Error responses often include an object with `error` or `sqlMessage` fields for diagnostics.
 
+### MySQL Schema Management via Letmetry API
+
+The Letmetry `/mysql/query` endpoint can be used to perform MySQL schema operations (DDL - Data Definition Language) when needed. This allows database schema changes through curl or JavaScript without direct database access.
+
+#### Common Schema Operations
+
+**Check Current Schema**:
+```bash
+# View all tables in database
+curl -X POST https://letmetry.cloud/mysql/query \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "SHOW TABLES"}'
+
+# Describe table structure
+curl -X POST https://letmetry.cloud/mysql/query \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "DESCRIBE table_name"}'
+
+# Show table creation statement
+curl -X POST https://letmetry.cloud/mysql/query \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "SHOW CREATE TABLE table_name"}'
+```
+
+**Create Table**:
+```bash
+# Create new table
+curl -X POST https://letmetry.cloud/mysql/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sql": "CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      username VARCHAR(255) NOT NULL,
+      email VARCHAR(255) UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_username (username)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+  }'
+```
+
+**Alter Table**:
+```bash
+# Add new column
+curl -X POST https://letmetry.cloud/mysql/query \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "ALTER TABLE users ADD COLUMN phone VARCHAR(20) AFTER email"}'
+
+# Modify column
+curl -X POST https://letmetry.cloud/mysql/query \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "ALTER TABLE users MODIFY COLUMN username VARCHAR(500) NOT NULL"}'
+
+# Add index
+curl -X POST https://letmetry.cloud/mysql/query \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "ALTER TABLE users ADD INDEX idx_email (email)"}'
+
+# Drop column
+curl -X POST https://letmetry.cloud/mysql/query \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "ALTER TABLE users DROP COLUMN phone"}'
+```
+
+**Drop Table**:
+```bash
+# Drop table (use with caution)
+curl -X POST https://letmetry.cloud/mysql/query \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "DROP TABLE IF EXISTS old_table"}'
+```
+
+#### Best Practices for Schema Changes
+
+**1. Always Check Before Modifying**:
+```bash
+# Verify table exists before altering (example - use actual whitelisted table name)
+curl -X POST https://letmetry.cloud/mysql/query \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "SHOW TABLES LIKE \"users\""}'
+
+# Check if column exists before adding (example - validate table/column against whitelist first)
+curl -X POST https://letmetry.cloud/mysql/query \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "SHOW COLUMNS FROM users LIKE \"new_column\""}'
+```
+
+**2. Use Safe DDL Patterns**:
+- ✅ Use `CREATE TABLE IF NOT EXISTS` to avoid errors
+- ✅ Use `DROP TABLE IF EXISTS` to handle non-existent tables
+- ✅ MySQL does NOT support `ADD COLUMN IF NOT EXISTS` - always check column existence first
+- ✅ Check existing schema before modifications to avoid errors
+
+**3. Schema Versioning Strategy**:
+```bash
+# Create schema_version table to track migrations
+curl -X POST https://letmetry.cloud/mysql/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sql": "CREATE TABLE IF NOT EXISTS schema_version (
+      version INT PRIMARY KEY,
+      description VARCHAR(255),
+      applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )"
+  }'
+
+# Record migration
+curl -X POST https://letmetry.cloud/mysql/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sql": "INSERT INTO schema_version (version, description) VALUES (?, ?)",
+    "params": [1, "Initial schema creation"]
+  }'
+```
+
+**IMPORTANT NOTE on Query Types**:
+- **DDL Operations (CREATE, ALTER, DROP)**: Cannot use parameterized queries - must validate via whitelists
+- **DML Operations (INSERT, SELECT, UPDATE, DELETE)**: Should ALWAYS use parameterized queries
+- The LetmetryAPI.queryMysql() accepts two parameters: `queryMysql(sql, params = [])`
+- For DDL: Only the sql parameter is used (after whitelist validation)
+- For DML: Both sql and params should be used for security
+
+**4. JavaScript Usage Example**:
+```javascript
+// Using LetmetryAPI helper from letmetry-cloud-api.js
+const LetmetryAPI = require('./letmetry-cloud-api.js');
+
+// IMPORTANT: All examples below show proper security patterns
+// - DDL (CREATE/ALTER/DROP): Use whitelist validation, then string interpolation
+// - DML (INSERT/SELECT/UPDATE/DELETE): Use parameterized queries with params array
+// - LetmetryAPI.queryMysql(sql, params = []) supports both patterns
+
+// Check current schema (DDL - no parameters needed)
+async function checkSchema() {
+  const tables = await LetmetryAPI.queryMysql('SHOW TABLES');
+  console.log('Existing tables:', tables);
+  return tables;
+}
+
+// Create table safely with whitelist validation
+async function createTableIfNeeded(tableName) {
+  // SECURITY: Validate table name against whitelist
+  const ALLOWED_TABLES = ['users', 'museums', 'achievements'];
+  if (!ALLOWED_TABLES.includes(tableName)) {
+    throw new Error(`Table ${tableName} not in whitelist`);
+  }
+  
+  // Check if table exists (using validated tableName after whitelist)
+  const tables = await LetmetryAPI.queryMysql('SHOW TABLES');
+  const tableExists = tables.some(t => Object.values(t)[0] === tableName);
+  
+  if (!tableExists) {
+    // Only use validated tableName in DDL after whitelist check
+    await LetmetryAPI.queryMysql(`
+      CREATE TABLE ${tableName} (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        data JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    console.log(`Table ${tableName} created successfully`);
+  } else {
+    console.log(`Table ${tableName} already exists`);
+  }
+}
+
+// Add column if not exists with validation
+async function addColumnIfNeeded(tableName, columnName, columnDef) {
+  // SECURITY: Validate all identifiers against whitelists
+  const ALLOWED_TABLES = ['users', 'museums', 'achievements'];
+  const ALLOWED_COLUMNS = ['username', 'email', 'phone', 'created_at'];
+  const ALLOWED_DEFS = ['VARCHAR(255)', 'VARCHAR(20)', 'INT', 'TIMESTAMP'];
+  
+  if (!ALLOWED_TABLES.includes(tableName)) {
+    throw new Error(`Table ${tableName} not in whitelist`);
+  }
+  if (!ALLOWED_COLUMNS.includes(columnName)) {
+    throw new Error(`Column ${columnName} not in whitelist`);
+  }
+  if (!ALLOWED_DEFS.includes(columnDef)) {
+    throw new Error(`Column definition ${columnDef} not in whitelist`);
+  }
+  
+  // Check if column exists (safe after all validation)
+  const columns = await LetmetryAPI.queryMysql(`SHOW COLUMNS FROM ${tableName}`);
+  const columnExists = columns.some(c => c.Field === columnName);
+  
+  if (!columnExists) {
+    // Only use validated identifiers after whitelist check
+    await LetmetryAPI.queryMysql(
+      `ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDef}`
+    );
+    console.log(`Column ${columnName} added to ${tableName}`);
+  } else {
+    console.log(`Column ${columnName} already exists in ${tableName}`);
+  }
+}
+```
+
+#### Security Considerations for Schema Changes
+
+**CRITICAL Security Rules**:
+- ⚠️ **Never** expose schema modification endpoints to public APIs
+- ⚠️ **Never** construct DDL statements from user input without validation
+- ⚠️ **Always** validate table/column names against a whitelist
+- ⚠️ **Always** use parameterized queries for data manipulation (DML)
+- ⚠️ **Never** drop tables in production without explicit confirmation
+- ⚠️ **Always** backup data before destructive schema changes
+
+**Safe Pattern for Dynamic Schema Operations**:
+```javascript
+// Safe: Whitelist allowed table names
+const ALLOWED_TABLES = ['users', 'museums', 'achievements'];
+
+async function safeAlterTable(tableName, operation) {
+  // Validate table name against whitelist
+  if (!ALLOWED_TABLES.includes(tableName)) {
+    throw new Error(`Table ${tableName} not in whitelist`);
+  }
+  
+  // SECURITY: Validate operation structure with strict regex patterns
+  // Only allow specific, well-formed operations
+  const ADD_COLUMN_PATTERN = /^ADD COLUMN [a-zA-Z_][a-zA-Z0-9_]* (VARCHAR\(\d+\)|INT|TIMESTAMP|TEXT|DATETIME|DATE)( NOT NULL| NULL| DEFAULT ('[\w\s-]+'|\d+|CURRENT_TIMESTAMP|NULL))?$/;
+  const DROP_COLUMN_PATTERN = /^DROP COLUMN [a-zA-Z_][a-zA-Z0-9_]*$/;
+  const ADD_INDEX_PATTERN = /^ADD INDEX [a-zA-Z_][a-zA-Z0-9_]* \([a-zA-Z_][a-zA-Z0-9_]*(, ?[a-zA-Z_][a-zA-Z0-9_]*)*\)$/;
+  
+  const isValid = 
+    ADD_COLUMN_PATTERN.test(operation) ||
+    DROP_COLUMN_PATTERN.test(operation) ||
+    ADD_INDEX_PATTERN.test(operation);
+    
+  if (!isValid) {
+    throw new Error(`Operation does not match allowed patterns: ${operation}`);
+  }
+  
+  // Execute validated operation
+  const sql = `ALTER TABLE ${tableName} ${operation}`;
+  return await LetmetryAPI.queryMysql(sql);
+}
+```
+
+#### Testing Schema Changes
+
+**Validation Steps**:
+1. **Test in Development First**: Always test schema changes locally or in dev environment
+2. **Verify Structure**: Use `DESCRIBE table_name` to confirm changes
+3. **Check Data Integrity**: Ensure existing data is not corrupted
+4. **Test Application**: Verify application still works with new schema
+5. **Monitor Errors**: Check for SQL errors in response objects
+
+**Example Validation Script**:
+```javascript
+async function validateSchemaChange(tableName, expectedColumns) {
+  // SECURITY: Validate table name against whitelist
+  const ALLOWED_TABLES = ['users', 'museums', 'achievements'];
+  if (!ALLOWED_TABLES.includes(tableName)) {
+    throw new Error(`Table ${tableName} not in whitelist`);
+  }
+  
+  // Get current schema (safe after validation)
+  const columns = await LetmetryAPI.queryMysql(`DESCRIBE ${tableName}`);
+  
+  // Verify expected columns exist
+  const columnNames = columns.map(col => col.Field);
+  const missing = expectedColumns.filter(col => !columnNames.includes(col));
+  
+  if (missing.length > 0) {
+    console.error('Missing columns:', missing);
+    return false;
+  }
+  
+  console.log('Schema validation passed');
+  return true;
+}
+
+// Usage
+await validateSchemaChange('users', ['id', 'username', 'email', 'created_at']);
+```
+
+#### Error Handling
+
+The MySQL query API returns errors in this format:
+```json
+{
+  "error": "Error message",
+  "sqlMessage": "Detailed SQL error",
+  "sql": "The SQL statement that failed"
+}
+```
+
+**Common Errors and Solutions**:
+- `Table already exists`: Use `CREATE TABLE IF NOT EXISTS`
+- `Table doesn't exist`: Use `DROP TABLE IF EXISTS`
+- `Duplicate column name`: Check if column exists first
+- `Syntax error`: Validate SQL syntax before execution
+- `Access denied`: Verify API permissions for DDL operations
+
+**Error Handling Pattern**:
+```javascript
+async function executeSchemaChange(sql) {
+  try {
+    const result = await LetmetryAPI.queryMysql(sql);
+    
+    // Check for error in response
+    if (result && result.error) {
+      console.error('SQL Error:', result.sqlMessage);
+      console.error('Failed SQL:', result.sql);
+      throw new Error(result.error);
+    }
+    
+    console.log('Schema change executed successfully');
+    return result;
+  } catch (error) {
+    console.error('Schema change failed:', error.message);
+    throw error;
+  }
+}
+```
+
+#### When to Use Schema Operations
+
+**Appropriate Use Cases**:
+- ✅ Adding new features requiring new tables
+- ✅ Adding columns for new functionality
+- ✅ Creating indexes for performance optimization
+- ✅ Development and testing environments
+- ✅ One-time migration scripts
+
+**When NOT to Use**:
+- ❌ In production without testing and backup
+- ❌ Based on untrusted user input
+- ❌ During high-traffic periods
+- ❌ Without proper authorization/authentication
+- ❌ For frequent schema changes (indicates design issues)
+
+**Migration Best Practice**:
+```javascript
+// Example migration script structure
+async function runMigration(version) {
+  // Check if already applied
+  const applied = await LetmetryAPI.queryMysql(
+    'SELECT version FROM schema_version WHERE version = ?',
+    [version]
+  );
+  
+  if (applied.length > 0) {
+    console.log(`Migration ${version} already applied`);
+    return;
+  }
+  
+  try {
+    // Execute schema changes
+    await executeSchemaChange(/* your DDL */);
+    
+    // Record successful migration
+    await LetmetryAPI.queryMysql(
+      'INSERT INTO schema_version (version, description) VALUES (?, ?)',
+      [version, 'Description of changes']
+    );
+    
+    console.log(`Migration ${version} completed successfully`);
+  } catch (error) {
+    console.error(`Migration ${version} failed:`, error);
+    throw error;
+  }
+}
+```
+
 
 ## Bug Fix Requirements (MANDATORY PROCESS)
 
