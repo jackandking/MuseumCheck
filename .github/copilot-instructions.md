@@ -652,7 +652,7 @@ curl -X POST https://letmetry.cloud/mysql/query \
 **2. Use Safe DDL Patterns**:
 - ✅ Use `CREATE TABLE IF NOT EXISTS` to avoid errors
 - ✅ Use `DROP TABLE IF EXISTS` to handle non-existent tables
-- ✅ Use `ALTER TABLE ADD COLUMN IF NOT EXISTS` when supported
+- ✅ Always check if column exists before adding (MySQL doesn't support `ADD COLUMN IF NOT EXISTS`)
 - ✅ Check existing schema before modifications
 
 **3. Schema Versioning Strategy**:
@@ -682,6 +682,9 @@ curl -X POST https://letmetry.cloud/mysql/query \
 // Using LetmetryAPI helper from letmetry-cloud-api.js
 const LetmetryAPI = require('./letmetry-cloud-api.js');
 
+// IMPORTANT: All examples below include whitelist validation to prevent SQL injection
+// NEVER skip whitelist validation when using dynamic table/column names
+
 // Check current schema
 async function checkSchema() {
   const tables = await LetmetryAPI.queryMysql('SHOW TABLES');
@@ -689,10 +692,22 @@ async function checkSchema() {
   return tables;
 }
 
-// Create table safely
+// Create table safely with whitelist validation
 async function createTableIfNeeded(tableName) {
-  const tables = await LetmetryAPI.queryMysql(`SHOW TABLES LIKE '${tableName}'`);
+  // SECURITY: Validate table name against whitelist
+  const ALLOWED_TABLES = ['users', 'museums', 'achievements'];
+  if (!ALLOWED_TABLES.includes(tableName)) {
+    throw new Error(`Table ${tableName} not in whitelist`);
+  }
+  
+  // Use parameterized query for safe checking
+  const tables = await LetmetryAPI.queryMysql(
+    'SHOW TABLES LIKE ?',
+    [tableName]
+  );
+  
   if (tables.length === 0) {
+    // Only use validated tableName in DDL after whitelist check
     await LetmetryAPI.queryMysql(`
       CREATE TABLE ${tableName} (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -706,12 +721,27 @@ async function createTableIfNeeded(tableName) {
   }
 }
 
-// Add column if not exists
+// Add column if not exists with validation
 async function addColumnIfNeeded(tableName, columnName, columnDef) {
+  // SECURITY: Validate all identifiers against whitelists
+  const ALLOWED_TABLES = ['users', 'museums', 'achievements'];
+  const ALLOWED_COLUMNS = ['username', 'email', 'phone', 'created_at'];
+  
+  if (!ALLOWED_TABLES.includes(tableName)) {
+    throw new Error(`Table ${tableName} not in whitelist`);
+  }
+  if (!ALLOWED_COLUMNS.includes(columnName)) {
+    throw new Error(`Column ${columnName} not in whitelist`);
+  }
+  
+  // Use parameterized query for checking
   const columns = await LetmetryAPI.queryMysql(
-    `SHOW COLUMNS FROM ${tableName} LIKE '${columnName}'`
+    'SHOW COLUMNS FROM ?? LIKE ?',
+    [tableName, columnName]
   );
+  
   if (columns.length === 0) {
+    // Only use validated identifiers after whitelist check
     await LetmetryAPI.queryMysql(
       `ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDef}`
     );
@@ -768,7 +798,13 @@ async function safeAlterTable(tableName, operation) {
 **Example Validation Script**:
 ```javascript
 async function validateSchemaChange(tableName, expectedColumns) {
-  // Get current schema
+  // SECURITY: Validate table name against whitelist
+  const ALLOWED_TABLES = ['users', 'museums', 'achievements'];
+  if (!ALLOWED_TABLES.includes(tableName)) {
+    throw new Error(`Table ${tableName} not in whitelist`);
+  }
+  
+  // Get current schema (safe after validation)
   const columns = await LetmetryAPI.queryMysql(`DESCRIBE ${tableName}`);
   
   // Verify expected columns exist
