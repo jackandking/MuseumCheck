@@ -209,6 +209,16 @@ const UtilityFunctions = {
         });
     },
     
+    // Generate random nickname ID for new users
+    generateRandomNickname: () => {
+        const adjectives = ['快乐', '勇敢', '聪明', '活泼', '可爱', '机灵', '淘气', '乖巧', '开心', '好奇'];
+        const animals = ['熊猫', '兔子', '小鹿', '狐狸', '松鼠', '猫咪', '小鸟', '海豚', '企鹅', '考拉'];
+        const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
+        const randomAnimal = animals[Math.floor(Math.random() * animals.length)];
+        const randomNum = Math.floor(Math.random() * 999) + 1;
+        return `${randomAdj}的${randomAnimal}${randomNum}`;
+    },
+    
     // ===== WeChat Environment Detection =====
     // Detect if running in WeChat browser or Mini Program webview
     isWeChatEnvironment: () => {
@@ -4046,6 +4056,12 @@ class MuseumCheckApp {
         // Update header title with child nickname
         this.updateHeaderTitle();
         
+        // Check if this is a first-time user and show nickname prompt
+        if (!this.hasSetNickname()) {
+            // Show nickname prompt immediately for first-time users
+            this.showNicknamePrompt();
+        }
+        
         // Update dynamic museum count displays
         this.updateDynamicMuseumCounts();
         
@@ -5718,10 +5734,40 @@ class MuseumCheckApp {
     loadChildNickname() {
         try {
             const saved = localStorage.getItem('childNickname');
-            return saved || '小淘气'; // Default to '小淘气' if not saved
+            if (saved) {
+                return saved;
+            }
+            
+            // Generate random nickname for new users
+            const randomNickname = UtilityFunctions.generateRandomNickname();
+            // Store it temporarily (will be saved when user confirms)
+            return randomNickname;
         } catch (error) {
             console.error('Failed to load child nickname:', error);
-            return '小淘气';
+            return UtilityFunctions.generateRandomNickname();
+        }
+    }
+    
+    /**
+     * Check if user has explicitly set a nickname
+     * @returns {boolean} true if nickname has been set by user
+     */
+    hasSetNickname() {
+        try {
+            return localStorage.getItem('nicknameHasBeenSet') === 'true';
+        } catch (error) {
+            return false;
+        }
+    }
+    
+    /**
+     * Mark that user has explicitly set their nickname
+     */
+    markNicknameAsSet() {
+        try {
+            localStorage.setItem('nicknameHasBeenSet', 'true');
+        } catch (error) {
+            console.error('Failed to mark nickname as set:', error);
         }
     }
 
@@ -5745,6 +5791,236 @@ class MuseumCheckApp {
             e.stopPropagation();
             this.startInlineNicknameEdit(nicknameDisplay);
         });
+    }
+    
+    /**
+     * Show nickname prompt for first-time users
+     * Forces user to set a nickname before accessing the app
+     */
+    showNicknamePrompt() {
+        // Create modal overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'nicknamePromptOverlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-in-out;
+        `;
+        
+        // Create prompt modal
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+        `;
+        
+        modal.innerHTML = `
+            <style>
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes slideUp {
+                    from { transform: translateY(30px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                #nicknamePromptOverlay .prompt-title {
+                    font-size: 28px;
+                    font-weight: bold;
+                    color: #2c5aa0;
+                    margin-bottom: 15px;
+                    text-align: center;
+                }
+                #nicknamePromptOverlay .prompt-subtitle {
+                    font-size: 16px;
+                    color: #666;
+                    margin-bottom: 30px;
+                    text-align: center;
+                    line-height: 1.5;
+                }
+                #nicknamePromptOverlay .nickname-input-wrapper {
+                    position: relative;
+                    margin-bottom: 25px;
+                }
+                #nicknamePromptOverlay .nickname-input {
+                    width: 100%;
+                    padding: 15px 20px;
+                    font-size: 18px;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 12px;
+                    outline: none;
+                    transition: all 0.3s ease;
+                    box-sizing: border-box;
+                    text-align: center;
+                    font-weight: 500;
+                }
+                #nicknamePromptOverlay .nickname-input:focus {
+                    border-color: #2c5aa0;
+                    box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+                }
+                #nicknamePromptOverlay .nickname-hint {
+                    font-size: 13px;
+                    color: #999;
+                    text-align: center;
+                    margin-bottom: 15px;
+                }
+                #nicknamePromptOverlay .error-message {
+                    color: #ff4444;
+                    font-size: 14px;
+                    text-align: center;
+                    margin-top: 10px;
+                    min-height: 20px;
+                }
+                #nicknamePromptOverlay .confirm-button {
+                    width: 100%;
+                    padding: 15px;
+                    background: linear-gradient(45deg, #ff6b6b, #ffa500);
+                    color: white;
+                    border: none;
+                    border-radius: 12px;
+                    font-size: 18px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+                }
+                #nicknamePromptOverlay .confirm-button:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+                }
+                #nicknamePromptOverlay .confirm-button:active {
+                    transform: translateY(0);
+                }
+            </style>
+            <div class="prompt-title">🎨 欢迎来到博物馆之旅！</div>
+            <div class="prompt-subtitle">请给自己起一个可爱的昵称吧~<br>这样我们就能记住你了！</div>
+            <div class="nickname-input-wrapper">
+                <input 
+                    type="text" 
+                    id="nicknamePromptInput" 
+                    class="nickname-input" 
+                    maxlength="10" 
+                    placeholder="输入你的昵称"
+                    value="${this.childNickname}"
+                />
+            </div>
+            <div class="nickname-hint">最多5个中文字或10个英文字母</div>
+            <div class="error-message" id="nicknameError"></div>
+            <button class="confirm-button" id="confirmNicknameButton">开始探索 →</button>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        // Get elements
+        const input = document.getElementById('nicknamePromptInput');
+        const confirmButton = document.getElementById('confirmNicknameButton');
+        const errorDiv = document.getElementById('nicknameError');
+        
+        // Focus input and select text
+        setTimeout(() => {
+            input.focus();
+            input.select();
+        }, 100);
+        
+        // Handle confirm
+        const handleConfirm = () => {
+            const nickname = input.value.trim();
+            
+            if (!nickname) {
+                errorDiv.textContent = '昵称不能为空哦~';
+                input.focus();
+                return;
+            }
+            
+            // Validate nickname
+            const validation = this.validateNickname(nickname);
+            if (!validation.isValid) {
+                errorDiv.textContent = validation.message;
+                input.focus();
+                return;
+            }
+            
+            // Save nickname
+            const result = this.saveChildNickname(nickname);
+            if (result.isValid) {
+                // Mark nickname as set
+                this.markNicknameAsSet();
+                
+                // Remove overlay with animation
+                overlay.style.animation = 'fadeOut 0.3s ease-in-out';
+                setTimeout(() => {
+                    overlay.remove();
+                }, 300);
+                
+                // Track event
+                this.trackEvent('nickname_first_time_set', {
+                    'nickname_length': nickname.length,
+                    'is_default_modified': nickname !== this.childNickname
+                });
+            } else {
+                errorDiv.textContent = result.message;
+                input.focus();
+            }
+        };
+        
+        // Add fadeOut animation to CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Event listeners
+        confirmButton.addEventListener('click', handleConfirm);
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleConfirm();
+            }
+        });
+        
+        // Clear error on input
+        input.addEventListener('input', () => {
+            errorDiv.textContent = '';
+        });
+        
+        // Prevent closing by clicking overlay
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                // Shake animation for modal to indicate it can't be closed
+                modal.style.animation = 'shake 0.5s ease-in-out';
+                setTimeout(() => {
+                    modal.style.animation = 'slideUp 0.3s ease-out';
+                }, 500);
+            }
+        });
+        
+        // Add shake animation
+        const shakeStyle = document.createElement('style');
+        shakeStyle.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+                20%, 40%, 60%, 80% { transform: translateX(10px); }
+            }
+        `;
+        document.head.appendChild(shakeStyle);
     }
 
     /**
@@ -6478,6 +6754,9 @@ class MuseumCheckApp {
             
             this.childNickname = nickname;
             localStorage.setItem('childNickname', nickname);
+            
+            // Mark nickname as explicitly set by user
+            this.markNicknameAsSet();
             
             // Update header title
             this.updateHeaderTitle();
