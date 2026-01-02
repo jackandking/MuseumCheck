@@ -635,7 +635,7 @@
                 // Generate unique filename to avoid 409 conflicts
                 const userId = localStorage.getItem('userId') || 
                               localStorage.getItem('museumcheck_user_id') || 
-                              `user_${Math.random().toString(36).substr(2, 9)}`;
+                              `user_${Math.random().toString(36).substring(2, 11)}`;
                 const timestamp = Date.now();
                 const sanitizedMuseumName = (currentPoster.museumName || 'poster')
                     .replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')
@@ -668,7 +668,7 @@
                         if (isConflict && uploadAttempts < MAX_UPLOAD_ATTEMPTS) {
                             console.warn(`Upload attempt ${uploadAttempts} failed with conflict, retrying...`);
                             // Generate new filename with additional random suffix
-                            const retryFilename = `${sanitizedMuseumName}_${userId}_${timestamp}_retry${uploadAttempts}_${Math.random().toString(36).substr(2, 6)}.png`;
+                            const retryFilename = `${sanitizedMuseumName}_${userId}_${timestamp}_retry${uploadAttempts}_${Math.random().toString(36).substring(2, 8)}.png`;
                             file = new File([blob], retryFilename, { type: blob.type || 'image/png' });
                             continue; // Retry
                         }

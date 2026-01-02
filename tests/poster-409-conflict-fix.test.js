@@ -104,7 +104,7 @@ describe('Poster Publishing 409 Conflict Fix', () => {
             // Simulate fallback logic
             const userId = localStorage.getItem('userId') || 
                           localStorage.getItem('museumcheck_user_id') || 
-                          `user_${Math.random().toString(36).substr(2, 9)}`;
+                          `user_${Math.random().toString(36).substring(2, 11)}`;
             
             // Should generate a fallback userId
             expect(userId).toMatch(/^user_[a-z0-9]{9}$/);
