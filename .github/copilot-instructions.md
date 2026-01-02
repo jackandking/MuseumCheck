@@ -652,7 +652,8 @@ curl -X POST https://letmetry.cloud/mysql/query \
 **2. Use Safe DDL Patterns**:
 - ✅ Use `CREATE TABLE IF NOT EXISTS` to avoid errors
 - ✅ Use `DROP TABLE IF EXISTS` to handle non-existent tables
-- ✅ Always check if column exists before adding (MySQL doesn't support `ADD COLUMN IF NOT EXISTS`)
+- ✅ MySQL 8.0.29+ supports `ADD COLUMN IF NOT EXISTS`, but always check compatibility
+- ✅ For older MySQL versions, check if column exists before adding
 - ✅ Check existing schema before modifications
 
 **3. Schema Versioning Strategy**:
@@ -700,13 +701,11 @@ async function createTableIfNeeded(tableName) {
     throw new Error(`Table ${tableName} not in whitelist`);
   }
   
-  // Use parameterized query for safe checking
-  const tables = await LetmetryAPI.queryMysql(
-    'SHOW TABLES LIKE ?',
-    [tableName]
-  );
+  // Check if table exists (using validated tableName after whitelist)
+  const tables = await LetmetryAPI.queryMysql('SHOW TABLES');
+  const tableExists = tables.some(t => Object.values(t)[0] === tableName);
   
-  if (tables.length === 0) {
+  if (!tableExists) {
     // Only use validated tableName in DDL after whitelist check
     await LetmetryAPI.queryMysql(`
       CREATE TABLE ${tableName} (
@@ -726,6 +725,7 @@ async function addColumnIfNeeded(tableName, columnName, columnDef) {
   // SECURITY: Validate all identifiers against whitelists
   const ALLOWED_TABLES = ['users', 'museums', 'achievements'];
   const ALLOWED_COLUMNS = ['username', 'email', 'phone', 'created_at'];
+  const ALLOWED_DEFS = ['VARCHAR(255)', 'VARCHAR(20)', 'INT', 'TIMESTAMP'];
   
   if (!ALLOWED_TABLES.includes(tableName)) {
     throw new Error(`Table ${tableName} not in whitelist`);
@@ -733,14 +733,15 @@ async function addColumnIfNeeded(tableName, columnName, columnDef) {
   if (!ALLOWED_COLUMNS.includes(columnName)) {
     throw new Error(`Column ${columnName} not in whitelist`);
   }
+  if (!ALLOWED_DEFS.includes(columnDef)) {
+    throw new Error(`Column definition ${columnDef} not in whitelist`);
+  }
   
-  // Use parameterized query for checking
-  const columns = await LetmetryAPI.queryMysql(
-    'SHOW COLUMNS FROM ?? LIKE ?',
-    [tableName, columnName]
-  );
+  // Check if column exists (safe after all validation)
+  const columns = await LetmetryAPI.queryMysql(`SHOW COLUMNS FROM ${tableName}`);
+  const columnExists = columns.some(c => c.Field === columnName);
   
-  if (columns.length === 0) {
+  if (!columnExists) {
     // Only use validated identifiers after whitelist check
     await LetmetryAPI.queryMysql(
       `ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDef}`
@@ -773,11 +774,19 @@ async function safeAlterTable(tableName, operation) {
     throw new Error(`Table ${tableName} not in whitelist`);
   }
   
-  // Validate operation type
-  const allowedOps = ['ADD COLUMN', 'DROP COLUMN', 'ADD INDEX'];
-  const isValid = allowedOps.some(op => operation.toUpperCase().startsWith(op));
+  // SECURITY: Validate operation structure with strict regex patterns
+  // Only allow specific, well-formed operations
+  const ADD_COLUMN_PATTERN = /^ADD COLUMN [a-zA-Z_][a-zA-Z0-9_]* (VARCHAR\(\d+\)|INT|TIMESTAMP|TEXT)( NOT NULL| NULL| DEFAULT .+)?$/;
+  const DROP_COLUMN_PATTERN = /^DROP COLUMN [a-zA-Z_][a-zA-Z0-9_]*$/;
+  const ADD_INDEX_PATTERN = /^ADD INDEX [a-zA-Z_][a-zA-Z0-9_]* \([a-zA-Z_][a-zA-Z0-9_]*(, ?[a-zA-Z_][a-zA-Z0-9_]*)*\)$/;
+  
+  const isValid = 
+    ADD_COLUMN_PATTERN.test(operation) ||
+    DROP_COLUMN_PATTERN.test(operation) ||
+    ADD_INDEX_PATTERN.test(operation);
+    
   if (!isValid) {
-    throw new Error('Operation not allowed');
+    throw new Error(`Operation does not match allowed patterns: ${operation}`);
   }
   
   // Execute validated operation
