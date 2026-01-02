@@ -678,15 +678,24 @@ curl -X POST https://letmetry.cloud/mysql/query \
   }'
 ```
 
+**IMPORTANT NOTE on Query Types**:
+- **DDL Operations (CREATE, ALTER, DROP)**: Cannot use parameterized queries - must validate via whitelists
+- **DML Operations (INSERT, SELECT, UPDATE, DELETE)**: Should ALWAYS use parameterized queries
+- The LetmetryAPI.queryMysql() accepts two parameters: `queryMysql(sql, params = [])`
+- For DDL: Only the sql parameter is used (after whitelist validation)
+- For DML: Both sql and params should be used for security
+
 **4. JavaScript Usage Example**:
 ```javascript
 // Using LetmetryAPI helper from letmetry-cloud-api.js
 const LetmetryAPI = require('./letmetry-cloud-api.js');
 
-// IMPORTANT: All examples below include whitelist validation to prevent SQL injection
-// NEVER skip whitelist validation when using dynamic table/column names
+// IMPORTANT: All examples below show proper security patterns
+// - DDL (CREATE/ALTER/DROP): Use whitelist validation, then string interpolation
+// - DML (INSERT/SELECT/UPDATE/DELETE): Use parameterized queries with params array
+// - LetmetryAPI.queryMysql(sql, params = []) supports both patterns
 
-// Check current schema
+// Check current schema (DDL - no parameters needed)
 async function checkSchema() {
   const tables = await LetmetryAPI.queryMysql('SHOW TABLES');
   console.log('Existing tables:', tables);
