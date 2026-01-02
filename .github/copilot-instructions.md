@@ -638,12 +638,12 @@ curl -X POST https://letmetry.cloud/mysql/query \
 
 **1. Always Check Before Modifying**:
 ```bash
-# Verify table exists before altering
+# Verify table exists before altering (example - use actual whitelisted table name)
 curl -X POST https://letmetry.cloud/mysql/query \
   -H "Content-Type: application/json" \
   -d '{"sql": "SHOW TABLES LIKE \"users\""}'
 
-# Check if column exists before adding
+# Check if column exists before adding (example - validate table/column against whitelist first)
 curl -X POST https://letmetry.cloud/mysql/query \
   -H "Content-Type: application/json" \
   -d '{"sql": "SHOW COLUMNS FROM users LIKE \"new_column\""}'
@@ -652,9 +652,8 @@ curl -X POST https://letmetry.cloud/mysql/query \
 **2. Use Safe DDL Patterns**:
 - ✅ Use `CREATE TABLE IF NOT EXISTS` to avoid errors
 - ✅ Use `DROP TABLE IF EXISTS` to handle non-existent tables
-- ✅ MySQL 8.0.29+ supports `ADD COLUMN IF NOT EXISTS`, but always check compatibility
-- ✅ For older MySQL versions, check if column exists before adding
-- ✅ Check existing schema before modifications
+- ✅ MySQL does NOT support `ADD COLUMN IF NOT EXISTS` - always check column existence first
+- ✅ Check existing schema before modifications to avoid errors
 
 **3. Schema Versioning Strategy**:
 ```bash
@@ -785,7 +784,7 @@ async function safeAlterTable(tableName, operation) {
   
   // SECURITY: Validate operation structure with strict regex patterns
   // Only allow specific, well-formed operations
-  const ADD_COLUMN_PATTERN = /^ADD COLUMN [a-zA-Z_][a-zA-Z0-9_]* (VARCHAR\(\d+\)|INT|TIMESTAMP|TEXT)( NOT NULL| NULL| DEFAULT .+)?$/;
+  const ADD_COLUMN_PATTERN = /^ADD COLUMN [a-zA-Z_][a-zA-Z0-9_]* (VARCHAR\(\d+\)|INT|TIMESTAMP|TEXT|DATETIME|DATE)( NOT NULL| NULL| DEFAULT ('[\w\s-]+'|\d+|CURRENT_TIMESTAMP|NULL))?$/;
   const DROP_COLUMN_PATTERN = /^DROP COLUMN [a-zA-Z_][a-zA-Z0-9_]*$/;
   const ADD_INDEX_PATTERN = /^ADD INDEX [a-zA-Z_][a-zA-Z0-9_]* \([a-zA-Z_][a-zA-Z0-9_]*(, ?[a-zA-Z_][a-zA-Z0-9_]*)*\)$/;
   
