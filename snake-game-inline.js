@@ -113,61 +113,38 @@
   }
 
   function setupTouchControls() {
-    // Up button
-    overlayElements.upBtn.addEventListener('touchstart', (e) => {
+    // Helper function to handle direction changes
+    const handleDirection = (newDir, checkAxis) => (e) => {
       e.preventDefault();
-      if (state === 'playing' && dir.y === 0) {
-        nextDir = { x: 0, y: -1 };
+      if (state === 'playing') {
+        // Check if movement is allowed (not reversing into self)
+        if (checkAxis === 'x' && dir.x === 0) {
+          nextDir = newDir;
+        } else if (checkAxis === 'y' && dir.y === 0) {
+          nextDir = newDir;
+        }
       }
-    });
-    overlayElements.upBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (state === 'playing' && dir.y === 0) {
-        nextDir = { x: 0, y: -1 };
-      }
-    });
+    };
 
-    // Down button
-    overlayElements.downBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (state === 'playing' && dir.y === 0) {
-        nextDir = { x: 0, y: 1 };
-      }
-    });
-    overlayElements.downBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (state === 'playing' && dir.y === 0) {
-        nextDir = { x: 0, y: 1 };
-      }
-    });
+    // Up button (check y-axis)
+    const upHandler = handleDirection({ x: 0, y: -1 }, 'y');
+    overlayElements.upBtn.addEventListener('touchstart', upHandler);
+    overlayElements.upBtn.addEventListener('click', upHandler);
 
-    // Left button
-    overlayElements.leftBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (state === 'playing' && dir.x === 0) {
-        nextDir = { x: -1, y: 0 };
-      }
-    });
-    overlayElements.leftBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (state === 'playing' && dir.x === 0) {
-        nextDir = { x: -1, y: 0 };
-      }
-    });
+    // Down button (check y-axis)
+    const downHandler = handleDirection({ x: 0, y: 1 }, 'y');
+    overlayElements.downBtn.addEventListener('touchstart', downHandler);
+    overlayElements.downBtn.addEventListener('click', downHandler);
 
-    // Right button
-    overlayElements.rightBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (state === 'playing' && dir.x === 0) {
-        nextDir = { x: 1, y: 0 };
-      }
-    });
-    overlayElements.rightBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (state === 'playing' && dir.x === 0) {
-        nextDir = { x: 1, y: 0 };
-      }
-    });
+    // Left button (check x-axis)
+    const leftHandler = handleDirection({ x: -1, y: 0 }, 'x');
+    overlayElements.leftBtn.addEventListener('touchstart', leftHandler);
+    overlayElements.leftBtn.addEventListener('click', leftHandler);
+
+    // Right button (check x-axis)
+    const rightHandler = handleDirection({ x: 1, y: 0 }, 'x');
+    overlayElements.rightBtn.addEventListener('touchstart', rightHandler);
+    overlayElements.rightBtn.addEventListener('click', rightHandler);
   }
 
   // Game state
