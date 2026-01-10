@@ -385,6 +385,37 @@ node tools/test-mcp-museum-search.js
 
 **详细文档：** 参见 **[MCP_SETUP.md](MCP_SETUP.md)** 了解配置和使用方法
 
+### 🤖 自定义 GitHub Copilot 代理
+
+项目配置了专门的 GitHub Copilot 自定义代理，用于自动化数据质量检查和开发辅助：
+
+**博物馆数据检查代理** (`.github/agents/museum-data-checker.agent.md`)
+- 自动检测重复的博物馆名称和ID
+- 验证数据完整性和必填字段
+- 检查图片URL的可用性
+- 验证年龄分组内容的适宜性
+- 执行系统性问题分析
+
+**使用方式：**
+
+1. **自动激活：** 当您编辑博物馆数据时，代理会自动介入
+2. **手动调用：** 在 GitHub Copilot Chat 中使用 `@museum-data-checker`
+3. **命令行：** `gh copilot suggest -a museum-data-checker "验证博物馆数据质量"`
+
+**验证脚本：**
+```bash
+# 运行数据质量验证
+node tools/validate-museum-data.js
+
+# 检查重复项
+node tools/deduplicate-museums.js
+
+# 验证镇馆之宝图片
+node tools/verify-treasure-images.js
+```
+
+**详细文档：** 参见 **[.github/agents/README.md](.github/agents/README.md)** 了解更多自定义代理信息
+
 ## 🔧 开发者指南 - 三级数据管理系统
 
 ### 数据导出工具
