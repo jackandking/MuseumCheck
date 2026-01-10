@@ -934,6 +934,9 @@
     </script>
     <!-- Event Wall Service (shared) -->
     <script src="event-wall-service.js"></script>
+    <!-- Modular Architecture - Load configuration and utilities first -->
+    <script src="src/config/constants.js"></script>
+    <script src="src/utils/common.js"></script>
     <!-- Main application script - must run to render museum list -->
     <script src="script.js"></script>
     <!-- Deferred feature scripts - non-critical, load after main app is interactive -->
