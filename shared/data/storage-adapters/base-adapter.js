@@ -174,3 +174,12 @@ if (typeof module !== 'undefined' && module.exports) {
 if (typeof window !== 'undefined') {
   window.StorageAdapter = StorageAdapter;
 }
+
+// 导出
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = StorageAdapter;
+}
+
+if (typeof window !== 'undefined') {
+  window.StorageAdapter = StorageAdapter;
+}

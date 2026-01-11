@@ -103,6 +103,46 @@ try {
   global.DOM_SELECTORS = context.DOM_SELECTORS;
   
   console.log('✅ MuseumCheckApp loaded successfully and made globally available');
+  // Load storage adapters so tests can reference global classes
+  try {
+    const adaptersRoot = path.join(__dirname, '..', 'shared', 'data', 'storage-adapters');
+    const StorageAdapter = require(path.join(adaptersRoot, 'base-adapter.js'));
+    const LocalStorageAdapter = require(path.join(adaptersRoot, 'localstorage-adapter.js'));
+    const KVAdapter = require(path.join(adaptersRoot, 'kv-adapter.js'));
+    const SQLAdapter = require(path.join(adaptersRoot, 'sql-adapter.js'));
+    const FileAdapter = require(path.join(adaptersRoot, 'file-adapter.js'));
+    // Expose to global as many tests reference these symbols directly
+    global.StorageAdapter = StorageAdapter;
+    global.LocalStorageAdapter = LocalStorageAdapter;
+    global.KVAdapter = KVAdapter;
+    global.SQLAdapter = SQLAdapter;
+    global.FileAdapter = FileAdapter;
+    // Also mirror on window for code paths that check window
+    window.StorageAdapter = StorageAdapter;
+    window.LocalStorageAdapter = LocalStorageAdapter;
+    window.KVAdapter = KVAdapter;
+    window.SQLAdapter = SQLAdapter;
+    window.FileAdapter = FileAdapter;
+    console.log('✅ Storage adapters loaded and exposed globally for tests');
+  } catch (e) {
+    console.warn('⚠️ Failed to load storage adapters into test environment:', e && e.message);
+  }
+  try {
+    // Load and expose core modules expected as globals in tests
+    const coreRoot = path.join(__dirname, '..', 'core');
+    const EventBus = require(path.join(coreRoot, 'event-bus.js'));
+    const OverlayManager = require(path.join(coreRoot, 'overlay-manager.js'));
+    const DataManager = require(path.join(coreRoot, 'data-manager.js'));
+    global.EventBus = EventBus;
+    global.OverlayManager = OverlayManager;
+    global.DataManager = DataManager;
+    window.EventBus = EventBus;
+    window.OverlayManager = OverlayManager;
+    window.DataManager = DataManager;
+    console.log('✅ Core modules (EventBus, OverlayManager, DataManager) loaded globally');
+  } catch (e) {
+    console.warn('⚠️ Failed to load core modules into test environment:', e && e.message);
+  }
   try {
     // Patch prototype methods if missing or need extension
     const Proto = global.MuseumCheckApp && global.MuseumCheckApp.prototype;

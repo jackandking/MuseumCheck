@@ -5448,9 +5448,11 @@
                 }, 800); // Slightly longer delay to ensure page is fully loaded
             }
             
-            // Load treasure reports and image error reports in parallel with museum data
-            const [_, treasureReportsData, imageErrorReportsData] = await Promise.all([
-                loadMuseumData(),
+            // Load museum data first (await ensures tasks/render have data)
+            await loadMuseumData();
+            
+            // Then load treasure reports and image error reports in parallel
+            const [treasureReportsData, imageErrorReportsData] = await Promise.all([
                 loadTreasureReports(),
                 loadImageErrorReports()
             ]);

@@ -17,6 +17,20 @@ class KVAdapter extends StorageAdapter {
     this.defaultExpireAt = config.defaultExpireAt || (Date.now() + 365 * 24 * 60 * 60 * 1000); // 1年
   }
 
+  _fetchWithTimeout(url, options = {}, timeout) {
+    const controller = new AbortController();
+    const opts = { ...options, signal: controller.signal };
+    return Promise.race([
+      fetch(url, opts),
+      new Promise((_, reject) => setTimeout(() => {
+        try { controller.abort(); } catch (e) {}
+        const err = new Error('Timeout');
+        err.name = 'AbortError';
+        reject(err);
+      }, timeout))
+    ]);
+  }
+
   /**
    * 读取数据
    */
@@ -25,17 +39,10 @@ class KVAdapter extends StorageAdapter {
     
     try {
       const url = `${this.endpoint}?key=${encodeURIComponent(key)}&sortKey=${encodeURIComponent(sortKey)}`;
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-      
-      const response = await fetch(url, {
+      const response = await this._fetchWithTimeout(url, {
         method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
+        headers: { 'Accept': 'application/json' }
+      }, timeout);
       
       if (response.status === 404) {
         return null;
@@ -78,10 +85,7 @@ class KVAdapter extends StorageAdapter {
     } = options;
     
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-      
-      const response = await fetch(this.endpoint, {
+      const response = await this._fetchWithTimeout(this.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -89,11 +93,8 @@ class KVAdapter extends StorageAdapter {
           sortKey,
           value: typeof value === 'string' ? value : JSON.stringify(value),
           expireAt
-        }),
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
+        })
+      }, timeout);
       
       if (!response.ok) {
         throw new Error(`KV Store write error: ${response.status}`);
@@ -117,11 +118,8 @@ class KVAdapter extends StorageAdapter {
     const { sortKey = 'default', timeout = this.timeout } = options;
     
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-      
       // 通过设置过期时间为现在来"删除"
-      const response = await fetch(this.endpoint, {
+      const response = await this._fetchWithTimeout(this.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -129,11 +127,8 @@ class KVAdapter extends StorageAdapter {
           sortKey,
           value: '',
           expireAt: Math.floor(Date.now() / 1000) // 立即过期
-        }),
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
+        })
+      }, timeout);
       
       return response.ok;
     } catch (error) {
@@ -158,17 +153,10 @@ class KVAdapter extends StorageAdapter {
     
     try {
       const url = `${this.endpoint}?key=${encodeURIComponent(key)}&sortKey=${encodeURIComponent(sortKeyPattern)}`;
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-      
-      const response = await fetch(url, {
+      const response = await this._fetchWithTimeout(url, {
         method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
+        headers: { 'Accept': 'application/json' }
+      }, timeout);
       
       if (!response.ok) {
         throw new Error(`KV Store query error: ${response.status}`);

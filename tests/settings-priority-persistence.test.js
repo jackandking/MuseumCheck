@@ -51,7 +51,7 @@ describe('Settings Priority Persistence Bug Fix', () => {
     });
     
     test('should save priority to localStorage', () => {
-        const priority = ['tier2', 'tier1', 'tier3'];
+        const priority = ['tier2', 'tier1'];
         localStorage.setItem('museumDataTierPriority', JSON.stringify({ priority }));
         
         const stored = localStorage.getItem('museumDataTierPriority');
@@ -62,7 +62,7 @@ describe('Settings Priority Persistence Bug Fix', () => {
     });
     
     test('should update loader instance when priority changes', () => {
-        const newPriority = ['tier2', 'tier1', 'tier3'];
+        const newPriority = ['tier2', 'tier1'];
         
         // Simulate settings page save action
         localStorage.setItem('museumDataTierPriority', JSON.stringify({ priority: newPriority }));
@@ -78,20 +78,20 @@ describe('Settings Priority Persistence Bug Fix', () => {
     });
     
     test('should load priority from localStorage on page refresh', () => {
-        // Save a custom priority
+        // Save a custom priority (tier3 will be ignored by loader)
         const customPriority = ['tier3', 'tier1', 'tier2'];
         localStorage.setItem('museumDataTierPriority', JSON.stringify({ priority: customPriority }));
         
         // Simulate page refresh by creating new loader instance
         const newLoader = new MuseumDataLoader();
         
-        // Verify the new instance loaded the correct priority
-        expect(newLoader.tierPriority).toEqual(customPriority);
+        // Verify the new instance loaded the correct priority (filtered)
+        expect(newLoader.tierPriority).toEqual(['tier1', 'tier2']);
     });
     
     test('should persist settings through save/refresh cycle', () => {
         // Step 1: Change priority to dynamic data first
-        const dynamicPriority = ['tier2', 'tier1', 'tier3'];
+        const dynamicPriority = ['tier2', 'tier1'];
         localStorage.setItem('museumDataTierPriority', JSON.stringify({ priority: dynamicPriority }));
         window.museumDataLoader.updatePrioritySettings(dynamicPriority);
         
@@ -111,25 +111,20 @@ describe('Settings Priority Persistence Bug Fix', () => {
         const priorityValue = parsed.priority.join('-');
         
         // Step 6: Verify the dropdown would show correct value
-        expect(priorityValue).toBe('tier2-tier1-tier3');
+        expect(priorityValue).toBe('tier2-tier1');
     });
     
-    test('should handle all three priority options', () => {
+    test('should handle supported priority options', () => {
         const testCases = [
             {
-                name: '远程存储优先 (dynamic, new default)',
-                priority: ['tier2', 'tier1', 'tier3'],
-                value: 'tier2-tier1-tier3'
+                name: '远程存储优先 (dynamic, default)',
+                priority: ['tier2', 'tier1'],
+                value: 'tier2-tier1'
             },
             {
                 name: '静态文件优先 (stable)',
-                priority: ['tier1', 'tier2', 'tier3'],
-                value: 'tier1-tier2-tier3'
-            },
-            {
-                name: '内置数据优先 (offline)',
-                priority: ['tier3', 'tier1', 'tier2'],
-                value: 'tier3-tier1-tier2'
+                priority: ['tier1', 'tier2'],
+                value: 'tier1-tier2'
             }
         ];
         
@@ -152,7 +147,7 @@ describe('Settings Priority Persistence Bug Fix', () => {
         expect(window.museumDataLoader.cache.size).toBeGreaterThan(0);
         
         // Change priority and clear cache (as settings page does)
-        const newPriority = ['tier2', 'tier1', 'tier3'];
+        const newPriority = ['tier2', 'tier1'];
         window.museumDataLoader.updatePrioritySettings(newPriority);
         window.museumDataLoader.clearCache();
         

@@ -213,8 +213,8 @@ describe('Image Upload Utility', () => {
             });
             
             const result = await imageUploader.uploadImage(file, { compress: false });
-            // Should fallback to original filename and still sanitize
-            expect(result).toBe('https://letmetry.cloud/images/test%ZZ%invalid.png');
+            // Sanitization-first: invalid percent sequences are safely encoded
+            expect(result).toBe('https://letmetry.cloud/images/test%25ZZ%25invalid.png');
         });
 
         test('should preserve legitimate filenames with multiple dots', async () => {
@@ -248,7 +248,7 @@ describe('Image Upload Utility', () => {
                 status: 500
             });
             
-            await expect(imageUploader.uploadImage(file, { compress: false })).rejects.toThrow('上传失败: 500');
+            await expect(imageUploader.uploadImage(file, { compress: false })).rejects.toThrow('服务器错误 (500): 服务暂时不可用，请稍后重试');
         });
 
         test('should throw error on invalid response format without url or filename', async () => {

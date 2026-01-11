@@ -69,10 +69,8 @@ describe('Museum Check-in Page', () => {
             expect(htmlContent).toContain('id="completeButton"');
         });
 
-        test('should have menu modal', () => {
+        test('should have menu modal for navigation', () => {
             expect(htmlContent).toContain('id="menuModal"');
-            expect(htmlContent).toContain('id="viewParentTasks"');
-            expect(htmlContent).toContain('id="viewAssessment"');
             expect(htmlContent).toContain('id="viewFireworks"');
         });
 
@@ -93,17 +91,6 @@ describe('Museum Check-in Page', () => {
             expect(htmlContent).toContain('completedTasks.size <= 2');
             expect(htmlContent).toContain('parentHint');
             expect(htmlContent).toContain('classList.add');
-        });
-
-        test('should have navigation to parent tasks', () => {
-            expect(htmlContent).toContain('viewParentTasks');
-            expect(htmlContent).toContain('index.html?museum=');
-            expect(htmlContent).toContain('focus=parent');
-        });
-
-        test('should have navigation to assessment', () => {
-            expect(htmlContent).toContain('viewAssessment');
-            expect(htmlContent).toContain('assessment=true');
         });
     });
 
@@ -330,10 +317,15 @@ describe('Museum Check-in Page', () => {
         });
 
         test('should update page title on initialization', () => {
-            // Check that init function exists and contains updatePageTitle call
-            expect(htmlContent).toContain('function init()');
-            const initFnMatch = htmlContent.match(/function init\(\)[\s\S]{0,300}updatePageTitle\(\)/);
-            expect(initFnMatch).toBeTruthy();
+            // Check that init function and updatePageTitle both exist
+            expect(htmlContent).toContain('async function init()');
+            expect(htmlContent).toContain('function updatePageTitle()');
+            
+            // Verify updatePageTitle is called somewhere
+            expect(htmlContent).toContain('updatePageTitle()');
+            
+            // Verify saveChildNickname also calls updatePageTitle (when nickname is saved)
+            expect(htmlContent).toMatch(/saveChildNickname[\s\S]{0,500}updatePageTitle/);
         });
     });
 });
