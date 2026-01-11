@@ -4026,6 +4026,9 @@ class MuseumCheckApp {
             this.achievementGamification = new AchievementGamification();
         }
         
+        // Initialize homepage adapter for museum data management
+        this.homepageAdapter = null;  // Will be initialized in async init()
+        
         this.init();
     }
 
@@ -4048,6 +4051,34 @@ class MuseumCheckApp {
 
     async init() {
         await this.initIndexedDB();
+        
+        // Initialize homepage adapter for museum data management (Phase 2.5)
+        if (typeof HomepageAdapter !== 'undefined' && 
+            typeof window.dataManager !== 'undefined' && 
+            typeof window.eventBus !== 'undefined' && 
+            typeof window.museumDataLoader !== 'undefined') {
+            try {
+                this.homepageAdapter = new HomepageAdapter(
+                    window.dataManager,
+                    window.eventBus,
+                    window.museumDataLoader
+                );
+                await this.homepageAdapter.init();
+                
+                // Use adapter's museums instead of MUSEUMS array
+                this.filteredMuseums = this.homepageAdapter.getFilteredMuseums();
+                
+                console.log('[Phase 2.5] HomepageAdapter initialized successfully');
+            } catch (error) {
+                console.error('[Phase 2.5] Failed to initialize HomepageAdapter:', error);
+                // Fallback to MUSEUMS array
+                this.filteredMuseums = MUSEUMS;
+            }
+        } else {
+            // Fallback: Use MUSEUMS array directly (backward compatibility)
+            console.log('[Phase 2.5] HomepageAdapter not available, using MUSEUMS array');
+            this.filteredMuseums = MUSEUMS;
+        }
         
         // Initialize age selector visual state
         this.initAgeSelector();
@@ -5273,6 +5304,45 @@ class MuseumCheckApp {
                 this.trackEvent('leaderboard_refreshed');
             });
         }
+        
+        // HomepageAdapter event listeners (Phase 2.5)
+        if (this.homepageAdapter && typeof window.eventBus !== 'undefined') {
+            window.eventBus.on('homepage:museums:loaded', (museums) => {
+                this.filteredMuseums = museums;
+                this.renderMuseums();
+                console.log('[Phase 2.5] Museums loaded via adapter:', museums.length);
+            });
+            
+            window.eventBus.on('homepage:search', (museums) => {
+                this.filteredMuseums = museums;
+                this.renderMuseums();
+            });
+            
+            window.eventBus.on('homepage:sorted', (museums) => {
+                this.filteredMuseums = museums;
+                this.renderMuseums();
+            });
+            
+            window.eventBus.on('homepage:filter:location', (museums) => {
+                this.filteredMuseums = museums;
+                this.renderMuseums();
+            });
+            
+            window.eventBus.on('homepage:filter:tags', (museums) => {
+                this.filteredMuseums = museums;
+                this.renderMuseums();
+            });
+            
+            window.eventBus.on('homepage:filter:collections', (museums) => {
+                this.filteredMuseums = museums;
+                this.renderMuseums();
+            });
+            
+            window.eventBus.on('homepage:filters:cleared', (museums) => {
+                this.filteredMuseums = museums;
+                this.renderMuseums();
+            });
+        }
     }
     
     /**
@@ -5312,6 +5382,54 @@ class MuseumCheckApp {
 
     // Search functionality methods
     filterMuseums() {
+        // Phase 2.5: Use HomepageAdapter if available
+        if (this.homepageAdapter) {
+            // Apply search
+            if (this.searchQuery) {
+                this.homepageAdapter.search(this.searchQuery);
+            } else {
+                this.homepageAdapter.clearFilters();
+                
+                // No search query - show only visited/favorited/browsed museums
+                // Get IDs of museums to display
+                const relevantMuseumIds = new Set();
+                
+                // Add visited museums
+                this.visitedMuseums.forEach(id => relevantMuseumIds.add(id));
+                
+                // Add favorited museums
+                this.favoriteMuseums.forEach(id => relevantMuseumIds.add(id));
+                
+                // Add browsed museums
+                Object.keys(this.browsedMuseums).forEach(id => relevantMuseumIds.add(id));
+                
+                // If user has relevant museums, filter to show only those
+                if (relevantMuseumIds.size > 0) {
+                    const allMuseums = this.homepageAdapter.getFilteredMuseums();
+                    this.filteredMuseums = allMuseums.filter(museum => relevantMuseumIds.has(museum.id));
+                    
+                    // Sort by recency (most recently browsed first)
+                    this.filteredMuseums.sort((a, b) => {
+                        const timeA = this.browsedMuseums[a.id] || 0;
+                        const timeB = this.browsedMuseums[b.id] || 0;
+                        return timeB - timeA; // Most recent first
+                    });
+                } else {
+                    // No relevant museums, show all
+                    this.filteredMuseums = this.homepageAdapter.getFilteredMuseums();
+                }
+            }
+            
+            // Apply collection filter if enabled
+            if (this.showOnlyMuseumsWithCollections) {
+                this.homepageAdapter.filterByCollections(true);
+                this.filteredMuseums = this.homepageAdapter.getFilteredMuseums();
+            }
+            
+            return;
+        }
+        
+        // Fallback: Original MUSEUMS array logic (backward compatibility)
         // If there's a search query, filter museums by search criteria (all museums)
         if (this.searchQuery) {
             const query = this.searchQuery.toLowerCase();
@@ -7052,6 +7170,19 @@ class MuseumCheckApp {
 
     // Sort museums based on current sort preference
     sortMuseums(museums) {
+        // Phase 2.5: Use HomepageAdapter if available
+        if (this.homepageAdapter) {
+            // Sync visited/favorite museums to adapter before sorting
+            // (Adapter needs these for default sort strategy)
+            this.homepageAdapter.visitedMuseums = this.visitedMuseums || [];
+            this.homepageAdapter.favoriteMuseums = this.favoriteMuseums || [];
+            
+            // Let adapter handle sorting
+            this.homepageAdapter.sort(this.sortBy || 'default');
+            return this.homepageAdapter.getFilteredMuseums();
+        }
+        
+        // Fallback: Original sorting logic (backward compatibility)
         const sorted = [...museums]; // Create a copy to avoid mutating original
         
         if (this.sortBy === 'default') {

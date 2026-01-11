@@ -198,8 +198,8 @@ class MuseumDataLoader {
     /**
      * Load all museums for listing (homepage display only)
      * 
-     * This method uses the MUSEUMS array (Tier 3) for the complete list.
-     * It provides basic metadata efficiently for homepage display.
+     * This method uses the MUSEUMS_META array for the complete list.
+     * It provides lightweight metadata efficiently for homepage display.
      * 
      * IMPORTANT: For detailed museum data (checklists, collections, etc.),
      * always use loadMuseum() which tries dynamic data first.
@@ -208,25 +208,33 @@ class MuseumDataLoader {
      */
     async loadAllMuseums() {
         try {
-            // For homepage listing purposes ONLY, use MUSEUMS array
-            // This provides the complete museum list efficiently
-            // For individual museum details, use loadMuseum() which prioritizes dynamic data
-            if (typeof MUSEUMS === 'undefined') {
-                console.error('MUSEUMS array not found in global scope');
-                return [];
+            // Priority 1: Use MUSEUMS_META if available (lightweight, fast)
+            if (typeof MUSEUMS_META !== 'undefined' && MUSEUMS_META.length > 0) {
+                console.log('Loaded museums from MUSEUMS_META (optimized for homepage)');
+                // MUSEUMS_META already contains: id, name, location, tags, image, hasCollections
+                // This is sufficient for homepage listing and search
+                return MUSEUMS_META;
             }
             
-            // Return shallow copy with basic metadata only
-            // Detailed data should be loaded via loadMuseum() for fresh dynamic content
-            return MUSEUMS.map(m => ({
-                id: m.id,
-                name: m.name,
-                location: m.location,
-                description: m.description,
-                tags: m.tags,
-                image: m.image,
-                collections: m.collections  // Include collections for V3 navigation check
-            }));
+            // Fallback: Use MUSEUMS array if MUSEUMS_META is not available
+            // This provides backward compatibility during migration
+            if (typeof MUSEUMS !== 'undefined') {
+                console.warn('MUSEUMS_META not found, using MUSEUMS array as fallback');
+                // Return shallow copy with basic metadata only
+                // Detailed data should be loaded via loadMuseum() for fresh dynamic content
+                return MUSEUMS.map(m => ({
+                    id: m.id,
+                    name: m.name,
+                    location: m.location,
+                    description: m.description,
+                    tags: m.tags,
+                    image: m.image,
+                    hasCollections: m.collections && m.collections.length > 0
+                }));
+            }
+            
+            console.error('Neither MUSEUMS_META nor MUSEUMS array found in global scope');
+            return [];
         } catch (error) {
             console.error('Error loading all museums:', error);
             return [];

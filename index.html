@@ -933,6 +933,29 @@
       // Adopt meta as default dataset before main script executes
       (function(){ if(!window.MUSEUMS && window.MUSEUMS_META){ window.MUSEUMS = window.MUSEUMS_META; } })();
     </script>
+    
+    <!-- Phase 2 Core Architecture (DataManager + EventBus + Adapters) -->
+    <script src="core/event-bus.js"></script>
+    <script src="core/data-manager.js"></script>
+    <script src="core/version-manager.js"></script>
+    <script src="core/overlay-manager.js"></script>
+    <script src="core/storage/storage-adapter-base.js"></script>
+    <script src="core/storage/local-storage-adapter.js"></script>
+    <script src="core/storage/kv-storage-adapter.js"></script>
+    <script src="core/storage/sql-storage-adapter.js"></script>
+    <script src="core/storage/file-storage-adapter.js"></script>
+    <script src="core/adapters/homepage-adapter.js"></script>
+    <script>
+      // Initialize global core systems (Phase 2)
+      (function() {
+        if (typeof EventBus !== 'undefined' && typeof DataManager !== 'undefined') {
+          window.eventBus = new EventBus();
+          window.dataManager = new DataManager(window.eventBus);
+          console.log('[Phase 2] Core systems initialized');
+        }
+      })();
+    </script>
+    
     <!-- Event Wall Service (shared) -->
     <script src="event-wall-service.js"></script>
     <!-- Main application script - must run to render museum list -->
