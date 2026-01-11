@@ -4029,7 +4029,16 @@ class MuseumCheckApp {
         // Initialize homepage adapter for museum data management
         this.homepageAdapter = null;  // Will be initialized in async init()
         
-        this.init();
+        // Start async initialization but don't block constructor
+        // The initialization will complete in the background
+        this.initPromise = this.init().catch(error => {
+            console.error('[Init] Failed to initialize MuseumCheckApp:', error);
+            // Even if init fails, show loading indicator hiding to prevent hang
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+        });
     }
 
     initAgeSelector() {
@@ -4050,9 +4059,16 @@ class MuseumCheckApp {
     }
 
     async init() {
+        console.log('[Init] Starting MuseumCheckApp initialization...');
         await this.initIndexedDB();
         
         // Initialize homepage adapter for museum data management (Phase 2.5)
+        console.log('[Init] Checking Phase 2.5 dependencies:');
+        console.log('  HomepageAdapter:', typeof HomepageAdapter);
+        console.log('  dataManager:', typeof window.dataManager);
+        console.log('  eventBus:', typeof window.eventBus);
+        console.log('  museumDataLoader:', typeof window.museumDataLoader);
+        
         if (typeof HomepageAdapter !== 'undefined' && 
             typeof window.dataManager !== 'undefined' && 
             typeof window.eventBus !== 'undefined' && 
@@ -4066,18 +4082,25 @@ class MuseumCheckApp {
                 await this.homepageAdapter.init();
                 
                 // Use adapter's museums instead of MUSEUMS array
-                this.filteredMuseums = this.homepageAdapter.getFilteredMuseums();
+                const adapterMuseums = this.homepageAdapter.getFilteredMuseums();
+                this.filteredMuseums = Array.isArray(adapterMuseums) ? adapterMuseums : MUSEUMS || [];
                 
-                console.log('[Phase 2.5] HomepageAdapter initialized successfully');
+                console.log('[Phase 2.5] HomepageAdapter initialized successfully with', this.filteredMuseums.length, 'museums');
             } catch (error) {
                 console.error('[Phase 2.5] Failed to initialize HomepageAdapter:', error);
                 // Fallback to MUSEUMS array
-                this.filteredMuseums = MUSEUMS;
+                this.filteredMuseums = MUSEUMS || [];
             }
         } else {
             // Fallback: Use MUSEUMS array directly (backward compatibility)
             console.log('[Phase 2.5] HomepageAdapter not available, using MUSEUMS array');
-            this.filteredMuseums = MUSEUMS;
+            this.filteredMuseums = MUSEUMS || [];
+        }
+        
+        // Defensive guard: ensure filteredMuseums is always an array
+        if (!Array.isArray(this.filteredMuseums)) {
+            console.warn('[Init Guard] filteredMuseums is not an array after initialization:', typeof this.filteredMuseums);
+            this.filteredMuseums = MUSEUMS || [];
         }
         
         // Initialize age selector visual state
@@ -4128,6 +4151,12 @@ class MuseumCheckApp {
         
         this.renderMuseums();
         this.updateStats();
+        
+        // Ensure loading indicator is hidden (final safety check)
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
         
         // Update fireworks button visibility based on available fireworks
         this.updateFireworksButtonVisibility();
@@ -5307,40 +5336,47 @@ class MuseumCheckApp {
         
         // HomepageAdapter event listeners (Phase 2.5)
         if (this.homepageAdapter && typeof window.eventBus !== 'undefined') {
-            window.eventBus.on('homepage:museums:loaded', (museums) => {
-                this.filteredMuseums = museums;
+            const syncFilteredFromAdapter = (label) => {
+                this.filteredMuseums = this.homepageAdapter.getFilteredMuseums();
                 this.renderMuseums();
-                console.log('[Phase 2.5] Museums loaded via adapter:', museums.length);
+                if (label) {
+                    console.log(`[Phase 2.5] ${label}: ${this.filteredMuseums.length}`);
+                }
+            };
+
+            window.eventBus.on('homepage:museums:loaded', () => {
+                syncFilteredFromAdapter('Museums loaded via adapter');
             });
             
-            window.eventBus.on('homepage:search', (museums) => {
-                this.filteredMuseums = museums;
-                this.renderMuseums();
+            window.eventBus.on('homepage:search', () => {
+                syncFilteredFromAdapter('Search completed');
             });
             
-            window.eventBus.on('homepage:sorted', (museums) => {
-                this.filteredMuseums = museums;
-                this.renderMuseums();
+            // CRITICAL FIX: homepage:sorted is emitted AFTER adapter.sort() completes
+            // We should NOT call renderMuseums() (which calls sortMuseums() again)
+            // Instead, just sync the already-sorted museums and update stats
+            window.eventBus.on('homepage:sorted', () => {
+                this.filteredMuseums = this.homepageAdapter.getFilteredMuseums();
+                this.updateStats();
+                if (console && console.log) {
+                    console.log(`[Phase 2.5] Museums sorted: ${this.filteredMuseums.length}`);
+                }
             });
             
-            window.eventBus.on('homepage:filter:location', (museums) => {
-                this.filteredMuseums = museums;
-                this.renderMuseums();
+            window.eventBus.on('homepage:filter:location', () => {
+                syncFilteredFromAdapter('Location filter applied');
             });
             
-            window.eventBus.on('homepage:filter:tags', (museums) => {
-                this.filteredMuseums = museums;
-                this.renderMuseums();
+            window.eventBus.on('homepage:filter:tags', () => {
+                syncFilteredFromAdapter('Tag filter applied');
             });
             
-            window.eventBus.on('homepage:filter:collections', (museums) => {
-                this.filteredMuseums = museums;
-                this.renderMuseums();
+            window.eventBus.on('homepage:filter:collections', () => {
+                syncFilteredFromAdapter('Collections filter applied');
             });
             
-            window.eventBus.on('homepage:filters:cleared', (museums) => {
-                this.filteredMuseums = museums;
-                this.renderMuseums();
+            window.eventBus.on('homepage:filters:cleared', () => {
+                syncFilteredFromAdapter('Filters cleared');
             });
         }
     }
@@ -7266,10 +7302,18 @@ class MuseumCheckApp {
         try {
             const grid = document.getElementById('museumGrid');
             const loadingIndicator = document.getElementById('loadingIndicator');
-            // Hide loading indicator
+            
+            // Hide loading indicator immediately
             if (loadingIndicator) {
                 loadingIndicator.style.display = 'none';
             }
+            
+            // Ensure grid exists before clearing
+            if (!grid) {
+                console.error('renderMuseums: museumGrid element not found');
+                return;
+            }
+            
             grid.innerHTML = '';
 
             // Determine if user is new (no visited museums, no search, no favorites, no filters)
@@ -7278,6 +7322,12 @@ class MuseumCheckApp {
                 && (!this.lastSearchQuery || this.lastSearchQuery.trim() === '')
                 && (!this.showOnlyMuseumsWithCollections);
 
+            // Ensure filteredMuseums is always an array
+            if (!Array.isArray(this.filteredMuseums)) {
+                console.warn('[Defensive Guard] filteredMuseums is not an array:', typeof this.filteredMuseums, this.filteredMuseums);
+                this.filteredMuseums = MUSEUMS || [];
+            }
+            
             let museumsToRender = this.filteredMuseums;
             if (this.showOnlyMuseumsWithCollections) {
                 museumsToRender = this.filteredMuseums.filter(museum => this.museumHasCollections(museum));

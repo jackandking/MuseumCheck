@@ -341,6 +341,16 @@
                     </div>
                     <!-- Museums will be populated by JavaScript -->
                 </div>
+                <script>
+                  // Safety: Hide loading indicator after 5 seconds if render didn't complete
+                  setTimeout(function() {
+                    const indicator = document.getElementById('loadingIndicator');
+                    if (indicator && indicator.style.display !== 'none') {
+                      console.warn('Loading indicator still visible after 5s timeout - hiding it');
+                      indicator.style.display = 'none';
+                    }
+                  }, 5000);
+                </script>
             </section>
         </main>
     </div>
