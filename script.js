@@ -4712,7 +4712,7 @@ class MuseumCheckApp {
 
         // Quiz button
         document.getElementById('quizButton').addEventListener('click', () => {
-            window.location.href = 'pages/quiz/index.html';
+            window.location.href = 'quiz/index.html';
         });
 
         // National Treasures Survey button

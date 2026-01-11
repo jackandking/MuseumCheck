@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>考一考 - 博物馆知识测验</title>
-    <link rel="stylesheet" href="../../src/css/quiz/quiz-style.css">
+    <link rel="stylesheet" href="css/quiz-style.css">
 </head>
 <body>
     <div class="quiz-container">
@@ -66,14 +66,14 @@
     </div>
 
     <!-- Load museum data first -->
-    <script src="../../museums-data.js"></script>
+    <script src="../museums-data.js"></script>
     <!-- Then load quiz modules -->
-    <script src="../../src/js/core/points-manager.js"></script>
-    <script src="../../src/js/features/quiz/quiz-data.js"></script>
-    <script src="../../src/js/features/quiz/quiz-engine.js"></script>
-    <script src="../../src/js/features/quiz/quiz-statistics.js"></script>
-    <script src="../../src/js/features/quiz/quiz-limit.js"></script>
-    <script src="../../src/js/features/quiz/quiz-ui.js"></script>
+    <script src="js/points-manager.js"></script>
+    <script src="js/quiz-data.js"></script>
+    <script src="js/quiz-engine.js"></script>
+    <script src="js/quiz-statistics.js"></script>
+    <script src="js/quiz-limit.js"></script>
+    <script src="js/quiz-ui.js"></script>
     <script>
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
@@ -151,7 +151,7 @@
         }
 
         function goHome() {
-            window.location.href = '../../index.html';
+            window.location.href = '../index.html';
         }
     </script>
 </body>

@@ -46,25 +46,38 @@
 ### 目录结构
 
 ```
-pages/quiz/
+quiz/                       # Self-contained quiz module
 ├── index.html              # 答题首页
 ├── session.html            # 答题会话页面
 ├── result.html             # 结果页面
-└── wrong-questions.html    # 错题本
-
-src/
-├── js/
-│   ├── core/
-│   │   └── points-manager.js       # 统一积分管理
-│   └── features/quiz/
-│       ├── quiz-data.js            # 题库数据管理
-│       ├── quiz-engine.js          # 答题引擎核心
-│       ├── quiz-statistics.js      # 统计分析
-│       ├── quiz-limit.js           # 防沉迷限制
-│       └── quiz-ui.js              # UI辅助函数
-└── css/quiz/
-    └── quiz-style.css              # 答题页面样式
+├── wrong-questions.html    # 错题本
+├── README.md               # Module documentation
+├── css/
+│   └── quiz-style.css      # 答题页面样式
+└── js/
+    ├── points-manager.js   # 统一积分管理
+    ├── quiz-data.js        # 题库数据管理
+    ├── quiz-engine.js      # 答题引擎核心
+    ├── quiz-statistics.js  # 统计分析
+    ├── quiz-limit.js       # 防沉迷限制
+    └── quiz-ui.js          # UI辅助函数
 ```
+
+### 架构设计原则
+
+本模块采用**自包含架构**（Self-Contained Architecture）：
+
+- ✅ **高内聚**：相关功能集中在一个目录
+- ✅ **低耦合**：最小化外部依赖
+- ✅ **清晰边界**：模块范围明确定义
+- ✅ **易于维护**：变更局限在模块内部
+- ✅ **样式隔离**：CSS与页面代码靠近，避免样式冲突
+
+### 外部依赖
+
+仅依赖两个核心模块：
+- `museums-data.js` - 博物馆元数据（用于生成题目）
+- `achievement-gamification.js` - 成就系统（通过PointsManager集成）
 
 ### 核心模块
 
