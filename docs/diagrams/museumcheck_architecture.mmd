@@ -5,8 +5,9 @@ graph LR
     accDescr: High-level flow showing client, data, persistence, optional KV sync, image sources and CI
 
     Browser[Browser (mobile-first SPA)] -->|GET assets| Static[Static Host (GitHub Pages)]
-    Static -->|serves| Assets[(index.html / script.js / style.css / museums-data.js)]
-    Browser -->|reads bundled data| Museums[Museums Data (museums-data.js)]
+    Static -->|serves| Assets[(index.html / script.js / style.css / museums-meta.js / museums/{id}.json)]
+    Browser -->|reads meta list| MuseumsMeta[Museum Metadata (museums-meta.js)]
+    Browser -->|loads details| MuseumJson[Per-museum JSON (/museums/{id}.json)]
     Browser -->|read/write| LocalStorage[localStorage\nvisitedMuseums,\nmuseumChecklists]
     Browser -->|optional sync| KV[Tier-2 KV / Letmetry API]
     Browser -->|image requests| Images[Image Sources (Wikimedia Commons, proxy)]

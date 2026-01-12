@@ -9,7 +9,7 @@
 ## Components
 
 - **Web Client (SPA)**: `index.html`, `script.js`, `style.css` — browser-run UI that renders museum cards, modals, checklists, and controls age selection.
-- **Museum Data**: `museums-data.js` / `museums-meta.js` — canonical static dataset (120 museums) bundled with the site; used as primary read source in the client.
+- **Museum Data (current)**: `museums-meta.js` for lightweight homepage listing, plus per-museum static JSON files under `/museums/{id}.json` for verified content; dynamic Tier 2 (KV store) can override when available.
 - **Local Persistence**: Browser `localStorage` (keys: `visitedMuseums`, `museumChecklists`) used for all runtime state and progress.
 - **Optional Tier-2 (KV) / Letmetry API**: remote KV store & Letmetry endpoints used in some flows (dev/debug) for sharing or backup. Requires composite keys (`key` + `sortKey`).
 - **Image Sources**: Wikimedia Commons preferred; fallback via Bing helper or image proxy helpers (`image-proxy-helper.js`).
@@ -18,7 +18,7 @@
 
 ## Public Interfaces / Contracts
 
-- Browser ↔ Static Host: GET requests for `index.html`, `script.js`, `style.css`, `museums-data.js` (200 OK expected for assets).
+- Browser ↔ Static Host: GET requests for `index.html`, `script.js`, `style.css`, `museums-meta.js`, and `/museums/{id}.json` (200 OK expected for assets).
 - Browser ↔ localStorage: keys and shapes:
 
   - `visitedMuseums`: JSON array of museum IDs, e.g. `["forbidden-city","national-museum"]`.
@@ -30,8 +30,8 @@ Why it matters: These are the only external contracts; tests and migration plans
 
 ## Key Data Flows (Ingress → Egress)
 
-1. User Visit & Checklists
-   - Browser loads SPA → `museums-data.js` → user opens museum modal → user checks items → client updates `museumChecklists` in `localStorage` → UI updates progress counter.
+ 1. User Visit & Checklists
+    - Browser loads SPA → `museums-meta.js` populates listing → user opens museum modal → loader fetches Tier 2 (KV) then Tier 1 (`/museums/{id}.json`) → user checks items → client updates `museumChecklists` in `localStorage` → UI updates progress counter.
 
 2. Mark Museum Visited
    - User toggles museum visit on card → client updates `visitedMuseums` (localStorage) → progress percentage recalculated and shown.
@@ -43,9 +43,9 @@ Why it matters: These are the only external contracts; tests and migration plans
 
 - Asset 404/500 (Static host): SPA fails to load or has missing JS/CSS → visible error, no fallback. Mitigation: health-check CI and SRI for critical assets.
 - `localStorage` unavailable or quota exceeded (incognito, browser limits): progress lost/failed writes. Mitigation: detect failures, prompt user to export or retry.
-- JSON parse errors on `museums-data.js` (data corruption or partial download): UI crashes. Mitigation: defensive parsing and fail-safe UI to show a meaningful error and recovery path.
+- JSON parse errors on static data (`museums-meta.js` or `/museums/{id}.json`): UI crashes. Mitigation: defensive parsing and fail-safe UI to show a meaningful error and recovery path.
 - KV/Letmetry failures (missing `sortKey`, 4xx/5xx, network errors): remote sync fails — must not block local saves. Mitigation: local-first writes, exponential retry, circuit breaker, and clear error UX.
-- Duplicate museum IDs/names in `museums-data.js`: UI confusion (search, counters wrong). Mitigation: run data-quality tests (`npm run validate-data`) and block PRs on duplicates.
+- Duplicate museum IDs/names in metadata or static JSON: UI confusion (search, counters wrong). Mitigation: run data-quality tests (`npm run validate-data`) and block PRs on duplicates.
 - Image load failures / broken URLs: thumbnails broken. Mitigation: `image-fallback-config.js` and proxy helpers to surface placeholders.
 
 ## SLIs / SLOs (Suggested)
@@ -60,7 +60,7 @@ Why it matters: These SLOs are focused on user-observable behavior for a static,
 ## Testing & Validation Strategy
 
 - Unit/regression tests (Jest + jsdom) for core logic: checklist save/load, progress calc, KV request formation (must include `sortKey`).
-- Data-quality tests: detect duplicate `id` or `name` in `museums-data.js` and fail CI until resolved.
+- Data-quality tests: detect duplicate `id` or `name` in `museums-meta.js` and static museum files; fail CI until resolved.
 - Manual validation matrix (documented in repository): local dev server `python3 -m http.server 8000` and manual scenarios for checklists and persistence.
 - E2E: lightweight Playwright scenario to open homepage, open a museum modal, toggle checklist items, refresh, and verify persistence.
 

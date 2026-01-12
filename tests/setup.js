@@ -36,7 +36,9 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock
 });
 
-// Load MUSEUMS data from museums-data.js and make it globally available
+// Load MUSEUMS data from museums-data.js and make it globally available for tests
+// Note: Runtime no longer uses museums-data.js (moved to Tier2→Tier1 loader);
+// this is retained as test fixture data until fully migrated to per-museum JSON.
 function loadMuseumData() {
   const museumsDataPath = path.join(__dirname, '..', 'museums-data.js');
   const scriptPath = path.join(__dirname, '..', 'script.js');

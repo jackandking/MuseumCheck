@@ -33,7 +33,7 @@ quiz/
 ## 🔗 External Dependencies
 
 This module depends on:
-- `../museums-data.js` - Museum metadata for question generation
+- `../museums-meta.js` / museum data loader - Museum metadata for question generation (runtime: uses Tier2→Tier1 loader; tests: may use museums-data.js)
 - `../achievement-gamification.js` - For XP/points integration (via PointsManager)
 
 ## 🎯 Module Entry Points

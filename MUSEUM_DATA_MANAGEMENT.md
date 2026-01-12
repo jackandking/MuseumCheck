@@ -198,12 +198,9 @@ const expireAt = Math.floor(Date.now() / 1000) + 2592000;
 ## Tier 3: 内置数据
 
 ### 特点
-- **文件**：`museums-data.js`（全量数据）+ `museums-meta.js`（元数据）
-- **用途**：默认数据、离线支持、首次加载
-- **优势**：
-  - 保证离线可用
-  - 首次加载快速（元数据优先）
-  - 完整的博物馆列表
+- **文件**：`museums-meta.js`（首页元数据）+ `/museums/{id}.json`（静态详情数据）
+- **用途**：首页轻量列表 + 详情静态回退
+- **状态**：`museums-data.js` 已弃用且不再在运行时使用，后续将删除
 
 ### 文件结构
 
@@ -221,26 +218,13 @@ window.MUSEUMS_META = [
 ];
 ```
 
-**museums-data.js** - 基础数据（仅用于首页列表）
-```javascript
-const MUSEUMS = [
-  {
-    id: 'forbidden-city',
-    name: '故宫博物院',
-    // ... 包含 checklists，但仅用于首页展示
-    // 博物馆详情页会从 Tier 2 或 Tier 1 获取最新数据
-  },
-  // ... 更多博物馆
-];
-```
-
-⚠️ **注意**：`museums-data.js` 中的数据仅用于首页博物馆列表展示。博物馆详情页（如任务清单、镇馆之宝等）会优先从远程获取最新数据。
+⚠️ **注意**：`museums-data.js` 已从加载路径移除。首页列表依赖 `museums-meta.js`，详情页通过数据加载器按 Tier 2 → Tier 1 获取。
 
 ## 优先级配置
 
 ### 动态优先模式（默认且唯一推荐）
 
-**优先级**：远程存储 → 静态文件（不使用内置数据）
+**优先级**：远程存储 → 静态文件（过滤 tier3）
 
 系统默认使用动态优先模式，且会自动过滤掉 tier3 的配置。这确保用户始终获取最新、最准确的博物馆信息。
 
@@ -256,16 +240,7 @@ museumDataLoader.updatePrioritySettings(['tier2', 'tier1', 'tier3']);
 
 ### 关于离线模式
 
-**重要**：离线模式已被废弃。原因如下：
-
-1. **数据质量问题**：内置数据可能过时或不准确
-2. **用户体验考量**：错误的信息会让孩子在博物馆里感到困惑和失望
-3. **明确的反馈**：网络错误提示比提供错误数据更诚实
-
-如果用户处于离线环境，应用会：
-1. 首页仍然可以显示博物馆列表（使用 MUSEUMS 数组）
-2. 点击博物馆详情时会提示检查网络连接
-3. 如果有已缓存的博物馆数据，可以继续使用
+离线时：首页可使用 `museums-meta.js` 展示列表；详情若缺数据则提示检查网络或使用已缓存的 Tier 2/1 结果。不会回退到 `museums-data.js`。
 
 ### 用户界面配置
 
@@ -288,8 +263,9 @@ graph TD
     E -->|否| F[修改数据]
     F --> B
     E -->|是| G[导出为静态文件]
-    G --> H[添加到 museums-data.js]
-    H --> I[提交代码]
+    G --> H[提交 /museums/{id}.json]
+    H --> I[更新元数据（生成 museums-meta.js）]
+    I --> J[提交代码]
 ```
 
 **详细步骤**：
@@ -309,11 +285,10 @@ graph TD
 # 从管理界面复制 JSON 数据
 echo '{ "id": "new-museum", ... }' > museums/new-museum.json
 
-# 5. 添加到内置数据
-# 编辑 museums-data.js，添加新博物馆到 MUSEUMS 数组
+# 5. 生成/更新 museums-meta.js（如需）
 
 # 6. 提交代码
-git add museums/new-museum.json museums-data.js
+git add museums/new-museum.json museums-meta.js
 git commit -m "Add new museum: XXX"
 git push
 ```
@@ -331,11 +306,10 @@ git push
 # 从管理界面导出 JSON，覆盖现有文件
 cat museum-data.json > museums/existing-museum.json
 
-# 4. 更新内置数据
-# 编辑 museums-data.js，同步修改
+# 4. 如需更新元数据，重新生成 museums-meta.js
 
 # 5. 提交代码
-git add museums/existing-museum.json museums-data.js
+git add museums/existing-museum.json museums-meta.js
 git commit -m "Update museum: XXX"
 git push
 ```
