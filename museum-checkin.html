@@ -70,14 +70,26 @@
         .loading { text-align: center; color: white; font-size: 18px; padding: 40px; }
         .loading-spinner { display: inline-block; width: 40px; height: 40px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s linear infinite; margin-bottom: 16px; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .header { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .menu-button, .settings-button { width: 44px; height: 44px; background: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+        .header { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 16px; }
+        .menu-button, .settings-button { width: 44px; height: 44px; background: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); transition: all 0.2s ease; flex-shrink: 0; }
         .menu-button { font-size: 24px; }
         .settings-button { font-size: 20px; }
+        .menu-button:hover:not(:disabled),
+        .settings-button:hover:not(:disabled) {
+            background-color: rgba(79, 70, 229, 0.1);
+            transform: scale(1.05);
+        }
         .title { font-size: 32px; font-weight: bold; color: white; text-align: center; margin: 20px 0 30px 0; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); cursor: pointer; }
         .museum-name { font-size: 18px; color: rgba(255, 255, 255, 0.9); text-align: center; margin-bottom: 30px; }
         .task-grid { width: 100%; max-width: 800px; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding-bottom: 20px; }
-        @media (max-width: 768px) { .task-grid { grid-template-columns: repeat(2, 1fr); } .title { font-size: 28px; } }
+        @media (max-width: 768px) { 
+            .task-grid { grid-template-columns: repeat(2, 1fr); } 
+            .title { font-size: 28px; }
+            .menu-button, .settings-button { width: 44px; height: 44px; font-size: 18px; }
+        }
+        @media (max-width: 480px) {
+            .menu-button, .settings-button { width: 40px; height: 40px; font-size: 16px; }
+        }
     </style>
     
     <!-- Additional CSS - Styles for task cards, modals, and other UI components -->
@@ -4057,11 +4069,11 @@
         }
     </style>
     <!-- Virtual Pet and Achievement Gamification Styles - Load asynchronously -->
-    <link rel="stylesheet" href="virtual-pet.css" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="achievement-gamification.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/virtual-pet.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/achievement-gamification.css" media="print" onload="this.media='all'">
     <noscript>
-        <link rel="stylesheet" href="virtual-pet.css">
-        <link rel="stylesheet" href="achievement-gamification.css">
+        <link rel="stylesheet" href="css/virtual-pet.css">
+        <link rel="stylesheet" href="css/achievement-gamification.css">
     </noscript>
 </head>
 <!-- child-mode class is intentionally hardcoded because this page is specifically for kids' tasks -->
@@ -4722,14 +4734,14 @@
 
 
     <!-- Load dependencies -->
-    <script src="museum-data-loader.js"></script>
-    <script src="treasure-workflow-generator.js"></script>
+    <script src="js/museum-data-loader.js"></script>
+    <script src="js/treasure-workflow-generator.js"></script>
     <script src="firework.js"></script>
-    <script src="achievement-gamification.js"></script>
-    <script src="virtual-pet.js"></script>
+    <script src="js/achievement-gamification.js"></script>
+    <script src="js/virtual-pet.js"></script>
     <script src="snake-game-inline.js"></script>
     <script src="baidu-image-search.js"></script>
-    <script src="letmetry-cloud-api.js"></script>
+    <script src="js/letmetry-cloud-api.js"></script>
     <script src="image-upload-util.js"></script>
     <!-- Event Wall Service (shared, must come after REMOTE_STORAGE_CONFIG is defined) -->
     <script src="event-wall-service.js"></script>

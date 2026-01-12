@@ -43,14 +43,11 @@ const DOM_SELECTORS = {
         MUSEUM_MODAL: '#museumModal',
         MUSEUM_MODAL_CLOSE: '#museumModal .close',
         ACHIEVEMENT_MODAL: '#achievementModal',
-        ACHIEVEMENT_MODAL_CLOSE: '#achievementModal .close',
-        ASSESSMENT_HISTORY_MODAL: '#assessmentHistoryModal',
-        ASSESSMENT_HISTORY_MODAL_CLOSE: '#assessmentHistoryModal .close'
+        ACHIEVEMENT_MODAL_CLOSE: '#achievementModal .close'
     },
     
     BUTTONS: {
-        ACHIEVEMENT: '#achievementButton',
-        ASSESSMENT_HISTORY: '#assessmentHistoryButton'
+        ACHIEVEMENT: '#achievementButton'
     },
     
     ELEMENTS: {
@@ -4756,39 +4753,88 @@ class MuseumCheckApp {
         });
         
         // Achievement button - Navigate to new achievements page
-        document.getElementById('achievementButton').addEventListener('click', () => {
-            window.location.href = 'achievements.html';
-        });
+        // Note: Achievement button no longer in top bar, only in mobile menu
+        const achievementButton = document.getElementById('achievementButton');
+        if (achievementButton) {
+            achievementButton.addEventListener('click', () => {
+                window.location.href = 'achievements.html';
+            });
+        }
 
-        // Assessment history button
-        document.getElementById('assessmentHistoryButton').addEventListener('click', () => {
-            this.showAssessmentHistoryModal();
-        });
+        // Leaderboard button (desktop-only, may not exist on mobile)
+        const leaderboardButton = document.getElementById('leaderboardButton');
+        if (leaderboardButton) {
+            leaderboardButton.addEventListener('click', () => {
+                this.showLeaderboardModal();
+            });
+        }
 
-        // Leaderboard button
-        document.getElementById('leaderboardButton').addEventListener('click', () => {
-            this.showLeaderboardModal();
-        });
+        // Quiz button (desktop-only)
+        const quizButton = document.getElementById('quizButton');
+        if (quizButton) {
+            quizButton.addEventListener('click', () => {
+                window.location.href = 'quiz/index.html';
+            });
+        }
 
-        // Quiz button
-        document.getElementById('quizButton').addEventListener('click', () => {
-            window.location.href = 'quiz/index.html';
-        });
+        // National Treasures Survey button (desktop-only)
+        const nationalTreasuresButton = document.getElementById('nationalTreasuresButton');
+        if (nationalTreasuresButton) {
+            nationalTreasuresButton.addEventListener('click', () => {
+                window.open('survey/national-treasures/index.html', '_blank');
+            });
+        }
 
-        // National Treasures Survey button
-        document.getElementById('nationalTreasuresButton').addEventListener('click', () => {
-            window.open('survey/national-treasures/index.html', '_blank');
-        });
-
-        // Event Wall button
-        document.getElementById('eventWallButton').addEventListener('click', () => {
-            window.open('event-wall.html', '_blank');
-        });
+        // Event Wall button (desktop-only)
+        const eventWallButton = document.getElementById('eventWallButton');
+        if (eventWallButton) {
+            eventWallButton.addEventListener('click', () => {
+                window.open('event-wall.html', '_blank');
+            });
+        }
 
         // Settings button
-        document.getElementById('settingsButton').addEventListener('click', () => {
-            this.showSettingsModal();
+        const settingsButton = document.getElementById('settingsButton');
+        if (settingsButton) {
+            settingsButton.addEventListener('click', () => {
+                this.showSettingsModal();
+            });
+        }
+
+        // 汉堡菜单按钮
+        const mobileMenuButton = document.getElementById('mobileMenuButton');
+        if (mobileMenuButton) {
+            mobileMenuButton.addEventListener('click', () => {
+                this.openMobileMenu();
+            });
+        }
+
+        // 汉堡菜单关闭按钮
+        const closeMobileMenuBtn = document.getElementById('closeMobileMenu');
+        if (closeMobileMenuBtn) {
+            closeMobileMenuBtn.addEventListener('click', () => {
+                this.closeMobileMenu();
+            });
+        }
+
+        // 汉堡菜单项点击事件委托
+        const mobileMenuItems = document.querySelectorAll('.mobile-menu-item');
+        mobileMenuItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                const action = e.currentTarget.getAttribute('data-action');
+                this.handleMobileMenuAction(action);
+            });
         });
+
+        // 汉堡菜单模态框外部点击关闭
+        const mobileMenuModal = document.getElementById('mobileMenuModal');
+        if (mobileMenuModal) {
+            mobileMenuModal.addEventListener('click', (e) => {
+                if (e.target.id === 'mobileMenuModal') {
+                    this.closeMobileMenu();
+                }
+            });
+        }
 
         // Achievement modal close - DISABLED (now using separate achievements.html page)
         /* Commented out - achievement modal removed
@@ -4798,9 +4844,13 @@ class MuseumCheckApp {
         */
 
         // Assessment history modal close
-        document.querySelector('#assessmentHistoryModal .close').addEventListener('click', () => {
-            this.closeAssessmentHistoryModal();
-        });
+        // Assessment history modal removed - this element no longer exists
+        const assessmentHistoryModalClose = document.querySelector('#assessmentHistoryModal .close');
+        if (assessmentHistoryModalClose) {
+            assessmentHistoryModalClose.addEventListener('click', () => {
+                this.closeAssessmentHistoryModal();
+            });
+        }
 
         // Leaderboard modal close
         document.querySelector('#leaderboardModal .close').addEventListener('click', () => {
@@ -4842,11 +4892,15 @@ class MuseumCheckApp {
         */
 
         // Click outside assessment history modal to close
-        document.getElementById('assessmentHistoryModal').addEventListener('click', (e) => {
-            if (e.target.id === 'assessmentHistoryModal') {
-                this.closeAssessmentHistoryModal();
-            }
-        });
+        // Assessment history modal removed - feature no longer exists
+        const assessmentHistoryModal = document.getElementById('assessmentHistoryModal');
+        if (assessmentHistoryModal) {
+            assessmentHistoryModal.addEventListener('click', (e) => {
+                if (e.target.id === 'assessmentHistoryModal') {
+                    this.closeAssessmentHistoryModal();
+                }
+            });
+        }
 
         // Click outside leaderboard modal to close
         document.getElementById('leaderboardModal').addEventListener('click', (e) => {
@@ -4866,14 +4920,21 @@ class MuseumCheckApp {
         }
 
         // Settings icon click
-        document.getElementById('settingsIcon').addEventListener('click', () => {
-            this.showSettingsModal();
-        });
+        // Settings icon no longer visible - hidden in header updates
+        const settingsIcon = document.getElementById('settingsIcon');
+        if (settingsIcon) {
+            settingsIcon.addEventListener('click', () => {
+                this.showSettingsModal();
+            });
+        }
 
         // Settings modal close
-        document.querySelector('#settingsModal .close').addEventListener('click', () => {
-            this.closeSettingsModal();
-        });
+        const settingsModalClose = document.querySelector('#settingsModal .close');
+        if (settingsModalClose) {
+            settingsModalClose.addEventListener('click', () => {
+                this.closeSettingsModal();
+            });
+        }
 
         // Click outside settings modal to close
         document.getElementById('settingsModal').addEventListener('click', (e) => {
@@ -5289,14 +5350,20 @@ class MuseumCheckApp {
         */
 
         // Fireworks button - opens fireworks wall page showing all museum achievements
-        document.getElementById('fireworksButton').addEventListener('click', () => {
-            window.open('fireworks-wall.html', '_blank');
-        });
+        const fireworksButton = document.getElementById('fireworksButton');
+        if (fireworksButton) {
+            fireworksButton.addEventListener('click', () => {
+                window.open('fireworks-wall.html', '_blank');
+            });
+        }
 
         // Fireworks modal close
-        document.querySelector('#fireworksModal .close').addEventListener('click', () => {
-            this.closeFireworksModal();
-        });
+        const fireworksModalClose = document.querySelector('#fireworksModal .close');
+        if (fireworksModalClose) {
+            fireworksModalClose.addEventListener('click', () => {
+                this.closeFireworksModal();
+            });
+        }
 
         // Click outside fireworks modal to close
         document.getElementById('fireworksModal').addEventListener('click', (e) => {
@@ -7830,24 +7897,11 @@ class MuseumCheckApp {
     }
 
     updateStats() {
-        const visitedCount = this.visitedMuseums.length;
-        const totalCount = MUSEUMS.length;
-        // Fix percentage display: use one decimal place to show meaningful progress for small percentages
-        const percentage = totalCount > 0 
-            ? (visitedCount > 0 ? Math.round((visitedCount / totalCount) * 100 * 10) / 10 : 0)
-            : 0;
-
-        document.getElementById('visitedCount').textContent = visitedCount;
-        document.getElementById('totalCount').textContent = totalCount;
-        const percentageElement = document.getElementById('visitedPercentage');
-        if (percentageElement) {
-            percentageElement.textContent = percentage;
-        }
-        
-        // Update Minecraft-style progress bar
-        this.updateMinecraftProgressBar(percentage);
+        // Progress statistics feature removed per user request
+        // Keep only essential updates for other features
         
         // Update achievements
+        const visitedCount = this.visitedMuseums.length;
         this.updateAchievements(visitedCount);
         
         // Update fireworks count
@@ -7855,46 +7909,10 @@ class MuseumCheckApp {
         if (fireworksCountElement) {
             fireworksCountElement.textContent = this.fireworks.length;
         }
-        
-        // 🐛 Fix: Update main page assessment scores on initialization
-        this.updateMainPageAssessmentScores();
     }
 
-    // 🐛 Fix: Method to update main page assessment scores during initialization
-    updateMainPageAssessmentScores() {
-        try {
-            // getAssessmentResults() now returns an array (sorted by date, newest first)
-            const sortedResults = this.getAssessmentResults();
-            
-            // Calculate scores (same logic as updateHistorySummary)
-            const totalAssessments = sortedResults.length;
-            const averageScore = totalAssessments > 0 
-                ? Math.round(sortedResults.reduce((sum, r) => sum + r.score, 0) / totalAssessments)
-                : 0;
-            const latestScore = totalAssessments > 0 ? sortedResults[0].score : 0;
-            
-            // Update main page display elements
-            const mainAverageScore = document.getElementById('mainAverageScore');
-            const mainLatestScore = document.getElementById('mainLatestScore');
-            if (mainAverageScore) {
-                mainAverageScore.textContent = averageScore;
-            }
-            if (mainLatestScore) {
-                mainLatestScore.textContent = latestScore;
-            }
-        } catch (error) {
-            console.warn('Failed to update main page assessment scores:', error);
-            // Ensure scores show 0 if there's an error
-            const mainAverageScore = document.getElementById('mainAverageScore');
-            const mainLatestScore = document.getElementById('mainLatestScore');
-            if (mainAverageScore) {
-                mainAverageScore.textContent = '0';
-            }
-            if (mainLatestScore) {
-                mainLatestScore.textContent = '0';
-            }
-        }
-    }
+    // 🐛 Fix: Method to update main page assessment scores during initialization - REMOVED
+    // Progress statistics feature removed per user request
 
     updateDynamicMuseumCounts() {
         // Update all dynamic museum count displays with the actual count
@@ -8311,25 +8329,7 @@ class MuseumCheckApp {
         return achievements;
     }
     
-    updateMinecraftProgressBar(percentage) {
-        // Update the Minecraft-styled progress bar
-        const progressFill = document.getElementById('minecraftProgressFill');
-        const progressBlocks = document.getElementById('minecraftProgressBlocks');
-        
-        if (progressFill) {
-            progressFill.style.width = percentage + '%';
-        }
-        
-        // Add pixel blocks based on percentage
-        if (progressBlocks) {
-            const blockCount = Math.floor(percentage / 5); // One block every 5%
-            let blocksHTML = '';
-            for (let i = 0; i < blockCount; i++) {
-                blocksHTML += '<span class="pixel-block"></span>';
-            }
-            progressBlocks.innerHTML = blocksHTML;
-        }
-    }
+    // updateMinecraftProgressBar removed - progress statistics feature removed per user request
     
     updateAchievements(visitedCount) {
         const achievements = this.calculateAchievements(visitedCount);
@@ -10141,6 +10141,97 @@ class MuseumCheckApp {
 
     closeSettingsModal() {
         document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    // 汉堡菜单方法
+    openMobileMenu() {
+        const modal = document.getElementById('mobileMenuModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            
+            // P0: Trigger open animation (slide-up + fade-in)
+            const content = modal.querySelector('.mobile-menu-content');
+            if (content) {
+                content.classList.remove('closing');
+                content.classList.add('open');
+            }
+            
+            // 同步烟花按钮显示状态到菜单
+            this.updateMobileMenuFireworksVisibility();
+            
+            // Track mobile menu opened
+            this.trackEvent('mobile_menu_opened', {
+                screen_width: window.innerWidth
+            });
+        }
+    }
+
+    closeMobileMenu() {
+        const modal = document.getElementById('mobileMenuModal');
+        if (modal) {
+            // P0: Trigger close animation (slide-down + fade-out, 200ms)
+            const content = modal.querySelector('.mobile-menu-content');
+            if (content) {
+                content.classList.remove('open');
+                content.classList.add('closing');
+                
+                // Wait for animation to complete before hiding modal
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    content.classList.remove('closing');
+                }, 200);
+            } else {
+                modal.style.display = 'none';
+            }
+        }
+    }
+
+    handleMobileMenuAction(action) {
+        // P0: Auto-close menu after 200ms delay to allow animation completion
+        setTimeout(() => {
+            this.closeMobileMenu();
+        }, 200);
+        
+        // 执行对应功能
+        switch(action) {
+            case 'achievements':
+                window.location.href = 'achievements.html';
+                break;
+            case 'leaderboard':
+                this.showLeaderboardModal();
+                break;
+            case 'quiz':
+                window.location.href = 'quiz/index.html';
+                break;
+            case 'nationalTreasures':
+                window.open('survey/national-treasures/index.html', '_blank');
+                break;
+            case 'eventWall':
+                window.open('event-wall.html', '_blank');
+                break;
+            case 'fireworks':
+                // 烟花功能 - 根据现有实现调整
+                // 这里假设有一个烟花墙页面
+                window.location.href = 'fireworks-wall.html';
+                break;
+        }
+        
+        // Track menu item clicked
+        this.trackEvent('mobile_menu_item_clicked', {
+            action: action,
+            screen_width: window.innerWidth
+        });
+    }
+
+    updateMobileMenuFireworksVisibility() {
+        // 同步桌面端烟花按钮的显示状态到移动菜单
+        const desktopFireworks = document.getElementById('fireworksButton');
+        const mobileFireworks = document.getElementById('mobileMenuFireworks');
+        
+        if (desktopFireworks && mobileFireworks) {
+            const isVisible = desktopFireworks.style.display !== 'none';
+            mobileFireworks.style.display = isVisible ? 'block' : 'none';
+        }
     }
 
     initializeCollapsibleSections() {
@@ -15125,16 +15216,22 @@ class MuseumCheckApp {
     }
     
     setupHistoryEventListeners() {
-        // Museum filter change
-        document.getElementById('historyMuseumFilter').addEventListener('change', () => {
-            const results = this.getAssessmentResults();
-            this.renderHistoryList(results);
-        });
+        // Assessment history feature removed - these elements no longer exist
+        const historyMuseumFilter = document.getElementById('historyMuseumFilter');
+        if (historyMuseumFilter) {
+            historyMuseumFilter.addEventListener('change', () => {
+                const results = this.getAssessmentResults();
+                this.renderHistoryList(results);
+            });
+        }
         
         // Export button
-        document.getElementById('exportHistoryButton').addEventListener('click', () => {
-            this.exportAssessmentHistory();
-        });
+        const exportHistoryButton = document.getElementById('exportHistoryButton');
+        if (exportHistoryButton) {
+            exportHistoryButton.addEventListener('click', () => {
+                this.exportAssessmentHistory();
+            });
+        }
     }
     
     exportAssessmentHistory() {
@@ -15594,4 +15691,22 @@ class MuseumCheckApp {
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new MuseumCheckApp();
     try { window.museumCheck = window.app; } catch(e) {}
+    
+    // 响应式更新汉堡菜单显示状态
+    function updateMobileMenuVisibility() {
+        const mobileMenuButton = document.getElementById('mobileMenuButton');
+        if (mobileMenuButton) {
+            const isMobile = window.innerWidth <= 768;
+            mobileMenuButton.style.display = isMobile ? 'flex' : 'none';
+        }
+        
+        // 同步烟花按钮状态
+        if (window.app && window.app.updateMobileMenuFireworksVisibility) {
+            window.app.updateMobileMenuFireworksVisibility();
+        }
+    }
+    
+    // 初始化和窗口 resize 时更新
+    updateMobileMenuVisibility();
+    window.addEventListener('resize', updateMobileMenuVisibility);
 });
