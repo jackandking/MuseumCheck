@@ -8345,42 +8345,6 @@ class MuseumCheckApp {
         this.currentAchievements = achievements;
     }
 
-    // Dynamically ensure full museums data is loaded (Option B)
-    ensureFullMuseumsData() {
-        if (this._fullMuseumsLoaded) return Promise.resolve(true);
-        if (this._fullMuseumsLoadingPromise) return this._fullMuseumsLoadingPromise;
-        this._fullMuseumsLoadingPromise = new Promise((resolve, reject) => {
-            try {
-                // If museums-data already present, mark as loaded
-                if (Array.isArray(window.MUSEUMS) && window.MUSEUMS.length && window.MUSEUMS[0].checklists) {
-                    this._fullMuseumsLoaded = true;
-                    return resolve(true);
-                }
-                const script = document.createElement('script');
-                script.src = 'museums-data.js';
-                script.async = true;
-                script.onload = () => {
-                    try {
-                        // Adopt global MUSEUMS into app state
-                        if (Array.isArray(window.MUSEUMS) && window.MUSEUMS.length) {
-                            this._fullMuseumsLoaded = true;
-                            // Reset filtered dataset so subsequent lookups include checklists
-                            this.filteredMuseums = window.MUSEUMS;
-                            resolve(true);
-                        } else {
-                            reject(new Error('museums-data.js loaded but MUSEUMS missing'));
-                        }
-                    } catch (e) { reject(e); }
-                };
-                script.onerror = () => reject(new Error('Failed to load museums-data.js'));
-                document.head.appendChild(script);
-            } catch (e) {
-                reject(e);
-            }
-        });
-        return this._fullMuseumsLoadingPromise;
-    }
-
     openMuseumModal(museum, activeTab = 'parent') {
         // Block museum modal when in Douyin affiliate mode
         if (this.isDouyinAffiliate) {
@@ -8430,25 +8394,15 @@ class MuseumCheckApp {
         // This allows updated data from KV store to override static data
         this.getMuseumByIdWithLoader(museum.id, false).then(loadedMuseum => {
             const museumToUse = loadedMuseum || museum;
-            
-            // If current museum lacks checklists (meta dataset), load full data then reopen
-            try {
-                const noChecklist = !(museumToUse && museumToUse.checklists && museumToUse.checklists.parent && museumToUse.checklists.child);
-                if (noChecklist) {
-                    this.ensureFullMuseumsData().then(() => {
-                        const full = (typeof this.getMuseumById === 'function') ? this.getMuseumById(museumToUse.id) : (window.MUSEUMS || []).find(m=>m.id===museumToUse.id) || museumToUse;
-                        if (full && full.checklists && full.checklists.parent && full.checklists.child) {
-                            // Merge dynamic data (like images) with checklist data
-                            const merged = { ...full, ...loadedMuseum };
-                            this.renderMuseumModalContent(merged, activeTab, safeGuidance, mi, ageLabels);
-                        }
-                    }).catch(() => {
-                        // failed to load: keep placeholder; user can close modal
-                    });
-                    return;
+            const hasChecklists = !!(museumToUse && museumToUse.checklists && museumToUse.checklists.parent && museumToUse.checklists.child);
+
+            if (!hasChecklists) {
+                if (content) {
+                    content.innerHTML = '<div class="load-error">⚠️ 暂时无法加载参观指南，请检查网络后重试。</div>';
                 }
-            } catch (e) { /* ignore */ }
-            
+                return;
+            }
+
             // Render with loaded museum data (includes any KV store updates)
             this.renderMuseumModalContent(museumToUse, activeTab, safeGuidance, mi, ageLabels);
         }).catch(error => {

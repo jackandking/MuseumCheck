@@ -2,7 +2,7 @@
 
 **Scope**: High-level architecture for the MuseumCheck single-page application (SPA). Focuses on public interfaces, major flows, data contracts, observable failure modes, and testing / operational guidance.
 
-**Diagram (inline)**
+**Diagram**
 
 ```mermaid src="./diagrams/museumcheck_architecture.mmd" alt="MuseumCheck high-level architecture"```
 
