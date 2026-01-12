@@ -1,11 +1,18 @@
 :root {
-    /* ===== BASE COLORS ===== */
-    --primary-color: #2c5aa0;
-    --secondary-color: #f8f9fa;
-    --accent-color: #28a745;
-    --text-color: #333;
-    --border-color: #ddd;
-    --hover-color: #e9ecef;
+    /* ===== EDUCATIONAL COLOR PALETTE ===== */
+    /* Based on UI Pro Max recommendations for learning apps */
+    --primary-color: #0D9488;        /* Teal - Learning primary */
+    --secondary-color: #2DD4BF;      /* Light Teal - Secondary */
+    --accent-color: #EA580C;         /* Orange - CTA */
+    --background-color: #F0FDFA;     /* Light mint background */
+    --text-color: #134E4A;           /* Dark teal text */
+    --border-color: #5EEAD4;         /* Teal border */
+    --hover-color: #CCFBF1;          /* Lighter teal hover */
+    
+    /* Additional colors */
+    --text-muted: #14B8A6;           /* Medium teal for muted text */
+    --success-color: #10B981;        /* Green for success states */
+    --white: #ffffff;
     
     /* ===== BUTTON DESIGN SYSTEM ===== */
     /* Primary Action Buttons - Main user actions */
@@ -76,6 +83,12 @@
     --minecraft-wood: #9c6f3c;
     --minecraft-cobblestone: #7a7a7a;
     --minecraft-redstone: #c41919;
+    
+    /* ===== TYPOGRAPHY SYSTEM ===== */
+    /* Educational, friendly fonts - Fredoka for headings, Nunito for body */
+    --font-heading: 'Fredoka', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-body: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-chinese: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 }
 
 /* =====================================================
@@ -97,6 +110,36 @@ button,
     outline: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+}
+
+/* Respect user's motion preferences for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* SVG Icon Styling */
+.menu-icon,
+.settings-icon,
+[class$="-icon"] svg {
+    width: 24px;
+    height: 24px;
+    display: block;
+}
+
+/* Ensure all interactive elements have pointer cursor */
+.museum-card,
+.favorite-button,
+.assessment-button,
+.museum-manage-button,
+.menu-button,
+.settings-button {
+    cursor: pointer;
 }
 
 button:disabled,
@@ -441,10 +484,10 @@ ACCESSIBILITY:
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    font-family: var(--font-body), 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
     line-height: 1.6;
     color: var(--text-color);
-    background-color: var(--secondary-color);
+    background-color: var(--background-color);
 }
 
 /* Global Fireworks Overlay */
@@ -481,6 +524,7 @@ header {
 }
 
 header h1 {
+    font-family: var(--font-heading);
     color: var(--primary-color);
     font-size: 2.8em;
     margin-bottom: 15px;
@@ -499,6 +543,10 @@ header h1 {
 .settings-button {
     width: 44px;
     height: 44px;
+    min-width: 44px;  /* 防止flex压缩 */
+    min-height: 44px;
+    max-width: 44px;  /* 防止flex拉伸 */
+    max-height: 44px;
     background: white;
     border: none;
     border-radius: 50%;
@@ -511,10 +559,7 @@ header h1 {
     flex-shrink: 0;
 }
 
-.menu-button {
-    font-size: 24px;
-}
-
+.menu-button,
 .settings-button {
     font-size: 20px;
 }
@@ -523,12 +568,6 @@ header h1 {
 .settings-button:hover:not(:disabled) {
     background-color: rgba(79, 70, 229, 0.1);
     transform: scale(1.05);
-}
-
-.settings-icon {
-    cursor: pointer;
-    transition: transform 0.2s ease;
-    display: none;
 }
 
 .subtitle {
@@ -787,9 +826,20 @@ header h1 {
     margin: 0 auto;
 }
 
+.search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
 .search-input {
     width: 100%;
-    padding: 14px 45px 14px 18px;
+    padding: 14px 45px 14px 48px;
     border: 2px solid #e5e7eb;
     border-radius: 12px;
     font-size: 16px;
@@ -1449,8 +1499,8 @@ header h1 {
 }
 
 .museum-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 24px rgba(44, 90, 160, 0.15), 0 8px 16px rgba(0,0,0,0.08);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(13, 148, 136, 0.15), 0 8px 16px rgba(0,0,0,0.08);
     border-color: var(--primary-color);
 }
 
@@ -1482,7 +1532,7 @@ header h1 {
 }
 
 .museum-card:hover .museum-image img {
-    transform: scale(1.05);
+    opacity: 0.95;
 }
 
 .museum-header {
@@ -3999,7 +4049,9 @@ main[role="main"] {
     background: linear-gradient(135deg, #c0392b, #a93226);
 }
 
-.settings-button {
+/* Settings modal buttons - more specific selector */
+.settings-content .settings-button,
+.settings-input-group .settings-button {
     background: linear-gradient(135deg, #3498db, #2980b9);
     color: white;
     border: none;
@@ -4020,13 +4072,15 @@ main[role="main"] {
     box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
 }
 
-.settings-button:hover:not(:disabled) {
+.settings-content .settings-button:hover:not(:disabled),
+.settings-input-group .settings-button:hover:not(:disabled) {
     transform: var(--btn-hover-transform);
     box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
     background: linear-gradient(135deg, #2980b9, #21618c);
 }
 
-.settings-button:active:not(:disabled) {
+.settings-content .settings-button:active:not(:disabled),
+.settings-input-group .settings-button:active:not(:disabled) {
     transform: var(--btn-active-transform);
 }
 

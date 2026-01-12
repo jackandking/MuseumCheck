@@ -5870,17 +5870,6 @@ class MuseumCheckApp {
             const hasFireworks = this.fireworks.length > 0 || this.remoteFireworks.length > 0;
             fireworksButton.style.display = hasFireworks ? '' : 'none';
         }
-        
-        // Update museum-level fireworks buttons
-        const museumFireworksButtons = document.querySelectorAll('.museum-fireworks-button');
-        museumFireworksButtons.forEach(button => {
-            const museumId = button.getAttribute('data-museum');
-            if (museumId) {
-                const museumFireworks = this.getFireworksByMuseum(museumId);
-                // Show button only if this museum has fireworks
-                button.style.display = museumFireworks.length > 0 ? '' : 'none';
-            }
-        });
     }
 
     getFireworksByMuseum(museumId) {
@@ -7498,8 +7487,6 @@ class MuseumCheckApp {
                             <h3>
                                 <button class="favorite-button" data-museum="${museum.id}" title="${isFavorite ? '取消收藏' : '收藏博物馆'}">${isFavorite ? '⭐' : '☆'}</button>
                                 ${museum.name}
-                                <button class="museum-fireworks-button" data-museum="${museum.id}" title="查看本馆烟花墙" style="display: none;">🎆</button>
-                                <button class="museum-checkin-button" data-museum="${museum.id}" title="进入打卡页面">🔗 打卡</button>
                                 <button class="museum-manage-button" data-museum="${museum.id}" title="管理博物馆数据">🔧 管理</button>
                                 ${isVisited && !this.assessmentHidden 
                                     ? (hasAssessment 
@@ -7519,8 +7506,6 @@ class MuseumCheckApp {
                 card.addEventListener('click', (e) => {
                     if (!e.target.classList.contains('visit-checkbox') && 
                         !e.target.classList.contains('assessment-button') &&
-                        !e.target.classList.contains('museum-fireworks-button') &&
-                        !e.target.classList.contains('museum-checkin-button') &&
                         !e.target.classList.contains('museum-manage-button') &&
                         !e.target.classList.contains('favorite-button')) {
                         // Mark museum as browsed
@@ -7556,51 +7541,12 @@ class MuseumCheckApp {
                     }
                 });
 
-                // Add fireworks button event
-                const fireworksButton = card.querySelector('.museum-fireworks-button');
-                if (fireworksButton) {
-                    fireworksButton.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        // Open fireworks-wall.html in new tab with museum ID parameter
-                        window.open(`fireworks-wall.html?museum=${encodeURIComponent(museum.id)}`, '_blank');
-                        
-                        // Track event
-                        this.trackEvent('museum_fireworks_wall_opened', {
-                            'museum_id': museum.id,
-                            'museum_name': museum.name,
-                            'museum_location': museum.location
-                        });
-                    });
-                }
-
                 // Add assessment button event (only for clickable buttons)
                 const assessmentButton = card.querySelector('.assessment-button');
                 if (assessmentButton) {
                     assessmentButton.addEventListener('click', (e) => {
                         e.stopPropagation();
                         this.openAssessmentModal(museum.id);
-                    });
-                }
-
-                // Add check-in button event
-                const checkinButton = card.querySelector('.museum-checkin-button');
-                if (checkinButton) {
-                    checkinButton.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        // Mark museum as browsed
-                        this.markMuseumAsBrowsed(museum.id);
-                        
-                        // Navigate to museum-checkin.html with museum ID and age group
-                        const checkedRadio = document.querySelector('input[name="ageGroup"]:checked');
-                        const ageGroup = checkedRadio ? checkedRadio.value : this.currentAge;
-                        window.location.href = `museum-checkin.html?museum=${museum.id}&age=${ageGroup}`;
-                        
-                        // Track event
-                        this.trackEvent('museum_checkin_opened', {
-                            'museum_id': museum.id,
-                            'museum_name': museum.name,
-                            'age_group': ageGroup
-                        });
                     });
                 }
 
