@@ -65,7 +65,7 @@ https://museumcheck.cn/
 - **渐进式UX**：完成任务后自然引导家长了解更多功能
 - **可嵌入**：支持嵌入博物馆官网
 - **编辑模式**：博物馆工作人员可在线编辑任务内容
-- 详细文档：[Museum Check-in Documentation](MUSEUM_CHECKIN_DOC.md)
+- 详细文档：[Museum Check-in Documentation](docs/features/museum-checkin.md)
 
 ## 技术特点
 
@@ -334,7 +334,7 @@ https://museumcheck.cn/
 - **集中管理模式** (推荐) - 所有博物馆数据（包括工作流）集中在单个文件中
   - 示例：`museums/pinghu-museum.js`（平湖博物馆）
   - 优势：易于维护，内容创作更高效
-  - 详见 **[CENTRALIZED_DATA_PATTERN.md](CENTRALIZED_DATA_PATTERN.md)** 完整说明
+  - 详见 **[CENTRALIZED_DATA_PATTERN.md](docs/architecture/centralized-data-pattern.md)** 完整说明
 
 - **分离管理模式** (兼容) - 工作流数据在 `workflows-data.js` 中统一管理
   - 适用于已有的博物馆
@@ -385,7 +385,7 @@ node tools/test-mcp-museum-search.js
 - 获取真实的博物馆统计数据（藏品数量、参观人数、质量等级等）
 - 与 GitHub Copilot 无缝集成，辅助开发过程
 
-**详细文档：** 参见 **[MCP_SETUP.md](MCP_SETUP.md)** 了解配置和使用方法
+**详细文档：** 参见 **[MCP_SETUP.md](docs/guides/mcp-setup.md)** 了解配置和使用方法
 
 ## 🔧 开发者指南 - 三级数据管理系统
 
@@ -418,7 +418,7 @@ node tools/export-kvstore-to-static.js --museum forbidden-city
 4. 提交静态文件到版本控制
 
 **完整文档：**
-- [三级数据管理系统](MUSEUM_DATA_MANAGEMENT.md)
+- [三级数据管理系统](docs/reports/data-management.md)
 - [导出工具使用指南](tools/README_EXPORT_KVSTORE.md)
 - [数据管理界面](museum-data-manager.html)
 

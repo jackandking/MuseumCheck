@@ -93,8 +93,7 @@
 │  ├─ scripts/              # 构建脚本
 │  ├─ tools/                # 工具脚本
 │  ├─ tests/                # 单元测试
-│  ├─ tests-e2e/            # E2E 测试
-│  ├─ e2e/                  # E2E 配置
+│  ├─ e2e/                  # E2E 测试 (已合并 tests-e2e/)
 │  ├─ shared/               # 共享模块
 │  ├─ shared-features/      # 共享功能
 │  ├─ node_modules/         # NPM 依赖
@@ -104,29 +103,44 @@
 │  ├─ wiki/                 # Wiki 页面
 │  └─ archive/              # 📦 归档文件 (见下)
 │
-└─ 文档文件 (根目录)
-   ├─ README.md             # 项目主文档
-   ├─ QUICK_START_GUIDE.md  # 快速开始
-   ├─ TESTING_GUIDE.md      # 测试指南
-   ├─ QUIZ_README.md        # 测验说明
-   ├─ MUSEUM_CHECKIN_DOC.md # 打卡说明
-   ├─ DATABASE_INIT_GUIDE.md # 数据库初始化
-   ├─ MCP_SETUP.md          # MCP 配置
-   ├─ COPILOT_REQUESTS.md   # Copilot 请求
-   └─ 其他说明文档
+└─ 根目录允许的文档文件
+   └─ README.md             # 项目主文档
 ```
 
-### docs/ - 文档目录
+### docs/ - 文档目录 (已完整重构)
 
 ```
 docs/
-├─ ARCHITECTURE_OVERVIEW.md          # 架构概览
 ├─ SIMPLIFIED_ARCHITECTURE.md        # 简化架构 ✨
-├─ ARCHITECTURE_SIMPLIFICATION_REPORT.md  # 简化报告 ✨
-├─ MUSEUM_DATA_MANAGEMENT.md         # 数据管理
-├─ CENTRALIZED_DATA_PATTERN.md       # 集中管理模式
-├─ ADMIN_PAGES_README.md             # 管理页面说明
-├─ MINECRAFT_IMAGES_README.md        # Minecraft 图片
+├─ DIRECTORY_STRUCTURE.md            # 目录结构说明
+├─ DOCS_QUICK_REF.md                 # 📝 文档规范快速参考
+│
+├─ architecture/                     # 📐 架构设计文档
+│  ├─ overview.md                    # 架构概览
+│  ├─ simplification-report.md       # 架构简化报告
+│  ├─ centralized-data-pattern.md    # 集中数据管理模式
+│  ├─ API_REFERENCE.md               # API 参考
+│  ├─ DATA_FLOW.md                   # 数据流图
+│  └─ PHASE1_IMPLEMENTATION.md       # 第一阶段实现
+│
+├─ features/                         # 🎯 功能说明文档
+│  ├─ admin-pages.md                 # 管理页面说明
+│  ├─ minecraft-images.md            # Minecraft 图片模块
+│  ├─ museum-checkin.md              # 博物馆打卡功能
+│  └─ quiz.md                        # 测验功能
+│
+├─ guides/                           # 📚 开发指南
+│  ├─ quick-start.md                 # 快速开始
+│  ├─ testing.md                     # 测试指南
+│  ├─ database-init.md               # 数据库初始化
+│  └─ mcp-setup.md                   # MCP 配置指南
+│
+├─ api/                              # 🔌 API 文档
+│  └─ (预留)
+│
+├─ reports/                          # 📊 进度报告
+│  ├─ copilot-requests.md            # Copilot 请求记录
+│  └─ data-management.md             # 数据管理系统
 │
 └─ archive/                          # 📦 历史和调试文件
    ├─ ACHIEVEMENT_POSTER_FIX.md     # 成就海报修复
@@ -293,57 +307,81 @@ ls -1 | wc -l
 
 ## 📝 目录整理规范
 
-### 新文件创建指南
+## 📝 文档创建规范 (CRITICAL)
+
+**⚠️ 强制执行：禁止在根目录创建新的 Markdown 文件！**
+
+参见 `.github/copilot-instructions-docs.md` 完整规范。
+
+### 文件位置指南
 
 ```
-场景 1: 当前工作的文档
-→ 放在根目录 (README.md, QUICK_START_GUIDE.md)
+场景 1: 架构设计文档
+→ docs/architecture/
 
-场景 2: 项目级别文档
-→ 放在 docs/ (ARCHITECTURE_OVERVIEW.md)
+场景 2: 功能说明文档  
+→ docs/features/
 
-场景 3: 已完成的任务报告
-→ 放在 docs/archive/ (PHASE_3_COMPLETION_REPORT.md)
+场景 3: 开发指南
+→ docs/guides/
 
-场景 4: 调试和临时文件
-→ 放在 docs/archive/ 或 tmp/
+场景 4: API 文档
+→ docs/api/
 
-场景 5: 资源文件 (图片、logo 等)
-→ 放在 archive/qrcodes/ 或新建 archive/subdir/
+场景 5: 进度报告、总结
+→ docs/reports/
 
-场景 6: 代码示例和演示
-→ 如果是游戏或老功能 → archive/games/
-→ 如果是当前功能演示 → 根目录或 demos/ (新建)
+场景 6: 历史归档
+→ docs/archive/
+```
+
+### 白名单 (仅允许在根目录)
+
+- ✅ `README.md` - 项目主文档
+- ✅ `CHANGELOG.md` - 版本更新日志
+- ✅ `CONTRIBUTING.md` - 贡献指南
+- ✅ `LICENSE.md` - 许可证
+
+### 自动检查
+
+```bash
+bash scripts/check-docs-location.sh
 ```
 
 ---
 
-## 🎉 效果对比
+## 🎉 迁移效果对比
 
-### 整理前
+### 迁移前
 ```
-ls -1 | head -20
-ACHIEVEMENT_POSTER_FIX.md
-ACHIEVEMENT_POSTER_VERIFICATION.md
-ADMIN_PAGES_README.md
-ARCHITECTURE_OVERVIEW.md
-ARCHITECTURE_SIMPLIFICATION_REPORT.md
-...
-MuseumCheck_QRCode_BeijingArtMuseum.png
-MuseumCheck_QRCode_BeijingCapitalMuseum.png
-...
-debug-homepage-init.html
-debug-mode.js
-...
+根目录 MD 文件数: 14 个
+├─ ARCHITECTURE_OVERVIEW.md
+├─ ARCHITECTURE_SIMPLIFICATION_REPORT.md
+├─ ADMIN_PAGES_README.md
+├─ MYSQL_IMAGES_README.md
+├─ MUSEUM_CHECKIN_DOC.md
+├─ QUIZ_README.md
+├─ DATABASE_INIT_GUIDE.md
+├─ MCP_SETUP.md
+├─ QUICK_START_GUIDE.md
+├─ TESTING_GUIDE.md
+├─ COPILOT_REQUESTS.md
+├─ MUSEUM_DATA_MANAGEMENT.md
+├─ CENTRALIZED_DATA_PATTERN.md
+└─ README.md
 ```
-**感觉**: 混乱、杂乱、难以找文件 😕
+**感觉**: 混乱、杂乱、难以导航 😕
 
-### 整理后
+### 迁移后 ✨
 ```
-ls -1
-.copilot-mcp.json
-.devcontainer/
-.git/
+根目录 MD 文件数: 1 个 (仅 README.md)
+
+docs/
+├─ architecture/ (3 个)
+├─ features/     (4 个)
+├─ guides/       (4 个)
+├─ reports/      (2 个)
+└─ archive/      (30+ 个)
 .github/
 .gitignore
 .vscode/

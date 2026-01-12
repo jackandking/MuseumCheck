@@ -5,6 +5,23 @@ MuseumCheck is a fully functional web application designed to help parents and c
 
 **ALWAYS follow these instructions first and only fallback to additional search and context gathering if the information here is incomplete or found to be in error.**
 
+## 🚫 CRITICAL: 文档创建规范 (Documentation Rules)
+
+**⚠️ 强制执行：禁止在根目录创建新的 Markdown 文件！**
+
+所有新文档必须创建在 `docs/` 目录的相应子目录中：
+- `docs/architecture/` - 架构设计文档
+- `docs/features/` - 功能说明文档  
+- `docs/guides/` - 开发指南和教程
+- `docs/api/` - API 接口文档
+- `docs/reports/` - 进度报告和总结
+
+**详细规范**: 查看 [.github/copilot-instructions-docs.md](.github/copilot-instructions-docs.md)
+
+**例外**: 仅 `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `LICENSE.md` 允许在根目录。
+
+---
+
 ## Current Repository State
 
 **IMPORTANT**: This is a COMPLETE, FULLY FUNCTIONAL web application. The repository contains:

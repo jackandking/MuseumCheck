@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # MuseumCheck 新架构快速验证脚本
-# 使用方法: chmod +x verify-new-architecture.sh && ./verify-new-architecture.sh
+# 使用方法: chmod +x scripts/verify-new-architecture.sh && ./scripts/verify-new-architecture.sh
 
 set -e  # 遇到错误立即退出
 

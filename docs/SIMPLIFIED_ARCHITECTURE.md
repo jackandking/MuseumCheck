@@ -252,7 +252,7 @@ A: 只有当 AWS 成本超过阈值时才考虑，目前完全在免费额度内
 
 - [museum-data-loader.js](../museum-data-loader.js) - 数据加载器实现
 - [museums-meta.js](../museums-meta.js) - 元数据文件
-- [MUSEUM_DATA_MANAGEMENT.md](../MUSEUM_DATA_MANAGEMENT.md) - 数据管理指南
+- [MUSEUM_DATA_MANAGEMENT.md](reports/data-management.md) - 数据管理指南
 - [README.md](../README.md) - 项目总览
 
 ---

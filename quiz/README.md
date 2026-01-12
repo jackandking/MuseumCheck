@@ -97,4 +97,4 @@ This module follows these architectural principles:
 
 ## 📚 API Reference
 
-See main `QUIZ_README.md` in the root directory for detailed API documentation.
+See main documentation in `../docs/features/quiz.md` for detailed API documentation.
