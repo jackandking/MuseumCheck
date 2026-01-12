@@ -41,7 +41,6 @@ describe('Museum Check-in Page', () => {
         });
 
         test('should include required JavaScript dependencies', () => {
-            expect(htmlContent).toContain('<script src="museums-data.js"></script>');
             expect(htmlContent).toContain('<script src="museum-data-loader.js"></script>');
             expect(htmlContent).toContain('<script src="firework.js"></script>');
         });
@@ -153,9 +152,6 @@ describe('Museum Check-in Page', () => {
             // Check that it uses museumDataLoader
             expect(htmlContent).toContain('window.museumDataLoader');
             expect(htmlContent).toContain('museumDataLoader.loadMuseum');
-            
-            // Check that it has fallback to static MUSEUMS array
-            expect(htmlContent).toContain('MUSEUMS.find');
         });
 
         test('should not use cache when loading museum data', () => {
@@ -281,7 +277,7 @@ describe('Museum Check-in Page', () => {
 
     describe('Embeddable Features', () => {
         test('should be standalone page suitable for embedding', () => {
-            // No external dependencies beyond museums-data.js and firework.js
+            // No dependency on main script bundle
             expect(htmlContent).not.toContain('<script src="script.js">');
             
             // Self-contained functionality
@@ -298,7 +294,7 @@ describe('Museum Check-in Page', () => {
     describe('Data Flow and Logic', () => {
         test('should load museum data on initialization', () => {
             expect(htmlContent).toContain('loadMuseumData');
-            expect(htmlContent).toContain('MUSEUMS.find');
+            expect(htmlContent).toContain('museumDataLoader.loadMuseum');
         });
 
         test('should extract child tasks for age group', () => {
