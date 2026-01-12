@@ -7378,7 +7378,7 @@
                 const pascalCase = musId.split('-')
                     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
                     .join('');
-                return `MuseumCheck_QRCode_${pascalCase}.png`;
+                return `assets/qrcodes/MuseumCheck_QRCode_${pascalCase}.png`;
             };
             
             // Try to load museum-specific QR code or fallback to generic WeChat QR
@@ -7395,7 +7395,7 @@
                     fallbackQR.crossOrigin = 'anonymous';
                     fallbackQR.onload = () => resolve(fallbackQR);
                     fallbackQR.onerror = () => resolve(null);
-                    fallbackQR.src = 'MuseumCheck_QRCode_WX.jpg';
+                    fallbackQR.src = 'assets/qrcodes/MuseumCheck_QRCode_WX.jpg';
                 };
                 qrImg.src = museumQRFile;
             });

@@ -1,7 +1,7 @@
 # 博物馆打卡 (MuseumCheck)
 
 <div align="center">
-  <img src="MuseumCheck_logo.jpg" alt="MuseumCheck Logo" width="200" height="200">
+  <img src="assets/images/MuseumCheck_logo.jpg" alt="MuseumCheck Logo" width="200" height="200">
 </div>
 
 一个帮助中国家庭规划博物馆参观的互动应用，让孩子爱上博物馆之旅。
