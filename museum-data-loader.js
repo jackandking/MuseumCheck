@@ -1,102 +1,137 @@
 /**
- * Museum Data Loader - Dynamic-First Data Management System
+ * Museum Data Loader - KV Store + Browser Cache Architecture
  * 
- * Tier 1: Individual museum static JSON files (/museums/{museum-id}.json)
- * Tier 2: KV store dynamic data (remote storage for fresh content)
+ * Architecture: KV Store (AWS Lambda) + Browser Cache (localStorage)
  * 
- * Default Priority: Tier 2 → Tier 1 (dynamic data first)
- * When museum-specific data is needed, always try to load fresh dynamic data from remote first.
- * Falls back to static files when remote fetch fails.
+ * Data Sources:
+ * - Primary: KV Store (https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com)
+ * - Cache: Browser localStorage with 7-day expiration
+ * - Listing: MUSEUMS_META array (lightweight metadata for homepage)
  * 
- * Note: Tier 3 (museums-data.js) is intentionally NOT used as fallback for museum-specific data.
- * The quality of consolidated static data may be outdated or incorrect.
- * It's better to inform users of network issues than to provide potentially incorrect data.
+ * Design Philosophy:
+ * - Single source of truth (KV Store) for always-fresh data
+ * - Browser cache for offline support and performance
+ * - No static JSON files as fallback (adds complexity, rarely used)
+ * - Future: If AWS costs exceed free tier, consider static files + CDN
  * 
- * Homepage uses MUSEUMS array directly for listing, so this doesn't affect homepage loading.
+ * Why not static files?
+ * - KV Store is fast enough with AWS Lambda (99.9% uptime)
+ * - Browser cache handles offline scenarios
+ * - Static files add maintenance overhead (sync, versioning)
+ * - Cost-effective: Free tier covers current traffic volume
  */
 
 class MuseumDataLoader {
     constructor() {
-        this.cache = new Map();
+        this.cache = new Map(); // In-memory cache for current session
         this.kvStoreEndpoint = 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore';
         this.kvStoreKeyPrefix = 'museum-data-';
+        this.cacheExpirationDays = 7; // localStorage cache expires after 7 days
         
-        // Load tier priority from settings
-        this.loadPrioritySettings();
+        // Legacy compatibility: tierPriority for tests
+        this.tierPriority = ['tier2'];
     }
 
     /**
-     * Load tier priority settings from localStorage
+     * Legacy method for backward compatibility with tests
+     * @deprecated No longer used in simplified architecture
      */
     loadPrioritySettings() {
-        try {
-            const settings = localStorage.getItem('museumDataTierPriority');
-            if (settings) {
-                const parsed = JSON.parse(settings);
-                // Filter out tier3 from any saved priority to enforce dynamic-first policy
-                const filteredPriority = (parsed.priority || []).filter(tier => tier !== 'tier3');
-                this.tierPriority = filteredPriority.length > 0 ? filteredPriority : ['tier2', 'tier1'];
-            } else {
-                // Default priority: Tier 2 (dynamic data) → Tier 1 (static files)
-                // Tier 3 is intentionally excluded - it's better to show network error than bad data
-                this.tierPriority = ['tier2', 'tier1'];
-            }
-        } catch (error) {
-            console.warn('Error loading tier priority settings:', error);
-            this.tierPriority = ['tier2', 'tier1'];
-        }
+        // Silent no-op for compatibility
     }
 
     /**
-     * Update tier priority settings
-     * @param {Array<string>} priority - Array of tier names in priority order
+     * Legacy method for backward compatibility with tests
+     * @deprecated No longer used in simplified architecture
      */
     updatePrioritySettings(priority) {
-        try {
-            // Filter out tier3 to enforce dynamic-first policy
-            const filteredPriority = (priority || []).filter(tier => tier !== 'tier3');
-            this.tierPriority = filteredPriority.length > 0 ? filteredPriority : ['tier2', 'tier1'];
-            localStorage.setItem('museumDataTierPriority', JSON.stringify({ priority: this.tierPriority }));
-            console.log('Museum data tier priority updated:', this.tierPriority);
-        } catch (error) {
-            console.error('Error updating tier priority settings:', error);
-        }
+        // Silent no-op for compatibility
     }
 
     /**
-     * Get current tier priority settings
-     * @returns {Array<string>} Current priority order
+     * Legacy method for backward compatibility with tests
+     * @deprecated No longer used in simplified architecture
      */
     getPrioritySettings() {
-        return [...this.tierPriority];
+        return ['tier2']; // Always return KV Store only
     }
 
     /**
-     * Load museum data from Tier 1 (individual static file)
-     * @param {string} museumId - Museum identifier
-     * @returns {Promise<Object|null>} Museum data or null if not found
+     * Legacy method: Load from Tier 1 (no longer used in production)
+     * @deprecated Tier 1 static files removed in simplified architecture
      */
     async loadFromTier1(museumId) {
+        return null; // Tier 1 removed in simplified architecture
+    }
+
+    /**
+     * Legacy method: Load from Tier 2 (now integrated into loadMuseum)
+     * @deprecated Use loadMuseum() instead in new code
+     */
+    async loadFromTier2(museumId) {
+        return await this.loadFromKVStore(museumId);
+    }
+
+    /**
+     * Legacy method: Load from Tier 3 (no longer used)
+     * @deprecated museums-data.js not used at runtime
+     */
+    async loadFromTier3(museumId) {
+        return null; // Tier 3 removed in simplified architecture
+    }
+
+    /**
+     * Get cached data from localStorage with expiration check
+     * @param {string} museumId - Museum identifier
+     * @returns {Object|null} Cached data or null if expired/not found
+     */
+    getCachedFromStorage(museumId) {
         try {
-            const response = await fetch(`museums/${museumId}.json`);
-            if (!response.ok) {
+            const cacheKey = `museum-cache-${museumId}`;
+            const cached = localStorage.getItem(cacheKey);
+            if (!cached) return null;
+
+            const { data, timestamp } = JSON.parse(cached);
+            const now = Date.now();
+            const expirationMs = this.cacheExpirationDays * 24 * 60 * 60 * 1000;
+
+            if (now - timestamp > expirationMs) {
+                // Cache expired
+                localStorage.removeItem(cacheKey);
                 return null;
             }
-            const data = await response.json();
-            console.log(`Loaded museum ${museumId} from Tier 1 (static file)`);
+
             return data;
         } catch (error) {
-            console.log(`Museum ${museumId} not found in Tier 1:`, error.message);
+            console.warn(`Error reading cache for ${museumId}:`, error);
             return null;
         }
     }
 
     /**
-     * Load museum data from Tier 2 (KV store)
+     * Save data to localStorage cache
+     * @param {string} museumId - Museum identifier
+     * @param {Object} data - Museum data to cache
+     */
+    setCachedToStorage(museumId, data) {
+        try {
+            const cacheKey = `museum-cache-${museumId}`;
+            const cacheData = {
+                data,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+        } catch (error) {
+            console.warn(`Error caching ${museumId}:`, error);
+        }
+    }
+
+    /**
+     * Load museum data from KV Store
      * @param {string} museumId - Museum identifier
      * @returns {Promise<Object|null>} Museum data or null if not found
      */
-    async loadFromTier2(museumId) {
+    async loadFromKVStore(museumId) {
         try {
             const key = `${this.kvStoreKeyPrefix}${museumId}`;
             const sortKey = 'museum';
@@ -113,85 +148,63 @@ class MuseumDataLoader {
             }
             
             const data = JSON.parse(result.value);
-            console.log(`Loaded museum ${museumId} from Tier 2 (KV store)`);
+            console.log(`✓ Loaded museum ${museumId} from KV Store`);
             return data;
         } catch (error) {
-            console.log(`Museum ${museumId} not found in Tier 2:`, error.message);
+            console.log(`✗ Failed to load ${museumId} from KV Store:`, error.message);
             return null;
         }
     }
 
     /**
-     * Load museum data from Tier 3 (consolidated MUSEUMS array)
-     * 
-     * NOTE: This method is intentionally NOT used as a fallback for loadMuseum().
-     * The consolidated static data in museums-data.js may be outdated or contain errors.
-     * It's better to inform users of network issues than to provide potentially incorrect data.
-     * 
-     * This method is kept for internal use by loadAllMuseums() for homepage listing only.
-     * 
-     * @param {string} museumId - Museum identifier
-     * @returns {Promise<Object|null>} Museum data or null if not found
-     * @deprecated since v2.2.0 - Do not use for individual museum data loading.
-     *             Use loadMuseum() instead which tries dynamic data first.
-     *             This method is retained only for internal use by loadAllMuseums() for homepage listing.
-     */
-    async loadFromTier3(museumId) {
-        try {
-            // MUSEUMS array should be available globally
-            if (typeof MUSEUMS === 'undefined') {
-                console.error('MUSEUMS array not found in global scope');
-                return null;
-            }
-            
-            const museum = MUSEUMS.find(m => m.id === museumId);
-            if (museum) {
-                console.log(`Loaded museum ${museumId} from Tier 3 (MUSEUMS array) - for listing only`);
-                return museum;
-            }
-            return null;
-        } catch (error) {
-            console.error(`Error loading museum ${museumId} from Tier 3:`, error);
-            return null;
-        }
-    }
-
-    /**
-     * Load museum data following tier priority
+     * Load museum data with cache strategy
      * @param {string} museumId - Museum identifier
      * @param {boolean} useCache - Whether to use cached data
      * @returns {Promise<Object|null>} Museum data or null if not found
      */
     async loadMuseum(museumId, useCache = true) {
-        // Check cache first
+        // Check in-memory cache first (fastest)
         if (useCache && this.cache.has(museumId)) {
-            console.log(`Loaded museum ${museumId} from cache`);
+            console.log(`↻ Loaded museum ${museumId} from memory cache`);
             return this.cache.get(museumId);
         }
 
-        // Try loading from tiers in priority order (tier3 is excluded by design)
-        for (const tier of this.tierPriority) {
-            let data = null;
-            
-            switch (tier) {
-                case 'tier1':
-                    data = await this.loadFromTier1(museumId);
-                    break;
-                case 'tier2':
-                    data = await this.loadFromTier2(museumId);
-                    break;
-                // tier3 case intentionally removed - we prefer network errors over bad data
-            }
-
-            if (data) {
-                // Cache the result
-                this.cache.set(museumId, data);
-                return data;
+        // Check localStorage cache (still fast, works offline)
+        if (useCache) {
+            const cachedData = this.getCachedFromStorage(museumId);
+            if (cachedData) {
+                console.log(`↻ Loaded museum ${museumId} from localStorage cache`);
+                this.cache.set(museumId, cachedData); // Also set in memory
+                return cachedData;
             }
         }
 
-        // Log a more helpful error message about network issues
-        console.warn(`Museum ${museumId} not found - network issue or data not available. Please check your connection.`);
+        // Load from KV Store (fresh data)
+        const data = await this.loadFromKVStore(museumId);
+        
+        if (data) {
+            // Cache the fresh data
+            this.cache.set(museumId, data); // Memory cache
+            this.setCachedToStorage(museumId, data); // localStorage cache
+            return data;
+        }
+
+        // If network failed, try to use expired cache as last resort
+        if (useCache) {
+            try {
+                const cacheKey = `museum-cache-${museumId}`;
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) {
+                    const { data: expiredData } = JSON.parse(cached);
+                    console.warn(`⚠ Using expired cache for ${museumId} (network unavailable)`);
+                    return expiredData;
+                }
+            } catch (error) {
+                // Ignore error, will return null
+            }
+        }
+
+        console.warn(`✗ Museum ${museumId} not available - please check network connection`);
         return null;
     }
 
