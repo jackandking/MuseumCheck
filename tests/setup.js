@@ -36,39 +36,63 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock
 });
 
-// Load MUSEUMS data from museums-data.js and make it globally available for tests
-// Note: Runtime no longer uses museums-data.js (moved to Tier2→Tier1 loader);
-// this is retained as test fixture data until fully migrated to per-museum JSON.
-function loadMuseumData() {
-  const museumsDataPath = path.join(__dirname, '..', 'museums-data.js');
-  const scriptPath = path.join(__dirname, '..', 'script.js');
-  
-  let content;
-  if (fs.existsSync(museumsDataPath)) {
-    content = fs.readFileSync(museumsDataPath, 'utf8');
-  } else {
-    content = fs.readFileSync(scriptPath, 'utf8');
+const sampleMuseums = [
+  {
+    id: 'forbidden-city',
+    name: '故宫博物院',
+    location: '北京',
+    description: '紫禁城是明清两代的皇宫，有着丰富的历史遗迹。',
+    tags: ['历史', '建筑', '文化'],
+    collections: [
+      {
+        name: '翠玉白菜',
+        imageUrl: 'https://example.com/jadeite-cabbage.jpg',
+        description: '清代玉雕作品，以白菜寓意富贵。'
+      }
+    ],
+    checklists: {
+      parent: {
+        '3-6': ['数一数有多少个宫灯'],
+        '7-12': ['记录紫禁城的主要门楼'],
+        '13-18': ['调研明清两朝宫廷制度差异']
+      },
+      child: {
+        '3-6': ['找出最多的金色装饰'],
+        '7-12': ['识别不同朝代的服饰'],
+        '13-18': ['比较古今博物馆展陈方式']
+      }
+    }
+  },
+  {
+    id: 'national-museum',
+    name: '中国国家博物馆',
+    location: '北京',
+    description: '综合性历史艺术博物馆，展示中华文明。',
+    tags: ['历史', '艺术', '科普'],
+    collections: [
+      {
+        name: '司母戊鼎',
+        imageUrl: 'https://example.com/simu-wu-tripod.jpg',
+        description: '商代青铜器之王，国家级文物。'
+      }
+    ],
+    checklists: {
+      parent: {
+        '3-6': ['观察青铜器的纹饰'],
+        '7-12': ['记录不同时期的服饰变化'],
+        '13-18': ['关注文物修复与科技结合']
+      },
+      child: {
+        '3-6': ['认识一件陶器'],
+        '7-12': ['描述一个代表文物'],
+        '13-18': ['讨论文物保护新技术']
+      }
+    }
   }
-  
-  const startIndex = content.indexOf('const MUSEUMS = [');
-  const endIndex = content.indexOf('];', startIndex) + 2;
-  
-  if (startIndex !== -1 && endIndex !== -1) {
-    const museumsCode = content.substring(startIndex, endIndex);
-    const museums = eval(museumsCode.replace('const MUSEUMS = ', ''));
-    
-    // Make MUSEUMS globally available
-    global.MUSEUMS = museums;
-    
-    return museums;
-  }
-  
-  return [];
-}
+];
 
-// Load museum data at setup time
-const loadedMuseums = loadMuseumData();
-console.log(`✅ Loaded ${loadedMuseums.length} museums for testing`);
+global.MUSEUMS = sampleMuseums;
+window.MUSEUMS = sampleMuseums;
 
 // Load the main script to make MuseumCheckApp available
 const scriptPath = path.join(__dirname, '..', 'script.js');
