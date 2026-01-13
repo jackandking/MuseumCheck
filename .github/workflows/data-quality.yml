@@ -1,0 +1,105 @@
+name: Data Quality Checks
+
+on:
+  push:
+    branches: [ dev, main ]
+    paths:
+      - 'museums/**'
+      - 'script.js'
+      - 'js/museums-data.js'
+  pull_request:
+    branches: [ dev, main ]
+    paths:
+      - 'museums/**'
+      - 'script.js'
+      - 'js/museums-data.js'
+
+jobs:
+  data-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run data quality tests
+        run: npm run test:data-quality
+      
+      - name: Validate museum data structure
+        run: npm run validate-data
+      
+      - name: Check for duplicate museums
+        run: |
+          node -e "
+          const fs = require('fs');
+          let museums = [];
+          
+          // Try to load from museums-data.js first
+          if (fs.existsSync('js/museums-data.js')) {
+            const content = fs.readFileSync('js/museums-data.js', 'utf8');
+            const match = content.match(/const MUSEUMS = (\[[\s\S]*?\]);/);
+            if (match) {
+              museums = eval(match[1]);
+            }
+          }
+          
+          // Fallback to script.js
+          if (museums.length === 0 && fs.existsSync('script.js')) {
+            const content = fs.readFileSync('script.js', 'utf8');
+            const startIdx = content.indexOf('const MUSEUMS = [');
+            if (startIdx !== -1) {
+              const endIdx = content.indexOf('];', startIdx) + 2;
+              museums = eval(content.substring(startIdx, endIdx).replace('const MUSEUMS = ', ''));
+            }
+          }
+          
+          console.log('✅ Total museums:', museums.length);
+          
+          const names = new Map();
+          const ids = new Map();
+          let dupNames = 0, dupIds = 0;
+          
+          museums.forEach((m, i) => {
+            if (names.has(m.name)) {
+              console.log(\`❌ DUPLICATE NAME: \${m.name} (indices \${names.get(m.name)} and \${i})\`);
+              dupNames++;
+            } else {
+              names.set(m.name, i);
+            }
+            
+            if (ids.has(m.id)) {
+              console.log(\`❌ DUPLICATE ID: \${m.id} (indices \${ids.get(m.id)} and \${i})\`);
+              dupIds++;
+            } else {
+              ids.set(m.id, i);
+            }
+          });
+          
+          if (dupNames === 0 && dupIds === 0) {
+            console.log('✅ No duplicates found');
+          } else {
+            console.log(\`❌ Found \${dupNames} duplicate names and \${dupIds} duplicate IDs\`);
+            process.exit(1);
+          }
+          "
+      
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **Data Quality Check Failed**\n\nPlease review the museum data for duplicates or validation errors. See the workflow logs for details.'
+            })

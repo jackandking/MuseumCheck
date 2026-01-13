@@ -2,6 +2,18 @@
 
 <div align="center">
   <img src="assets/images/MuseumCheck_logo.jpg" alt="MuseumCheck Logo" width="200" height="200">
+  
+  <p>
+    <a href="https://github.com/jackandking/MuseumCheck/actions/workflows/test.yml">
+      <img src="https://github.com/jackandking/MuseumCheck/actions/workflows/test.yml/badge.svg" alt="Tests">
+    </a>
+    <a href="https://github.com/jackandking/MuseumCheck/actions/workflows/data-quality.yml">
+      <img src="https://github.com/jackandking/MuseumCheck/actions/workflows/data-quality.yml/badge.svg" alt="Data Quality">
+    </a>
+    <a href="https://codecov.io/gh/jackandking/MuseumCheck">
+      <img src="https://codecov.io/gh/jackandking/MuseumCheck/branch/dev/graph/badge.svg" alt="Coverage">
+    </a>
+  </p>
 </div>
 
 一个帮助中国家庭规划博物馆参观的互动应用，让孩子爱上博物馆之旅。

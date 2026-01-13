@@ -41,8 +41,8 @@ describe('Museum Check-in Page', () => {
         });
 
         test('should include required JavaScript dependencies', () => {
-            expect(htmlContent).toContain('<script src="museum-data-loader.js"></script>');
-            expect(htmlContent).toContain('<script src="firework.js"></script>');
+            expect(htmlContent).toContain('<script src="js/museum-data-loader.js"></script>');
+            expect(htmlContent).toContain('<script src="js/firework.js"></script>');
         });
 
         test('should have header with menu and settings buttons', () => {
