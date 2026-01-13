@@ -4071,11 +4071,11 @@ class MuseumCheckApp {
             typeof window.eventBus !== 'undefined' && 
             typeof window.museumDataLoader !== 'undefined') {
             try {
-                this.homepageAdapter = new HomepageAdapter(
-                    window.dataManager,
-                    window.eventBus,
-                    window.museumDataLoader
-                );
+                this.homepageAdapter = new HomepageAdapter({
+                    dataManager: window.dataManager,
+                    eventBus: window.eventBus,
+                    museumDataLoader: window.museumDataLoader
+                });
                 await this.homepageAdapter.init();
                 
                 // Use adapter's museums instead of MUSEUMS array
