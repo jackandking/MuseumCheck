@@ -1,11 +1,14 @@
 ---
 name: museum-photo-search
-description: 'Museum Photo Search Skill - AI-powered search for high-quality museum building photos using Letmetry Cloud image search API. Triggers on requests like "find museum photo", "search museum image", "get best museum building photo", "find photos for museums with empty images". Validates URLs and intelligently selects the most suitable museum exterior photo.'
+description: 'Museum Photo Search Skill (Enhanced) - AI-powered search with authority sources priority. Searches Wikipedia, Wikimedia Commons, and Baidu Baike FIRST, then falls back to Letmetry Cloud API. Validates URLs and intelligently selects the most suitable museum exterior photo. Priority: Wikipedia > Wikimedia Commons > Baidu Baike > Letmetry API'
 ---
 
-# Museum Photo Search
+# Museum Photo Search (Enhanced with Authority Sources)
 
-This skill provides AI-powered search and selection of high-quality museum building photos using Letmetry Cloud's image search API combined with Copilot's intelligent analysis.
+This skill provides AI-powered search and selection of high-quality museum building photos with a **multi-tier approach**: 
+1. **Priority Tier 1**: Authority sources (Wikipedia, Wikimedia Commons, Baidu Baike)
+2. **Priority Tier 2**: Letmetry Cloud API (fallback)
+3. **Priority Tier 3**: Manual search fallback
 
 ## Scope of Application
 
@@ -19,17 +22,22 @@ This skill provides AI-powered search and selection of high-quality museum build
 
 ### Required
 
-1. **Letmetry Cloud API Access**
+1. **Authority Sources Access** (Priority)
+   - Wikipedia API: `https://en.wikipedia.org/w/api.php` (free, no key required)
+   - Wikimedia Commons API: `https://commons.wikimedia.org/w/api.php` (free, no key required)
+   - Baidu Baike: `https://baike.baidu.com/` (web scraping with proper User-Agent)
+
+2. **Letmetry Cloud API** (Fallback)
    - Endpoint: `https://letmetry.cloud/image/search`
    - No authentication required (public API)
    - Network connectivity
 
-2. **Museum Data Context**
+3. **Museum Data Context**
    - Access to `data/museums-meta.json`
    - Museum name and basic information
    - Understanding of museum location/context
 
-3. **Node.js Environment** (for inline code execution)
+4. **Node.js Environment** (for inline code execution)
    - Version 14+ required
    - `fetch` or `node-fetch` for HTTP requests
 
@@ -38,16 +46,46 @@ This skill provides AI-powered search and selection of high-quality museum build
 ```mermaid
 flowchart TD
     A["User: Find photo for 'Museum Name'"] --> B["Information Gathering"]
-    B --> C["Generate Search Keywords"]
-    C --> D["Call Letmetry Image Search API"]
-    D --> E["Validate Image URLs"]
+    B --> C1["Authority Sources Tier"]
+    C1 --> C1a["Try Wikipedia API"]
+    C1a --> C1b{"Found?"} 
+    C1b -->|Yes| D["Validate & Return"]
+    C1b -->|No| C1c["Try Wikimedia Commons"]
+    C1c --> C1d{"Found?"}
+    C1d -->|Yes| D
+    C1d -->|No| C1e["Try Baidu Baike"]
+    C1e --> C1f{"Found?"}
+    C1f -->|Yes| D
+    C1f -->|No| C2["Letmetry API Fallback"]
+    C2 --> E["Validate Image URLs"]
     E --> F{"Valid URLs?"}
     F -->|Yes| G["AI Analysis & Selection"]
     F -->|No| H["Try Alternative Keywords"]
-    H --> D
+    H --> C2
     G --> I["Rank Images by Quality"]
-    I --> J["Present Recommendation"]
+    I --> J["Present Recommendation with Source"]
     J --> K["Developer Reviews & Applies"]
+    
+    style C1 fill:#90EE90
+    style D fill:#87CEEB
+    style C2 fill:#FFD700
+```
+
+**Search Priority** (降级流程):
+```
+Authority Sources (Free, High Quality)
+    ↓
+1️⃣ Wikipedia API          → English museum info + official images
+2️⃣ Wikimedia Commons      → Free licensed, high-quality photos
+3️⃣ Baidu Baike           → Chinese museums, detailed infobox images
+    ↓
+(If ALL authority sources fail)
+    ↓
+Letmetry Cloud API        → General image search (fallback)
+    ↓
+(If all automated searches fail)
+    ↓
+Manual Search Fallback    → User performs manual search
 ```
 
 ---
@@ -109,7 +147,222 @@ const testApi = async () => {
 
 ---
 
-## Step 2: Image Search Phase
+## Step 1.5: Authority Sources Search Phase (NEW - PRIORITY)
+
+### 1.5.1 Wikipedia API Search
+
+**Highest Priority - Official & Free**
+
+```javascript
+async function searchWikipedia(museumName) {
+  console.log(`📖 Searching Wikipedia: "${museumName}"...`);
+  
+  try {
+    // Try multiple name variations
+    const variations = [
+      museumName,
+      `${museumName} Museum`,
+      museumName.replace(/博物馆|博物院/, 'Museum')
+    ];
+    
+    for (const searchTerm of variations) {
+      const url = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(searchTerm)}&prop=pageimages&pithumbsize=800&redirects=1&format=json`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.query?.pages) {
+        const pages = Object.values(data.query.pages);
+        for (const page of pages) {
+          if (page.thumbnail) {
+            console.log(`✅ Found Wikipedia image: ${page.title}`);
+            return {
+              source: 'wikipedia',
+              sourceUrl: `https://en.wikipedia.org/wiki/${page.title}`,
+              imageUrl: page.thumbnail.source,
+              description: `Wikipedia - ${page.title}`
+            };
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.log(`⚠️ Wikipedia search failed: ${error.message}`);
+  }
+  
+  return null;
+}
+```
+
+**Advantages**:
+- ✅ Free API, no authentication needed
+- ✅ Official information & images
+- ✅ High-quality, verified museum photos
+- ✅ Global coverage for international museums
+
+---
+
+### 1.5.2 Wikimedia Commons Search
+
+**Second Priority - Free Licensed Images**
+
+```javascript
+async function searchWikimediaCommons(museumName, location) {
+  console.log(`🌍 Searching Wikimedia Commons: "${museumName}"...`);
+  
+  try {
+    const searchTerms = [
+      `${museumName} museum`,
+      `${location} museum`,
+      `${museumName} 博物馆`,
+      `${museumName} building`
+    ];
+    
+    for (const searchTerm of searchTerms) {
+      // Wikimedia Commons API search
+      const url = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchTerm)}&srnamespace=6&format=json&srlimit=5`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.query?.search && data.query.search.length > 0) {
+        const firstResult = data.query.search[0];
+        const fileTitle = firstResult.title;
+        
+        // Get file details
+        const fileUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(fileTitle)}&prop=imageinfo&iiprop=url&format=json`;
+        const fileResponse = await fetch(fileUrl);
+        const fileData = await fileResponse.json();
+        
+        const pages = Object.values(fileData.query.pages);
+        if (pages[0]?.imageinfo) {
+          const imageUrl = pages[0].imageinfo[0].url;
+          console.log(`✅ Found Wikimedia Commons image`);
+          return {
+            source: 'wikimedia-commons',
+            sourceUrl: `https://commons.wikimedia.org/wiki/${fileTitle}`,
+            imageUrl: imageUrl,
+            description: `Wikimedia Commons - Free Licensed Image`
+          };
+        }
+      }
+    }
+  } catch (error) {
+    console.log(`⚠️ Wikimedia Commons search failed: ${error.message}`);
+  }
+  
+  return null;
+}
+```
+
+**Advantages**:
+- ✅ All images have free licenses (CC0, CC-BY-SA, etc.)
+- ✅ No copyright issues
+- ✅ Professional, curated images
+- ✅ Excellent for international museums
+
+---
+
+### 1.5.3 Baidu Baike Search
+
+**Third Priority - Chinese Museum Sources**
+
+```javascript
+async function searchBaiduBaike(museumName) {
+  console.log(`📖 Searching Baidu Baike: "${museumName}"...`);
+  
+  try {
+    const url = `https://baike.baidu.com/item/${encodeURIComponent(museumName)}`;
+    
+    // Fetch with proper User-Agent
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    
+    if (!response.ok) return null;
+    
+    const html = await response.text();
+    
+    // Extract infobox images (usually museum building)
+    // Baidu format: <img src="xxx" ... class="pic">
+    const imgMatches = html.match(/<img[^>]*src="([^"]*)"[^>]*class="[^"]*pic[^"]*"[^>]*>/gi);
+    
+    if (imgMatches && imgMatches.length > 0) {
+      for (const match of imgMatches) {
+        const srcMatch = match.match(/src="([^"]*)"/);
+        if (srcMatch && srcMatch[1]) {
+          let imageUrl = srcMatch[1];
+          if (imageUrl.startsWith('//')) {
+            imageUrl = 'https:' + imageUrl;
+          }
+          
+          console.log(`✅ Found Baidu Baike image`);
+          return {
+            source: 'baidu-baike',
+            sourceUrl: url,
+            imageUrl: imageUrl,
+            description: `Baidu Baike - Chinese Encyclopedia`
+          };
+        }
+      }
+    }
+  } catch (error) {
+    console.log(`⚠️ Baidu Baike search failed: ${error.message}`);
+  }
+  
+  return null;
+}
+```
+
+**Advantages**:
+- ✅ Best for Chinese museums
+- ✅ Detailed information in infobox
+- ✅ Official museum photos
+- ✅ Rich content
+
+---
+
+### 1.5.4 Authority Search Flow
+
+**Execute Authority Searches in Priority Order**:
+
+```javascript
+async function searchFromAuthoritySources(museumName, location) {
+  console.log(`\n🏛️ Tier 1: Authority Sources Search`);
+  console.log(`Priority: Wikipedia > Wikimedia Commons > Baidu Baike\n`);
+  
+  // 1. Try Wikipedia (international museums)
+  let result = await searchWikipedia(museumName);
+  if (result) {
+    return { ...result, tier: 1, priority: 'Wikipedia (Official)' };
+  }
+  
+  // 2. Try Wikimedia Commons (free licensed)
+  result = await searchWikimediaCommons(museumName, location);
+  if (result) {
+    return { ...result, tier: 1, priority: 'Wikimedia Commons (Free)' };
+  }
+  
+  // 3. Try Baidu Baike (Chinese museums)
+  if (hasChineseCharacters(museumName)) {
+    result = await searchBaiduBaike(museumName);
+    if (result) {
+      return { ...result, tier: 1, priority: 'Baidu Baike (Chinese)' };
+    }
+  }
+  
+  console.log('⚠️ No authority sources found, falling back to Tier 2...\n');
+  return null;
+}
+```
+
+---
+
+## Step 2: Letmetry API Fallback Phase
+
+**Only if Authority Sources Return No Results**
 
 ### 2.1 Generate Optimal Search Keywords
 
@@ -496,26 +749,30 @@ Present recommendation with reasoning
 
 ---
 
-## Step 5: Results Presentation Phase
+## Step 5: Results Presentation Phase (Enhanced with Source Attribution)
 
-### 5.1 Recommendation Output Format
+### 5.1 Recommendation Output Format with Source Information
 
-**Present results in structured format:**
+**Present results in structured format with SOURCE ATTRIBUTION**:
 
 ```markdown
 ## 🎯 Museum Photo Search Results
 
 ### Museum: {museumName}
 **Location:** {location}  
-**Search Keywords Used:** {keywords}  
-**Total URLs Found:** {total}  
-**Valid URLs After Validation:** {validCount}
+**Search Tier:** {Tier 1: Authority Sources | Tier 2: Letmetry API}
 
 ---
 
 ### ✅ RECOMMENDED IMAGE
 
 **URL:** {bestImageUrl}
+
+**📚 SOURCE: {source information}**
+- Source Type: {Wikipedia | Wikimedia Commons | Baidu Baike | Letmetry API}
+- Source URL: {link to original source page}
+- License: {Public Domain | CC-BY-SA | Wikimedia | Letmetry}
+- Quality: {High | Medium | Good}
 
 **Confidence Score:** {confidenceScore}/100
 
@@ -528,14 +785,14 @@ Present recommendation with reasoning
 
 **Reasoning:**
 {Detailed explanation of why this image is the best choice, 
-including specific observations about the URL, expected quality, 
+including specific observations about the source, expected quality, 
 and relevance to the museum}
 
 **Technical Details:**
 - Status Code: 200 OK
 - Content-Type: image/jpeg
-- Content-Length: {size if available}
-- Estimated Resolution: {if determinable from URL}
+- Source Authority: {Tier 1 Authority | Tier 2 Fallback}
+- License Status: ✅ Free to use | ⚠️ Verify usage rights
 
 ---
 
@@ -543,11 +800,13 @@ and relevance to the museum}
 
 **Second Best:**
 URL: {alternativeUrl1}
+Source: {Wikipedia | Wikimedia Commons | Baidu Baike | API}
 Score: {score}/100
 Notes: {brief reasoning}
 
 **Third Best:**
 URL: {alternativeUrl2}
+Source: {Source type}
 Score: {score}/100
 Notes: {brief reasoning}
 
@@ -557,9 +816,10 @@ Notes: {brief reasoning}
 
 Developer should:
 1. ✅ Review the recommended image URL above
-2. ✅ Optionally open URL in browser to visually verify
-3. ✅ Copy the URL to update museums-meta.json manually
-4. ✅ If not satisfied, try alternative URLs or search again
+2. ✅ **Verify source attribution** - link back to original
+3. ✅ Optionally open URL in browser to visually verify
+4. ✅ Copy the URL to update museums-meta.json manually
+5. ✅ If not satisfied, try alternative URLs or search again
 
 **Manual Update Command:**
 ```javascript
@@ -618,38 +878,174 @@ Review each recommended URL above, then update museums-meta.json:
 
 ---
 
-## Step 6: Fallback Strategies
+## Step 6: Authority Source Handling Guidelines (权威媒体处理指南)
 
-### 6.1 No Valid Images Found
+### 6.1 Wikipedia Images Priority
 
-**If Letmetry API returns no usable results:**
+**When Wikipedia images are found**, follow this priority order:
+
+```javascript
+// Priority order for Wikipedia images:
+1. "Commons" images (stored on Wikimedia Commons)
+   - URL pattern: https://upload.wikimedia.org/wikipedia/commons/...
+   - License: Typically free (CC-BY-SA or Public Domain)
+   - Quality: Usually excellent, curated
+   - Preference: ⭐⭐⭐⭐⭐ HIGHEST
+
+2. Infobox images (from Wikipedia article)
+   - URL pattern: https://upload.wikimedia.org/wikipedia/en/...
+   - License: Variable, check source page
+   - Quality: Good, official sources
+   - Preference: ⭐⭐⭐⭐ HIGH
+
+3. Historical/artistic depictions
+   - URL pattern: https://upload.wikimedia.org/...
+   - License: Check specific image page
+   - Quality: Varies, may be artistic
+   - Preference: ⭐⭐⭐ MEDIUM (use only if building photo unavailable)
+```
+
+**Verification Steps for Wikipedia Images:**
+```bash
+1. Check HTTP status: curl -I <url> | grep "200 OK"
+2. Verify MIME type is image (image/jpeg, image/png, etc.)
+3. Check Content-Length indicates reasonable size (100KB-5MB typical)
+4. Visit Wikipedia source page to verify museum relevance
+5. Look for license information on Wikimedia Commons page
+```
+
+### 6.2 Wikimedia Commons (RECOMMENDED)
+
+**Wikimedia Commons represents BEST-CASE scenario:**
+
+```javascript
+// Wikimedia Commons advantages:
+✅ All images are FREE to use (public domain or CC-licensed)
+✅ Official cultural institution uploads (museums, governments)
+✅ Professional photography standards (high resolution, composition)
+✅ Structured metadata (photographer, date, license info)
+✅ Global search index (find any museum worldwide)
+✅ NO usage rights concerns - fully cleared for reuse
+
+// URL Pattern Recognition:
+https://commons.wikimedia.org/ → Use this source confidently
+https://upload.wikimedia.org/wikipedia/commons/ → Same source, direct file access
+License types found here: Public Domain, CC0, CC-BY, CC-BY-SA (all FREE)
+
+// When to use Wikimedia Commons result:
+✅ Always prefer Wikimedia Commons images when available
+✅ These are highest quality, fully cleared, professional photos
+✅ Can confidently use without license verification
+✅ Most appropriate for museum application
+```
+
+### 6.3 Baidu Baike (百度百科) for Chinese Museums
+
+**Baidu Baike is VALUABLE for Chinese museums:**
+
+```javascript
+// Baidu Baike advantages for Chinese museums:
+✅ Most comprehensive Chinese museum coverage
+✅ Official infobox images from museum websites
+✅ Clear museum descriptions and historical context
+✅ Wide audience = reliable, verified information
+✅ Local perspective and details
+⚠️ May have copyright ownership by Baidu
+
+// URL Pattern Recognition:
+https://baike.baidu.com/pic/... → Image URL from Baike infobox
+Usually embedded in museum article infoboxes
+Format: {museumName} 百科 search
+
+// When to use Baidu Baike results:
+✅ When Wikimedia/Wikipedia don't have content (many local museums)
+✅ As secondary source if Commons/Wikipedia unavailable
+✅ For verification of museum official name and basic facts
+⚠️ Always verify image copyright with Baidu before use
+```
+
+### 6.4 Letmetry API (降级策略 - Fallback Only)
+
+**Only use Letmetry API when authority sources fail:**
+
+```javascript
+// Letmetry usage guidelines:
+❌ Never use Letmetry as FIRST choice - authority sources are better
+✅ Use only when Wikipedia/Commons/Baike don't return satisfactory results
+✅ Useful for niche museums or very recent museums
+✅ Good for alternative angles (different photographer, season, etc.)
+
+// When authority sources fail:
+1. ✅ All Wikipedia searches returned no results
+2. ✅ Wikimedia Commons has no relevant images
+3. ✅ Baidu Baike blocked or no images available
+4. ✅ Museum is obscure or not well-documented internationally
+
+// Letmetry search strategy with keywords:
+- Use broader keywords: "{museumName}" vs. "{museumName} building"
+- Try translations: English + Chinese + pinyin versions
+- Include location: "{museumName} {location}" for specificity
+- Add descriptor: "{museumName} 建筑" or "{museumName} 外观"
+
+// Code example for Letmetry fallback:
+async function letmetryFallback(museumName, location) {
+  const keywords = [
+    `${museumName} ${location}`,
+    museumName,
+    `${museumName} building`,
+    `${museumName} museum`
+  ];
+  
+  for (const keyword of keywords) {
+    const results = await LetmetryAPI.searchImages(keyword);
+    if (results && results.length > 0) {
+      // Filter for museum-like images and validate
+      const validImage = await validateAndSelectBest(results);
+      if (validImage) return validImage;
+    }
+  }
+  
+  return null; // Even Letmetry fallback unsuccessful
+}
+```
+
+---
+
+## Step 7: Fallback Strategies
+
+### 7.1 No Valid Images Found
+
+**If all automated searches (authority sources + Letmetry) return no usable results:**
 
 ```markdown
-⚠️ No suitable images found via Letmetry API for "{museumName}"
+⚠️ No suitable images found for "{museumName}"
 
 **Fallback Options:**
 
-1. **Try Wikimedia Commons Search:**
+1. **Try Wikimedia Commons Search Directly:**
    - Manual search: https://commons.wikimedia.org/w/index.php?search={museumName}
-   - Free licensed images
-   - Often high quality official photos
+   - Free licensed images, often high quality official photos
+   - Search tips: Try English name, location, "museum building"
 
 2. **Try Alternative Keywords:**
    - Museum's English name (if available)
    - Add location: "{museumName} {location}"
    - Remove '博物院'/'博物馆' suffix
+   - Try pinyin name for Chinese museums
 
-3. **Manual Search:**
+3. **Manual Search Tools:**
+   - Wikimedia Commons: https://commons.wikimedia.org/
    - Baidu Images: https://image.baidu.com/search/index?tn=baiduimage&word={museumName}
    - Google Images: https://images.google.com/search?q={museumName}
-   - Museum official website
+   - Google Arts & Culture: https://artsandculture.google.com/ (official institutional photos)
 
-4. **Ask for Help:**
+4. **Contact Museum Official:**
    - Request from museum official website
-   - Contact museum for media kit
+   - Contact museum media/press department for media kit
+   - Many museums provide high-resolution photos for public use
 ```
 
-### 6.2 API Connection Issues
+### 7.2 API Connection Issues
 
 **If Letmetry API is unreachable:**
 
@@ -678,7 +1074,7 @@ async function searchWithRetry(keyword, maxRetries = 3) {
 }
 ```
 
-### 6.3 All URLs Invalid
+### 7.3 All URLs Invalid
 
 **If URL validation fails for all results:**
 
@@ -700,7 +1096,7 @@ async function searchWithRetry(keyword, maxRetries = 3) {
 
 ---
 
-## Complete Example: Single Museum Search
+## Complete Example: Single Museum Search (Using 3-Tier Approach)
 
 ```javascript
 // Complete workflow for finding a museum photo
@@ -868,6 +1264,73 @@ async function batchFindMuseumPhotos(museumsFile = 'data/museums-meta.json') {
 
 // Run batch processing
 const results = await batchFindMuseumPhotos();
+```
+
+---
+
+## Best Practice: Authority Sources Priority (权威媒体优先)
+
+**CRITICAL PRINCIPLE**: Always search authority sources FIRST before falling back to Letmetry API.
+
+### Why Authority Sources Matter
+
+| Aspect | Authority Sources | Letmetry API |
+|--------|-------------------|--------------|
+| **Quality** | Professional, curated | Variable, algorithm-selected |
+| **License** | Free to use (CC0, CC-BY-SA, PD) | May have restrictions |
+| **Reliability** | Stable, institutional backing | Dependent on search algorithms |
+| **Metadata** | Rich (photographer, date, license) | Limited metadata |
+| **Reputation** | Wikipedia, Wikimedia, Baidu authority | Third-party service |
+| **Cost** | Free, no API key required | Free, but lower priority |
+
+### Recommended Search Sequence
+
+1. **First**: Wikipedia API → Look for official images
+2. **Second**: Wikimedia Commons → Search free licensed photos
+3. **Third**: Baidu Baike → For Chinese museums with local content
+4. **Last**: Letmetry API → Only if all authority sources fail
+
+### Code Pattern for Priority Implementation
+
+```javascript
+async function searchMuseumImageWithPriority(museumName, location) {
+  console.log(`🔍 Searching for ${museumName}...\n`);
+  
+  // Priority Tier 1: Authority Sources
+  console.log('📚 Tier 1: Searching authority sources...');
+  
+  // Try Wikipedia first
+  let result = await searchWikipedia(museumName);
+  if (result) {
+    console.log('✅ Found in Wikipedia!');
+    return { ...result, source: 'Wikipedia', tier: 1 };
+  }
+  
+  // Try Wikimedia Commons
+  result = await searchWikimediaCommons(museumName);
+  if (result) {
+    console.log('✅ Found in Wikimedia Commons!');
+    return { ...result, source: 'Wikimedia Commons', tier: 1 };
+  }
+  
+  // Try Baidu Baike for Chinese museums
+  result = await searchBaiduBaike(museumName);
+  if (result) {
+    console.log('✅ Found in Baidu Baike!');
+    return { ...result, source: 'Baidu Baike', tier: 1 };
+  }
+  
+  // Priority Tier 2: API Fallback
+  console.log('🔄 Tier 1 failed, trying Tier 2 fallback...');
+  result = await searchWithLetmetry(museumName, location);
+  if (result) {
+    console.log('✅ Found in Letmetry API!');
+    return { ...result, source: 'Letmetry API', tier: 2 };
+  }
+  
+  console.log('❌ No images found in any source');
+  return null;
+}
 ```
 
 ---
