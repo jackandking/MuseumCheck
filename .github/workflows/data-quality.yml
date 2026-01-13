@@ -4,15 +4,17 @@ on:
   push:
     branches: [ dev, main ]
     paths:
-      - 'museums/**'
+      - 'core/data-manager.js'
+      - 'core/storage/*.js'
+      - 'js/museums-meta.js'
       - 'script.js'
-      - 'js/museums-data.js'
   pull_request:
     branches: [ dev, main ]
     paths:
-      - 'museums/**'
+      - 'core/data-manager.js'
+      - 'core/storage/*.js'
+      - 'js/museums-meta.js'
       - 'script.js'
-      - 'js/museums-data.js'
 
 jobs:
   data-quality:
@@ -39,58 +41,59 @@ jobs:
       
       - name: Check for duplicate museums
         run: |
-          node -e "
+          node << 'EOF'
           const fs = require('fs');
-          let museums = [];
           
-          // Try to load from museums-data.js first
-          if (fs.existsSync('js/museums-data.js')) {
-            const content = fs.readFileSync('js/museums-data.js', 'utf8');
-            const match = content.match(/const MUSEUMS = (\[[\s\S]*?\]);/);
-            if (match) {
-              museums = eval(match[1]);
-            }
+          // Load from museums-meta.js (primary source - metadata only)
+          const content = fs.readFileSync('js/museums-meta.js', 'utf8');
+          
+          // Count museum objects from museums-meta.js
+          const idMatches = content.match(/"id":\s*"[^"]+"/g) || [];
+          const museums = idMatches.length;
+          
+          if (museums === 0) {
+            console.error('❌ No museum metadata found in js/museums-meta.js');
+            process.exit(1);
           }
           
-          // Fallback to script.js
-          if (museums.length === 0 && fs.existsSync('script.js')) {
-            const content = fs.readFileSync('script.js', 'utf8');
-            const startIdx = content.indexOf('const MUSEUMS = [');
-            if (startIdx !== -1) {
-              const endIdx = content.indexOf('];', startIdx) + 2;
-              museums = eval(content.substring(startIdx, endIdx).replace('const MUSEUMS = ', ''));
-            }
-          }
+          console.log(`✅ Total museums in metadata: ${museums}`);
           
-          console.log('✅ Total museums:', museums.length);
+          // Check for duplicate IDs
+          const ids = new Set();
+          let dupCount = 0;
           
-          const names = new Map();
-          const ids = new Map();
-          let dupNames = 0, dupIds = 0;
-          
-          museums.forEach((m, i) => {
-            if (names.has(m.name)) {
-              console.log(\`❌ DUPLICATE NAME: \${m.name} (indices \${names.get(m.name)} and \${i})\`);
-              dupNames++;
+          (content.match(/"id":\s*"([^"]+)"/g) || []).forEach(match => {
+            const id = match.match(/"id":\s*"([^"]+)"/)[1];
+            if (ids.has(id)) {
+              console.log(`❌ DUPLICATE ID: ${id}`);
+              dupCount++;
             } else {
-              names.set(m.name, i);
-            }
-            
-            if (ids.has(m.id)) {
-              console.log(\`❌ DUPLICATE ID: \${m.id} (indices \${ids.get(m.id)} and \${i})\`);
-              dupIds++;
-            } else {
-              ids.set(m.id, i);
+              ids.add(id);
             }
           });
           
-          if (dupNames === 0 && dupIds === 0) {
+          // Check for duplicate names
+          const names = new Set();
+          let dupNames = 0;
+          
+          (content.match(/"name":\s*"([^"]+)"/g) || []).forEach(match => {
+            const name = match.match(/"name":\s*"([^"]+)"/)[1];
+            if (names.has(name)) {
+              console.log(`❌ DUPLICATE NAME: ${name}`);
+              dupNames++;
+            } else {
+              names.add(name);
+            }
+          });
+          
+          if (dupCount === 0 && dupNames === 0) {
             console.log('✅ No duplicates found');
+            process.exit(0);
           } else {
-            console.log(\`❌ Found \${dupNames} duplicate names and \${dupIds} duplicate IDs\`);
+            console.log(`❌ Found ${dupCount} duplicate IDs and ${dupNames} duplicate names`);
             process.exit(1);
           }
-          "
+          EOF
       
       - name: Comment PR with results
         if: github.event_name == 'pull_request' && failure()
