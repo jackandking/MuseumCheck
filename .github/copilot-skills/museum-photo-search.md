@@ -356,6 +356,7 @@ function filterValidImages(validationResults) {
 | **Lighting** | 10% | Good lighting, proper exposure | Dark, overexposed, poor contrast |
 | **Authenticity** | 5% | Official, professional appearance | Watermarks, tourist photos |
 | **Relevance** | 5% | Matches museum type, appropriate | Wrong building, unrelated |
+| **🔥 Museum Name/Signage Visible** | **+35 BONUS** | **Museum name in image/signage** | **No identifying text** |
 
 ### 4.2 AI Analysis Prompt Pattern
 
@@ -376,20 +377,58 @@ IMAGE URLS TO ANALYZE:
 3. {url3}
 ...
 
-ANALYSIS CRITERIA:
-1. Museum building exterior clearly visible (40%)
-2. High resolution and image quality (25%)
-3. Professional angle and composition (15%)
-4. Good lighting and exposure (10%)
-5. Authentic/official appearance (5%)
-6. Relevance to museum type (5%)
+ANALYSIS CRITERIA (with CRITICAL WEIGHT UPDATE):
 
-REQUIRED OUTPUT:
-- Best Image URL: {selected URL}
-- Confidence Score: {0-100}
-- Reasoning: {why this image is best}
-- Quality Assessment: {pros and cons}
-- Alternative URLs: {ranked list of next best options}
+🔥 HIGHEST PRIORITY (35% bonus):
+- **Museum Name/Signage Visible**: Does image contain "{museumName}" text or museum signage/logo?
+  → If YES: Add +35 bonus points (most important!)
+  → If clearly shows museum entrance/name: +35 points
+  → If shows building name on facade: +35 points
+
+2. Museum Building Exterior (25%)
+   - Main building clearly visible and recognizable
+   - Professional architectural photo
+   - Good clarity and framing
+
+3. Image Quality (15%)
+   - High resolution and sharp
+   - Good lighting and exposure
+   - No watermarks or distortions
+
+4. Composition & Angle (15%)
+   - Professional angle
+   - Good framing of building
+   - Landscape orientation preferred for architecture
+
+5. Authenticity (10%)
+   - Official, professional appearance
+   - Institutional/official photo
+
+SCORING RULES:
+- Base score: 50 points
+- **If museum name/signage visible: +35 BONUS** ← HIGHEST PRIORITY!
+- If only generic building: +10 points
+- If building unclear or not relevant: -20 points
+- High resolution (800+x800+): +10 points
+- Orientation bonus (landscape/wide): +5 points
+
+REQUIRED OUTPUT (JSON ONLY):
+{
+  "bestIndex": selected_index,
+  "reasoning": "Brief reason (80 chars max). Mention if museum name found!",
+  "confidence": "high/medium/low",
+  "museumNameFound": true or false,
+  "scoringBreakdown": {
+    "baseScore": 50,
+    "signageBonus": 0 or 35,
+    "qualityBonus": 0-10,
+    "resolutionBonus": 0-10,
+    "finalScore": total_score
+  }
+}
+
+⚠️ CRITICAL: **ALWAYS prioritize images with museum name/signage visible!**
+Return JSON only, no explanations.
 ```
 
 ### 4.3 URL Pattern Analysis
