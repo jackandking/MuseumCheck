@@ -22,16 +22,13 @@ jobs:
         with:
           fetch-depth: 2
       
-      - name: 🔍 检查新增的根目录 MD 文件
+      - name: 🔍 检查新增的根目录 MD 文件（仅 PR）
+        if: github.event_name == 'pull_request'
         run: |
           echo "🔍 检查是否有新的根目录 MD 文件..."
           
           # 获取本次提交新增或修改的根目录 MD 文件
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            NEW_ROOT_MD=$(git diff --name-only --diff-filter=AM origin/${{ github.base_ref }}..HEAD | grep "^[A-Z].*\.md$" || true)
-          else
-            NEW_ROOT_MD=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD | grep "^[A-Z].*\.md$" || true)
-          fi
+          NEW_ROOT_MD=$(git diff --name-only --diff-filter=AM origin/${{ github.base_ref }}..HEAD | grep "^[A-Z].*\.md$" || true)
           
           # 白名单（仅允许这些文件在根目录）
           ALLOWED="README.md CHANGELOG.md CONTRIBUTING.md LICENSE.md"
@@ -64,38 +61,6 @@ jobs:
             echo "✅ 未发现违规文档"
           fi
       
-      - name: ⚠️ 检查所有根目录 MD 文件（含已存在）
-        run: |
-          echo "⚠️ 扫描所有根目录 MD 文件..."
-          
-          # 白名单
-          ALLOWED="README.md CHANGELOG.md CONTRIBUTING.md LICENSE.md"
-          
-          # 找出所有根目录 MD 文件
-          ROOT_MD=$(find . -maxdepth 1 -name "[A-Z]*.md" -type f | sed 's|^\./||' | sort)
-          
-          VIOLATIONS=""
-          if [ -n "$ROOT_MD" ]; then
-            for file in $ROOT_MD; do
-              if ! echo "$ALLOWED" | grep -q "$file"; then
-                VIOLATIONS="$VIOLATIONS $file"
-              fi
-            done
-          fi
-          
-          if [ -n "$VIOLATIONS" ]; then
-            echo "⚠️ 警告：根目录存在不符合规范的 MD 文件："
-            for file in $VIOLATIONS; do
-              echo "  ⚠️ $file → 应迁移到 docs/ 子目录"
-            done
-            echo ""
-            echo "💡 建议：将这些文件移动到合适的 docs/ 子目录中"
-            # 非强制失败，仅警告
-          else
-            echo "✅ 根目录无违规 MD 文件"
-          fi
-      
       - name: 📊 运行完整检查（含已存在文件）
         run: |
-          bash scripts/check-docs-location.sh || true
-        continue-on-error: true
+          bash scripts/check-docs-location.sh
