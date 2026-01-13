@@ -6,14 +6,14 @@ on:
     paths:
       - 'core/data-manager.js'
       - 'core/storage/*.js'
-      - 'js/museums-meta.js'
+      - 'data/museums-meta.json'
       - 'script.js'
   pull_request:
     branches: [ dev, main ]
     paths:
       - 'core/data-manager.js'
       - 'core/storage/*.js'
-      - 'js/museums-meta.js'
+      - 'data/museums-meta.json'
       - 'script.js'
 
 jobs:
@@ -44,31 +44,26 @@ jobs:
           node << 'EOF'
           const fs = require('fs');
           
-          // Load from museums-meta.js (primary source - metadata only)
-          const content = fs.readFileSync('js/museums-meta.js', 'utf8');
+          // Load from data/museums-meta.json (pure JSON)
+          const museums = JSON.parse(fs.readFileSync('data/museums-meta.json', 'utf8'));
           
-          // Count museum objects from museums-meta.js
-          const idMatches = content.match(/"id":\s*"[^"]+"/g) || [];
-          const museums = idMatches.length;
-          
-          if (museums === 0) {
-            console.error('❌ No museum metadata found in js/museums-meta.js');
+          if (!Array.isArray(museums) || museums.length === 0) {
+            console.error('❌ No museum metadata found in data/museums-meta.json');
             process.exit(1);
           }
           
-          console.log(`✅ Total museums in metadata: ${museums}`);
+          console.log(`✅ Total museums in metadata: ${museums.length}`);
           
           // Check for duplicate IDs
           const ids = new Set();
-          let dupCount = 0;
+          let dupIds = 0;
           
-          (content.match(/"id":\s*"([^"]+)"/g) || []).forEach(match => {
-            const id = match.match(/"id":\s*"([^"]+)"/)[1];
-            if (ids.has(id)) {
-              console.log(`❌ DUPLICATE ID: ${id}`);
-              dupCount++;
+          museums.forEach(m => {
+            if (ids.has(m.id)) {
+              console.log(`❌ DUPLICATE ID: ${m.id}`);
+              dupIds++;
             } else {
-              ids.add(id);
+              ids.add(m.id);
             }
           });
           
@@ -76,21 +71,20 @@ jobs:
           const names = new Set();
           let dupNames = 0;
           
-          (content.match(/"name":\s*"([^"]+)"/g) || []).forEach(match => {
-            const name = match.match(/"name":\s*"([^"]+)"/)[1];
-            if (names.has(name)) {
-              console.log(`❌ DUPLICATE NAME: ${name}`);
+          museums.forEach(m => {
+            if (names.has(m.name)) {
+              console.log(`❌ DUPLICATE NAME: ${m.name}`);
               dupNames++;
             } else {
-              names.add(name);
+              names.add(m.name);
             }
           });
           
-          if (dupCount === 0 && dupNames === 0) {
+          if (dupIds === 0 && dupNames === 0) {
             console.log('✅ No duplicates found');
             process.exit(0);
           } else {
-            console.log(`❌ Found ${dupCount} duplicate IDs and ${dupNames} duplicate names`);
+            console.log(`❌ Found ${dupIds} duplicate IDs and ${dupNames} duplicate names`);
             process.exit(1);
           }
           EOF
