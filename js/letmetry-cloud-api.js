@@ -169,7 +169,121 @@ const LetmetryAPI = (function(){
     return { uploaded: upload, imageUrl, title: title || '', userName: userName || '' };
   }
 
-  return { uploadFile, uploadImage, listFiles, publishPoster, insertRecord, queryMysql, updateRecord, deleteRecord, setApiKey, getApiKey, setBaseUrl, getBaseUrl, DEFAULT_BASE };
+  /**
+   * Verify if a museum exists in the official Chinese museum database
+   * @param {string} museumName - The museum name to verify
+   * @param {boolean} strictMode - If true, require exact match (default: false for fuzzy matching)
+   * @returns {Promise<Object>} Verification result with status, matched museum data, and confidence score
+   */
+  async function verifyMuseumOfficial(museumName, strictMode = false) {
+    if (!museumName || typeof museumName !== 'string') {
+      throw new Error('Museum name must be a non-empty string');
+    }
+
+    try {
+      const response = await fetch('https://letmetry.cloud/museum/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ museumName: museumName.trim() })
+      });
+
+      if (!response.ok) {
+        return {
+          status: 'error',
+          error: `HTTP ${response.status}: ${response.statusText}`,
+          verified: false,
+          museumName,
+          matches: [],
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        return {
+          status: 'not_found',
+          error: data.error || 'Museum not found in official database',
+          verified: false,
+          museumName,
+          matches: [],
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      // Calculate similarity score for each match
+      const searchTerm = museumName.toLowerCase();
+      const scoredMatches = (data.museums || []).map(museum => {
+        const museumNameLower = (museum.name || '').toLowerCase();
+        
+        // Exact match
+        if (museumNameLower === searchTerm) {
+          return { ...museum, score: 100, matchType: 'exact' };
+        }
+        
+        // Starts with or contains match
+        if (museumNameLower.includes(searchTerm) || searchTerm.includes(museumNameLower)) {
+          return { ...museum, score: 80, matchType: 'partial' };
+        }
+        
+        // Levenshtein-like scoring for fuzzy match
+        const similarity = calculateSimilarity(searchTerm, museumNameLower);
+        return { ...museum, score: Math.round(similarity * 100), matchType: 'fuzzy' };
+      });
+
+      // Sort by score descending
+      scoredMatches.sort((a, b) => b.score - a.score);
+
+      const bestMatch = scoredMatches[0];
+      const verified = strictMode ? (bestMatch?.score >= 100) : (bestMatch?.score >= 60);
+
+      return {
+        status: 'success',
+        verified,
+        museumName,
+        strictMode,
+        bestMatch: bestMatch || null,
+        allMatches: scoredMatches,
+        totalResults: data.count,
+        timestamp: new Date().toISOString(),
+        officialMetadata: {
+          matchName: bestMatch?.name,
+          matchProvince: bestMatch?.province,
+          qualityGrade: bestMatch?.qualityGrade,
+          collectionCount: bestMatch?.collectionCount,
+          preciousArtifactsCount: bestMatch?.preciousArtifactsCount,
+          educationalActivitiesCount: bestMatch?.educationalActivitiesCount,
+          visitorCount: bestMatch?.visitorCount
+        }
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        error: error.message,
+        verified: false,
+        museumName,
+        matches: [],
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Simple Levenshtein-like similarity calculator (0-1)
+   * @private
+   */
+  function calculateSimilarity(str1, str2) {
+    const maxLen = Math.max(str1.length, str2.length);
+    if (maxLen === 0) return 1;
+    
+    let matches = 0;
+    for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
+      if (str1[i] === str2[i]) matches++;
+    }
+    return matches / maxLen;
+  }
+
+  return { uploadFile, uploadImage, listFiles, publishPoster, insertRecord, queryMysql, updateRecord, deleteRecord, setApiKey, getApiKey, setBaseUrl, getBaseUrl, verifyMuseumOfficial, DEFAULT_BASE };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = LetmetryAPI;

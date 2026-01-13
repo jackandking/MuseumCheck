@@ -4105,16 +4105,10 @@ class MuseumCheckApp {
         
         // Update header title with child nickname
         this.updateHeaderTitle();
-        
-        // Check if this is a first-time user and trigger inline nickname editing
+
+        // Show a one-time gentle tip for first-time users
         if (!this.hasSetNickname()) {
-            // Trigger inline nickname editing for first-time users after a short delay
-            setTimeout(() => {
-                const nicknameDisplay = document.getElementById('nicknameDisplay');
-                if (nicknameDisplay) {
-                    this.startInlineNicknameEdit(nicknameDisplay);
-                }
-            }, 500); // Small delay to ensure UI is ready
+            this.showNicknameTip();
         }
         
         // Update dynamic museum count displays
@@ -4948,6 +4942,22 @@ class MuseumCheckApp {
 
         // Auto-save nickname on blur (when user leaves the input field)
         const nicknameInput = document.getElementById('childNicknameInput');
+        const nicknameStatus = document.getElementById('childNicknameStatus');
+
+        const showNicknameStatus = (message, type) => {
+            if (!nicknameStatus) return;
+            nicknameStatus.textContent = message || '';
+            nicknameStatus.classList.remove('error', 'success', 'visible', 'fade-out');
+            if (message) {
+                if (type) nicknameStatus.classList.add(type);
+                nicknameStatus.classList.add('visible');
+                if (type === 'success') {
+                    // Trigger subtle fade-out after display
+                    setTimeout(() => nicknameStatus.classList.add('fade-out'), 50);
+                }
+            }
+        };
+
         if (nicknameInput) {
             nicknameInput.addEventListener('blur', () => {
                 const nickname = nicknameInput.value.trim();
@@ -4963,33 +4973,22 @@ class MuseumCheckApp {
                             'nickname_length': nickname.length,
                             'auto_saved': true
                         });
+                        showNicknameStatus('✔ 已保存', 'success');
+                        setTimeout(() => showNicknameStatus(''), 1200);
                     } else {
-                        // Show error message when nickname is invalid (content safety or length)
-                        alert(result.message);
+                        showNicknameStatus(result.message || '昵称不符合要求', 'error');
                         // Restore the previous valid nickname
                         nicknameInput.value = savedNickname || '小淘气';
+                        nicknameInput.focus();
                     }
+                } else {
+                    // Clear status if nothing changed
+                    showNicknameStatus('');
                 }
             });
         }
 
-        // Auto-save DeepSeek API Key on blur
-        const deepseekApiKeyInput = document.getElementById('deepseekApiKeyInput');
-        if (deepseekApiKeyInput) {
-            deepseekApiKeyInput.addEventListener('blur', () => {
-                const apiKey = deepseekApiKeyInput.value.trim();
-                if (apiKey) {
-                    localStorage.setItem('deepseekApiKey', apiKey);
-                } else {
-                    localStorage.removeItem('deepseekApiKey');
-                }
-                
-                // Track API key saved event
-                this.trackEvent('deepseek_api_key_saved', {
-                    'has_key': !!apiKey
-                });
-            });
-        }
+        // Auto-save DeepSeek API Key on blur - REMOVED (setting deleted)
 
         // Auto-save age group on change
         const ageGroupSelector = document.getElementById('ageGroupSelector');
@@ -5082,73 +5081,11 @@ class MuseumCheckApp {
         this.updateGamificationStatsDisplay();
         // ===== END GAMIFICATION SETTINGS =====
 
-        // Fireworks retention time slider
-        const retentionSlider = document.getElementById('fireworksRetentionInput');
-        if (retentionSlider) {
-            retentionSlider.addEventListener('input', (e) => {
-                const minutes = parseInt(e.target.value, 10);
-                this.updateFireworksRetentionDisplay(minutes);
-            });
-            
-            retentionSlider.addEventListener('change', (e) => {
-                const minutes = parseInt(e.target.value, 10);
-                const retentionMs = minutes * 60000;
-                
-                const result = this.saveFireworksRetentionTime(retentionMs);
-                
-                if (result.success) {
-                    // Track retention time change
-                    this.trackEvent('fireworks_retention_changed', {
-                        'retention_minutes': minutes,
-                        'retention_hours': minutes / 60
-                    });
-                    
-                    // Clean up expired fireworks immediately
-                    this.fireworks = this.cleanupExpiredFireworks(this.fireworks);
-                    this.updateStats();
-                }
-            });
-        }
+        // Fireworks retention time slider - REMOVED (setting deleted)
 
-        // Auto-save firework type on change
-        const fireworkTypeSelector = document.getElementById('fireworkTypeSelector');
-        if (fireworkTypeSelector) {
-            fireworkTypeSelector.addEventListener('change', () => {
-                const selectedType = fireworkTypeSelector.value;
-                const result = this.saveFireworkType(selectedType);
-                
-                if (result.success) {
-                    // Track firework type change
-                    this.trackEvent('firework_type_changed', {
-                        'firework_type': selectedType,
-                        'auto_saved': true
-                    });
-                }
-            });
-        }
+        // Auto-save firework type on change - REMOVED (setting deleted)
 
-        // Firework launch interval slider
-        const launchIntervalSlider = document.getElementById('fireworkLaunchIntervalInput');
-        if (launchIntervalSlider) {
-            launchIntervalSlider.addEventListener('input', (e) => {
-                const intervalMs = parseInt(e.target.value, 10);
-                this.updateFireworkLaunchIntervalDisplay(intervalMs);
-            });
-            
-            launchIntervalSlider.addEventListener('change', (e) => {
-                const intervalMs = parseInt(e.target.value, 10);
-                
-                const result = this.saveFireworkLaunchInterval(intervalMs);
-                
-                if (result.success) {
-                    // Track launch interval change
-                    this.trackEvent('firework_launch_interval_changed', {
-                        'interval_ms': intervalMs,
-                        'interval_seconds': intervalMs / 1000
-                    });
-                }
-            });
-        }
+        // Firework launch interval slider - REMOVED (setting deleted)
 
         // Sort by selector
         const sortBySelector = document.getElementById('sortBySelector');
@@ -5208,22 +5145,7 @@ class MuseumCheckApp {
             });
         }
 
-        // Guide button visibility toggle
-        const showGuideButtonToggle = document.getElementById('showGuideButtonToggle');
-        if (showGuideButtonToggle) {
-            showGuideButtonToggle.addEventListener('change', (e) => {
-                const showGuideButton = e.target.checked;
-                const result = this.saveGuideButtonVisibility(showGuideButton);
-                
-                if (result.success) {
-                    // Track guide button visibility change
-                    this.trackEvent('guide_button_visibility_changed', {
-                        'show_guide_button': showGuideButton,
-                        'auto_saved': true
-                    });
-                }
-            });
-        }
+        // Guide button visibility toggle - REMOVED (setting deleted)
 
         // Show only museums with collections toggle
         const showOnlyMuseumsWithCollections = document.getElementById('showOnlyMuseumsWithCollections');
@@ -5274,41 +5196,13 @@ class MuseumCheckApp {
             this.clearAllData();
         });
 
-        // Data tier priority selector
-        const dataTierSelector = document.getElementById('dataTierPrioritySelector');
-        if (dataTierSelector) {
-            dataTierSelector.addEventListener('change', (e) => {
-                const priority = e.target.value.split('-');
-                if (window.museumDataLoader) {
-                    window.museumDataLoader.updatePrioritySettings(priority);
-                    this.showNotification('数据优先级已更新', 2000);
-                }
-            });
-        }
+        // Data tier priority selector - REMOVED (setting deleted)
 
-        // Open data manager button
-        const openDataManagerBtn = document.getElementById('openDataManagerButton');
-        if (openDataManagerBtn) {
-            openDataManagerBtn.addEventListener('click', () => {
-                window.open('museum-data-manager.html', '_blank');
-            });
-        }
+        // Open data manager button - REMOVED (setting deleted)
 
-        // Open fireworks admin button
-        const openFireworksAdminBtn = document.getElementById('openFireworksAdminButton');
-        if (openFireworksAdminBtn) {
-            openFireworksAdminBtn.addEventListener('click', () => {
-                window.open('admin-fireworks.html?admin=1', '_blank');
-            });
-        }
+        // Open fireworks admin button - REMOVED (setting deleted)
 
-        // Open leaderboard admin button
-        const openLeaderboardAdminBtn = document.getElementById('openLeaderboardAdminButton');
-        if (openLeaderboardAdminBtn) {
-            openLeaderboardAdminBtn.addEventListener('click', () => {
-                window.open('admin-leaderboard.html?admin=1', '_blank');
-            });
-        }
+        // Open leaderboard admin button - REMOVED (setting deleted)
 
         // Open treasures page button
         const openTreasuresBtn = document.getElementById('openTreasuresButton');
@@ -5959,7 +5853,8 @@ class MuseumCheckApp {
             
             // Generate random nickname for new users
             const randomNickname = UtilityFunctions.generateRandomNickname();
-            // Store it temporarily (will be saved when user confirms)
+            // Persist once to avoid changing across reloads, but keep nicknameHasBeenSet false
+            localStorage.setItem('childNickname', randomNickname);
             return randomNickname;
         } catch (error) {
             console.error('Failed to load child nickname:', error);
@@ -5985,6 +5880,8 @@ class MuseumCheckApp {
     markNicknameAsSet() {
         try {
             localStorage.setItem('nicknameHasBeenSet', 'true');
+            // Once user explicitly sets nickname, ensure tip never shows again
+            localStorage.setItem('nicknameTipDismissed', 'true');
         } catch (error) {
             console.error('Failed to mark nickname as set:', error);
         }
@@ -5995,6 +5892,46 @@ class MuseumCheckApp {
         if (nicknameDisplay) {
             const nickname = this.childNickname || '小淘气';
             nicknameDisplay.textContent = nickname;
+        }
+    }
+
+    showNicknameTip() {
+        try {
+            const TIP_KEY = 'nicknameTipDismissed';
+            // Do not show if user already set nickname or dismissed tip
+            if (localStorage.getItem(TIP_KEY) === 'true' || this.hasSetNickname()) return;
+
+            const headerTitle = document.getElementById('headerTitle');
+            if (!headerTitle) return;
+
+            // Avoid duplicate tip
+            if (document.querySelector('.nickname-tip')) return;
+
+            const tip = document.createElement('div');
+            tip.className = 'nickname-tip';
+            tip.innerHTML = '<span class="tip-text">点这里修改昵称</span><button class="tip-close" aria-label="关闭提示">✕</button>';
+
+            const dismiss = () => {
+                tip.remove();
+                localStorage.setItem(TIP_KEY, 'true');
+            };
+
+            tip.querySelector('.tip-close').addEventListener('click', (e) => {
+                e.stopPropagation();
+                dismiss();
+            });
+
+            headerTitle.insertAdjacentElement('afterend', tip);
+        } catch (error) {
+            console.warn('Failed to show nickname tip:', error);
+        }
+    }
+
+    dismissNicknameTip() {
+        const tip = document.querySelector('.nickname-tip');
+        if (tip) {
+            tip.remove();
+            localStorage.setItem('nicknameTipDismissed', 'true');
         }
     }
 
@@ -6022,6 +5959,9 @@ class MuseumCheckApp {
             return;
         }
 
+        // Dismiss nickname tip when user starts editing
+        this.dismissNicknameTip();
+
         const currentNickname = nicknameDisplay.textContent.trim();
         
         // Create input element
@@ -6030,6 +5970,11 @@ class MuseumCheckApp {
         input.value = currentNickname;
         input.maxLength = 10;
         input.className = 'nickname-editing';
+
+        // Inline hint for validation feedback
+        const hint = document.createElement('div');
+        hint.className = 'nickname-hint';
+        hint.textContent = '按 Enter 保存，Esc 取消';
         
         // Store original value for cancel
         const originalNickname = currentNickname;
@@ -6037,6 +5982,7 @@ class MuseumCheckApp {
         // Replace text with input
         nicknameDisplay.textContent = '';
         nicknameDisplay.appendChild(input);
+        nicknameDisplay.appendChild(hint);
         
         // Focus and select text
         input.focus();
@@ -6045,13 +5991,14 @@ class MuseumCheckApp {
         // Handle save on Enter key
         const handleSave = () => {
             const newNickname = input.value.trim();
-            
+
             if (newNickname === '') {
-                // Restore original if empty
-                nicknameDisplay.textContent = originalNickname;
+                hint.textContent = '昵称不能为空';
+                hint.classList.add('error');
+                input.focus();
                 return;
             }
-            
+
             if (newNickname !== originalNickname) {
                 // Validate and save
                 const result = this.saveChildNickname(newNickname);
@@ -6066,15 +6013,25 @@ class MuseumCheckApp {
                         'previous_length': originalNickname.length
                     });
                     
+                    // Clear hint
+                    hint.textContent = '已保存';
+                    hint.classList.remove('error');
+                    hint.classList.add('success');
+                    
                     // Show brief success feedback
                     nicknameDisplay.style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
                     setTimeout(() => {
                         nicknameDisplay.style.backgroundColor = '';
+                        hint.textContent = '';
+                        hint.classList.remove('success');
                     }, 500);
                 } else {
-                    // Show error and restore original
-                    alert(result.message);
-                    nicknameDisplay.textContent = originalNickname;
+                    // Inline error feedback, keep input for correction
+                    hint.textContent = result.message || '昵称不符合要求';
+                    hint.classList.remove('success');
+                    hint.classList.add('error');
+                    input.focus();
+                    return;
                 }
             } else {
                 // No change, just restore display
@@ -6125,85 +6082,15 @@ class MuseumCheckApp {
         }
     }
 
-    saveFireworksRetentionTime(retentionTimeMs) {
-        try {
-            // Validate retention time (1 minute to 1 day)
-            const minTime = 60000; // 1 minute
-            const maxTime = 86400000; // 1 day
-            
-            if (retentionTimeMs < minTime || retentionTimeMs > maxTime) {
-                console.warn('Invalid retention time, using default');
-                retentionTimeMs = 60000;
-            }
-            
-            localStorage.setItem('fireworksRetentionTime', retentionTimeMs.toString());
-            
-            return { success: true, message: '烟花留存时间已保存' };
-        } catch (error) {
-            console.error('Failed to save fireworks retention time:', error);
-            return { success: false, message: '保存失败，请重试' };
-        }
-    }
+    // saveFireworksRetentionTime - REMOVED (setting deleted)
 
-    loadFireworkType() {
-        try {
-            const saved = localStorage.getItem('fireworkType');
-            // Default to 'heart' if not saved
-            return saved || 'heart';
-        } catch (error) {
-            console.error('Failed to load firework type:', error);
-            return 'heart'; // Default to heart shape
-        }
-    }
+    // loadFireworkType - REMOVED (setting deleted)
 
-    saveFireworkType(fireworkType) {
-        try {
-            // Validate firework type - includes all 11 types available in the UI
-            const validTypes = ['heart', 'circle', 'star', 'diamond', 'spiral', 'butterfly', 'rose', 'sunburst', 'cascade', 'ring', 'crosshatch'];
-            if (!validTypes.includes(fireworkType)) {
-                console.warn('Invalid firework type, using default');
-                fireworkType = 'heart';
-            }
-            
-            localStorage.setItem('fireworkType', fireworkType);
-            
-            return { success: true, message: '烟花类型已保存' };
-        } catch (error) {
-            console.error('Failed to save firework type:', error);
-            return { success: false, message: '保存失败，请重试' };
-        }
-    }
+    // saveFireworkType - REMOVED (setting deleted)
 
-    loadFireworkLaunchInterval() {
-        try {
-            const saved = localStorage.getItem('fireworkLaunchInterval');
-            // Default to 1000ms (1 second)
-            return saved ? parseInt(saved, 10) : 1000;
-        } catch (error) {
-            console.error('Failed to load firework launch interval:', error);
-            return 1000; // Default 1 second
-        }
-    }
+    // loadFireworkLaunchInterval - REMOVED (setting deleted)
 
-    saveFireworkLaunchInterval(intervalMs) {
-        try {
-            // Validate interval (0.5 seconds to 5 seconds)
-            const minInterval = 500;  // 0.5 seconds
-            const maxInterval = 5000; // 5 seconds
-            
-            if (intervalMs < minInterval || intervalMs > maxInterval) {
-                console.warn('Invalid launch interval, using default');
-                intervalMs = 1000;
-            }
-            
-            localStorage.setItem('fireworkLaunchInterval', intervalMs.toString());
-            
-            return { success: true, message: '烟花发射间隔已保存' };
-        } catch (error) {
-            console.error('Failed to save firework launch interval:', error);
-            return { success: false, message: '保存失败，请重试' };
-        }
-    }
+    // saveFireworkLaunchInterval - REMOVED (setting deleted)
 
     loadAssessmentVisibility() {
         try {
@@ -10744,12 +10631,7 @@ class MuseumCheckApp {
             nicknameInput.value = this.childNickname;
         }
         
-        // Update DeepSeek API Key input
-        const deepseekApiKeyInput = document.getElementById('deepseekApiKeyInput');
-        if (deepseekApiKeyInput) {
-            const apiKey = localStorage.getItem('deepseekApiKey') || '';
-            deepseekApiKeyInput.value = apiKey;
-        }
+        // Update DeepSeek API Key input - REMOVED (setting deleted)
         
         // Update current age group display
         const ageGroupDisplay = document.getElementById('currentAgeGroupDisplay');
@@ -10768,15 +10650,9 @@ class MuseumCheckApp {
             ageGroupSelector.value = this.currentAge;
         }
         
-        // Update data tier priority selector
-        const dataTierSelector = document.getElementById('dataTierPrioritySelector');
-        if (dataTierSelector && window.museumDataLoader) {
-            const priority = window.museumDataLoader.getPrioritySettings();
-            dataTierSelector.value = priority.join('-');
-        }
+        // Update data tier priority selector - REMOVED (setting deleted)
         
-        // Update fireworks retention time slider
-        const retentionSlider = document.getElementById('fireworksRetentionInput');
+        // Update fireworks retention time slider - REMOVED (setting deleted)
         
         // Update gamification stats display
         this.updateGamificationStatsDisplay();
@@ -10806,31 +10682,11 @@ class MuseumCheckApp {
     }
 
     renderSettingsInfoComplete() {
-        // Update fireworks retention time slider
-        const retentionSlider = document.getElementById('fireworksRetentionInput');
-        const retentionDisplay = document.getElementById('fireworksRetentionDisplay');
-        if (retentionSlider && retentionDisplay) {
-            const retentionMs = this.loadFireworksRetentionTime();
-            const retentionMinutes = Math.round(retentionMs / 60000);
-            retentionSlider.value = retentionMinutes;
-            this.updateFireworksRetentionDisplay(retentionMinutes);
-        }
+        // Update fireworks retention time slider - REMOVED (setting deleted)
         
-        // Update firework type selector
-        const fireworkTypeSelector = document.getElementById('fireworkTypeSelector');
-        if (fireworkTypeSelector) {
-            const currentType = this.loadFireworkType();
-            fireworkTypeSelector.value = currentType;
-        }
+        // Update firework type selector - REMOVED (setting deleted)
         
-        // Update firework launch interval slider
-        const launchIntervalSlider = document.getElementById('fireworkLaunchIntervalInput');
-        const launchIntervalDisplay = document.getElementById('fireworkLaunchIntervalDisplay');
-        if (launchIntervalSlider && launchIntervalDisplay) {
-            const intervalMs = this.loadFireworkLaunchInterval();
-            launchIntervalSlider.value = intervalMs;
-            this.updateFireworkLaunchIntervalDisplay(intervalMs);
-        }
+        // Update firework launch interval slider - REMOVED (setting deleted)
         
         // Update sort by selector
         const sortBySelector = document.getElementById('sortBySelector');
@@ -10850,11 +10706,7 @@ class MuseumCheckApp {
             showManageButtonToggle.checked = !this.manageButtonHidden;
         }
 
-        // Update guide button visibility toggle
-        const showGuideButtonToggle = document.getElementById('showGuideButtonToggle');
-        if (showGuideButtonToggle) {
-            showGuideButtonToggle.checked = !this.guideButtonHidden;
-        }
+        // Update guide button visibility toggle - REMOVED (setting deleted)
 
         // Update child mode toggle
         const childModeToggle = document.getElementById('childModeToggle');
@@ -10869,27 +10721,9 @@ class MuseumCheckApp {
         }
     }
 
-    updateFireworksRetentionDisplay(minutes) {
-        const display = document.getElementById('fireworksRetentionDisplay');
-        if (!display) return;
-        
-        if (minutes < 60) {
-            display.textContent = `${minutes} 分钟`;
-        } else if (minutes < 1440) {
-            const hours = Math.round(minutes / 60 * 10) / 10;
-            display.textContent = `${hours} 小时`;
-        } else {
-            display.textContent = '1 天';
-        }
-    }
+    // updateFireworksRetentionDisplay - REMOVED (setting deleted)
 
-    updateFireworkLaunchIntervalDisplay(intervalMs) {
-        const display = document.getElementById('fireworkLaunchIntervalDisplay');
-        if (!display) return;
-        
-        const seconds = intervalMs / 1000;
-        display.textContent = `${seconds.toFixed(1)} 秒`;
-    }
+    // updateFireworkLaunchIntervalDisplay - REMOVED (setting deleted)
 
     // Fireworks Modal Functions
     showFireworksModal(museumId = null) {
