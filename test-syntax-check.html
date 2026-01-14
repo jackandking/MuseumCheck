@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Syntax Check</title>
+</head>
+<body>
+    <h1>Museum Data Manager - Syntax Validation</h1>
+    <div id="results"></div>
+    
+    <script src="/js/museum-data-loader.js"></script>
+    <script>
+        // Try to replicate the exact code from museum-data-manager.html
+        try {
+            // This mimics the IIFE from the page
+            (function(){
+                const loader = new MuseumDataLoader();
+                let currentMuseums = [];
+                let currentData = null;
+                
+                async function initMuseumSelector() {
+                    const uploadSelect = document.createElement('select');
+                    uploadSelect.id = 'museumIdSelect';
+                    const quickLoadSelect = document.createElement('select');
+                    quickLoadSelect.id = 'quickLoadMuseumId';
+                    document.body.appendChild(uploadSelect);
+                    document.body.appendChild(quickLoadSelect);
+                    
+                    try {
+                        const response = await fetch('/data/museums-meta.json');
+                        const museums = await response.json();
+                        
+                        museums.forEach(museum => {
+                            const uploadOption = document.createElement('option');
+                            uploadOption.value = museum.id;
+                            uploadOption.textContent = `${museum.name} (${museum.id})`;
+                            uploadSelect.appendChild(uploadOption);
+                            
+                            const quickLoadOption = document.createElement('option');
+                            quickLoadOption.value = museum.id;
+                            quickLoadOption.textContent = `${museum.name} (${museum.id})`;
+                            quickLoadSelect.appendChild(quickLoadOption);
+                        });
+                        
+                        document.getElementById('results').innerHTML = `
+                            <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; color: green;">
+                                <h2>✅ SUCCESS</h2>
+                                <p>JavaScript code is syntactically correct!</p>
+                                <p>Loaded ${museums.length} museums successfully.</p>
+                                <p>Dropdown elements:</p>
+                                <ul>
+                                    <li>#museumIdSelect: ${uploadSelect.children.length} options</li>
+                                    <li>#quickLoadMuseumId: ${quickLoadSelect.children.length} options</li>
+                                </ul>
+                            </div>
+                        `;
+                    } catch (error) {
+                        document.getElementById('results').innerHTML = `
+                            <div style="background: #ffebee; padding: 20px; border-radius: 8px; color: red;">
+                                <h2>❌ ERROR</h2>
+                                <p>${error.message}</p>
+                            </div>
+                        `;
+                    }
+                }
+                
+                // Test the initialization
+                initMuseumSelector();
+            })();
+        } catch (syntaxError) {
+            document.getElementById('results').innerHTML = `
+                <div style="background: #ffebee; padding: 20px; border-radius: 8px; color: red;">
+                    <h2>❌ SYNTAX ERROR</h2>
+                    <p>${syntaxError.message}</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
