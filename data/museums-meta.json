@@ -140,8 +140,8 @@
       "文物",
       "历史"
     ],
-    "image": "",
-    "hasCollections": false
+    "image": "https://upload.wikimedia.org/wikipedia/commons/7/74/%E6%B2%B3%E5%8D%97%E5%8D%9A%E7%89%A9%E9%99%A2_-_Henan_Museum_-_2014.03_-_panoramio.jpg",
+    "hasCollections": true
   },
   {
     "id": "liaoning-museum",
@@ -152,8 +152,7 @@
       "考古",
       "历史"
     ],
-    "image": "",
-    "hasCollections": false
+    "hasCollections": true
   },
   {
     "id": "shandong-museum",
@@ -164,8 +163,7 @@
       "孔子",
       "历史"
     ],
-    "image": "",
-    "hasCollections": false
+    "hasCollections": true
   },
   {
     "id": "tianjin-museum",
@@ -176,8 +174,7 @@
       "文化",
       "天津"
     ],
-    "image": "",
-    "hasCollections": false
+    "hasCollections": true
   },
   {
     "id": "china-art-museum",
@@ -188,9 +185,8 @@
       "艺术",
       "绘画"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/National_Art_Museum_of_China_01.jpg/800px-National_Art_Museum_of_China_01.jpg",
     "hasCollections": true
-  },
   {
     "id": "hunan-museum",
     "name": "湖南省博物馆",
@@ -212,8 +208,7 @@
       "雪域高原",
       "佛教"
     ],
-    "image": "",
-    "hasCollections": false
+    "hasCollections": true
   },
   {
     "id": "xinjiang-museum",
@@ -224,8 +219,7 @@
       "多民族",
       "西域文化"
     ],
-    "image": "",
-    "hasCollections": false
+    "hasCollections": true
   },
   {
     "id": "yunnan-museum",
@@ -236,8 +230,7 @@
       "西南文化",
       "边疆历史"
     ],
-    "image": "",
-    "hasCollections": false
+    "hasCollections": true
   },
   {
     "id": "inner-mongolia-museum",
@@ -248,8 +241,7 @@
       "蒙古族",
       "游牧文明"
     ],
-    "image": "",
-    "hasCollections": false
+    "hasCollections": true
   },
   {
     "id": "chongqing-three-gorges-museum",
