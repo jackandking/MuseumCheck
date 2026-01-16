@@ -43,3 +43,24 @@ jobs:
           else
             echo "✅ Coverage meets 80% threshold"
           fi
+
+  notify-failure:
+    needs: test
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify on failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`;
+            
+            // Create an issue for failed workflow
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title: `🚨 Test workflow failed on ${context.ref}`,
+              body: `## Test Failure Alert\n\n**Branch:** \`${context.ref}\`\n**Commit:** \`${context.sha.substring(0, 7)}\`\n**Run:** [View Details](${runUrl})\n\nPlease investigate and fix the failing tests.`,
+              labels: ['bug', 'ci-failure']
+            });
