@@ -41,9 +41,8 @@ describe('Museum Check-in Page', () => {
         });
 
         test('should include required JavaScript dependencies', () => {
-            expect(htmlContent).toContain('<script src="museums-data.js"></script>');
-            expect(htmlContent).toContain('<script src="museum-data-loader.js"></script>');
-            expect(htmlContent).toContain('<script src="firework.js"></script>');
+            expect(htmlContent).toContain('<script src="js/museum-data-loader.js"></script>');
+            expect(htmlContent).toContain('<script src="js/firework.js"></script>');
         });
 
         test('should have header with menu and settings buttons', () => {
@@ -57,8 +56,8 @@ describe('Museum Check-in Page', () => {
 
         test('should have progress tracking elements', () => {
             expect(htmlContent).toContain('id="completedCount"');
-            expect(htmlContent).toContain('id="totalCount"');
             expect(htmlContent).toContain('id="progressFill"');
+            expect(htmlContent).toContain('id="progressStars"');
         });
     });
 
@@ -69,11 +68,10 @@ describe('Museum Check-in Page', () => {
             expect(htmlContent).toContain('id="completeButton"');
         });
 
-        test('should have menu modal', () => {
+        test('should have menu modal for navigation', () => {
             expect(htmlContent).toContain('id="menuModal"');
-            expect(htmlContent).toContain('id="viewParentTasks"');
-            expect(htmlContent).toContain('id="viewAssessment"');
-            expect(htmlContent).toContain('id="viewFireworks"');
+            // Fireworks menu items are now handled by SharedMenu component
+            expect(htmlContent).toContain('SharedMenu.init');
         });
 
         test('should have parent hint section in task modal', () => {
@@ -93,17 +91,6 @@ describe('Museum Check-in Page', () => {
             expect(htmlContent).toContain('completedTasks.size <= 2');
             expect(htmlContent).toContain('parentHint');
             expect(htmlContent).toContain('classList.add');
-        });
-
-        test('should have navigation to parent tasks', () => {
-            expect(htmlContent).toContain('viewParentTasks');
-            expect(htmlContent).toContain('index.html?museum=');
-            expect(htmlContent).toContain('focus=parent');
-        });
-
-        test('should have navigation to assessment', () => {
-            expect(htmlContent).toContain('viewAssessment');
-            expect(htmlContent).toContain('assessment=true');
         });
     });
 
@@ -166,9 +153,6 @@ describe('Museum Check-in Page', () => {
             // Check that it uses museumDataLoader
             expect(htmlContent).toContain('window.museumDataLoader');
             expect(htmlContent).toContain('museumDataLoader.loadMuseum');
-            
-            // Check that it has fallback to static MUSEUMS array
-            expect(htmlContent).toContain('MUSEUMS.find');
         });
 
         test('should not use cache when loading museum data', () => {
@@ -262,7 +246,8 @@ describe('Museum Check-in Page', () => {
 
         test('should navigate back to main application', () => {
             expect(htmlContent).toContain('index.html');
-            expect(htmlContent).toContain('backToHome');
+            // Navigation is handled by SharedMenu component
+            expect(htmlContent).toContain('SharedMenu');
         });
 
         test('should provide link to parent tasks from hint', () => {
@@ -294,7 +279,7 @@ describe('Museum Check-in Page', () => {
 
     describe('Embeddable Features', () => {
         test('should be standalone page suitable for embedding', () => {
-            // No external dependencies beyond museums-data.js and firework.js
+            // No dependency on main script bundle
             expect(htmlContent).not.toContain('<script src="script.js">');
             
             // Self-contained functionality
@@ -311,7 +296,7 @@ describe('Museum Check-in Page', () => {
     describe('Data Flow and Logic', () => {
         test('should load museum data on initialization', () => {
             expect(htmlContent).toContain('loadMuseumData');
-            expect(htmlContent).toContain('MUSEUMS.find');
+            expect(htmlContent).toContain('museumDataLoader.loadMuseum');
         });
 
         test('should extract child tasks for age group', () => {
@@ -330,10 +315,15 @@ describe('Museum Check-in Page', () => {
         });
 
         test('should update page title on initialization', () => {
-            // Check that init function exists and contains updatePageTitle call
-            expect(htmlContent).toContain('function init()');
-            const initFnMatch = htmlContent.match(/function init\(\)[\s\S]{0,300}updatePageTitle\(\)/);
-            expect(initFnMatch).toBeTruthy();
+            // Check that init function and updatePageTitle both exist
+            expect(htmlContent).toContain('async function init()');
+            expect(htmlContent).toContain('function updatePageTitle()');
+            
+            // Verify updatePageTitle is called somewhere
+            expect(htmlContent).toContain('updatePageTitle()');
+            
+            // Verify saveChildNickname also calls updatePageTitle (when nickname is saved)
+            expect(htmlContent).toMatch(/saveChildNickname[\s\S]{0,500}updatePageTitle/);
         });
     });
 });

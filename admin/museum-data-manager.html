@@ -1,0 +1,2341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>博物馆数据管理 | MuseumCheck</title>
+  
+  <!-- Baidu Analytics (百度统计) -->
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?10856afa2ea23687b7e8f5b901795c57";
+      var s = document.getElementsByTagName("script")[0]; 
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+  
+  <!-- Debug Mode Support -->
+  <script src="../js/debug-mode.js"></script>
+  
+  <style>
+    :root {
+      --primary: #0D9488;
+      --primary-light: #14B8A6;
+      --primary-dark: #0F766E;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --radius: 12px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+    }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%); color: var(--gray-800); margin: 0; padding: 0; min-height: 100vh; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+    
+    /* Header */
+    .header { background: linear-gradient(135deg, var(--primary) 0%, #2DD4BF 100%); border-radius: var(--radius); padding: 32px; margin-bottom: 24px; color: #fff; position: relative; overflow: hidden; }
+    .header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 60%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%); }
+    .header-content { position: relative; z-index: 1; }
+    .title { font-size: 28px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.5px; }
+    .subtitle { font-size: 15px; opacity: 0.9; margin: 0; }
+    .header-actions { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+    .header-actions .btn { background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); }
+    .header-actions .btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-1px); }
+    
+    /* Cards */
+    .card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 20px; border: 1px solid var(--gray-100); }
+    .section-title { font-size: 18px; font-weight: 700; margin: 0 0 20px; color: var(--gray-800); display: flex; align-items: center; gap: 10px; }
+    .section-title::before { content: ''; width: 4px; height: 20px; background: linear-gradient(180deg, var(--primary), #2DD4BF); border-radius: 2px; }
+    
+    /* Buttons */
+    .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; }
+    .btn-primary:hover { box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4); transform: translateY(-1px); }
+    .btn-secondary { background: var(--gray-100); color: var(--gray-700); }
+    .btn-secondary:hover { background: var(--gray-200); }
+    .btn-danger { background: linear-gradient(135deg, var(--danger), #dc2626); color: #fff; }
+    .btn-danger:hover { box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4); transform: translateY(-1px); }
+    .btn-success { background: linear-gradient(135deg, var(--success), #059669); color: #fff; }
+    .btn-success:hover { box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4); transform: translateY(-1px); }
+    .btn-sm { padding: 6px 12px; font-size: 13px; }
+    .btn-icon { width: 36px; height: 36px; padding: 0; justify-content: center; }
+    
+    /* Custom Autocomplete Search */
+    .search-container { position: relative; }
+    .search-box { display: flex; gap: 12px; align-items: stretch; }
+    .search-input-wrapper { flex: 1; position: relative; }
+    .search-input { width: 100%; padding: 14px 16px 14px 48px; border: 2px solid var(--gray-200); border-radius: 10px; font-size: 15px; transition: all 0.2s; background: var(--gray-50); }
+    .search-input:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+    .search-input::placeholder { color: var(--gray-400); }
+    .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--gray-400); font-size: 18px; pointer-events: none; }
+    .search-clear { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--gray-200); border: none; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 12px; color: var(--gray-500); }
+    .search-clear:hover { background: var(--gray-300); }
+    .search-input:not(:placeholder-shown) ~ .search-clear { display: flex; }
+    
+    /* Autocomplete Dropdown */
+    .autocomplete-dropdown { position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-lg); border: 1px solid var(--gray-200); max-height: 400px; overflow-y: auto; z-index: 100; display: none; }
+    .autocomplete-dropdown.active { display: block; animation: dropdownFade 0.2s ease; }
+    @keyframes dropdownFade { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .autocomplete-header { padding: 12px 16px; font-size: 12px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; background: var(--gray-50); border-bottom: 1px solid var(--gray-100); position: sticky; top: 0; }
+    .autocomplete-item { padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.15s; border-bottom: 1px solid var(--gray-100); }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover, .autocomplete-item.highlighted { background: var(--gray-50); }
+    .autocomplete-item.highlighted { background: rgba(37, 99, 235, 0.08); }
+    .autocomplete-icon { width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, var(--primary-light), #2DD4BF); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .autocomplete-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+    .autocomplete-info { flex: 1; min-width: 0; }
+    .autocomplete-name { font-weight: 600; color: var(--gray-800); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .autocomplete-name mark { background: rgba(37, 99, 235, 0.2); color: var(--primary-dark); padding: 0 2px; border-radius: 2px; }
+    .autocomplete-meta { font-size: 13px; color: var(--gray-500); display: flex; align-items: center; gap: 8px; }
+    .autocomplete-tag { font-size: 11px; padding: 2px 8px; background: var(--gray-100); border-radius: 4px; color: var(--gray-600); }
+    .autocomplete-empty { padding: 32px 16px; text-align: center; color: var(--gray-500); }
+    .autocomplete-empty-icon { font-size: 32px; margin-bottom: 8px; }
+    
+    /* Museum List */
+    .museum-list { display: grid; gap: 12px; }
+    .museum-item { background: var(--gray-50); border-radius: 10px; padding: 16px; transition: all 0.2s; border: 1px solid transparent; }
+    .museum-item:hover { background: #fff; border-color: var(--gray-200); box-shadow: var(--shadow-sm); }
+    .museum-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .museum-info { flex: 1; }
+    .museum-name { font-size: 16px; font-weight: 600; color: var(--gray-800); margin: 0 0 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .museum-meta { font-size: 13px; color: var(--gray-500); }
+    .museum-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .museum-data-preview { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--gray-200); }
+    .data-field { margin-bottom: 8px; font-size: 13px; }
+    .data-field-label { font-weight: 600; color: var(--gray-700); display: inline-block; min-width: 70px; }
+    .data-field-value { color: var(--gray-600); }
+    .data-tag { display: inline-block; background: var(--gray-200); padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-right: 4px; margin-bottom: 4px; color: var(--gray-600); }
+    .data-count { display: inline-block; background: #fef3c7; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px; color: #92400e; }
+    .data-description { color: var(--gray-600); font-size: 13px; line-height: 1.5; margin: 8px 0; max-height: 60px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+    
+    /* Form Elements */
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--gray-700); }
+    input, select, textarea { width: 100%; padding: 12px 14px; border-radius: 8px; border: 2px solid var(--gray-200); font-size: 14px; font-family: inherit; box-sizing: border-box; transition: all 0.2s; background: #fff; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+    textarea { min-height: 400px; font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 13px; }
+    .hint { font-size: 13px; color: var(--gray-500); margin-top: 6px; }
+    
+    /* Status Messages */
+    .status { padding: 12px 16px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px; }
+    .status-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .status-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .status-info { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .status-warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    
+    /* Badges */
+    .tier-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .tier-1 { background: #d1fae5; color: #065f46; }
+    .tier-2 { background: #fef3c7; color: #92400e; }
+    .tier-3 { background: #dbeafe; color: #1e40af; }
+    
+    /* Empty State */
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-state-icon { font-size: 56px; margin-bottom: 16px; filter: grayscale(0.3); }
+    .empty-state-title { font-size: 18px; font-weight: 600; color: var(--gray-700); margin-bottom: 8px; }
+    .empty-state-desc { color: var(--gray-500); font-size: 14px; }
+    
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 24px; background: var(--gray-100); padding: 4px; border-radius: 10px; }
+    .tab { flex: 1; padding: 10px 16px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--gray-600); border-radius: 8px; transition: all 0.2s; text-align: center; }
+    .tab.active { background: #fff; color: var(--primary); box-shadow: var(--shadow-sm); }
+    .tab:hover:not(.active) { color: var(--gray-800); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+    /* Editor Styles */
+    .structured-editor { display: block; }
+    .editor-section { margin-bottom: 32px; }
+    .editor-section h3 { font-size: 16px; font-weight: 600; color: var(--gray-800); margin: 0 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200); }
+    .field-row { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: start; margin-bottom: 16px; }
+    .field-label { font-weight: 600; padding-top: 12px; font-size: 14px; color: var(--gray-700); }
+    .array-item { background: var(--gray-50); padding: 16px; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--gray-200); }
+    .array-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .remove-btn { padding: 6px 12px; font-size: 12px; background: var(--danger); color: #fff; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+    .remove-btn:hover { background: #dc2626; }
+    .add-btn { padding: 10px 20px; font-size: 14px; background: var(--success); color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-top: 8px; transition: all 0.2s; }
+    .add-btn:hover { background: #059669; }
+    .input-with-search { display: flex; gap: 8px; align-items: center; }
+    .input-with-search input { flex: 1; }
+    .search-image-btn { padding: 10px 14px; background: var(--primary); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; white-space: nowrap; transition: all 0.2s; }
+    .search-image-btn:hover { background: var(--primary-dark); }
+    
+    /* Preview Section */
+    .preview-section { background: var(--gray-50); padding: 20px; border-radius: 10px; border: 1px solid var(--gray-200); }
+    .preview-title { font-size: 18px; font-weight: 600; margin: 0 0 16px; color: var(--gray-800); }
+    .preview-image { max-width: 100%; height: auto; border-radius: 8px; margin: 12px 0; }
+    .collection-item { background: #fff; padding: 16px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--gray-200); }
+    .collection-name { font-weight: 600; margin: 0 0 8px; color: var(--gray-800); }
+    
+    /* Image Preview */
+    .image-preview-container { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .image-preview-thumb { width: 72px; height: 72px; border-radius: 8px; object-fit: cover; border: 2px solid var(--gray-200); background: var(--gray-100); }
+    .image-preview-thumb.loading { opacity: 0.5; }
+    .image-preview-placeholder { width: 72px; height: 72px; border-radius: 8px; border: 2px dashed var(--gray-300); background: var(--gray-50); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--gray-400); text-align: center; padding: 4px; }
+    .input-wrapper { flex: 1; min-width: 0; }
+    .image-selected-feedback { animation: pulse 0.3s ease-in-out; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); background: #d1fae5; } }
+    
+    /* Modal */
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); overflow: auto; }
+    .modal.active { display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; }
+    .modal-content { background: #fff; border-radius: var(--radius); max-width: 900px; width: 100%; max-height: calc(100vh - 80px); overflow: hidden; display: flex; flex-direction: column; animation: modalSlide 0.3s ease; }
+    @keyframes modalSlide { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-size: 18px; font-weight: 700; margin: 0; color: var(--gray-800); }
+    .modal-close { background: var(--gray-100); border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; color: var(--gray-500); font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .modal-close:hover { background: var(--gray-200); color: var(--gray-700); }
+    .modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+    
+    /* Search Results */
+    .search-form { margin-bottom: 24px; }
+    .search-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+    .result-item { border: 2px solid var(--gray-200); border-radius: 10px; overflow: hidden; cursor: pointer; transition: all 0.2s; background: #fff; }
+    .result-item:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow); }
+    .result-item.selected { border-color: var(--success); background: #f0fdf4; }
+    .result-image { width: 100%; height: 160px; object-fit: cover; background: var(--gray-100); }
+    .result-info { padding: 12px; }
+    .result-name { font-size: 13px; font-weight: 600; margin: 0 0 4px; color: var(--gray-800); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .result-meta { font-size: 12px; color: var(--gray-500); }
+    
+    /* Loading & Spinner */
+    .loading { text-align: center; padding: 48px; color: var(--gray-500); }
+    .loading-spinner { text-align: center; padding: 48px; }
+    .loading-spinner::after { content: ''; display: block; width: 40px; height: 40px; margin: 0 auto 16px; border: 3px solid var(--gray-200); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .no-results { text-align: center; padding: 48px 20px; color: var(--gray-500); }
+    .no-results-icon { font-size: 48px; margin-bottom: 12px; }
+    
+    /* Toast */
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--gray-800); color: #fff; padding: 14px 24px; border-radius: 10px; box-shadow: var(--shadow-lg); z-index: 2000; animation: toastSlide 0.3s ease; font-weight: 500; }
+    @keyframes toastSlide { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+    
+    /* Header Top Layout */
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+    .header-title-section { flex: 1; }
+    .settings-btn { background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff; transition: all 0.2s; position: relative; flex-shrink: 0; }
+    .settings-btn:hover { background: rgba(255,255,255,0.3); transform: scale(1.05); }
+    .settings-btn svg { width: 24px; height: 24px; }
+    .status-dot { position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.8); }
+    .status-dot.configured { background: #10b981; }
+    .status-dot.not-configured { background: #f59e0b; }
+    
+    /* Settings Modal */
+    .settings-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: flex-start; padding: 80px 16px; }
+    .settings-modal.active { display: flex; }
+    .settings-modal-content { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-lg); width: 100%; max-width: 480px; animation: modalSlide 0.3s ease; }
+    .settings-modal-header { padding: 20px 24px; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center; }
+    .settings-modal-header h3 { margin: 0; font-size: 18px; font-weight: 700; color: var(--gray-800); }
+    .settings-modal-close { background: var(--gray-100); border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 16px; color: var(--gray-500); display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .settings-modal-close:hover { background: var(--gray-200); color: var(--gray-700); }
+    .settings-modal-body { padding: 24px; }
+    .settings-item { margin-bottom: 16px; }
+    .settings-item:last-child { margin-bottom: 0; }
+    .settings-item label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--gray-700); }
+    .settings-item input { width: 100%; padding: 12px 14px; border-radius: 8px; border: 2px solid var(--gray-200); font-size: 14px; transition: all 0.2s; box-sizing: border-box; }
+    .settings-item input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1); }
+    .settings-item .hint { font-size: 13px; color: var(--gray-500); margin-top: 6px; }
+    .settings-item .hint a { color: var(--primary); text-decoration: none; }
+    .settings-item .hint a:hover { text-decoration: underline; }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .wrap { padding: 16px 12px; }
+      .header { padding: 24px 20px; }
+      .title { font-size: 22px; }
+      .card { padding: 20px 16px; }
+      .search-box { flex-direction: column; }
+      .search-box .btn { width: 100%; justify-content: center; }
+      .field-row { grid-template-columns: 1fr; gap: 6px; }
+      .field-label { padding-top: 0; font-size: 13px; }
+      .input-with-search { flex-direction: column; align-items: stretch; }
+      .search-image-btn { width: 100%; justify-content: center; }
+      .museum-item-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .museum-actions { width: 100%; }
+      .museum-actions .btn { flex: 1; justify-content: center; }
+      .tabs { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-content">
+        <div class="header-top">
+          <div class="header-title-section">
+            <h1 class="title">🏛️ 博物馆数据管理</h1>
+            <p class="subtitle">查看、编辑和上传博物馆数据，支持 KV Store 远程存储</p>
+          </div>
+          <button id="settingsBtn" class="settings-btn" onclick="toggleSettingsModal()" title="设置">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="24" height="24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+            <span id="apiKeyStatusDot" class="status-dot"></span>
+          </button>
+        </div>
+        <div class="header-actions">
+          <button id="uploadBtn" class="btn">📤 上传新数据</button>
+          <button id="backToHomeBtn" class="btn">🏠 返回主页</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="statusMsg"></div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="settings-modal">
+      <div class="settings-modal-content">
+        <div class="settings-modal-header">
+          <h3>⚙️ 设置</h3>
+          <button class="settings-modal-close" onclick="toggleSettingsModal()">✕</button>
+        </div>
+        <div class="settings-modal-body">
+          <div class="settings-item">
+            <label for="deepseekApiKey">DeepSeek API Key</label>
+            <input type="password" id="deepseekApiKey" placeholder="输入您的 DeepSeek API Key" />
+            <div class="hint">用于 AI 自动生成镇馆之宝数据。获取 API Key：<a href="https://platform.deepseek.com" target="_blank">platform.deepseek.com</a></div>
+          </div>
+          <div style="margin-top: 16px;">
+            <button class="btn btn-primary" onclick="saveApiSettings()">💾 保存设置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Card -->
+    <div class="card">
+      <div class="section-title">搜索博物馆</div>
+      <div class="search-container">
+        <div class="search-box">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input 
+              type="text" 
+              id="quickLoadMuseumId" 
+              class="search-input"
+              placeholder="输入博物馆名称、ID 或城市..."
+              autocomplete="off"
+            />
+            <button type="button" class="search-clear" id="searchClearBtn">✕</button>
+            <!-- Custom Autocomplete Dropdown -->
+            <div class="autocomplete-dropdown" id="autocompleteDropdown">
+              <div class="autocomplete-header">搜索结果</div>
+              <div id="autocompleteResults"></div>
+            </div>
+          </div>
+        </div>
+        <div class="hint" style="margin-top: 10px;">� 支持模糊搜索：博物馆名称、ID、城市、标签</div>
+      </div>
+    </div>
+
+    <!-- Museum List Card -->
+    <div class="card">
+      <div class="section-title">博物馆数据</div>
+      <div id="museumList" class="museum-list">
+        <div class="empty-state">
+          <div class="empty-state-icon">🏛️</div>
+          <div class="empty-state-title">搜索博物馆开始</div>
+          <div class="empty-state-desc">在上方搜索框中输入博物馆名称或选择一个博物馆</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="uploadCard" style="display:none;">
+      <div id="statusMsg" style="margin-bottom: 16px;"></div>
+      <div class="section-title">上传/编辑博物馆数据</div>
+      
+      <div id="editStatusInfo" style="display:none; background: #e3f2fd; padding: 12px; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid #2196f3;">
+        <strong>ℹ️ 编辑信息：</strong>
+        <div id="editStatusText" style="margin-top: 8px; font-size: 14px;"></div>
+      </div>
+      
+      <div class="form-group">
+        <label for="museumIdSelect">选择或搜索博物馆 *</label>
+        <div style="display: flex; gap: 8px;">
+          <input 
+            type="search" 
+            id="museumIdSelect" 
+            placeholder="搜索博物馆名称或 ID（如：故宫、北京、beijing）"
+            list="museumSearchList"
+            style="flex: 1;"
+          />
+          <button type="button" id="newMuseumBtn" class="btn btn-secondary" style="white-space: nowrap;">➕ 新建</button>
+        </div>
+        <datalist id="museumSearchList"></datalist>
+        <div class="hint">搜索现有博物馆或点击"新建"创建新博物馆</div>
+      </div>
+
+      <div class="form-group" id="customIdGroup" style="display:none;">
+        <label for="customMuseumId">自定义博物馆 ID *</label>
+        <input type="text" id="customMuseumId" placeholder="例如: forbidden-city" />
+        <div class="hint">使用小写字母和连字符，例如: forbidden-city, national-museum</div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="structured">📝 结构化编辑</button>
+        <button class="tab" data-tab="json">📄 JSON 编辑</button>
+        <button class="tab" data-tab="preview">👁️ 预览</button>
+      </div>
+
+      <div class="tab-content active" id="structured-tab">
+        <div class="structured-editor">
+          <h3>基本信息</h3>
+          <div class="field-row">
+            <div class="field-label">博物馆名称:</div>
+            <input type="text" id="edit-name" placeholder="例如: 故宫博物院" />
+          </div>
+          <div class="field-row">
+            <div class="field-label">所在城市:</div>
+            <input type="text" id="edit-location" placeholder="例如: 北京" />
+          </div>
+          <div class="field-row">
+            <div class="field-label">简介:</div>
+            <textarea id="edit-description" rows="3" placeholder="博物馆简介"></textarea>
+          </div>
+          <div class="field-row">
+            <div class="field-label">主图URL:</div>
+            <div class="image-preview-container">
+              <div id="museum-image-preview-wrapper">
+                <div class="image-preview-placeholder">暂无图片</div>
+              </div>
+              <div class="input-wrapper">
+                <div class="input-with-search">
+                  <input type="text" id="edit-image" placeholder="图片URL" onchange="updateImagePreview('museum-image-preview-wrapper', this.value)" />
+                  <button type="button" class="search-image-btn" onclick="openImageSearch('museum')">🔍 搜索图片</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">标签:</div>
+            <input type="text" id="edit-tags" placeholder="标签，用逗号分隔，例如: 历史,建筑,文物" />
+          </div>
+
+          <h3>馆藏精品</h3>
+          <div id="collections-editor"></div>
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <button class="add-btn" onclick="addCollection()">➕ 添加馆藏</button>
+            <button id="auto-generate-btn" class="add-btn" onclick="autoGenerateTreasures()" style="background: linear-gradient(135deg, #9c27b0, #ba68c8); display: none;">🤖 自动添加镇馆之宝</button>
+          </div>
+          <div class="hint" id="auto-generate-hint" style="display: none; color: #9c27b0; margin-top: 8px;">💡 博物馆暂无镇馆之宝数据，可使用 AI 自动生成</div>
+
+          <h3>参观路线 (Workflows)</h3>
+          <div id="workflows-editor"></div>
+          <button class="add-btn" onclick="addWorkflow()">➕ 添加路线</button>
+        </div>
+      </div>
+
+      <div class="tab-content" id="json-tab">
+        <div class="json-editor">
+          <div class="form-group">
+            <label for="museumDataJson">博物馆数据 (JSON)</label>
+            <textarea id="museumDataJson" placeholder='{"id":"forbidden-city","name":"故宫博物院",...}'></textarea>
+            <div class="hint">完整的 JSON 数据，包含所有字段</div>
+          </div>
+          <button type="button" class="btn btn-secondary" onclick="syncFromJson()">⬅️ 从JSON同步到结构化编辑</button>
+        </div>
+      </div>
+
+      <div class="tab-content" id="preview-tab">
+        <div class="preview-section" id="preview-content">
+          <p class="hint">加载博物馆数据后可在此预览</p>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:20px;">
+        <label for="expireAt">过期时间</label>
+        <select id="expireAt">
+          <option value="permanent">永久保存</option>
+          <option value="1day">1 天后过期</option>
+          <option value="7days">7 天后过期</option>
+          <option value="30days">30 天后过期</option>
+        </select>
+        <div class="hint">数据过期后会自动删除</div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-success" onclick="submitMuseumData()">✓ 提交</button>
+        <button type="button" id="cancelUploadBtn" class="btn btn-secondary">✕ 取消</button>
+        <button type="button" class="btn btn-secondary" onclick="validateData()">🔍 验证数据</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Search Modal -->
+  <div id="imageSearchModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">搜索图片</h2>
+        <button class="modal-close" onclick="closeImageSearch()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="search-form">
+          <div class="form-group">
+            <label id="searchLabel">搜索关键词</label>
+            <input type="text" id="searchQuery" placeholder="输入搜索关键词" />
+            <div class="hint" id="searchHint">将在 Wikimedia Commons 中搜索免费授权的图片</div>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="performImageSearch()">🔍 搜索 (Wikimedia)</button>
+            <button class="btn btn-primary" onclick="performBaiduInlineSearch()" style="background:linear-gradient(135deg,#de3f4f,#f48a8a)">🔍 搜索 (百度)</button>
+            <button class="btn btn-secondary" onclick="openBaiduImageSearch()">↗️ 去百度搜索</button>
+            <button class="btn btn-success" onclick="uploadLocalImage()">📤 上传照片</button>
+          </div>
+          <div class="hint" style="margin-top: 12px; padding: 10px; background: #fff3cd; border-left: 3px solid #ffc107; border-radius: 4px;">
+            💡 <strong>搜索策略：</strong>
+            <ul style="margin: 8px 0 0 16px; padding: 0; font-size: 12px;">
+              <li><strong>Wikimedia：</strong>免费授权图片，适合发布使用</li>
+              <li><strong>百度搜索：</strong>中国博物馆图片最全面，直接在此选择</li>
+              <li><strong>去百度搜索：</strong>在新窗口打开百度图片，手动复制URL</li>
+              <li><strong>上传照片：</strong>自己拍摄的照片，自动压缩以适合手机体验</li>
+            </ul>
+          </div>
+          <!-- Upload progress indicator -->
+          <div id="uploadProgress" style="display: none; margin-top: 12px; padding: 12px; background: #e8f5e9; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="upload-spinner" style="width: 20px; height: 20px; border: 2px solid #4caf50; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+              <span id="uploadStatusText">正在处理...</span>
+            </div>
+            <div id="uploadProgressBar" style="margin-top: 8px; height: 4px; background: #c8e6c9; border-radius: 2px; overflow: hidden;">
+              <div id="uploadProgressFill" style="height: 100%; background: #4caf50; width: 0%; transition: width 0.3s;"></div>
+            </div>
+          </div>
+        </div>
+        <div id="searchResults"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/wikimedia-image-search.js"></script>
+  <script src="../js/baidu-image-search.js"></script>
+  <script src="../js/deepseek-api.js"></script>
+  <script src="../js/image-upload-util.js"></script>
+  <script src="../js/museum-data-loader.js"></script>
+  <script>
+    // Settings modal functions (global scope)
+    function toggleSettingsModal() {
+      const modal = document.getElementById('settingsModal');
+      modal.classList.toggle('active');
+    }
+    
+    function loadApiSettings() {
+      const deepseekKey = localStorage.getItem('deepseekApiKey') || '';
+      document.getElementById('deepseekApiKey').value = deepseekKey;
+      
+      // Update status dot indicator
+      const statusDot = document.getElementById('apiKeyStatusDot');
+      if (deepseekKey) {
+        statusDot.className = 'status-dot configured';
+      } else {
+        statusDot.className = 'status-dot not-configured';
+      }
+    }
+    
+    function saveApiSettings() {
+      const deepseekKey = document.getElementById('deepseekApiKey').value.trim();
+      
+      if (deepseekKey) {
+        localStorage.setItem('deepseekApiKey', deepseekKey);
+      } else {
+        localStorage.removeItem('deepseekApiKey');
+      }
+      
+      // Update status dot indicator
+      const statusDot = document.getElementById('apiKeyStatusDot');
+      if (deepseekKey) {
+        statusDot.className = 'status-dot configured';
+      } else {
+        statusDot.className = 'status-dot not-configured';
+      }
+      
+      showToast('设置已保存', 'success');
+      toggleSettingsModal();
+    }
+    
+    // Close modal when clicking outside
+    document.addEventListener('click', function(e) {
+      const modal = document.getElementById('settingsModal');
+      if (e.target === modal) {
+        toggleSettingsModal();
+      }
+    });
+    
+    // Load settings on page load
+    document.addEventListener('DOMContentLoaded', loadApiSettings);
+  </script>
+  <script>
+    (function(){
+      const loader = new MuseumDataLoader();
+      let currentMuseums = [];
+      let currentData = null;
+      let highlightedIndex = -1;
+      let autocompleteResults = [];
+
+      // Initialize museum selector with custom autocomplete
+      async function initMuseumSelector() {
+        try {
+          // Load museums from JSON
+          const response = await fetch('../data/museums-meta.json');
+          const museums = await response.json();
+          
+          // Store museums for searching
+          window.allMuseums = museums;
+          
+          // Setup custom autocomplete for quick load search
+          setupAutocomplete();
+          
+          console.log(`✅ 已加载 ${museums.length} 个博物馆数据`);
+        } catch (error) {
+          console.error('Failed to load museums metadata:', error);
+        }
+      }
+
+      // Fuzzy search function - matches name, id, location, tags
+      function fuzzySearch(query, museums) {
+        if (!query || query.length < 1) return [];
+        
+        const q = query.toLowerCase().trim();
+        const results = [];
+        
+        museums.forEach(museum => {
+          let score = 0;
+          let matchType = '';
+          
+          // Exact match on name (highest priority)
+          if (museum.name && museum.name.toLowerCase() === q) {
+            score = 100;
+            matchType = 'name';
+          }
+          // Name starts with query
+          else if (museum.name && museum.name.toLowerCase().startsWith(q)) {
+            score = 90;
+            matchType = 'name';
+          }
+          // Name contains query
+          else if (museum.name && museum.name.toLowerCase().includes(q)) {
+            score = 80;
+            matchType = 'name';
+          }
+          // ID exact match
+          else if (museum.id && museum.id.toLowerCase() === q) {
+            score = 75;
+            matchType = 'id';
+          }
+          // ID contains query
+          else if (museum.id && museum.id.toLowerCase().includes(q)) {
+            score = 70;
+            matchType = 'id';
+          }
+          // Location match
+          else if (museum.location && museum.location.toLowerCase().includes(q)) {
+            score = 60;
+            matchType = 'location';
+          }
+          // Tag match
+          else if (museum.tags && museum.tags.some(tag => tag.toLowerCase().includes(q))) {
+            score = 50;
+            matchType = 'tag';
+          }
+          
+          if (score > 0) {
+            results.push({ ...museum, score, matchType });
+          }
+        });
+        
+        // Sort by score descending, limit to 10 results
+        return results.sort((a, b) => b.score - a.score).slice(0, 10);
+      }
+
+      // Highlight matched text
+      function highlightMatch(text, query) {
+        if (!text || !query) return escapeHtml(text || '');
+        const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi');
+        return escapeHtml(text).replace(regex, '<mark>$1</mark>');
+      }
+
+      function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      }
+
+      // Setup autocomplete for search input
+      function setupAutocomplete() {
+        const input = document.getElementById('quickLoadMuseumId');
+        const dropdown = document.getElementById('autocompleteDropdown');
+        const resultsContainer = document.getElementById('autocompleteResults');
+        const clearBtn = document.getElementById('searchClearBtn');
+
+        // Input event - show autocomplete
+        input.addEventListener('input', function() {
+          const query = this.value.trim();
+          
+          if (query.length < 1) {
+            hideAutocomplete();
+            return;
+          }
+          
+          autocompleteResults = fuzzySearch(query, window.allMuseums || []);
+          highlightedIndex = -1;
+          renderAutocomplete(query);
+        });
+
+        // Focus event - show dropdown if has value
+        input.addEventListener('focus', function() {
+          const query = this.value.trim();
+          if (query.length >= 1 && autocompleteResults.length > 0) {
+            dropdown.classList.add('active');
+          }
+        });
+
+        // Keyboard navigation
+        input.addEventListener('keydown', function(e) {
+          if (!dropdown.classList.contains('active')) return;
+          
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            highlightedIndex = Math.min(highlightedIndex + 1, autocompleteResults.length - 1);
+            updateHighlight();
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            highlightedIndex = Math.max(highlightedIndex - 1, -1);
+            updateHighlight();
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlightedIndex >= 0 && autocompleteResults[highlightedIndex]) {
+              selectMuseum(autocompleteResults[highlightedIndex]);
+            } else if (autocompleteResults.length > 0) {
+              selectMuseum(autocompleteResults[0]);
+            } else {
+              quickLoadMuseum();
+            }
+          } else if (e.key === 'Escape') {
+            hideAutocomplete();
+            input.blur();
+          }
+        });
+
+        // Clear button
+        clearBtn.addEventListener('click', function() {
+          input.value = '';
+          hideAutocomplete();
+          input.focus();
+        });
+
+        // Click outside to close
+        document.addEventListener('click', function(e) {
+          if (!e.target.closest('.search-input-wrapper')) {
+            hideAutocomplete();
+          }
+        });
+      }
+
+      function renderAutocomplete(query) {
+        const dropdown = document.getElementById('autocompleteDropdown');
+        const resultsContainer = document.getElementById('autocompleteResults');
+        
+        if (autocompleteResults.length === 0) {
+          resultsContainer.innerHTML = `
+            <div class="autocomplete-empty">
+              <div class="autocomplete-empty-icon">🔍</div>
+              <div>未找到匹配的博物馆</div>
+              <div style="font-size: 12px; margin-top: 4px;">尝试其他关键词</div>
+            </div>
+          `;
+          dropdown.classList.add('active');
+          return;
+        }
+        
+        resultsContainer.innerHTML = autocompleteResults.map((museum, index) => {
+          const icon = museum.image 
+            ? `<img src="${escapeHtml(museum.image)}" alt="" onerror="this.parentElement.innerHTML='🏛️'" />`
+            : '🏛️';
+          
+          return `
+            <div class="autocomplete-item ${index === highlightedIndex ? 'highlighted' : ''}" 
+                 data-index="${index}" 
+                 onclick="window.selectAutocompleteItem(${index})">
+              <div class="autocomplete-icon">${icon}</div>
+              <div class="autocomplete-info">
+                <div class="autocomplete-name">${highlightMatch(museum.name, query)}</div>
+                <div class="autocomplete-meta">
+                  <span>📍 ${highlightMatch(museum.location, query)}</span>
+                  ${museum.matchType === 'tag' ? `<span class="autocomplete-tag">${museum.tags.find(t => t.toLowerCase().includes(query.toLowerCase()))}</span>` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        dropdown.classList.add('active');
+      }
+
+      function updateHighlight() {
+        const items = document.querySelectorAll('.autocomplete-item');
+        items.forEach((item, index) => {
+          item.classList.toggle('highlighted', index === highlightedIndex);
+        });
+        
+        // Scroll highlighted item into view
+        if (highlightedIndex >= 0 && items[highlightedIndex]) {
+          items[highlightedIndex].scrollIntoView({ block: 'nearest' });
+        }
+      }
+
+      function hideAutocomplete() {
+        const dropdown = document.getElementById('autocompleteDropdown');
+        dropdown.classList.remove('active');
+        highlightedIndex = -1;
+      }
+
+      function selectMuseum(museum) {
+        const input = document.getElementById('quickLoadMuseumId');
+        input.value = museum.name;
+        hideAutocomplete();
+        
+        // Trigger load
+        quickLoadMuseum(museum.id);
+      }
+
+      // Expose for onclick
+      window.selectAutocompleteItem = function(index) {
+        if (autocompleteResults[index]) {
+          selectMuseum(autocompleteResults[index]);
+        }
+      };
+
+      // Handle museum selection in edit form
+      document.getElementById('museumIdSelect').addEventListener('change', async function(e) {
+        const input = e.target.value.trim();
+        const customIdGroup = document.getElementById('customIdGroup');
+        
+        if (!input) {
+          customIdGroup.style.display = 'none';
+          clearEditorsData();
+          return;
+        }
+        
+        // Find museum by name or ID
+        let museumId = null;
+        if (window.allMuseums) {
+          const museum = window.allMuseums.find(m => 
+            m.name === input || 
+            m.id === input ||
+            input.includes(m.id) ||
+            `${m.name} (${m.id})` === input
+          );
+          
+          if (museum) {
+            museumId = museum.id;
+          }
+        }
+        
+        if (museumId) {
+          document.getElementById('museumIdSelect').value = museumId;
+          customIdGroup.style.display = 'none';
+          await loadMuseumData(museumId);
+        } else {
+          customIdGroup.style.display = 'block';
+          clearEditorsData();
+        }
+      });
+      
+      // Handle 'New Museum' button
+      document.getElementById('newMuseumBtn').onclick = function(e) {
+        e.preventDefault();
+        document.getElementById('museumIdSelect').value = '';
+        document.getElementById('customIdGroup').style.display = 'block';
+        clearEditorsData();
+      };
+
+      // Tab switching
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+          const tabName = this.dataset.tab;
+          
+          // Update tab buttons
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Update tab content
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          document.getElementById(tabName + '-tab').classList.add('active');
+          
+          // Update preview when switching to preview tab
+          if (tabName === 'preview') {
+            updatePreview();
+          }
+        });
+      });
+
+      // Load museum data from all tiers
+      async function loadMuseumData(museumId) {
+        showStatus('正在加载博物馆数据...', 'info');
+        
+        try {
+          // First, always load meta information for basic fields
+          let metaInfo = null;
+          try {
+            const response = await fetch('../data/museums-meta.json');
+            const museums = await response.json();
+            metaInfo = museums.find(m => m.id === museumId);
+          } catch (error) {
+            console.error('Failed to load metadata:', error);
+          }
+          
+          // Try to load detailed data from KV Store
+          const kvData = await loader.loadFromTier2(museumId);
+          
+          // Merge: KV Store data + Meta information
+          // Priority: KV Store > Meta (for overlapping fields)
+          if (kvData) {
+            // Data exists in KV Store - use it as base
+            currentData = kvData;
+            
+            // Ensure all required fields exist, fill missing ones from meta
+            if (!currentData.id) currentData.id = museumId;
+            if (!currentData.name && metaInfo) currentData.name = metaInfo.name;
+            if (!currentData.location && metaInfo) currentData.location = metaInfo.location;
+            if (!currentData.tags && metaInfo) currentData.tags = metaInfo.tags;
+            if (!currentData.image && metaInfo) currentData.image = metaInfo.image;
+            
+            // Ensure arrays/objects exist
+            if (!currentData.collections) currentData.collections = [];
+            if (!currentData.workflows) currentData.workflows = [];
+            if (!currentData.checklists) currentData.checklists = { parent: {}, child: {} };
+            
+            showStatus(`✅ 成功加载博物馆数据: ${currentData.name}（来自 KV Store）`, 'success');
+          } else if (metaInfo) {
+            // No KV data, create from meta information
+            currentData = {
+              id: museumId,
+              name: metaInfo.name || '',
+              location: metaInfo.location || '',
+              description: '',
+              tags: metaInfo.tags || [],
+              image: metaInfo.image || '',
+              collections: [],
+              workflows: [],
+              checklists: { parent: {}, child: {} }
+            };
+            
+            showStatus(`📋 从元数据填充: ${metaInfo.name}（未在 KV Store 中找到，可编辑并保存）`, 'info');
+          } else {
+            // Neither KV nor meta data available
+            currentData = {
+              id: museumId,
+              name: '',
+              location: '',
+              description: '',
+              tags: [],
+              image: '',
+              collections: [],
+              workflows: [],
+              checklists: { parent: {}, child: {} }
+            };
+            
+            showStatus(`⚠️ 无数据找到，创建新博物馆（请填写信息）`, 'warning');
+          }
+          
+          populateEditors(currentData);
+          updatePreview();
+        } catch (error) {
+          showStatus('加载失败: ' + error.message, 'error');
+          console.error('Load error:', error);
+        }
+      }
+
+      // Populate all editors with data
+      function populateEditors(data) {
+        // Basic info
+        document.getElementById('edit-name').value = data.name || '';
+        document.getElementById('edit-location').value = data.location || '';
+        document.getElementById('edit-description').value = data.description || '';
+        document.getElementById('edit-image').value = data.image || '';
+        document.getElementById('edit-tags').value = (data.tags || []).join(', ');
+        
+        // Update museum image preview
+        updateImagePreview('museum-image-preview-wrapper', data.image || '');
+        
+        // JSON editor
+        document.getElementById('museumDataJson').value = JSON.stringify(data, null, 2);
+        
+        // Collections editor
+        renderCollectionsEditor(data.collections || []);
+        
+        // Workflows editor
+        renderWorkflowsEditor(data.workflows || []);
+      }
+
+      // Render collections editor
+      function renderCollectionsEditor(collections) {
+        const editor = document.getElementById('collections-editor');
+        editor.innerHTML = collections.map((col, index) => `
+          <div class="array-item" data-index="${index}">
+            <div class="array-item-header">
+              <strong>馆藏 #${index + 1}</strong>
+              <button class="remove-btn" onclick="removeCollection(${index})">删除</button>
+            </div>
+            <div class="field-row">
+              <div class="field-label">名称:</div>
+              <input type="text" class="col-name" value="${col.name || ''}" placeholder="文物名称" />
+            </div>
+            <div class="field-row">
+              <div class="field-label">图片URL:</div>
+              <div class="image-preview-container">
+                <div id="collection-image-preview-${index}">
+                  ${col.imageUrl ? `<img src="${col.imageUrl}" class="image-preview-thumb" onerror="this.parentElement.innerHTML='<div class=\\'image-preview-placeholder\\'>图片加载失败</div>'" />` : '<div class="image-preview-placeholder">暂无图片</div>'}
+                </div>
+                <div class="input-wrapper">
+                  <div class="input-with-search">
+                    <input type="text" class="col-image" value="${col.imageUrl || ''}" placeholder="图片URL" onchange="updateImagePreview('collection-image-preview-${index}', this.value)" />
+                    <button type="button" class="search-image-btn" onclick="openImageSearch('treasure', ${index})">🔍 搜索图片</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">描述:</div>
+              <textarea class="col-desc" rows="3" placeholder="文物描述">${col.description || ''}</textarea>
+            </div>
+          </div>
+        `).join('');
+        
+        // Show/hide auto-generate button based on collections count
+        const autoGenerateBtn = document.getElementById('auto-generate-btn');
+        const autoGenerateHint = document.getElementById('auto-generate-hint');
+        if (collections.length === 0) {
+          autoGenerateBtn.style.display = 'block';
+          autoGenerateHint.style.display = 'block';
+        } else {
+          autoGenerateBtn.style.display = 'none';
+          autoGenerateHint.style.display = 'none';
+        }
+      }
+
+      // Render workflows editor
+      function renderWorkflowsEditor(workflows) {
+        const editor = document.getElementById('workflows-editor');
+        editor.innerHTML = workflows.map((wf, index) => `
+          <div class="array-item" data-index="${index}">
+            <div class="array-item-header">
+              <strong>路线 #${index + 1}: ${wf.name || '未命名'}</strong>
+              <button class="remove-btn" onclick="removeWorkflow(${index})">删除</button>
+            </div>
+            <div class="field-row">
+              <div class="field-label">ID:</div>
+              <input type="text" class="wf-id" value="${wf.id || ''}" placeholder="workflow-id" />
+            </div>
+            <div class="field-row">
+              <div class="field-label">名称:</div>
+              <input type="text" class="wf-name" value="${wf.name || ''}" placeholder="路线名称" />
+            </div>
+            <div class="field-row">
+              <div class="field-label">描述:</div>
+              <textarea class="wf-desc" rows="2" placeholder="路线描述">${wf.description || ''}</textarea>
+            </div>
+            <div class="field-row">
+              <div class="field-label">适用年龄:</div>
+              <input type="text" class="wf-ages" value="${(wf.ages || []).join(', ')}" placeholder="例如: 3-6, 7-12, 13-18" />
+            </div>
+            <div class="hint" style="margin-left:162px">任务数据在JSON编辑模式中编辑</div>
+          </div>
+        `).join('');
+      }
+
+      // Add new collection
+      window.addCollection = function() {
+        const collections = getCollectionsFromEditor();
+        collections.push({ name: '', imageUrl: '', description: '' });
+        renderCollectionsEditor(collections);
+      };
+
+      // Remove collection
+      window.removeCollection = function(index) {
+        const collections = getCollectionsFromEditor();
+        collections.splice(index, 1);
+        renderCollectionsEditor(collections);
+      };
+
+      // Auto-generate treasures using DeepSeek API
+      window.autoGenerateTreasures = async function() {
+        const museumName = document.getElementById('edit-name').value;
+        
+        // Validate museum name
+        if (!museumName || !museumName.trim()) {
+          showStatus('请先填写博物馆名称', 'error');
+          return;
+        }
+        
+        // Check API key
+        const deepseekAPI = new DeepSeekAPI();
+        if (!deepseekAPI.hasApiKey()) {
+          const userChoice = confirm(
+            '🤖 AI 自动生成镇馆之宝\n\n' +
+            '此功能使用 DeepSeek AI 自动为博物馆生成 3 个真实的镇馆之宝数据。\n\n' +
+            '⚠️ 当前未配置 DeepSeek API Key\n\n' +
+            '是否前往设置页面配置 API Key？'
+          );
+          
+          if (userChoice) {
+            window.location.href = 'settings.html';
+          }
+          return;
+        }
+        
+        // Confirm action
+        if (!confirm(`🤖 是否使用 AI 自动生成"${museumName}"的镇馆之宝数据？\n\n这将调用 DeepSeek API 生成 3 个真实的镇馆之宝并自动验证其准确性。`)) {
+          return;
+        }
+        
+        // Show loading status
+        showStatus('正在使用 AI 生成镇馆之宝数据...', 'info');
+        
+        try {
+          // Call API to generate treasures
+          const treasures = await deepseekAPI.generateTreasures(museumName);
+          
+          showStatus('生成成功！正在自动验证镇馆之宝的准确性...', 'info');
+          
+          // Automatically validate the generated treasures
+          try {
+            const validationResult = await deepseekAPI.validateTreasures(museumName, treasures);
+            
+            // Check if any treasures were marked as invalid
+            if (!validationResult.isValid || validationResult.invalidTreasures.length > 0) {
+              // Filter out invalid treasures
+              const validTreasures = treasures.filter(t => 
+                !validationResult.invalidTreasures.includes(t.name)
+              );
+              
+              // If we have fewer than 3 valid treasures, use the recommendations instead
+              if (validTreasures.length < 3 && validationResult.recommendations.length >= 3) {
+                showStatus(
+                  `⚠️ AI 生成的镇馆之宝中有 ${validationResult.invalidTreasures.length} 个不准确，已自动替换为验证通过的推荐镇馆之宝。`, 
+                  'info'
+                );
+                
+                // Use recommendations from validation
+                const recommendedTreasures = validationResult.recommendations.map(rec => ({
+                  name: rec.name,
+                  imageUrl: '',
+                  description: rec.description
+                }));
+                
+                renderCollectionsEditor(recommendedTreasures);
+              } else if (validTreasures.length >= 3) {
+                showStatus(
+                  `⚠️ AI 生成的镇馆之宝中有 ${validationResult.invalidTreasures.length} 个不准确，已过滤。保留 ${validTreasures.length} 个验证通过的镇馆之宝。`, 
+                  'info'
+                );
+                renderCollectionsEditor(validTreasures);
+              } else {
+                // Not enough valid treasures and no good recommendations
+                showStatus(
+                  '⚠️ AI 生成的镇馆之宝验证未通过。请手动添加或重试。', 
+                  'error'
+                );
+                return;
+              }
+            } else {
+              // All treasures are valid
+              showStatus(`✓ 成功生成 ${treasures.length} 个镇馆之宝，已通过 AI 验证！`, 'success');
+              renderCollectionsEditor(treasures);
+            }
+            
+            // Scroll to collections editor
+            document.getElementById('collections-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+          } catch (validationError) {
+            // Validation failed, but we can still use the generated treasures
+            console.warn('自动验证失败，使用生成的数据:', validationError);
+            showStatus(
+              `✓ 成功生成 ${treasures.length} 个镇馆之宝（自动验证失败，请手动检查）。`, 
+              'info'
+            );
+            renderCollectionsEditor(treasures);
+            document.getElementById('collections-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          
+        } catch (error) {
+          showStatus('AI 生成失败: ' + error.message, 'error');
+          console.error('Auto-generate treasures error:', error);
+        }
+      };
+
+      // Add new workflow
+      window.addWorkflow = function() {
+        const workflows = getWorkflowsFromEditor();
+        workflows.push({ id: '', name: '', description: '', ages: [], tasks: [] });
+        renderWorkflowsEditor(workflows);
+      };
+
+      // Remove workflow
+      window.removeWorkflow = function(index) {
+        const workflows = getWorkflowsFromEditor();
+        workflows.splice(index, 1);
+        renderWorkflowsEditor(workflows);
+      };
+
+      // Get collections from editor
+      function getCollectionsFromEditor() {
+        const items = document.querySelectorAll('#collections-editor .array-item');
+        return Array.from(items).map(item => ({
+          name: item.querySelector('.col-name').value,
+          imageUrl: item.querySelector('.col-image').value,
+          description: item.querySelector('.col-desc').value
+        }));
+      }
+
+      // Get workflows from editor
+      function getWorkflowsFromEditor() {
+        const items = document.querySelectorAll('#workflows-editor .array-item');
+        return Array.from(items).map(item => {
+          const existingWorkflow = currentData?.workflows?.[item.dataset.index] || {};
+          return {
+            id: item.querySelector('.wf-id').value,
+            name: item.querySelector('.wf-name').value,
+            description: item.querySelector('.wf-desc').value,
+            ages: item.querySelector('.wf-ages').value.split(',').map(a => a.trim()).filter(a => a),
+            tasks: existingWorkflow.tasks || []
+          };
+        });
+      }
+
+      // Build complete data object from editors
+      function buildDataFromEditors() {
+        const museumId = document.getElementById('museumIdSelect').value === '__new__' 
+          ? document.getElementById('customMuseumId').value.trim()
+          : document.getElementById('museumIdSelect').value;
+        
+        return {
+          id: museumId,
+          name: document.getElementById('edit-name').value.trim(),
+          location: document.getElementById('edit-location').value.trim(),
+          description: document.getElementById('edit-description').value.trim(),
+          tags: document.getElementById('edit-tags').value.split(',').map(t => t.trim()).filter(t => t),
+          image: document.getElementById('edit-image').value.trim(),
+          collections: getCollectionsFromEditor(),
+          workflows: getWorkflowsFromEditor(),
+          checklists: currentData?.checklists || { parent: {}, child: {} }
+        };
+      }
+
+      // Sync from JSON to structured editor
+      window.syncFromJson = function() {
+        try {
+          const jsonData = document.getElementById('museumDataJson').value;
+          const parsed = JSON.parse(jsonData);
+          currentData = parsed;
+          populateEditors(parsed);
+          showStatus('已从JSON同步到结构化编辑器', 'success');
+        } catch (error) {
+          showStatus('JSON格式错误: ' + error.message, 'error');
+        }
+      };
+
+      // Update preview
+      function updatePreview() {
+        const data = buildDataFromEditors();
+        const preview = document.getElementById('preview-content');
+        
+        let html = `
+          <div class="preview-title">${data.name || '未命名博物馆'}</div>
+          <p><strong>位置:</strong> ${data.location || '未设置'}</p>
+          <p><strong>标签:</strong> ${data.tags.join(', ') || '无'}</p>
+          <p>${data.description || '无描述'}</p>
+        `;
+        
+        if (data.image) {
+          html += `<img src="${data.image}" alt="主图" class="preview-image" onerror="this.style.display='none'" />`;
+        }
+        
+        if (data.collections && data.collections.length > 0) {
+          html += '<h3>馆藏精品</h3>';
+          data.collections.forEach(col => {
+            html += `
+              <div class="collection-item">
+                <div class="collection-name">${col.name}</div>
+                ${col.imageUrl ? `<img src="${col.imageUrl}" alt="${col.name}" class="preview-image" onerror="this.style.display='none'" />` : ''}
+                <p>${col.description}</p>
+              </div>
+            `;
+          });
+        }
+        
+        if (data.workflows && data.workflows.length > 0) {
+          html += '<h3>参观路线</h3>';
+          data.workflows.forEach(wf => {
+            html += `
+              <div class="collection-item">
+                <div class="collection-name">${wf.name}</div>
+                <p>${wf.description}</p>
+                <p><small>适用年龄: ${wf.ages.join(', ')}</small></p>
+              </div>
+            `;
+          });
+        }
+        
+        preview.innerHTML = html;
+      }
+
+      // Clear all editors
+      function clearEditorsData() {
+        currentData = null;
+        document.getElementById('edit-name').value = '';
+        document.getElementById('edit-location').value = '';
+        document.getElementById('edit-description').value = '';
+        document.getElementById('edit-image').value = '';
+        document.getElementById('edit-tags').value = '';
+        document.getElementById('museumDataJson').value = '';
+        document.getElementById('collections-editor').innerHTML = '';
+        document.getElementById('workflows-editor').innerHTML = '';
+        document.getElementById('preview-content').innerHTML = '<p class="hint">加载博物馆数据后可在此预览</p>';
+      }
+
+      // Validate data
+      window.validateData = async function() {
+        try {
+          const data = buildDataFromEditors();
+          
+          // Also sync to JSON editor
+          document.getElementById('museumDataJson').value = JSON.stringify(data, null, 2);
+          
+          const required = ['id', 'name', 'location'];
+          const missing = required.filter(field => !data[field]);
+          
+          if (missing.length > 0) {
+            showStatus('缺少必需字段: ' + missing.join(', '), 'error');
+            return;
+          }
+          
+          showStatus('基础数据验证通过 ✓', 'success');
+          
+          // Check if we should validate treasures with AI
+          if (data.collections && data.collections.length > 0) {
+            const deepseekAPI = new DeepSeekAPI();
+            
+            if (!deepseekAPI.hasApiKey()) {
+              // Show more actionable dialog to configure API key
+              const userChoice = confirm(
+                '💡 AI 镇馆之宝验证\n\n' +
+                '基础数据验证已通过 ✓\n\n' +
+                '您可以使用 DeepSeek AI 来验证镇馆之宝的真实性。\n' +
+                '这将帮助确认列出的文物是否确实属于该博物馆。\n\n' +
+                '⚠️ 当前未配置 DeepSeek API Key\n\n' +
+                '是否前往设置页面配置 API Key？\n\n' +
+                '(配置后即可使用 AI 验证功能)'
+              );
+              
+              if (userChoice) {
+                // Redirect to settings page
+                window.location.href = 'settings.html';
+              }
+              return;
+            }
+            
+            // Ask user if they want to validate with AI
+            if (!confirm('🤖 是否使用 AI 验证镇馆之宝的真实性？\n\n这将调用 DeepSeek API 检查当前列出的镇馆之宝是否确实属于该博物馆。\n\n' + data.collections.length + ' 个镇馆之宝将被验证。')) {
+              return;
+            }
+            
+            showStatus('正在使用 AI 验证镇馆之宝...', 'info');
+            
+            try {
+              const validationResult = await deepseekAPI.validateTreasures(
+                data.name,
+                data.collections
+              );
+              
+              // Display validation results
+              displayValidationResults(validationResult, data.name);
+              
+            } catch (error) {
+              showStatus('AI 验证失败: ' + error.message, 'error');
+            }
+          }
+        } catch (error) {
+          showStatus('数据验证错误: ' + error.message, 'error');
+        }
+      };
+      
+      // Display AI validation results
+      function displayValidationResults(result, museumName) {
+        let message = `<h3>🤖 AI 验证结果：${escapeHtml(museumName)}</h3>`;
+        
+        if (result.isValid && result.invalidTreasures.length === 0) {
+          message += '<div class="status status-success">✓ 所有镇馆之宝验证通过！</div>';
+        } else {
+          message += '<div class="status status-error">⚠️ 发现不正确的镇馆之宝</div>';
+          
+          if (result.invalidTreasures.length > 0) {
+            message += '<h4>不正确的文物：</h4><ul>';
+            result.invalidTreasures.forEach(name => {
+              message += `<li style="color: #dc3545;">${escapeHtml(name)}</li>`;
+            });
+            message += '</ul>';
+          }
+        }
+        
+        if (result.recommendations && result.recommendations.length > 0) {
+          message += '<h4>AI 推荐的镇馆之宝：</h4>';
+          message += '<div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-top: 12px;">';
+          result.recommendations.forEach((rec, index) => {
+            // Store recommendation data safely in a global variable for click handlers
+            if (!window.pendingRecommendations) window.pendingRecommendations = [];
+            window.pendingRecommendations[index] = {
+              name: rec.name || '',
+              description: rec.description || '',
+              imageUrl: rec.imageUrl || ''
+            };
+            
+            message += `
+              <div id="recommendation-${index}" style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: start; gap: 12px;">
+                <div style="flex: 1;">
+                  <strong>${index + 1}. ${escapeHtml(rec.name || '')}</strong><br>
+                  <span style="color: #667; font-size: 14px;">${escapeHtml(rec.description || '')}</span>
+                </div>
+                <button 
+                  class="btn btn-success btn-sm recommendation-add-btn" 
+                  data-rec-index="${index}"
+                  style="flex-shrink: 0; white-space: nowrap;"
+                >
+                  ➕ 添加
+                </button>
+              </div>
+            `;
+          });
+          message += '</div>';
+          
+          if (!result.isValid || result.invalidTreasures.length > 0) {
+            message += '<p style="margin-top: 16px; color: #856404; background: #fff3cd; padding: 12px; border-radius: 8px;">💡 建议：点击"添加"按钮将推荐的镇馆之宝添加到藏品列表</p>';
+          }
+        }
+        
+        // Show in a modal-like display
+        const statusDiv = document.getElementById('statusMsg');
+        statusDiv.innerHTML = `<div class="status status-info" style="max-width: 100%; white-space: normal; text-align: left;">${message}</div>`;
+        
+        // Add event listeners to buttons (safer than inline onclick)
+        setTimeout(() => {
+          document.querySelectorAll('.recommendation-add-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+              const index = parseInt(this.getAttribute('data-rec-index'));
+              const rec = window.pendingRecommendations[index];
+              if (rec) {
+                addRecommendedTreasure(index, rec.name, rec.imageUrl, rec.description);
+              }
+            });
+          });
+        }, 100);
+        
+        // Scroll to results
+        statusDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      // Add a recommended treasure to the collections list
+      window.addRecommendedTreasure = function(index, name, imageUrl, description) {
+        try {
+          // Get current collections
+          const collections = getCollectionsFromEditor();
+          
+          // Check if treasure already exists
+          const existingIndex = collections.findIndex(c => c.name === name);
+          if (existingIndex !== -1) {
+            // Show inline error message without clearing validation results
+            const recommendationDiv = document.getElementById('recommendation-' + index);
+            if (recommendationDiv) {
+              const button = recommendationDiv.querySelector('button');
+              if (button) {
+                button.textContent = '⚠️ 已存在';
+                button.disabled = true;
+                button.style.opacity = '0.6';
+                button.style.cursor = 'not-allowed';
+              }
+            }
+            return;
+          }
+          
+          // Add new treasure
+          collections.push({
+            name: name,
+            imageUrl: imageUrl || '',
+            description: description || ''
+          });
+          
+          // Re-render collections editor
+          renderCollectionsEditor(collections);
+          
+          // Update the button to show it was added
+          // IMPORTANT: Don't call showStatus() here as it clears the entire validation results display,
+          // which would remove all other recommendation buttons and make them impossible to click.
+          const recommendationDiv = document.getElementById('recommendation-' + index);
+          if (recommendationDiv) {
+            const button = recommendationDiv.querySelector('button');
+            if (button) {
+              button.textContent = '✓ 已添加';
+              button.disabled = true;
+              button.style.opacity = '0.6';
+              button.style.cursor = 'not-allowed';
+              button.classList.remove('btn-success');
+              button.classList.add('btn-secondary');
+            }
+          }
+          
+          // Scroll to collections editor to show the newly added treasure in the collections list
+          setTimeout(() => {
+            document.getElementById('collections-editor').scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start' 
+            });
+          }, 300);
+          
+        } catch (error) {
+          console.error('添加推荐藏品失败:', error);
+          // Show inline error message without clearing validation results
+          const recommendationDiv = document.getElementById('recommendation-' + index);
+          if (recommendationDiv) {
+            const button = recommendationDiv.querySelector('button');
+            if (button) {
+              button.textContent = '❌ 失败';
+              button.style.backgroundColor = '#dc3545';
+            }
+          }
+        }
+      };
+
+      // Submit museum data
+      window.submitMuseumData = function() {
+        const data = buildDataFromEditors();
+        const expireOption = document.getElementById('expireAt').value;
+
+        // Validate
+        if (!data.id || !data.name) {
+          showStatus('请填写博物馆ID和名称', 'error');
+          return;
+        }
+
+        // Calculate expiration
+        let expireAt = 4866674732; // Default: year 2124
+        const now = Math.floor(Date.now() / 1000);
+        switch (expireOption) {
+          case '1day': expireAt = now + 86400; break;
+          case '7days': expireAt = now + 604800; break;
+          case '30days': expireAt = now + 2592000; break;
+        }
+
+        // Upload
+        loader.saveToKVStore(data.id, data, expireAt)
+          .then(success => {
+            if (success) {
+              showStatus('上传成功 ✓', 'success');
+              document.getElementById('uploadCard').style.display = 'none';
+              // After successful upload, reload the current museum if one was being edited
+              const museumId = data.id;
+              if (museumId) {
+                quickLoadMuseum();
+              }
+            } else {
+              showStatus('上传失败', 'error');
+            }
+          })
+          .catch(error => {
+            showStatus('上传失败: ' + error.message, 'error');
+          });
+      };
+
+      // Show status message
+      function showStatus(message, type = 'info') {
+        const statusDiv = document.getElementById('statusMsg');
+        statusDiv.innerHTML = `<div class="status status-${type}">${message}</div>`;
+        setTimeout(() => {
+          statusDiv.innerHTML = '';
+        }, 5000);
+      }
+
+      // Render museum list with expanded data preview
+      function renderMuseumList() {
+        const listDiv = document.getElementById('museumList');
+        
+        if (currentMuseums.length === 0) {
+          listDiv.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📦</div>
+              <div>选择博物馆以查看所有数据源</div>
+              <div class="hint">使用上方的快速加载选择器</div>
+            </div>
+          `;
+          return;
+        }
+
+        listDiv.innerHTML = currentMuseums.map(m => {
+          const tierInfo = getTierInfo(m.tier);
+          const isEditable = m.tier === 'kv' || m.tier === 'meta'; // Both KV and meta data can be edited and saved
+          const data = m.data || {};
+          
+          // Build data preview sections
+          let dataPreview = '';
+          
+          // Description
+          if (data.description) {
+            dataPreview += `
+              <div class="data-field">
+                <span class="data-field-label">简介:</span>
+                <div class="data-description">${escapeHtml(data.description)}</div>
+              </div>
+            `;
+          }
+          
+          // Tags
+          if (data.tags && data.tags.length > 0) {
+            dataPreview += `
+              <div class="data-field">
+                <span class="data-field-label">标签:</span>
+                <span class="data-field-value">
+                  ${data.tags.map(tag => `<span class="data-tag">${escapeHtml(tag)}</span>`).join('')}
+                </span>
+              </div>
+            `;
+          }
+          
+          // Collections count
+          const collectionsCount = data.collections ? data.collections.length : 0;
+          const workflowsCount = data.workflows ? data.workflows.length : 0;
+          const checklistsCount = data.checklists ? 
+            (Object.keys(data.checklists.parent || {}).length + Object.keys(data.checklists.child || {}).length) : 0;
+          
+          if (collectionsCount > 0 || workflowsCount > 0 || checklistsCount > 0) {
+            dataPreview += `
+              <div class="data-field">
+                <span class="data-field-label">数据统计:</span>
+                <span class="data-field-value">
+                  ${collectionsCount > 0 ? `<span class="data-count">馆藏 ${collectionsCount}</span>` : ''}
+                  ${workflowsCount > 0 ? `<span class="data-count">路线 ${workflowsCount}</span>` : ''}
+                  ${checklistsCount > 0 ? `<span class="data-count">清单 ${checklistsCount}</span>` : ''}
+                </span>
+              </div>
+            `;
+          }
+          
+          // Image indicator
+          if (data.image) {
+            dataPreview += `
+              <div class="data-field">
+                <span class="data-field-label">主图:</span>
+                <span class="data-field-value">✓ 已设置</span>
+              </div>
+            `;
+          }
+          
+          // Collections preview (first 3)
+          if (data.collections && data.collections.length > 0) {
+            const collectionsPreview = data.collections.slice(0, 3).map(c => escapeHtml(c.name || '未命名')).join(', ');
+            const moreCount = data.collections.length > 3 ? ` 等 ${data.collections.length} 件` : '';
+            dataPreview += `
+              <div class="data-field">
+                <span class="data-field-label">馆藏精品:</span>
+                <span class="data-field-value">${collectionsPreview}${moreCount}</span>
+              </div>
+            `;
+          }
+          
+          return `
+            <div class="museum-item">
+              <div class="museum-item-header">
+                <div class="museum-info">
+                  <div class="museum-name">
+                    ${escapeHtml(m.name)}
+                    <span class="tier-badge ${tierInfo.badgeClass}">${tierInfo.label}</span>
+                  </div>
+                  <div class="museum-meta">ID: ${m.id} • ${m.location || '未知位置'} • ${tierInfo.description}</div>
+                </div>
+                <div class="museum-actions">
+                  <button class="btn btn-secondary btn-sm" onclick="viewMuseum('${m.id}', '${m.tier}')">查看</button>
+                  ${isEditable ? `
+                    <button class="btn btn-secondary btn-sm" onclick="editMuseum('${m.id}')">编辑</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteMuseum('${m.id}')">删除</button>
+                  ` : `
+                    <button class="btn btn-secondary btn-sm" disabled style="opacity:0.5;cursor:not-allowed" title="只有 Tier 2 数据可编辑">编辑</button>
+                    <button class="btn btn-danger btn-sm" disabled style="opacity:0.5;cursor:not-allowed" title="只有 Tier 2 数据可删除">删除</button>
+                  `}
+                </div>
+              </div>
+              ${dataPreview ? `<div class="museum-data-preview">${dataPreview}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+      
+      // Get tier information for display
+      function getTierInfo(tier) {
+        // Handle different data sources
+        switch(tier) {
+          case 'kv':
+            return {
+              label: 'KV Store',
+              badgeClass: 'tier-2',
+              description: '远程存储（✓ 可编辑）'
+            };
+          case 'meta':
+            return {
+              label: '元数据',
+              badgeClass: 'tier-3',
+              description: '元数据库（✓ 可编辑并保存到 KV Store）'
+            };
+          default:
+            return {
+              label: '其他',
+              badgeClass: 'tier-1',
+              description: '其他数据源'
+            };
+        }
+      }
+
+      // View museum data
+      window.viewMuseum = async function(museumId, tier) {
+        try {
+          let data = null;
+          
+          // Load from KV Store only
+          data = await loader.loadFromTier2(museumId);
+          
+          if (data) {
+            const formatted = JSON.stringify(data, null, 2);
+            const maxLength = 1000;
+            const displayText = formatted.length > maxLength 
+              ? formatted.substring(0, maxLength) + '\n\n...(数据已截断，完整数据 ' + formatted.length + ' 字符)'
+              : formatted;
+            alert(`博物馆数据 [KV Store]:\n\n${displayText}`);
+          } else {
+            showStatus('未找到该博物馆数据', 'error');
+          }
+        } catch (error) {
+          showStatus('加载失败: ' + error.message, 'error');
+        }
+      };
+
+      // Edit museum data
+      window.editMuseum = async function(museumId) {
+        document.getElementById('uploadCard').style.display = 'block';
+        document.getElementById('museumIdSelect').value = museumId;
+        document.getElementById('customIdGroup').style.display = 'none';
+        await loadMuseumData(museumId);
+        document.getElementById('uploadCard').scrollIntoView({ behavior: 'smooth' });
+      };
+
+      // Delete museum data
+      window.deleteMuseum = async function(museumId) {
+        if (!confirm(`确定要从远程存储删除"${museumId}"吗？\n\n注意：这不会影响静态文件和内置数据。`)) {
+          return;
+        }
+
+        try {
+          const success = await loader.deleteFromKVStore(museumId);
+          if (success) {
+            showStatus('删除成功', 'success');
+            // Remove from current list
+            currentMuseums = currentMuseums.filter(m => m.id !== museumId);
+            renderMuseumList();
+          } else {
+            showStatus('删除失败', 'error');
+          }
+        } catch (error) {
+          showStatus('删除失败: ' + error.message, 'error');
+        }
+      };
+
+      // Show upload form
+      document.getElementById('uploadBtn').onclick = function() {
+        document.getElementById('museumIdSelect').value = '';
+        document.getElementById('customIdGroup').style.display = 'none';
+        clearEditorsData();
+        document.getElementById('uploadCard').style.display = 'block';
+        document.getElementById('uploadCard').scrollIntoView({ behavior: 'smooth' });
+      };
+
+      // Cancel upload
+      document.getElementById('cancelUploadBtn').onclick = function() {
+        document.getElementById('uploadCard').style.display = 'none';
+      };
+
+      // Quick load function - load specific museum by ID from all tiers
+      async function quickLoadMuseum(directMuseumId = null) {
+        let museumId = directMuseumId;
+        
+        // If no direct ID provided, try to extract from input
+        if (!museumId) {
+          const input = document.getElementById('quickLoadMuseumId').value.trim();
+          
+          if (!input) {
+            showStatus('请搜索或选择博物馆', 'error');
+            return;
+          }
+
+          // Extract museum ID from input
+          if (window.allMuseums) {
+            const museum = window.allMuseums.find(m => 
+              m.name === input || 
+              m.id === input ||
+              input.includes(m.id) ||
+              `${m.name} (${m.id})` === input
+            );
+            
+            if (museum) {
+              museumId = museum.id;
+            }
+          }
+          
+          if (!museumId) {
+            showStatus('未找到匹配的博物馆', 'error');
+            return;
+          }
+        }
+
+        const listDiv = document.getElementById('museumList');
+        listDiv.innerHTML = '<div class="loading">正在加载博物馆数据...</div>';
+
+        try {
+          // Load meta information
+          let metaInfo = null;
+          try {
+            const response = await fetch('../data/museums-meta.json');
+            const museums = await response.json();
+            metaInfo = museums.find(m => m.id === museumId);
+          } catch (error) {
+            console.error('Failed to load metadata:', error);
+          }
+          
+          // Load from KV Store
+          const tier2Data = await loader.loadFromTier2(museumId);
+          
+          currentMuseums = [];
+          
+          // If found in KV Store
+          if (tier2Data) {
+            // Merge with meta information
+            const mergedData = {
+              ...metaInfo,
+              ...tier2Data
+            };
+            
+            currentMuseums.push({
+              id: museumId,
+              name: tier2Data.name || metaInfo?.name || museumId,
+              location: tier2Data.location || metaInfo?.location || '未知位置',
+              tier: 'kv',
+              hasData: true,
+              data: mergedData,
+              dataSource: 'KV Store'
+            });
+            
+            renderMuseumList();
+            showStatus(`✅ 成功加载博物馆: ${currentMuseums[0].name}（来自 KV Store）`, 'success');
+          } else if (metaInfo) {
+            // Found in metadata only
+            currentMuseums.push({
+              id: museumId,
+              name: metaInfo.name,
+              location: metaInfo.location,
+              tier: 'meta',
+              hasData: false,
+              data: metaInfo,
+              dataSource: '元数据'
+            });
+            
+            renderMuseumList();
+            showStatus(`📋 在元数据中找到: ${metaInfo.name}（KV Store 无此数据，可编辑后保存）`, 'info');
+          } else {
+            // Not found anywhere
+            listDiv.innerHTML = `
+              <div class="empty-state">
+                <div class="empty-state-icon">❌</div>
+                <div>博物馆 "${museumId}" 在所有数据源中未找到</div>
+                <div class="hint">可以创建新博物馆或检查 ID 是否正确</div>
+              </div>
+            `;
+            showStatus(`博物馆 "${museumId}" 未找到`, 'error');
+          }
+        } catch (error) {
+          console.error('Error loading museum:', error);
+          listDiv.innerHTML = `<div class="status status-error">加载失败: ${error.message}</div>`;
+          showStatus('加载失败: ' + error.message, 'error');
+        }
+      }
+
+      // Back to home button
+      document.getElementById('backToHomeBtn').onclick = function() {
+        location.href = 'index.html';
+      };
+
+      // Initial load
+      initMuseumSelector();
+      
+      // Check for museum parameter in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const museumIdFromUrl = urlParams.get('museum');
+      
+      if (museumIdFromUrl) {
+        // Auto-select the museum in the quick load selector
+        const quickLoadSelect = document.getElementById('quickLoadMuseumId');
+        quickLoadSelect.value = museumIdFromUrl;
+        
+        // Show upload card and load the museum data
+        document.getElementById('uploadCard').style.display = 'block';
+        document.getElementById('museumIdSelect').value = museumIdFromUrl;
+        loadMuseumData(museumIdFromUrl);
+        
+        // Scroll to the upload card
+        setTimeout(() => {
+          document.getElementById('uploadCard').scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    })();
+
+    // Image Preview Helper Functions (Global scope)
+    function updateImagePreview(containerId, imageUrl) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      
+      if (!imageUrl || imageUrl.trim() === '') {
+        container.innerHTML = '<div class="image-preview-placeholder">暂无图片</div>';
+        return;
+      }
+      
+      // Show loading state
+      container.innerHTML = '<img src="' + imageUrl + '" class="image-preview-thumb loading" />';
+      
+      // Load image
+      const img = container.querySelector('img');
+      img.onload = function() {
+        img.classList.remove('loading');
+      };
+      img.onerror = function() {
+        container.innerHTML = '<div class="image-preview-placeholder">图片加载失败</div>';
+      };
+    }
+
+    function showToast(message, duration = 2000) {
+      // Remove existing toast if any
+      const existingToast = document.querySelector('.toast');
+      if (existingToast) {
+        existingToast.remove();
+      }
+      
+      // Create new toast
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      // Remove after duration
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    // Image Search Functions (Global scope for onclick handlers)
+    let imageSearchContext = { type: null, collectionIndex: null };
+    const wikimediaSearch = new WikimediaImageSearch();
+    const baiduSearch = new BaiduImageSearch();
+
+    function openImageSearch(type, collectionIndex = null) {
+      imageSearchContext = { type, collectionIndex };
+      const modal = document.getElementById('imageSearchModal');
+      const modalTitle = document.getElementById('modalTitle');
+      const searchLabel = document.getElementById('searchLabel');
+      const searchHint = document.getElementById('searchHint');
+      const searchQuery = document.getElementById('searchQuery');
+      const searchResults = document.getElementById('searchResults');
+
+      // Configure modal based on search type
+      if (type === 'museum') {
+        modalTitle.textContent = '搜索博物馆建筑照片';
+        searchLabel.textContent = '博物馆名称';
+        const museumName = document.getElementById('edit-name').value;
+        searchQuery.value = museumName || '';
+        searchQuery.placeholder = '例如: 故宫博物院';
+        searchHint.textContent = '将搜索博物馆建筑外观照片，所有图片来自 Wikimedia Commons (免费授权)';
+      } else if (type === 'treasure') {
+        modalTitle.textContent = '搜索文物藏品照片';
+        searchLabel.textContent = '文物名称';
+        const collectionItems = document.querySelectorAll('.array-item[data-index]');
+        const collectionItem = collectionItems[collectionIndex];
+        const treasureName = collectionItem ? collectionItem.querySelector('.col-name').value : '';
+        searchQuery.value = treasureName || '';
+        searchQuery.placeholder = '例如: 清明上河图';
+        searchHint.textContent = '将搜索文物藏品照片，所有图片来自 Wikimedia Commons (免费授权)';
+      }
+
+      // Clear previous results
+      searchResults.innerHTML = '';
+
+      // Show modal
+      modal.classList.add('active');
+
+      // Focus on search input
+      setTimeout(() => searchQuery.focus(), 100);
+    }
+
+    function closeImageSearch() {
+      const modal = document.getElementById('imageSearchModal');
+      modal.classList.remove('active');
+      imageSearchContext = { type: null, collectionIndex: null };
+    }
+
+    function openBaiduImageSearch() {
+      const searchQuery = document.getElementById('searchQuery').value.trim();
+      const type = imageSearchContext.type;
+      
+      if (!searchQuery) {
+        alert('请输入搜索关键词');
+        return;
+      }
+
+      // Build optimized search query
+      let optimizedQuery = searchQuery;
+      if (type === 'museum') {
+        optimizedQuery = `${searchQuery} 博物馆 外观 建筑`;
+      } else if (type === 'treasure') {
+        const museumName = document.getElementById('edit-name').value;
+        optimizedQuery = museumName ? `${searchQuery} ${museumName} 文物 高清` : `${searchQuery} 文物 高清`;
+      }
+
+      // Generate Baidu image search URL
+      const encodedQuery = encodeURIComponent(optimizedQuery);
+      const baiduUrl = `https://image.baidu.com/search/index?tn=baiduimage&word=${encodedQuery}`;
+      
+      // Open in new tab
+      window.open(baiduUrl, '_blank');
+      
+      // Optionally close the modal
+      // closeImageSearch();
+    }
+
+    async function performImageSearch() {
+      const searchQuery = document.getElementById('searchQuery').value.trim();
+      const searchResults = document.getElementById('searchResults');
+
+      if (!searchQuery) {
+        alert('请输入搜索关键词');
+        return;
+      }
+
+      // Show loading
+      searchResults.innerHTML = '<div class="loading-spinner"></div>';
+
+      try {
+        let results = [];
+        const museumName = document.getElementById('edit-name').value;
+
+        if (imageSearchContext.type === 'museum') {
+          results = await wikimediaSearch.searchMuseumPhotos(searchQuery);
+        } else if (imageSearchContext.type === 'treasure') {
+          results = await wikimediaSearch.searchTreasurePhotos(museumName, searchQuery);
+        }
+
+        if (results.length === 0) {
+          searchResults.innerHTML = `
+            <div class="no-results">
+              <div class="no-results-icon">🔍</div>
+              <div>Wikimedia 未找到相关图片</div>
+              <div class="hint">Wikimedia 的中国博物馆图片较少，推荐使用百度搜索</div>
+              <div style="display: flex; gap: 10px; justify-content: center; margin-top: 16px;">
+                <button class="btn btn-primary" style="background:linear-gradient(135deg,#de3f4f,#f48a8a)" onclick="performBaiduInlineSearch()">
+                  🔍 搜索百度图片
+                </button>
+                <button class="btn btn-secondary" onclick="openBaiduImageSearch()">
+                  ↗️ 去百度搜索
+                </button>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        // Display results
+        searchResults.innerHTML = results.map((img, idx) => `
+          <div class="result-item" onclick="selectImage('${escapeHtml(img.url)}', ${idx})">
+            <img src="${escapeHtml(img.thumbnailUrl)}" alt="${escapeHtml(img.name)}" class="result-image" 
+                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\'%3E%3Crect fill=\\'%23f0f0f0\\' width=\\'100\\' height=\\'100\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' fill=\\'%23999\\'%3E图片加载失败%3C/text%3E%3C/svg%3E'" />
+            <div class="result-info">
+              <div class="result-name">${escapeHtml(img.name)}</div>
+              <div class="result-meta">${img.width} × ${img.height}</div>
+            </div>
+          </div>
+        `).join('');
+
+        console.log(`✅ 显示 ${results.length} 个搜索结果`);
+      } catch (error) {
+        console.error('搜索失败:', error);
+        searchResults.innerHTML = `
+          <div class="no-results">
+            <div class="no-results-icon">❌</div>
+            <div>搜索失败</div>
+            <div class="hint">${escapeHtml(error.message)}</div>
+          </div>
+        `;
+      }
+    }
+
+    async function performBaiduInlineSearch() {
+      const searchQuery = document.getElementById('searchQuery').value.trim();
+      const searchResults = document.getElementById('searchResults');
+
+      if (!searchQuery) {
+        alert('请输入搜索关键词');
+        return;
+      }
+
+      // Show loading
+      searchResults.innerHTML = `
+        <div class="loading-spinner"></div>
+        <div style="text-align: center; margin-top: 12px; color: #667;">
+          正在从百度搜索图片...<br>
+          <small>如果加载较慢，可点击"去百度搜索"手动查找</small>
+        </div>
+      `;
+
+      try {
+        let results = [];
+        const museumName = document.getElementById('edit-name').value;
+
+        if (imageSearchContext.type === 'museum') {
+          results = await baiduSearch.searchMuseumPhotos(searchQuery);
+        } else if (imageSearchContext.type === 'treasure') {
+          results = await baiduSearch.searchTreasurePhotos(museumName, searchQuery);
+        }
+
+        if (results.length === 0) {
+          searchResults.innerHTML = `
+            <div class="no-results">
+              <div class="no-results-icon">🔍</div>
+              <div>百度未找到相关图片</div>
+              <div class="hint">
+                尝试使用不同的关键词，或点击"去百度搜索"手动查找
+              </div>
+              <button class="btn btn-secondary" style="margin-top: 16px;" onclick="openBaiduImageSearch()">
+                ↗️ 去百度搜索
+              </button>
+            </div>
+          `;
+          return;
+        }
+
+        // Display results with source indicator
+        searchResults.innerHTML = `
+          <div style="margin-bottom: 12px; padding: 8px 12px; background: #fee; border-left: 3px solid #de3f4f; border-radius: 4px; font-size: 12px;">
+            <strong>⚠️ 百度图片搜索结果</strong> - 请注意验证图片版权后再使用
+          </div>
+        ` + results.map((img, idx) => `
+          <div class="result-item" onclick="selectImage('${escapeHtml(img.url)}', ${idx})">
+            <img src="${escapeHtml(img.thumbnailUrl || img.url)}" alt="${escapeHtml(img.name)}" class="result-image" 
+                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\'%3E%3Crect fill=\\'%23f0f0f0\\' width=\\'100\\' height=\\'100\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' fill=\\'%23999\\'%3E图片加载失败%3C/text%3E%3C/svg%3E'" />
+            <div class="result-info">
+              <div class="result-name">${escapeHtml(img.name || '百度图片')}</div>
+              <div class="result-meta">${img.width && img.height ? `${img.width} × ${img.height}` : '百度搜索结果'}</div>
+            </div>
+          </div>
+        `).join('');
+
+        console.log(`✅ 显示 ${results.length} 个百度搜索结果`);
+      } catch (error) {
+        console.error('百度搜索失败:', error);
+        searchResults.innerHTML = `
+          <div class="no-results">
+            <div class="no-results-icon">❌</div>
+            <div>百度搜索失败</div>
+            <div class="hint">${escapeHtml(error.message)}</div>
+            <button class="btn btn-secondary" style="margin-top: 16px;" onclick="openBaiduImageSearch()">
+              ↗️ 去百度搜索
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    function selectImage(url, index) {
+      // Highlight selected item
+      document.querySelectorAll('.result-item').forEach((item, idx) => {
+        if (idx === index) {
+          item.classList.add('selected');
+        } else {
+          item.classList.remove('selected');
+        }
+      });
+
+      // Populate the appropriate field and update preview
+      if (imageSearchContext.type === 'museum') {
+        const input = document.getElementById('edit-image');
+        input.value = url;
+        input.classList.add('image-selected-feedback');
+        setTimeout(() => input.classList.remove('image-selected-feedback'), 300);
+        
+        // Update preview
+        updateImagePreview('museum-image-preview-wrapper', url);
+        
+        // Show toast notification
+        showToast('✓ 已选择博物馆图片');
+        console.log('✅ 已选择博物馆图片:', url);
+      } else if (imageSearchContext.type === 'treasure' && imageSearchContext.collectionIndex !== null) {
+        const collectionItems = document.querySelectorAll('.array-item[data-index]');
+        const collectionItem = collectionItems[imageSearchContext.collectionIndex];
+        if (collectionItem) {
+          const imageInput = collectionItem.querySelector('.col-image');
+          if (imageInput) {
+            imageInput.value = url;
+            imageInput.classList.add('image-selected-feedback');
+            setTimeout(() => imageInput.classList.remove('image-selected-feedback'), 300);
+            
+            // Update preview
+            const previewId = 'collection-image-preview-' + imageSearchContext.collectionIndex;
+            updateImagePreview(previewId, url);
+            
+            // Show toast notification
+            showToast('✓ 已选择文物图片');
+            console.log('✅ 已选择文物图片:', url);
+          }
+        }
+      }
+
+      // Close modal after selection
+      setTimeout(() => closeImageSearch(), 300);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    /**
+     * Upload a local image file to letmetry.cloud
+     * Compresses the image for mobile-optimized display
+     */
+    async function uploadLocalImage() {
+      const progressContainer = document.getElementById('uploadProgress');
+      const progressText = document.getElementById('uploadStatusText');
+      const progressFill = document.getElementById('uploadProgressFill');
+      const searchResults = document.getElementById('searchResults');
+      
+      try {
+        // Show upload progress container
+        progressContainer.style.display = 'block';
+        progressText.textContent = '请选择图片...';
+        progressFill.style.width = '0%';
+        
+        // Use the ImageUploader to pick and upload file
+        const url = await imageUploader.uploadWithUI({
+          compress: true,
+          onStart: (file) => {
+            progressText.textContent = `正在处理 ${file.name}...`;
+            progressFill.style.width = '10%';
+          },
+          onProgress: (stage, progress, file) => {
+            if (stage === 'compressing') {
+              progressText.textContent = '正在压缩图片...';
+              progressFill.style.width = `${10 + (progress * 0.4)}%`;
+            } else if (stage === 'uploading') {
+              progressText.textContent = '正在上传...';
+              progressFill.style.width = `${50 + (progress * 0.5)}%`;
+            }
+          },
+          onComplete: (url, file) => {
+            progressText.textContent = '上传完成！';
+            progressFill.style.width = '100%';
+          },
+          onError: (error, file) => {
+            progressText.textContent = `上传失败: ${error.message}`;
+            progressFill.style.backgroundColor = '#f44336';
+          }
+        });
+        
+        if (!url) {
+          // User cancelled file selection
+          progressContainer.style.display = 'none';
+          return;
+        }
+        
+        // Show success and select the uploaded image
+        showToast('✓ 图片上传成功');
+        
+        // Display uploaded image as a result
+        searchResults.innerHTML = `
+          <div style="margin-bottom: 12px; padding: 10px; background: #e8f5e9; border-left: 3px solid #4caf50; border-radius: 4px; font-size: 12px;">
+            <strong>✓ 图片上传成功！</strong> 点击下方图片选择使用
+          </div>
+          <div class="result-item selected" onclick="selectImage('${escapeHtml(url)}', 0)">
+            <img src="${escapeHtml(url)}" alt="已上传图片" class="result-image" />
+            <div class="result-info">
+              <div class="result-name">📤 已上传的照片</div>
+              <div class="result-meta">存储于 letmetry.cloud</div>
+            </div>
+          </div>
+        `;
+        
+        // Auto-select the uploaded image
+        setTimeout(() => selectImage(url, 0), 500);
+        
+        // Hide progress after a delay
+        setTimeout(() => {
+          progressContainer.style.display = 'none';
+        }, 2000);
+        
+      } catch (error) {
+        console.error('Upload error:', error);
+        progressText.textContent = `上传失败: ${error.message}`;
+        progressFill.style.backgroundColor = '#f44336';
+        
+        // Show error in search results
+        searchResults.innerHTML = `
+          <div class="no-results">
+            <div class="no-results-icon">❌</div>
+            <div>上传失败</div>
+            <div class="hint">${escapeHtml(error.message)}</div>
+            <button class="btn btn-primary" style="margin-top: 16px;" onclick="uploadLocalImage()">
+              🔄 重试上传
+            </button>
+          </div>
+        `;
+        
+        // Reset after delay
+        setTimeout(() => {
+          progressContainer.style.display = 'none';
+          progressFill.style.backgroundColor = '#4caf50';
+        }, 3000);
+      }
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('imageSearchModal').onclick = function(event) {
+      if (event.target === this) {
+        closeImageSearch();
+      }
+    };
+
+    // Allow Enter key to trigger search
+    document.getElementById('searchQuery').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        performImageSearch();
+      }
+    });
+  </script>
+</body>
+</html>

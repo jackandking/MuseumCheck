@@ -1,0 +1,66 @@
+name: 📝 文档位置检查
+
+on:
+  pull_request:
+    paths:
+      - '**.md'
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - '**.md'
+
+jobs:
+  check-docs-location:
+    name: 检查文档是否在正确目录
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      
+      - name: 🔍 检查新增的根目录 MD 文件（仅 PR）
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🔍 检查是否有新的根目录 MD 文件..."
+          
+          # 获取本次提交新增或修改的根目录 MD 文件
+          NEW_ROOT_MD=$(git diff --name-only --diff-filter=AM origin/${{ github.base_ref }}..HEAD | grep "^[A-Z].*\.md$" || true)
+          
+          # 白名单（仅允许这些文件在根目录）
+          ALLOWED="README.md CHANGELOG.md CONTRIBUTING.md LICENSE.md"
+          
+          VIOLATIONS=""
+          if [ -n "$NEW_ROOT_MD" ]; then
+            for file in $NEW_ROOT_MD; do
+              if ! echo "$ALLOWED" | grep -q "$file"; then
+                VIOLATIONS="$VIOLATIONS $file"
+              fi
+            done
+          fi
+          
+          if [ -n "$VIOLATIONS" ]; then
+            echo "❌ 检测到在根目录创建或修改新的 MD 文件："
+            for file in $VIOLATIONS; do
+              echo "  ❌ $file"
+            done
+            echo ""
+            echo "📋 请将文档移动到 docs/ 子目录："
+            echo "  - docs/architecture/ - 架构文档"
+            echo "  - docs/features/     - 功能文档"
+            echo "  - docs/guides/       - 开发指南"
+            echo "  - docs/api/          - API 文档"
+            echo "  - docs/reports/      - 进度报告"
+            echo ""
+            echo "📖 详细规范: .github/copilot-instructions-docs.md"
+            exit 1
+          else
+            echo "✅ 未发现违规文档"
+          fi
+      
+      - name: 📊 运行完整检查（含已存在文件）
+        run: |
+          bash scripts/check-docs-location.sh

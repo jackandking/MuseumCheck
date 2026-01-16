@@ -1,0 +1,102 @@
+name: Data Quality Checks
+
+on:
+  push:
+    branches: [ dev, main ]
+    paths:
+      - 'core/data-manager.js'
+      - 'core/storage/*.js'
+      - 'data/museums-meta.json'
+      - 'script.js'
+  pull_request:
+    branches: [ dev, main ]
+    paths:
+      - 'core/data-manager.js'
+      - 'core/storage/*.js'
+      - 'data/museums-meta.json'
+      - 'script.js'
+
+jobs:
+  data-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run data quality tests
+        run: npm run test:data-quality
+      
+      - name: Validate museum data structure
+        run: npm run validate-data
+      
+      - name: Check for duplicate museums
+        run: |
+          node << 'EOF'
+          const fs = require('fs');
+          
+          // Load from data/museums-meta.json (pure JSON)
+          const museums = JSON.parse(fs.readFileSync('data/museums-meta.json', 'utf8'));
+          
+          if (!Array.isArray(museums) || museums.length === 0) {
+            console.error('❌ No museum metadata found in data/museums-meta.json');
+            process.exit(1);
+          }
+          
+          console.log(`✅ Total museums in metadata: ${museums.length}`);
+          
+          // Check for duplicate IDs
+          const ids = new Set();
+          let dupIds = 0;
+          
+          museums.forEach(m => {
+            if (ids.has(m.id)) {
+              console.log(`❌ DUPLICATE ID: ${m.id}`);
+              dupIds++;
+            } else {
+              ids.add(m.id);
+            }
+          });
+          
+          // Check for duplicate names
+          const names = new Set();
+          let dupNames = 0;
+          
+          museums.forEach(m => {
+            if (names.has(m.name)) {
+              console.log(`❌ DUPLICATE NAME: ${m.name}`);
+              dupNames++;
+            } else {
+              names.add(m.name);
+            }
+          });
+          
+          if (dupIds === 0 && dupNames === 0) {
+            console.log('✅ No duplicates found');
+            process.exit(0);
+          } else {
+            console.log(`❌ Found ${dupIds} duplicate IDs and ${dupNames} duplicate names`);
+            process.exit(1);
+          }
+          EOF
+      
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **Data Quality Check Failed**\n\nPlease review the museum data for duplicates or validation errors. See the workflow logs for details.'
+            })

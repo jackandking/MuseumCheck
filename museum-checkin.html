@@ -9,6 +9,8 @@
     <link rel="dns-prefetch" href="//hm.baidu.com">
     <link rel="dns-prefetch" href="//static.hotjar.com">
     
+    <script src="js/debug-mode.js"></script>
+    
     <!-- Deferred Analytics Loading - Load after page becomes interactive -->
     <script>
         // Performance optimization: Defer all analytics to after first paint
@@ -57,53 +59,164 @@
     <!-- Critical CSS - Minimal styles for fast first paint -->
     <style>
         /* Critical CSS for immediate paint - shows loading state quickly */
+        /* Color scheme aligned with main site (teal-based) */
+        :root {
+            --checkin-primary: #0D9488;
+            --checkin-secondary: #2DD4BF;
+            --checkin-bg-start: #F0FDFA;
+            --checkin-bg-mid: #CCFBF1;
+            --checkin-bg-end: #99F6E4;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #a8d8ea 0%, #7fc8dc 50%, #5ab4d1 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--checkin-bg-start) 0%, var(--checkin-bg-mid) 50%, var(--checkin-bg-end) 100%);
             min-height: 100vh;
             padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        .loading { text-align: center; color: white; font-size: 18px; padding: 40px; }
-        .loading-spinner { display: inline-block; width: 40px; height: 40px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s linear infinite; margin-bottom: 16px; }
+        .loading { text-align: center; color: var(--checkin-primary); font-size: 18px; padding: 40px; }
+        .loading-spinner { display: inline-block; width: 40px; height: 40px; border: 3px solid rgba(13,148,136,.3); border-radius: 50%; border-top-color: var(--checkin-primary); animation: spin 1s linear infinite; margin-bottom: 16px; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .header { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .menu-button, .settings-button { width: 44px; height: 44px; background: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
-        .menu-button { font-size: 24px; }
-        .settings-button { font-size: 20px; }
-        .title { font-size: 32px; font-weight: bold; color: white; text-align: center; margin: 20px 0 30px 0; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); cursor: pointer; }
-        .museum-name { font-size: 18px; color: rgba(255, 255, 255, 0.9); text-align: center; margin-bottom: 30px; }
+        
+        /* Unified header structure - matches main site */
+        .checkin-header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+        .checkin-header h1 {
+            flex: 1;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--checkin-primary);
+            text-align: center;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .checkin-header .nickname-display {
+            cursor: pointer;
+            color: var(--checkin-primary);
+        }
+        .checkin-header .nickname-display:hover {
+            text-decoration: underline;
+        }
+        .menu-button, .settings-button {
+            width: 44px;
+            height: 44px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            margin: 0 8px;
+        }
+        .menu-button .menu-icon {
+            width: 24px;
+            height: 24px;
+            color: #4a5568;
+        }
+        .settings-button .settings-icon {
+            width: 24px;
+            height: 24px;
+            color: #4a5568;
+        }
+        .menu-button:hover:not(:disabled),
+        .settings-button:hover:not(:disabled) {
+            background-color: #f0f0f0;
+            transform: scale(1.1);
+            box-shadow: 0 4px 16px rgba(13, 148, 136, 0.2);
+        }
+        .menu-button:active,
+        .settings-button:active {
+            transform: scale(0.95);
+        }
+        
+        /* Legacy .header support (hidden) */
+        .header { display: none; }
+        .title { display: none; }
+        
+        .museum-name { 
+            font-size: 18px; 
+            color: var(--checkin-primary); 
+            text-align: center; 
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
         .task-grid { width: 100%; max-width: 800px; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding-bottom: 20px; }
-        @media (max-width: 768px) { .task-grid { grid-template-columns: repeat(2, 1fr); } .title { font-size: 28px; } }
+        @media (max-width: 768px) { 
+            .task-grid { grid-template-columns: repeat(2, 1fr); } 
+            .checkin-header h1 { font-size: 1em; }
+            .menu-button, .settings-button { width: 44px; height: 44px; }
+        }
+        @media (max-width: 480px) {
+            .checkin-header { padding: 8px 0; }
+            .checkin-header h1 { font-size: 0.9em; }
+            .menu-button, .settings-button { width: 40px; height: 40px; margin: 0 4px; }
+        }
     </style>
     
     <!-- Additional CSS - Styles for task cards, modals, and other UI components -->
     <style>
         .task-card {
             background: white;
-            border-radius: 20px;
+            border-radius: 24px;
             padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
             position: relative;
             min-height: 180px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
         }
 
         .task-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .task-card:active {
+            transform: translateY(-2px) scale(0.98);
+            transition: all 0.1s ease-out;
         }
 
         .task-card.completed {
             background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            animation: completeFlip 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes completeFlip {
+            0% {
+                transform: scale(1) rotateY(0deg);
+            }
+            50% {
+                transform: scale(1.05) rotateY(10deg);
+            }
+            100% {
+                transform: scale(1) rotateY(0deg);
+            }
         }
 
         .task-icon {
@@ -146,21 +259,31 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 16px;
+            font-size: 18px;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform: scale(0.6);
+            box-shadow: 0 2px 8px rgba(245, 87, 108, 0.3);
         }
 
         .task-card.completed .completion-badge {
             opacity: 1;
+            transform: scale(1);
+            animation: badgePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes badgePop {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         .add-task-card {
@@ -191,27 +314,120 @@
             max-width: 800px;
             margin-bottom: 20px;
             text-align: center;
-            color: white;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 16px 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         .progress-text {
-            font-size: 18px;
-            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .progress-stars {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .progress-star {
+            font-size: 28px;
+            transition: all 0.3s ease;
+            filter: grayscale(100%) opacity(0.3);
+        }
+
+        .progress-star.completed {
+            filter: none;
+            animation: starPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes starPop {
+            0% { transform: scale(0.5); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
         }
 
         .progress-bar {
             width: 100%;
-            height: 12px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 6px;
+            height: 14px;
+            background: #e5e7eb;
+            border-radius: 7px;
             overflow: hidden;
+        }
+
+        /* Task completion notification/toast */
+        .task-completion-toast {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(40, 167, 69, 0.3);
+            font-weight: 600;
+            z-index: 1500;
+            opacity: 0;
+            animation: toastSlideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            pointer-events: auto;
+            max-width: 90%;
+        }
+
+        @keyframes toastSlideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        @keyframes toastSlideUp {
+            from {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+        }
+
+        .task-completion-toast.fade-out {
+            animation: toastSlideUp 0.3s ease-out forwards;
         }
 
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
             border-radius: 6px;
-            transition: width 0.5s ease;
+            transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
         }
 
         /* Modal styles */
@@ -235,101 +451,208 @@
         .modal-content {
             background: white;
             border-radius: 20px;
-            padding: 30px;
+            padding: 16px 20px;
             max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
+            width: 92%;
+            max-height: 90vh;
             overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
 
         .modal-title {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
             color: #333;
         }
 
         .close-button {
-            font-size: 28px;
+            font-size: 24px;
             color: #999;
             cursor: pointer;
             border: none;
-            background: none;
-            padding: 0;
-            width: 32px;
-            height: 32px;
+            background: transparent;
+            padding: 6px;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            margin-right: -6px;
+        }
+
+        .close-button:hover {
+            background: #f0f0f0;
+            color: #333;
+            transform: scale(1.1);
+        }
+
+        .close-button:active {
+            transform: scale(0.95);
+        }
+
+        /* Mobile Menu Styles */
+        .mobile-menu-content {
+            max-width: 90vw;
+            width: 360px;
+        }
+
+        /* Grid layout for menu items - compact cards that fit in one screen */
+        .mobile-menu-items {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 8px 0;
+        }
+
+        .mobile-menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px 8px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            min-height: 80px;
+        }
+
+        .mobile-menu-item:hover {
+            background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+            border-color: var(--checkin-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.15);
+        }
+
+        .mobile-menu-item:active {
+            transform: scale(0.95);
+        }
+
+        .mobile-menu-item .menu-icon {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .mobile-menu-item .menu-text {
+            font-size: 12px;
+            color: #334155;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+        
+        /* Responsive: 2 columns on very narrow screens */
+        @media (max-width: 320px) {
+            .mobile-menu-items {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         .task-detail-icon {
-            font-size: 80px;
+            font-size: 48px;
             text-align: center;
-            margin: 20px 0;
+            margin: 8px 0;
         }
 
         .task-detail-title {
-            font-size: 20px;
+            font-size: 17px;
             font-weight: bold;
             color: #333;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             text-align: center;
         }
 
         .task-detail-description {
-            font-size: 16px;
+            font-size: 14px;
             color: #666;
-            line-height: 1.6;
-            margin-bottom: 20px;
+            line-height: 1.5;
+            margin-bottom: 12px;
         }
 
         .task-image {
             width: 100%;
-            border-radius: 12px;
-            margin-bottom: 20px;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 12px;
         }
 
         .action-buttons {
             display: flex;
             gap: 10px;
-            margin-top: 20px;
+            margin-top: 12px;
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding: 8px 0;
         }
 
         .button {
             flex: 1;
-            padding: 15px;
+            padding: 12px;
             border: none;
             border-radius: 12px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            touch-action: manipulation;
+            min-height: 44px;
         }
 
         .button-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
         }
 
         .button-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .button-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
         }
 
         .button-secondary {
             background: #f0f0f0;
             color: #333;
+            border: 2px solid #e0e0e0;
         }
 
         .button-secondary:hover {
-            background: #e0e0e0;
+            background: #e8e8e8;
+            border-color: #d0d0d0;
+            transform: translateY(-2px);
+        }
+
+        .button-secondary:active {
+            transform: translateY(0);
         }
 
         .parent-hint {
@@ -398,17 +721,17 @@
 
         /* Photo capture styles */
         .photo-section {
-            margin: 20px 0;
-            padding: 20px;
+            margin: 10px 0;
+            padding: 12px;
             background: #f8f9fa;
-            border-radius: 12px;
+            border-radius: 10px;
         }
 
         .photo-label {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             color: #333;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             display: block;
         }
 
@@ -416,50 +739,64 @@
             position: relative;
         }
 
-        .photo-input {
-            display: block;
+        .photo-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             width: 100%;
-            padding: 16px;
-            font-size: 18px;
-            font-weight: 700;
-            border: 3px dashed #667eea;
-            border-radius: 12px;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #667eea;
+            border: 2px dashed #667eea;
+            border-radius: 10px;
             background-color: #f0f0ff;
             cursor: pointer;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
         }
 
-        .photo-input::-webkit-file-upload-button {
-            display: none;
+        .photo-upload-label:hover {
+            background-color: #e8e8ff;
+            border-color: #5a6fd6;
         }
 
-        .photo-input::file-selector-button {
-            display: none;
+        .photo-upload-label:active {
+            transform: scale(0.98);
+        }
+
+        .photo-input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            overflow: hidden;
         }
 
         .photo-preview {
-            margin-top: 12px;
+            margin-top: 8px;
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
         }
 
         .photo-preview img {
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             object-fit: cover;
             border-radius: 8px;
             border: 2px solid #e9ecef;
         }
 
         .retake-button {
-            margin-top: 10px;
-            padding: 10px 20px;
+            margin-top: 8px;
+            padding: 8px 16px;
             background: #f0f0f0;
             color: #333;
             border: none;
             border-radius: 8px;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
         }
 
@@ -480,6 +817,7 @@
             opacity: 0;
             transform: scale(0.8);
             transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            backdrop-filter: blur(4px);
         }
 
         .completion-celebration.show {
@@ -625,20 +963,26 @@
             color: #2c5aa0;
             border: none;
             padding: 12px 24px;
-            border-radius: 12px;
+            border-radius: 16px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
             display: flex;
             align-items: center;
             gap: 8px;
+            touch-action: manipulation;
         }
 
         .poster-action-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+        }
+
+        .poster-action-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .poster-action-button:disabled {
@@ -650,12 +994,22 @@
         .poster-action-button.delete-button {
             background: #ff4444;
             color: white;
+            box-shadow: 0 4px 16px rgba(255, 68, 68, 0.3);
+        }
+
+        .poster-action-button.delete-button:hover {
+            box-shadow: 0 8px 24px rgba(255, 68, 68, 0.4);
         }
 
         .poster-action-button.published {
             background: #4caf50;
             color: white;
+            box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3);
             animation: buttonsSlideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s both;
+        }
+
+        .poster-action-button.published:hover {
+            box-shadow: 0 8px 24px rgba(76, 175, 80, 0.4);
         }
 
         @keyframes buttonsSlideUp {
@@ -1039,30 +1393,45 @@
             flex: 1;
             padding: 14px 20px;
             border: none;
-            border-radius: 12px;
+            border-radius: 16px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            touch-action: manipulation;
         }
 
         .puzzle-button-continue {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
         }
 
         .puzzle-button-continue:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .puzzle-button-continue:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
         }
 
         .puzzle-button-reset {
             background: #f0f0f0;
             color: #333;
+            border: 2px solid #e0e0e0;
+            transition: all 0.25s ease;
         }
 
         .puzzle-button-reset:hover {
-            background: #e0e0e0;
+            background: #e8e8e8;
+            border-color: #d0d0d0;
+            transform: translateY(-2px);
+        }
+
+        .puzzle-button-reset:active {
+            transform: translateY(0);
         }
 
         .puzzle-complete-message {
@@ -4057,11 +4426,11 @@
         }
     </style>
     <!-- Virtual Pet and Achievement Gamification Styles - Load asynchronously -->
-    <link rel="stylesheet" href="virtual-pet.css" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="achievement-gamification.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/virtual-pet.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/achievement-gamification.css" media="print" onload="this.media='all'">
     <noscript>
-        <link rel="stylesheet" href="virtual-pet.css">
-        <link rel="stylesheet" href="achievement-gamification.css">
+        <link rel="stylesheet" href="css/virtual-pet.css">
+        <link rel="stylesheet" href="css/achievement-gamification.css">
     </noscript>
 </head>
 <!-- child-mode class is intentionally hardcoded because this page is specifically for kids' tasks -->
@@ -4070,17 +4439,36 @@
         ✏️ 编辑模式
     </div>
 
-    <div class="header">
-        <button class="menu-button" id="menuButton" title="菜单">☰</button>
-        <button class="settings-button" id="settingsButton" title="设置">⚙️</button>
-    </div>
+    <!-- Unified header structure - matches main site -->
+    <header class="checkin-header">
+        <button class="menu-button" id="menuButton" title="菜单">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="menu-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+        </button>
+        <h1><span id="nicknameDisplay" class="nickname-display" title="点击修改昵称">小淘气</span>的孩子任务</h1>
+        <button class="settings-button" id="settingsButton" title="设置">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="settings-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+        </button>
+    </header>
 
-    <h1 class="title" id="pageTitle" title="点击修改昵称">孩子任务</h1>
+    <!-- Legacy elements (hidden, kept for JS compatibility) -->
+    <div class="header" style="display:none;">
+        <button class="menu-button" id="menuButtonLegacy" title="菜单"></button>
+        <button class="settings-button" id="settingsButtonLegacy" title="设置"></button>
+    </div>
+    <h1 class="title" id="pageTitle" title="点击修改昵称" style="display:none;">孩子任务</h1>
     <div class="museum-name" id="museumName">加载中...</div>
 
     <div class="progress-container">
-        <div class="progress-text">
-            已完成 <span id="completedCount">0</span>/<span id="totalCount">0</span> 个任务
+        <div class="progress-text" id="progressText">
+            已完成 <span id="completedCount">0</span> 个任务
+        </div>
+        <div class="progress-stars" id="progressStars">
+            <!-- Stars will be generated by JS -->
         </div>
         <div class="progress-bar">
             <div class="progress-fill" id="progressFill" style="width: 0%"></div>
@@ -4110,17 +4498,7 @@
                 </div>
                 <div class="museum-photo-contributor-form">
                     <div class="add-museum-photo-input-group">
-                        <label>🔍 搜索图片</label>
-                        <div class="input-with-action">
-                            <input type="text" id="modalMuseumPhotoSearch" placeholder="输入博物馆名称搜索">
-                            <div class="search-buttons-container">
-                                <button type="button" class="search-wiki-btn" id="modalMuseumPhotoSearchWikiBtn">Wiki</button>
-                                <button type="button" class="search-baidu-btn" id="modalMuseumPhotoSearchBaiduBtn">百度</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="add-museum-photo-input-group">
-                        <label>📤 上传照片（可选）</label>
+                        <label>📤 上传照片</label>
                         <div class="search-buttons-container">
                             <label class="upload-photo-btn" id="modalMuseumPhotoUploadLabel">
                                 📤 选择文件
@@ -4181,22 +4559,11 @@
                     </div>
                     
                     <div class="add-treasure-input-group">
-                        <label for="modalTreasureImage">🔍 搜索图片（可选）</label>
-                        <div class="input-with-action">
-                            <input type="text" id="modalTreasureImage" placeholder="点击搜索按钮查找图片">
-                            <div class="search-buttons-container">
-                                <button type="button" class="search-wiki-btn" id="modalSearchWikiBtn">Wiki</button>
-                                <button type="button" class="search-baidu-btn" id="modalSearchBaiduBtn">百度</button>
-                            </div>
-                        </div>
+                        <label>📤 上传照片（可选）</label>
                         <div class="image-preview-container">
                             <div id="modalTreasurePreview" class="image-preview-placeholder">📷</div>
-                            <span class="add-treasure-hint">搜索或上传照片</span>
+                            <span class="add-treasure-hint">上传照片</span>
                         </div>
-                    </div>
-                    
-                    <div class="add-treasure-input-group">
-                        <label>📤 上传照片（可选）</label>
                         <div class="search-buttons-container">
                             <label class="upload-photo-btn" id="modalTreasureUploadLabel">
                                 📤 选择文件
@@ -4209,8 +4576,10 @@
 
             <!-- Photo capture section -->
             <div class="photo-section" id="photoSection">
-                <label class="photo-label">📸 上传照片（可选）</label>
                 <div class="photo-input-wrapper">
+                    <label class="photo-upload-label" for="taskPhotoInput">
+                        📷 点击上传照片（可选）
+                    </label>
                     <input type="file" id="taskPhotoInput" class="photo-input" accept="image/*" aria-label="选择照片">
                 </div>
                 <div class="photo-preview" id="photoPreview"></div>
@@ -4297,15 +4666,15 @@
 
     <!-- Menu modal -->
     <div class="modal" id="menuModal">
-        <div class="modal-content">
+        <div class="modal-content mobile-menu-content">
             <div class="modal-header">
-                <h2 class="modal-title">菜单</h2>
+                <h2 class="modal-title">功能菜单</h2>
                 <button class="close-button" id="closeMenu">&times;</button>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="button button-secondary" id="viewMuseumFireworks">🎆 查看本馆烟花墙</button>
-                <button class="button button-secondary" id="viewFireworks">查看总烟花墙</button>
-                <button class="button button-secondary" id="backToHome">返回主页</button>
+            <div class="modal-body">
+                <div class="mobile-menu-items" id="sharedMenuItems">
+                    <!-- Menu items injected by SharedMenu -->
+                </div>
             </div>
         </div>
     </div>
@@ -4375,50 +4744,14 @@
                             <label for="newTreasureName">名称 <span style="color: #dc2626;">*</span></label>
                             <input type="text" id="newTreasureName" placeholder="例如：清明上河图" maxlength="50">
                             <div class="add-treasure-error" id="treasureNameError">⚠️ 名称已存在，请使用不同的名称</div>
-                            
-                            <!-- AI Treasure Name Suggestions -->
-                            <div class="ai-suggestion-section" id="aiSuggestionSection">
-                                <button type="button" class="ai-suggest-btn" id="aiSuggestBtn" 
-                                        title="让AI推荐3个镇馆之宝名称"
-                                        aria-label="AI推荐镇馆之宝名称"
-                                        aria-describedby="aiSuggestionHint">
-                                    <span class="ai-btn-icon" aria-hidden="true">🤖</span>
-                                    <span class="ai-btn-text">AI推荐</span>
-                                </button>
-                                <div class="ai-suggestions-container" id="aiSuggestionsContainer" role="listbox" aria-label="AI推荐的镇馆之宝">
-                                    <!-- Suggestions will be rendered here -->
-                                </div>
-                                <div class="ai-suggestion-loading" id="aiSuggestionLoading" aria-live="polite">
-                                    <span class="loading-spinner" aria-hidden="true"></span>
-                                    <span>AI 正在推荐...</span>
-                                </div>
-                                <div class="ai-suggestion-error" id="aiSuggestionError" role="alert" aria-live="assertive">
-                                    <!-- Error message will be shown here -->
-                                </div>
-                                <div class="ai-suggestion-hint" id="aiSuggestionHint">
-                                    💡 点击上方按钮，让AI推荐该博物馆的镇馆之宝
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="add-treasure-input-group">
-                            <label for="newTreasureImage">🔍 搜索图片（可选）</label>
-                            <div class="input-with-action">
-                                <input type="text" id="newTreasureImage" placeholder="点击搜索按钮查找图片">
-                                <div class="search-buttons-container">
-                                    <button type="button" class="search-wiki-btn" id="searchWikiBtn">Wiki</button>
-                                    <button type="button" class="search-baidu-btn" id="searchBaiduBtn">百度</button>
-                                    <button type="button" class="search-baidu-btn secondary" id="openBaiduBtn">↗️ 去百度</button>
-                                </div>
-                            </div>
-                            <div class="image-preview-container">
-                                <div id="newTreasurePreview" class="image-preview-placeholder">📷</div>
-                                <span class="add-treasure-hint">搜索或上传照片</span>
-                            </div>
                         </div>
                         
                         <div class="add-treasure-input-group">
                             <label>📤 上传照片（可选）</label>
+                            <div class="image-preview-container">
+                                <div id="newTreasurePreview" class="image-preview-placeholder">📷</div>
+                                <span class="add-treasure-hint">上传照片</span>
+                            </div>
                             <div class="search-buttons-container">
                                 <label class="upload-photo-btn" id="newTreasureUploadLabel">
                                     📤 选择文件
@@ -4722,18 +5055,27 @@
 
 
     <!-- Load dependencies -->
-    <script src="museums-data.js"></script>
-    <script src="museum-data-loader.js"></script>
-    <script src="treasure-workflow-generator.js"></script>
-    <script src="firework.js"></script>
-    <script src="achievement-gamification.js"></script>
-    <script src="virtual-pet.js"></script>
-    <script src="snake-game-inline.js"></script>
-    <script src="baidu-image-search.js"></script>
-    <script src="letmetry-cloud-api.js"></script>
-    <script src="image-upload-util.js"></script>
+    <script src="js/museum-data-loader.js"></script>
+    <script src="js/treasure-workflow-generator.js"></script>
+    <script src="js/firework.js"></script>
+    <script src="js/achievement-gamification.js"></script>
+    <script src="js/virtual-pet.js"></script>
+    <script src="js/baidu-image-search.js"></script>
+    <script src="config/api-endpoints.js"></script>
+    <script src="js/letmetry-cloud-api.js"></script>
+    <script src="js/image-upload-util.js"></script>
     <!-- Event Wall Service (shared, must come after REMOTE_STORAGE_CONFIG is defined) -->
-    <script src="event-wall-service.js"></script>
+    <script src="js/event-wall-service.js"></script>
+    <!-- Shared Menu Component -->
+    <script src="js/shared-menu.js"></script>
+    <script>
+        // Initialize shared menu after DOM ready
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof SharedMenu !== 'undefined') {
+                SharedMenu.init({ showHome: true, showMuseumFireworks: true });
+            }
+        });
+    </script>
     
     <script>
         // Configuration
@@ -4751,7 +5093,7 @@
 
         // Get museum ID from URL parameter
         const urlParams = new URLSearchParams(window.location.search);
-        const museumId = urlParams.get('museum') || 'forbidden-city';
+        const museumId = urlParams.get('id') || urlParams.get('museum') || 'forbidden-city';
         // Use saved age group from localStorage first, then URL parameter as fallback
         const savedAgeGroup = localStorage.getItem('ageGroup');
         const ageGroup = savedAgeGroup || urlParams.get('age') || '7-12';
@@ -5448,9 +5790,11 @@
                 }, 800); // Slightly longer delay to ensure page is fully loaded
             }
             
-            // Load treasure reports and image error reports in parallel with museum data
-            const [_, treasureReportsData, imageErrorReportsData] = await Promise.all([
-                loadMuseumData(),
+            // Load museum data first (await ensures tasks/render have data)
+            await loadMuseumData();
+            
+            // Then load treasure reports and image error reports in parallel
+            const [treasureReportsData, imageErrorReportsData] = await Promise.all([
                 loadTreasureReports(),
                 loadImageErrorReports()
             ]);
@@ -5460,6 +5804,13 @@
             setupEventListeners();
             loadCompletedTasks();
             loadPhotos(); // Load saved photos
+            
+            // Show fireworks menu items only in debug mode
+            if (window.MC_debugMode && window.MC_debugMode.isEnabled()) {
+                document.querySelectorAll('.fireworks-menu-item').forEach(item => {
+                    item.style.display = 'flex';
+                });
+            }
             // Re-render after loading persisted completion state so counts and badges reflect correctly
             renderTasks();
             updateProgress();
@@ -5490,7 +5841,7 @@
 
         // Load museum data with dynamic data priority support
         async function loadMuseumData() {
-            // Use museum data loader if available (respects tier priority)
+            // Load museum data via tiered loader (Tier2 -> Tier1). Tier3 is deprecated.
             let museum = null;
             if (window.museumDataLoader && typeof window.museumDataLoader.loadMuseum === 'function') {
                 try {
@@ -5500,35 +5851,16 @@
                     console.warn('Error loading museum with museumDataLoader:', error);
                 }
             }
-            
-            // Fallback to static MUSEUMS array
+
             if (!museum) {
-                museum = MUSEUMS.find(m => m.id === museumId);
-                console.log(`Loaded museum ${museumId} from static MUSEUMS array`);
-            }
-            
-            // Merge dynamic data (from KV store/Tier 1) with complete Tier 3 data
-            // KV store typically has updated images/collections but may lack checklists
-            // This ensures we have both new photos AND checklist data
-            if (museum) {
-                const tier3Museum = MUSEUMS.find(m => m.id === museumId);
-                if (tier3Museum) {
-                    // Merge: Tier 3 data as base, override with loaded data
-                    // This preserves checklists from Tier 3 while using updated collections/images
-                    currentMuseum = { ...tier3Museum, ...museum };
-                    console.log(`Merged dynamic data with Tier 3 data for museum ${museumId}`);
-                } else {
-                    currentMuseum = museum;
-                }
-            } else {
-                currentMuseum = null;
-            }
-            
-            if (!currentMuseum) {
+                console.warn(`Museum ${museumId} not found via loader (Tier2/Tier1)`);
                 document.getElementById('museumName').textContent = '博物馆未找到';
                 document.getElementById('taskGrid').innerHTML = '<div class="loading">未找到该博物馆的信息</div>';
+                currentMuseum = null;
                 return;
             }
+
+            currentMuseum = museum;
 
             // Merge user-added treasures from localStorage into currentMuseum.collections
             // This ensures user-added treasures are available even if KV store save failed
@@ -6276,6 +6608,31 @@
             }
 
             // Check if game should be shown (has photo and setting enabled)
+            // Ensure we process any pending file selected in the input but not yet stored
+            try {
+                const photoInputEl = document.getElementById('taskPhotoInput');
+                if (!taskPhotos[currentTaskIndex] && photoInputEl && photoInputEl.files && photoInputEl.files[0]) {
+                    // If user selected a file but FileReader/compression hasn't finished yet,
+                    // synchronously compress and read it here so the completion flow sees the photo.
+                    try {
+                        const compressedFile = await compressPhoto(photoInputEl.files[0]);
+                        const reader = new FileReader();
+                        const dataUrl = await new Promise((resolve, reject) => {
+                            reader.onload = (e) => resolve(e.target.result);
+                            reader.onerror = () => reject(new Error('读取图片失败'));
+                            reader.readAsDataURL(compressedFile);
+                        });
+                        taskPhotos[currentTaskIndex] = dataUrl;
+                        savePhotos();
+                        displayPhotoPreview(dataUrl);
+                    } catch (e) {
+                        console.warn('未能在完成前处理选中的照片：', e);
+                    }
+                }
+            } catch (e) {
+                console.error('处理待处理照片时出错：', e);
+            }
+
             const hasPhoto = !!taskPhotos[currentTaskIndex];
             const puzzleEnabled = loadPuzzleGameSetting();
             const showGame = hasPhoto && puzzleEnabled;
@@ -6546,9 +6903,32 @@
             const total = childTasks.length;
             const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
+            // Update text
             document.getElementById('completedCount').textContent = completed;
-            document.getElementById('totalCount').textContent = total;
+            
+            // Update progress bar
             document.getElementById('progressFill').style.width = percentage + '%';
+            
+            // Update stars display
+            const starsContainer = document.getElementById('progressStars');
+            if (starsContainer && total > 0) {
+                let starsHTML = '';
+                for (let i = 0; i < total; i++) {
+                    const isCompleted = i < completed;
+                    starsHTML += `<span class="progress-star ${isCompleted ? 'completed' : ''}">⭐</span>`;
+                }
+                starsContainer.innerHTML = starsHTML;
+            }
+            
+            // Update text based on completion
+            const progressText = document.getElementById('progressText');
+            if (progressText) {
+                if (completed === total && total > 0) {
+                    progressText.innerHTML = '🎉 太棒了！全部完成！';
+                } else {
+                    progressText.innerHTML = `已完成 <span id="completedCount">${completed}</span> 个任务`;
+                }
+            }
         }
 
         // Save completed tasks to local storage
@@ -7396,7 +7776,7 @@
                 const pascalCase = musId.split('-')
                     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
                     .join('');
-                return `MuseumCheck_QRCode_${pascalCase}.png`;
+                return `assets/qrcodes/MuseumCheck_QRCode_${pascalCase}.png`;
             };
             
             // Try to load museum-specific QR code or fallback to generic WeChat QR
@@ -7413,7 +7793,7 @@
                     fallbackQR.crossOrigin = 'anonymous';
                     fallbackQR.onload = () => resolve(fallbackQR);
                     fallbackQR.onerror = () => resolve(null);
-                    fallbackQR.src = 'MuseumCheck_QRCode_WX.jpg';
+                    fallbackQR.src = 'assets/qrcodes/MuseumCheck_QRCode_WX.jpg';
                 };
                 qrImg.src = museumQRFile;
             });
@@ -8202,7 +8582,16 @@
 
         // Setup event listeners
         function setupEventListeners() {
-            // Set up inline nickname editing on page title click
+            // Set up inline nickname editing on new unified header nickname display
+            const nicknameDisplay = document.getElementById('nicknameDisplay');
+            if (nicknameDisplay) {
+                nicknameDisplay.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    startInlineNicknameEditOnTitle(nicknameDisplay);
+                });
+            }
+            
+            // Set up inline nickname editing on legacy page title click
             const pageTitleElement = document.getElementById('pageTitle');
             if (pageTitleElement) {
                 pageTitleElement.addEventListener('click', (e) => {
@@ -8407,18 +8796,11 @@
                 });
             }
 
-            // Menu actions
-            document.getElementById('viewMuseumFireworks').onclick = () => {
+            // Menu actions - 由 SharedMenu 组件处理
+            // 监听 SharedMenu 派发的本馆烟花墙事件
+            document.addEventListener('sharedmenu:museumFireworks', () => {
                 window.location.href = `fireworks-wall.html?museum=${museumId}`;
-            };
-
-            document.getElementById('viewFireworks').onclick = () => {
-                window.location.href = `fireworks-wall.html`;
-            };
-
-            document.getElementById('backToHome').onclick = () => {
-                window.location.href = 'index.html';
-            };
+            });
 
             document.getElementById('parentTasksLink').onclick = (e) => {
                 e.preventDefault();
@@ -8783,14 +9165,20 @@
             const nickname = loadChildNickname();
             const title = `${nickname}的任务`;
             
-            // Update h1 title
+            // Update new unified header nickname display
+            const nicknameDisplay = document.getElementById('nicknameDisplay');
+            if (nicknameDisplay) {
+                nicknameDisplay.textContent = nickname;
+            }
+            
+            // Update legacy h1 title (kept for compatibility)
             const pageTitleElement = document.getElementById('pageTitle');
             if (pageTitleElement) {
                 pageTitleElement.textContent = title;
             }
             
             // Update page title tag
-            document.title = `${title} - 博物馆打卡`;
+            document.title = `${nickname}的孩子任务 - 博物馆打卡`;
         }
 
         // Settings management functions
@@ -8869,9 +9257,12 @@
                 return;
             }
             
+            // Check if this is the new unified header nickname display (only shows nickname)
+            const isNicknameDisplayOnly = titleElement.id === 'nicknameDisplay';
+            
             const currentText = titleElement.textContent.trim();
-            // Extract nickname from "nickname的任务" format
-            const currentNickname = currentText.replace('的任务', '');
+            // Extract nickname - for nicknameDisplay it's just the text, for pageTitle it's "nickname的任务"
+            const currentNickname = isNicknameDisplayOnly ? currentText : currentText.replace('的任务', '');
             
             // Create input element
             const input = document.createElement('input');
@@ -8916,13 +9307,16 @@
             input.focus();
             input.select();
             
+            // Helper to format display text based on element type
+            const formatDisplay = (nickname) => isNicknameDisplayOnly ? nickname : `${nickname}的任务`;
+            
             // Handle save on Enter key
             const handleSave = () => {
                 const newNickname = input.value.trim();
                 
                 if (newNickname === '') {
                     // Restore original if empty
-                    titleElement.textContent = `${originalNickname}的任务`;
+                    titleElement.textContent = formatDisplay(originalNickname);
                     return;
                 }
                 
@@ -8932,7 +9326,10 @@
                     
                     if (result.success) {
                         // Update display
-                        titleElement.textContent = `${newNickname}的任务`;
+                        titleElement.textContent = formatDisplay(newNickname);
+                        
+                        // Also update page title
+                        updatePageTitle();
                         
                         // Show brief success feedback
                         titleElement.style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
@@ -8942,17 +9339,17 @@
                     } else {
                         // Show error and restore original
                         alert(result.message);
-                        titleElement.textContent = `${originalNickname}的任务`;
+                        titleElement.textContent = formatDisplay(originalNickname);
                     }
                 } else {
                     // No change, just restore display
-                    titleElement.textContent = `${originalNickname}的任务`;
+                    titleElement.textContent = formatDisplay(originalNickname);
                 }
             };
             
             // Handle cancel on Escape key
             const handleCancel = () => {
-                titleElement.textContent = `${originalNickname}的任务`;
+                titleElement.textContent = formatDisplay(originalNickname);
             };
             
             // Event listeners
@@ -10077,216 +10474,6 @@
                 });
             }
             
-            // AI Suggestion button
-            const aiSuggestBtn = document.getElementById('aiSuggestBtn');
-            if (aiSuggestBtn) {
-                aiSuggestBtn.addEventListener('click', fetchAISuggestions);
-            }
-        }
-
-        // =====================================================
-        // AI Treasure Name Suggestions Feature
-        // =====================================================
-        
-        // Cache for AI suggestions to avoid repeated API calls (max 20 museums)
-        const aiSuggestionsCache = {};
-        const AI_CACHE_MAX_SIZE = 20;
-        
-        /**
-         * Add item to cache with size limit (LRU-style eviction)
-         * @param {string} key - Museum name
-         * @param {Array} value - Treasure suggestions
-         */
-        function addToAICache(key, value) {
-            const keys = Object.keys(aiSuggestionsCache);
-            if (keys.length >= AI_CACHE_MAX_SIZE) {
-                // Remove oldest entry (first key)
-                delete aiSuggestionsCache[keys[0]];
-            }
-            aiSuggestionsCache[key] = value;
-        }
-        
-        /**
-         * Load DeepSeek API script dynamically
-         * @returns {Promise<void>}
-         */
-        function loadDeepSeekAPI() {
-            return new Promise((resolve, reject) => {
-                if (typeof DeepSeekAPI !== 'undefined') {
-                    resolve();
-                    return;
-                }
-                
-                const script = document.createElement('script');
-                script.src = 'deepseek-api.js';
-                script.onload = () => {
-                    console.log('[AI Suggestions] DeepSeek API loaded successfully');
-                    resolve();
-                };
-                script.onerror = () => {
-                    console.error('[AI Suggestions] Failed to load DeepSeek API');
-                    reject(new Error('无法加载 AI 服务'));
-                };
-                document.head.appendChild(script);
-            });
-        }
-        
-        /**
-         * Fetch AI suggestions for treasure names
-         */
-        async function fetchAISuggestions() {
-            const suggestBtn = document.getElementById('aiSuggestBtn');
-            const suggestionsContainer = document.getElementById('aiSuggestionsContainer');
-            const loadingEl = document.getElementById('aiSuggestionLoading');
-            const errorEl = document.getElementById('aiSuggestionError');
-            const hintEl = document.getElementById('aiSuggestionHint');
-            
-            // Get current museum name
-            const museumName = currentMuseum ? currentMuseum.name : null;
-            
-            if (!museumName) {
-                showAISuggestionError('无法获取博物馆信息');
-                return;
-            }
-            
-            // Check cache first
-            if (aiSuggestionsCache[museumName]) {
-                console.log('[AI Suggestions] Using cached suggestions for:', museumName);
-                displayAISuggestions(aiSuggestionsCache[museumName]);
-                return;
-            }
-            
-            // Show loading state
-            suggestBtn.disabled = true;
-            loadingEl.classList.add('show');
-            suggestionsContainer.classList.remove('show');
-            errorEl.classList.remove('show');
-            hintEl.classList.add('hidden');
-            
-            try {
-                // Load DeepSeek API if not loaded
-                await loadDeepSeekAPI();
-                
-                // Check if API key is configured
-                const deepseekAPI = new DeepSeekAPI();
-                if (!deepseekAPI.hasApiKey()) {
-                    throw new Error('请先在主页设置中配置 DeepSeek API Key（点击主页右上角设置按钮）');
-                }
-                
-                // Validate museum name
-                if (!museumName.trim() || museumName.length > 100) {
-                    throw new Error('博物馆名称无效');
-                }
-                
-                console.log('[AI Suggestions] Fetching suggestions for:', museumName);
-                
-                // Call the API to generate treasures
-                const treasures = await deepseekAPI.generateTreasures(museumName);
-                
-                // Cache the results with size limit
-                addToAICache(museumName, treasures);
-                
-                // Display suggestions
-                displayAISuggestions(treasures);
-                
-            } catch (error) {
-                console.error('[AI Suggestions] Error:', error);
-                showAISuggestionError(error.message || 'AI 推荐失败，请稍后重试');
-            } finally {
-                // Hide loading state
-                loadingEl.classList.remove('show');
-                suggestBtn.disabled = false;
-            }
-        }
-        
-        /**
-         * Display AI suggestions as clickable buttons
-         * @param {Array<{name: string, description: string}>} treasures 
-         */
-        function displayAISuggestions(treasures) {
-            const container = document.getElementById('aiSuggestionsContainer');
-            const hintEl = document.getElementById('aiSuggestionHint');
-            
-            if (!treasures || treasures.length === 0) {
-                showAISuggestionError('AI 未能推荐镇馆之宝，请手动输入');
-                return;
-            }
-            
-            // Build suggestion buttons HTML
-            let html = '';
-            treasures.forEach((treasure, index) => {
-                const isExisting = treasureNameExists(treasure.name);
-                const disabledClass = isExisting ? 'disabled' : '';
-                const titleText = isExisting 
-                    ? '该镇馆之宝已存在' 
-                    : (treasure.description || '点击使用此名称');
-                
-                html += `
-                    <button type="button" 
-                            class="ai-suggestion-item ${disabledClass}" 
-                            data-name="${escapeHtml(treasure.name)}"
-                            data-description="${escapeHtml(treasure.description || '')}"
-                            title="${escapeHtml(titleText)}"
-                            ${isExisting ? 'disabled' : ''}>
-                        <span class="suggestion-icon">🏺</span>
-                        <span class="suggestion-name">${escapeHtml(treasure.name)}</span>
-                        ${isExisting ? '<span class="suggestion-exists">✓已有</span>' : ''}
-                    </button>
-                `;
-            });
-            
-            container.innerHTML = html;
-            container.classList.add('show');
-            hintEl.classList.add('hidden');
-            
-            // Add click handlers to suggestion buttons
-            container.querySelectorAll('.ai-suggestion-item:not(.disabled)').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    selectAISuggestion(this.dataset.name, this.dataset.description);
-                });
-            });
-        }
-        
-        /**
-         * Handle click on an AI suggestion
-         * @param {string} name - Treasure name
-         * @param {string} description - Treasure description
-         */
-        function selectAISuggestion(name, description) {
-            const nameInput = document.getElementById('newTreasureName');
-            if (nameInput) {
-                nameInput.value = name;
-                nameInput.focus();
-                
-                // Trigger validation
-                validateTreasureName(name);
-                
-                // Visual feedback
-                nameInput.classList.add('ai-filled');
-                setTimeout(() => {
-                    nameInput.classList.remove('ai-filled');
-                }, 500);
-            }
-            
-            console.log('[AI Suggestions] Selected:', name);
-        }
-        
-        /**
-         * Show error message in AI suggestion section
-         * @param {string} message 
-         */
-        function showAISuggestionError(message) {
-            const errorEl = document.getElementById('aiSuggestionError');
-            const hintEl = document.getElementById('aiSuggestionHint');
-            
-            if (errorEl) {
-                errorEl.textContent = '❌ ' + message;
-                errorEl.classList.add('show');
-            }
-            
-            if (hintEl) {
-                hintEl.classList.add('hidden');
-            }
         }
 
         // Helper function to escape HTML
