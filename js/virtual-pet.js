@@ -1277,6 +1277,7 @@ class VirtualPet {
                 const result = this.revivePet(points);
                 if (result.success) {
                     this.deductPoints(result.pointsUsed);
+                    this.updateUI(); // 扣积分后刷新UI显示正确的剩余积分
                     this.showPetMessage(result.message);
                 } else {
                     alert(result.message);
@@ -1292,6 +1293,7 @@ class VirtualPet {
                     const result = this.resetPet(points);
                     if (result.success) {
                         this.deductPoints(result.pointsUsed);
+                        this.updateUI(); // 扣积分后刷新UI显示正确的剩余积分
                         this.showPetMessage(result.message);
                     } else {
                         alert(result.message);
@@ -1312,6 +1314,7 @@ class VirtualPet {
                 const result = this.feedPet(points);
                 if (result.success) {
                     this.deductPoints(result.pointsUsed);
+                    this.updateUI(); // 扣积分后刷新UI显示正确的剩余积分
                     this.showPetMessage(result.message);
                 } else {
                     alert(result.message);
@@ -1325,6 +1328,7 @@ class VirtualPet {
                 const result = this.upgradeAttack(points);
                 if (result.success) {
                     this.deductPoints(result.pointsUsed);
+                    this.updateUI(); // 扣积分后刷新UI显示正确的剩余积分
                     this.showPetMessage(result.message);
                 } else {
                     alert(result.message);
@@ -1338,6 +1342,7 @@ class VirtualPet {
                 const result = this.upgradeDefense(points);
                 if (result.success) {
                     this.deductPoints(result.pointsUsed);
+                    this.updateUI(); // 扣积分后刷新UI显示正确的剩余积分
                     this.showPetMessage(result.message);
                 } else {
                     alert(result.message);
@@ -1353,6 +1358,7 @@ class VirtualPet {
                     const result = this.resetPet(points);
                     if (result.success) {
                         this.deductPoints(result.pointsUsed);
+                        this.updateUI(); // 扣积分后刷新UI显示正确的剩余积分
                         this.showPetMessage(result.message);
                     } else {
                         alert(result.message);
