@@ -7172,119 +7172,13 @@ class MuseumCheckApp {
 
     // Sort museums based on current sort preference
     sortMuseums(museums) {
-        // Phase 2.5: Use HomepageAdapter if available
+        // Delegate to HomepageAdapter (single source of truth for sorting)
         if (this.homepageAdapter) {
-            // IMPORTANT: Use the provided museums parameter, not all museums from adapter
-            // This ensures we sort ONLY the museums passed in (e.g., browsed museums for returning users)
-            console.log('🔍 [DEBUG] sortMuseums with HomepageAdapter:', {
-                museumsToSortCount: museums ? museums.length : 0,
-                adapterTotalCount: this.homepageAdapter.getFilteredMuseums().length
-            });
-            
-            // Fallback to manual sorting with the provided museums array
-            // instead of using adapter's getFilteredMuseums() which returns ALL museums
-            // Continue to fallback logic below
+            return this.homepageAdapter.sortMuseumsArray(museums, this.sortBy || 'default');
         }
         
-        // Fallback: Original sorting logic (backward compatibility)
-        const sorted = [...museums]; // Create a copy to avoid mutating original
-        
-        // When searching, always sort by recency (most recently browsed first)
-        if (this.searchQuery) {
-            sorted.sort((a, b) => {
-                const timeA = this.browsedMuseums[a.id] || 0;
-                const timeB = this.browsedMuseums[b.id] || 0;
-                if (timeA !== timeB) {
-                    return timeB - timeA; // Most recent first
-                }
-                // Fallback: alphabetical by name
-                return a.name.localeCompare(b.name, 'zh-CN');
-            });
-            return sorted;
-        }
-        
-        if (this.sortBy === 'default') {
-            // Comprehensive sorting: representative todos > favorites > fireworks > recency > unvisited > distance
-            sorted.sort((a, b) => {
-                // Priority -1: Museums with representative to-dos first
-                const aHasTodos = this.hasRepresentativeTodos(a.id);
-                const bHasTodos = this.hasRepresentativeTodos(b.id);
-                if (aHasTodos !== bHasTodos) {
-                    return bHasTodos ? 1 : -1;
-                }
-                // Priority 0: Favorite museums first
-                const aFavorite = this.favoriteMuseums.includes(a.id);
-                const bFavorite = this.favoriteMuseums.includes(b.id);
-                if (aFavorite !== bFavorite) {
-                    return bFavorite ? 1 : -1;
-                }
-                
-                // Priority 1: Museums with fireworks first
-                const aHasFireworks = this.hasFireworks(a.id);
-                const bHasFireworks = this.hasFireworks(b.id);
-                if (aHasFireworks !== bHasFireworks) {
-                    return bHasFireworks ? 1 : -1;
-                }
-                
-                // Priority 2: Sort by recency (most recently browsed first)
-                const timeA = this.browsedMuseums[a.id] || 0;
-                const timeB = this.browsedMuseums[b.id] || 0;
-                if (timeA !== timeB) {
-                    return timeB - timeA; // Most recent first
-                }
-                
-                // Priority 3: Unvisited museums first
-                const aVisited = this.visitedMuseums.includes(a.id);
-                const bVisited = this.visitedMuseums.includes(b.id);
-                if (aVisited !== bVisited) {
-                    return aVisited ? 1 : -1;
-                }
-                
-                // Priority 4: Closer museums first (if location available)
-                if (this.userLocation) {
-                    const aDist = this.getMuseumDistance(a);
-                    const bDist = this.getMuseumDistance(b);
-                    if (aDist !== bDist) {
-                        return aDist - bDist;
-                    }
-                }
-                
-                // Fallback: alphabetical by name
-                return a.name.localeCompare(b.name, 'zh-CN');
-            });
-        } else if (this.sortBy === 'name') {
-            // Sort by name alphabetically
-            sorted.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
-        } else if (this.sortBy === 'location') {
-            // Sort by location, then by name
-            sorted.sort((a, b) => {
-                const locCompare = a.location.localeCompare(b.location, 'zh-CN');
-                if (locCompare !== 0) return locCompare;
-                return a.name.localeCompare(b.name, 'zh-CN');
-            });
-        } else if (this.sortBy === 'visited') {
-            // Sort by visit status (unvisited first), then by name
-            sorted.sort((a, b) => {
-                const aVisited = this.visitedMuseums.includes(a.id);
-                const bVisited = this.visitedMuseums.includes(b.id);
-                if (aVisited !== bVisited) {
-                    return aVisited ? 1 : -1;
-                }
-                return a.name.localeCompare(b.name, 'zh-CN');
-            });
-        } else if (this.sortBy === 'distance') {
-            // Sort by distance (closest first), then by name
-            sorted.sort((a, b) => {
-                const aDist = this.getMuseumDistance(a);
-                const bDist = this.getMuseumDistance(b);
-                if (aDist !== bDist) {
-                    return aDist - bDist;
-                }
-                return a.name.localeCompare(b.name, 'zh-CN');
-            });
-        }
-        
-        return sorted;
+        // Fallback: simple alphabetical sort if adapter not available
+        return [...museums].sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
     }
 
     renderMuseums() {
@@ -7343,33 +7237,35 @@ class MuseumCheckApp {
                     resultsCount: museumsToRender.length
                 });
             }
-            // Returning users: show browsed museums sorted by recent browse time (only when NOT searching)
+            // Returning users: show browsed/visited museums sorted by recent activity time
             else if (isReturningUser) {
-                // Get visited museums (fully completed) - these come first (sorted by visitedMuseumsMeta)
-                const visitedMuseums = this.getVisitedMuseumsSorted();
-                
-                // Get browsed museums (just clicked the card) - these come after, sorted by browse time
+                // Combine visited and browsed museums, sorted by most recent activity
+                const visitMeta = this.loadVisitedMuseumsMeta() || {};
                 const browsedMuseumIds = Object.keys(this.browsedMuseums);
-                const browsedMuseumsNotVisited = browsedMuseumIds
-                    .filter(id => !this.visitedMuseums.includes(id))
+                const visitedMuseumIds = this.visitedMuseums || [];
+                
+                // Get all museums that user has interacted with
+                const interactedIds = [...new Set([...visitedMuseumIds, ...browsedMuseumIds])];
+                const interactedMuseums = interactedIds
                     .map(id => MUSEUMS.find(m => m.id === id))
                     .filter(m => m) // Remove any undefined
                     .sort((a, b) => {
-                        const timeA = this.browsedMuseums[a.id] || 0;
-                        const timeB = this.browsedMuseums[b.id] || 0;
+                        // Use the most recent time between visit and browse
+                        const visitTimeA = visitMeta[a.id] || 0;
+                        const browseTimeA = this.browsedMuseums[a.id] || 0;
+                        const visitTimeB = visitMeta[b.id] || 0;
+                        const browseTimeB = this.browsedMuseums[b.id] || 0;
+                        const timeA = Math.max(visitTimeA, browseTimeA);
+                        const timeB = Math.max(visitTimeB, browseTimeB);
                         return timeB - timeA; // Most recent first
                     });
                 
-                // Combine: visited museums (fully completed) first, then browsed (partial)
-                museumsToRender = [...visitedMuseums, ...browsedMuseumsNotVisited];
+                museumsToRender = interactedMuseums;
                 
                 console.log('🔍 [DEBUG] Returning User Display:', {
-                    visitedMuseumsCount: visitedMuseums.length,
-                    visitedMuseumIds: visitedMuseums.map(m => m.id),
-                    browsedMuseumIds: browsedMuseumIds,
-                    browsedMuseumsNotVisitedCount: browsedMuseumsNotVisited.length,
-                    browsedMuseumsNotVisitedIds: browsedMuseumsNotVisited.map(m => m.id),
-                    totalToRender: museumsToRender.length,
+                    visitedMuseumsCount: visitedMuseumIds.length,
+                    browsedMuseumsCount: browsedMuseumIds.length,
+                    totalInteracted: interactedMuseums.length,
                     totalInMUSEUMS: MUSEUMS.length
                 });
             }
@@ -7425,8 +7321,8 @@ class MuseumCheckApp {
                 }
             }
 
-            // Sort museums before rendering
-            const sortedMuseums = this.sortMuseums(museumsToRender);
+            // Sort museums before rendering (skip for returning users - already sorted by activity time)
+            const sortedMuseums = isReturningUser ? museumsToRender : this.sortMuseums(museumsToRender);
 
             sortedMuseums.forEach(museum => {
                 const isVisited = this.visitedMuseums.includes(museum.id);
