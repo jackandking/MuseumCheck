@@ -211,8 +211,8 @@ const UtilityFunctions = {
     generateRandomNickname: () => {
         // Generate UUID and take a substring to create unique but shorter nickname
         const uuid = UtilityFunctions.generateUUID();
-        // Take last 8 characters of UUID (without hyphens) for uniqueness
-        const shortId = uuid.replace(/-/g, '').slice(-8);
+        // Take last 6 characters of UUID (without hyphens) for shorter display
+        const shortId = uuid.replace(/-/g, '').slice(-6);
         return `用户${shortId}`;
     },
     
@@ -3996,7 +3996,6 @@ class MuseumCheckApp {
         this.sortBy = this.loadSortPreference(); // Load sorting preference
         this.userLocation = null; // Will be set if user grants location permission
         this.assessmentHidden = !this.loadAssessmentVisibility(); // Load from settings, default to hidden
-        this.manageButtonHidden = !this.loadManageButtonVisibility(); // Load from settings, default to hidden
         this.guideButtonHidden = !this.loadGuideButtonVisibility(); // Load from settings, default to hidden
         this.childModeEnabled = this.loadChildModeEnabled(); // Load child mode setting
         this.readonlyCheckboxes = false; // Default to interactive checkboxes
@@ -4106,19 +4105,13 @@ class MuseumCheckApp {
         // Update header title with child nickname
         this.updateHeaderTitle();
 
-        // Show a one-time gentle tip for first-time users
-        if (!this.hasSetNickname()) {
-            this.showNicknameTip();
-        }
+        // Nickname tip removed - now using onboarding modal instead
         
         // Update dynamic museum count displays
         this.updateDynamicMuseumCounts();
         
         // Apply assessment visibility setting
         this.applyAssessmentVisibility();
-        
-        // Apply management button visibility setting
-        this.applyManageButtonVisibility();
         
         // Apply guide button visibility setting
         this.applyGuideButtonVisibility();
@@ -5122,23 +5115,6 @@ class MuseumCheckApp {
                     // Track assessment visibility change
                     this.trackEvent('assessment_visibility_changed', {
                         'show_assessment': showAssessment,
-                        'auto_saved': true
-                    });
-                }
-            });
-        }
-
-        // Management button visibility toggle
-        const showManageButtonToggle = document.getElementById('showManageButtonToggle');
-        if (showManageButtonToggle) {
-            showManageButtonToggle.addEventListener('change', (e) => {
-                const showManageButton = e.target.checked;
-                const result = this.saveManageButtonVisibility(showManageButton);
-                
-                if (result.success) {
-                    // Track manage button visibility change
-                    this.trackEvent('manage_button_visibility_changed', {
-                        'show_manage_button': showManageButton,
                         'auto_saved': true
                     });
                 }
@@ -6168,38 +6144,6 @@ class MuseumCheckApp {
             body.classList.add('hide-assessments');
         } else {
             body.classList.remove('hide-assessments');
-        }
-    }
-
-    loadManageButtonVisibility() {
-        try {
-            const saved = localStorage.getItem('showManageButton');
-            // Default to false (hidden) if not saved
-            return saved === 'true';
-        } catch (error) {
-            console.error('Failed to load manage button visibility:', error);
-            return false; // Default to hidden
-        }
-    }
-
-    saveManageButtonVisibility(showManageButton) {
-        try {
-            localStorage.setItem('showManageButton', showManageButton ? 'true' : 'false');
-            this.manageButtonHidden = !showManageButton;
-            this.applyManageButtonVisibility();
-            return { success: true, message: '显示设置已保存' };
-        } catch (error) {
-            console.error('Failed to save manage button visibility:', error);
-            return { success: false, message: '保存失败，请重试' };
-        }
-    }
-
-    applyManageButtonVisibility() {
-        const body = document.body;
-        if (this.manageButtonHidden) {
-            body.classList.add('hide-manage-buttons');
-        } else {
-            body.classList.remove('hide-manage-buttons');
         }
     }
 
@@ -7365,7 +7309,6 @@ class MuseumCheckApp {
                             <div class="museum-info">
                                 <h3>
                                     ${museum.name}
-                                    <button class="museum-manage-button" data-museum="${museum.id}" title="管理博物馆数据">🔧 管理</button>
                                     ${isVisited && !this.assessmentHidden 
                                         ? (hasAssessment 
                                             ? '<span class="assessment-label" aria-disabled="true" title="已完成亲子测评">🧡 已完成</span>'
@@ -7386,7 +7329,6 @@ class MuseumCheckApp {
                 card.addEventListener('click', (e) => {
                     if (!e.target.classList.contains('visit-checkbox') && 
                         !e.target.classList.contains('assessment-button') &&
-                        !e.target.classList.contains('museum-manage-button') &&
                         !e.target.classList.contains('favorite-button')) {
                         // Mark museum as browsed
                         this.markMuseumAsBrowsed(museum.id);
@@ -7419,23 +7361,6 @@ class MuseumCheckApp {
                     assessmentButton.addEventListener('click', (e) => {
                         e.stopPropagation();
                         this.openAssessmentModal(museum.id);
-                    });
-                }
-
-                // Add manage button event
-                const manageButton = card.querySelector('.museum-manage-button');
-                if (manageButton) {
-                    manageButton.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        // Navigate to museum-data-manager.html with museum ID parameter
-                        window.location.href = `museum-data-manager.html?museum=${encodeURIComponent(museum.id)}`;
-                        
-                        // Track event
-                        this.trackEvent('museum_manage_opened', {
-                            'museum_id': museum.id,
-                            'museum_name': museum.name,
-                            'museum_location': museum.location
-                        });
                     });
                 }
 
@@ -10645,8 +10570,9 @@ class MuseumCheckApp {
     }
 
     renderSettingsInfo() {
-        // Update museum count
-        document.getElementById('museumCountSettings').textContent = MUSEUMS.length;
+        // Update museum count (element may not exist if settings section removed)
+        const museumCountEl = document.getElementById('museumCountSettings');
+        if (museumCountEl) museumCountEl.textContent = MUSEUMS.length;
         
         // Update child nickname input
         const nicknameInput = document.getElementById('childNicknameInput');
@@ -10721,12 +10647,6 @@ class MuseumCheckApp {
         const showAssessmentToggle = document.getElementById('showAssessmentToggle');
         if (showAssessmentToggle) {
             showAssessmentToggle.checked = !this.assessmentHidden;
-        }
-
-        // Update management button visibility toggle
-        const showManageButtonToggle = document.getElementById('showManageButtonToggle');
-        if (showManageButtonToggle) {
-            showManageButtonToggle.checked = !this.manageButtonHidden;
         }
 
         // Update guide button visibility toggle - REMOVED (setting deleted)
@@ -15118,21 +15038,48 @@ class MuseumCheckApp {
             );
             
             if (doubleConfirmed) {
-                // Clear all localStorage data
+                // Clear all localStorage data (preserve: childNickname, user_id)
                 localStorage.removeItem('visitedMuseums');
                 localStorage.removeItem('museumChecklists');
                 localStorage.removeItem('taskPhotos');
                 localStorage.removeItem('ageGroup');
                 localStorage.removeItem('assessmentResults');
-                localStorage.removeItem('assessmentProgress'); // Clear assessment progress
-                localStorage.removeItem('fireworks'); // Clear fireworks data
-                localStorage.removeItem('museumCheckFireworks'); // Clear shared fireworks data
+                localStorage.removeItem('assessmentProgress');
+                localStorage.removeItem('fireworks');
+                localStorage.removeItem('museumCheckFireworks');
                 
-                // Clear museum checkin page data (museumCheckin_* keys)
+                // Clear additional data that was previously missed
+                localStorage.removeItem('assessment_history');
+                localStorage.removeItem('current_assessment_progress');
+                localStorage.removeItem('virtualPetData');
+                localStorage.removeItem('browsedMuseums');
+                localStorage.removeItem('analytics_events');
+                localStorage.removeItem('visit_count');
+                localStorage.removeItem('lastSubmittedVisitCount');
+                localStorage.removeItem('lastSubmittedXP');
+                localStorage.removeItem('lastSubmittedPetPower');
+                localStorage.removeItem('fireworksRetentionTime');
+                
+                // Clear gamification data
+                localStorage.removeItem('gamificationXP');
+                localStorage.removeItem('gamificationStreak');
+                localStorage.removeItem('gamificationAchievements');
+                localStorage.removeItem('gamificationSettings');
+                localStorage.removeItem('museumcheck_xp_data');
+                
+                // Clear additional user data
+                localStorage.removeItem('museumPosters');
+                localStorage.removeItem('nicknameHasBeenSet');
+                
+                // Clear prefixed keys (museumCheckin_*, mc_*, museum-cache-*)
                 const keysToRemove = [];
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
-                    if (key && key.startsWith('museumCheckin_')) {
+                    if (key && (
+                        key.startsWith('museumCheckin_') || 
+                        key.startsWith('mc_') ||
+                        key.startsWith('museum-cache-')
+                    )) {
                         keysToRemove.push(key);
                     }
                 }
@@ -15491,12 +15438,80 @@ document.addEventListener('DOMContentLoaded', () => {
     window.app = new MuseumCheckApp();
     try { window.museumCheck = window.app; } catch(e) {}
     
+    // Show nickname onboarding modal for first-time users
+    setTimeout(() => {
+        showNicknameOnboardingModalIfNeeded();
+    }, 1000);
+    
     // 响应式更新汉堡菜单显示状态
     function updateMobileMenuVisibility() {
         const mobileMenuButton = document.getElementById('mobileMenuButton');
+        const isMobile = window.innerWidth <= 480;
+        
         if (mobileMenuButton) {
-            const isMobile = window.innerWidth <= 768;
-            mobileMenuButton.style.display = isMobile ? 'flex' : 'none';
+            const isTablet = window.innerWidth <= 768;
+            mobileMenuButton.style.display = isTablet ? 'flex' : 'none';
+        }
+        
+        // 移动端标题样式优化
+        if (isMobile) {
+            const header = document.querySelector('header');
+            const h1 = document.querySelector('header h1');
+            const title = document.getElementById('headerTitle');
+            const menuBtn = document.querySelector('.menu-button');
+            const settingsBtn = document.querySelector('.settings-button');
+            
+            if (header) {
+                header.style.padding = '6px 0';
+                header.style.marginBottom = '10px';
+            }
+            if (h1) {
+                h1.style.padding = '0 2px';
+                h1.style.gap = '2px';
+            }
+            if (title) {
+                title.style.fontSize = '14px';
+                title.style.whiteSpace = 'nowrap';
+            }
+            if (menuBtn) {
+                menuBtn.style.width = '22px';
+                menuBtn.style.height = '22px';
+                menuBtn.style.minWidth = '22px';
+                menuBtn.style.padding = '1px';
+            }
+            if (settingsBtn) {
+                settingsBtn.style.width = '22px';
+                settingsBtn.style.height = '22px';
+                settingsBtn.style.minWidth = '22px';
+                settingsBtn.style.padding = '1px';
+                settingsBtn.style.background = 'transparent';
+                const svg = settingsBtn.querySelector('svg');
+                if (svg) svg.style.background = 'transparent';
+            }
+            if (menuBtn) {
+                menuBtn.style.background = 'transparent';
+                const svg = menuBtn.querySelector('svg');
+                if (svg) svg.style.background = 'transparent';
+            }
+            // 添加移动端按钮样式覆盖
+            if (!document.getElementById('mobileButtonStyles')) {
+                const style = document.createElement('style');
+                style.id = 'mobileButtonStyles';
+                style.textContent = `
+                    @media (max-width: 480px) {
+                        .menu-button, .settings-button,
+                        .menu-button:hover, .settings-button:hover,
+                        .menu-button:active, .settings-button:active,
+                        .menu-button:focus, .settings-button:focus {
+                            background: transparent !important;
+                            background-color: transparent !important;
+                            box-shadow: none !important;
+                            border: none !important;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
         }
         
         // 同步烟花按钮状态
@@ -15507,5 +15522,74 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 初始化和窗口 resize 时更新
     updateMobileMenuVisibility();
+    // 延迟再执行一次确保样式应用
+    setTimeout(updateMobileMenuVisibility, 100);
     window.addEventListener('resize', updateMobileMenuVisibility);
 });
+
+// Show nickname onboarding modal for first-time users (homepage)
+function showNicknameOnboardingModalIfNeeded() {
+    // Check if user has already set nickname
+    const hasSetNickname = localStorage.getItem('nicknameHasBeenSet') === 'true';
+    if (hasSetNickname) return;
+    
+    const modal = document.getElementById('nicknameOnboardingModal');
+    const input = document.getElementById('onboardingNicknameInput');
+    const confirmBtn = document.getElementById('confirmOnboardingNickname');
+    const skipBtn = document.getElementById('skipOnboardingNickname');
+    
+    if (!modal) return;
+    
+    // Show modal
+    modal.style.display = 'flex';
+    
+    // Focus input after a short delay
+    setTimeout(() => {
+        if (input) input.focus();
+    }, 100);
+    
+    // Handle confirm button
+    const handleConfirm = () => {
+        const nickname = input.value.trim();
+        if (nickname) {
+            localStorage.setItem('childNickname', nickname);
+            // Update page title if function exists
+            if (window.app && window.app.updateUserDisplay) {
+                window.app.updateUserDisplay();
+            }
+        }
+        // Mark as set
+        localStorage.setItem('nicknameHasBeenSet', 'true');
+        closeOnboardingModal();
+        // Refresh page title display
+        location.reload();
+    };
+    
+    // Handle skip button
+    const handleSkip = () => {
+        // Mark as set so we don't show again
+        localStorage.setItem('nicknameHasBeenSet', 'true');
+        closeOnboardingModal();
+    };
+    
+    // Close modal function
+    const closeOnboardingModal = () => {
+        modal.style.display = 'none';
+        // Clean up event listeners
+        confirmBtn.removeEventListener('click', handleConfirm);
+        skipBtn.removeEventListener('click', handleSkip);
+        input.removeEventListener('keydown', handleKeydown);
+    };
+    
+    // Handle enter key
+    const handleKeydown = (e) => {
+        if (e.key === 'Enter') {
+            handleConfirm();
+        }
+    };
+    
+    // Add event listeners
+    confirmBtn.addEventListener('click', handleConfirm);
+    skipBtn.addEventListener('click', handleSkip);
+    input.addEventListener('keydown', handleKeydown);
+}

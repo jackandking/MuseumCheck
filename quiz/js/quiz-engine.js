@@ -17,9 +17,26 @@ class QuizEngine {
      * @param {string} museumId - Museum ID (null for random mode)
      * @param {string} ageGroup - Age group
      * @param {string} mode - 'normal', 'daily', 'random', 'wrong'
-     * @returns {Object} Session object
+     * @returns {Object} Session object or error object if blocked
      */
     startSession(museumId, ageGroup = '7-12', mode = 'normal') {
+        // Check if questions are exhausted (all answered, no wrong questions)
+        // Skip this check for 'wrong' mode since that's specifically for reviewing mistakes
+        if (mode !== 'wrong' && typeof QuizLimit !== 'undefined' && typeof QuizData !== 'undefined') {
+            const totalQuestions = QuizData.getAllAvailableQuestions(ageGroup).length;
+            const wrongCount = this.getWrongQuestions(true).length;
+            const exhaustedStatus = QuizLimit.checkQuestionsExhausted(ageGroup, totalQuestions, wrongCount);
+            
+            if (exhaustedStatus.exhausted) {
+                return {
+                    blocked: true,
+                    reason: 'questions_exhausted',
+                    title: '今日题目已全部完成',
+                    message: '太棒了！你今天已经把所有题目都答过了，而且没有错题需要复习。\n\n去探索新的博物馆，明天会有更多题目哦~ 🎉'
+                };
+            }
+        }
+        
         let questions = [];
         
         if (mode === 'daily') {
@@ -87,7 +104,15 @@ class QuizEngine {
         }
         
         const isCorrect = answerIndex === question.correctAnswer;
-        const points = isCorrect ? question.points : 0;
+        
+        // Check daily limit - no points if limit exceeded
+        let canEarnPoints = true;
+        if (typeof QuizLimit !== 'undefined') {
+            const limitStatus = QuizLimit.checkDailyLimit(this.currentSession.ageGroup);
+            canEarnPoints = limitStatus.canEarnPoints;
+        }
+        
+        const points = (isCorrect && canEarnPoints) ? question.points : 0;
         
         // Update streak
         if (isCorrect) {
@@ -107,9 +132,9 @@ class QuizEngine {
             this.currentSession.correctCount++;
         }
         
-        // Calculate points with streak bonus
+        // Calculate points with streak bonus (only if can earn points)
         let earnedPoints = points;
-        if (isCorrect && this.currentSession.streak >= 5) {
+        if (isCorrect && canEarnPoints && this.currentSession.streak >= 5) {
             // Bonus for 5+ streak
             earnedPoints += 10;
         }
@@ -126,12 +151,18 @@ class QuizEngine {
             timestamp: Date.now()
         });
         
+        // Record question ID for daily deduplication
+        if (typeof QuizLimit !== 'undefined') {
+            QuizLimit.recordAnsweredQuestion(question.id, this.currentSession.ageGroup);
+        }
+        
         return {
             isCorrect: isCorrect,
             correctAnswer: question.correctAnswer,
             points: earnedPoints,
             explanation: question.explanation,
-            streak: this.currentSession.streak
+            streak: this.currentSession.streak,
+            canEarnPoints: canEarnPoints
         };
     }
     
