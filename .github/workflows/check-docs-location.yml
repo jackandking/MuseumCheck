@@ -64,3 +64,40 @@ jobs:
       - name: 📊 运行完整检查（含已存在文件）
         run: |
           bash scripts/check-docs-location.sh
+      
+      - name: 📧 发送失败通知
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const sha = context.sha;
+            const runId = context.runId;
+            
+            // 创建 issue 通知失败
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title: '🚨 Workflow 失败通知: 文档位置检查',
+              body: `## 📝 文档位置检查 Workflow 失败
+              
+              **触发事件**: ${{ github.event_name }}
+              **分支**: ${{ github.ref }}
+              **提交**: ${sha}
+              **Workflow 运行**: #${runId}
+              
+              ### 🔗 相关链接
+              - [查看 Workflow 运行](${{ github.server_url }}/${owner}/${repo}/actions/runs/${runId})
+              - [查看提交详情](${{ github.server_url }}/${owner}/${repo}/commit/${sha})
+              
+              ### 📋 检查内容
+              - 检查根目录是否有违规的 MD 文件
+              - 验证文档是否在正确的目录结构中
+              
+              请及时检查并修复相关问题。
+              
+              ---
+              *此 issue 由 workflow 自动创建*`,
+              labels: ['bug', 'workflow-failure', 'docs']
+            });
