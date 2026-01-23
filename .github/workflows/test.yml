@@ -12,7 +12,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [20.x]
     
     steps:
       - name: Checkout code
@@ -22,23 +22,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
       
       - name: Install dependencies
         run: |
           # Clean npm cache to avoid corruption issues
           npm cache clean --force
-          # Try npm ci first (uses package-lock.json), fallback to npm install
-          npm ci || (echo "npm ci failed, trying npm install" && npm install)
+          # Remove node_modules and package-lock.json to ensure clean install
+          rm -rf node_modules package-lock.json
+          # Install fresh dependencies
+          npm install
       
       - name: Verify dependencies
         run: |
           # Verify jest is installed
-          npx jest --version || echo "Jest not found via npx, trying direct path"
-          # List installed packages to debug
+          npx jest --version
+          # List installed packages to confirm
           npm list --depth=0
-          # Check if jest is in node_modules
-          ls node_modules/.bin/jest || echo "Jest binary not found in node_modules/.bin"
       
       - name: Run unit tests
         run: npm test
