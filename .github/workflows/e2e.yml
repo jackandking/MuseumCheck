@@ -25,7 +25,11 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm ci
+        run: |
+          # Clean npm cache to avoid corruption issues
+          npm cache clean --force
+          # Try npm ci first, fallback to npm install if it fails
+          npm ci || npm install
       
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -62,7 +66,11 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm ci
+        run: |
+          # Clean npm cache to avoid corruption issues
+          npm cache clean --force
+          # Try npm ci first, fallback to npm install if it fails
+          npm ci || npm install
       
       - name: Install Playwright browsers
         run: npx playwright install --with-deps ${{ matrix.browser }}
