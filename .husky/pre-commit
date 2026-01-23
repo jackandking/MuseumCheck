@@ -29,6 +29,24 @@ fi
 echo "✅ All tests passed!"
 echo ""
 
+# ====== Run quick page verification ======
+echo "🚀 Running quick page verification..."
+if ! npm run verify:pages:simple --silent 2>/dev/null; then
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "❌ COMMIT BLOCKED: Page verification failed"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Run 'npm run verify:pages:simple' to see detailed failures."
+    echo ""
+    echo "Or bypass this check (NOT RECOMMENDED):"
+    echo "  git commit --no-verify"
+    echo ""
+    exit 1
+fi
+echo "✅ Page verification passed!"
+echo ""
+
 # ====== Run data quality checks ======
 echo "📊 Running data quality checks..."
 if ! npm run test:data-quality --silent 2>/dev/null; then
