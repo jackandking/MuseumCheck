@@ -26,6 +26,16 @@ check_file_placement() {
     local dirname=$(dirname "$file")
     
     case "$file" in
+        # 特殊目录例外 - GitHub Copilot Skills必须在特定位置
+        ".github/copilot-skills/"*)
+            return 0
+            ;;
+        
+        # 临时文件例外 - regression-results已在gitignore中
+        "regression-results/"*)
+            return 0
+            ;;
+        
         # 根目录允许的文件
         "README.md"|"CHANGELOG.md"|"CONTRIBUTING.md"|"LICENSE.md"|\
         "package.json"|".gitignore"|"CNAME"|"robots.txt"|\

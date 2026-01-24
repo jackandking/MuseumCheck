@@ -89,7 +89,7 @@ POST /image/search
 
 ### 启动 Mock API
 ```bash
-node mock-api-server.js
+node scripts/mock-api-server.js
 ```
 
 ### 启动本地服务器

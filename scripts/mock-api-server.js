@@ -1,6 +1,6 @@
 /**
  * Mock API Server for Local Development
- * Run with: node mock-api-server.js
+ * Run with: node scripts/mock-api-server.js
  * Provides mock endpoints that were previously on letmetry.cloud
  */
 

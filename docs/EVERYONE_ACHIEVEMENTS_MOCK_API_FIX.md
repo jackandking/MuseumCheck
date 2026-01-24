@@ -74,7 +74,7 @@ if (sql && sql.includes('achievement_posters')) {
 
 1. **启动 Mock API 服务器**：
    ```bash
-   node mock-api-server.js
+   node scripts/mock-api-server.js
    ```
 
 2. **启动本地服务器**：

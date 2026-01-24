@@ -8,7 +8,7 @@ echo "1. 检查 Mock API 服务器状态..."
 if curl -s http://localhost:3000/health > /dev/null; then
     echo "✅ Mock API 服务器运行正常"
 else
-    echo "❌ Mock API 服务器未运行，请先启动: node mock-api-server.js"
+    echo "❌ Mock API 服务器未运行，请先启动: node scripts/mock-api-server.js"
     exit 1
 fi
 

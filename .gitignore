@@ -5,6 +5,7 @@ node_modules/
 coverage/
 .nyc_output/
 test-results/
+regression-results/
 
 # Temporary files
 .tmp/
