@@ -48,6 +48,12 @@ class GameManager {
         if (typeof UnifiedTankBattleGame !== 'undefined' && !this.gameClasses.has('tank-battle')) {
             this.registerGame('tank-battle', UnifiedTankBattleGame);
         }
+        if (typeof UnifiedSpaceInvadersGame !== 'undefined' && !this.gameClasses.has('space-invaders')) {
+            this.registerGame('space-invaders', UnifiedSpaceInvadersGame);
+        }
+        if (typeof UnifiedSnakeGame !== 'undefined' && !this.gameClasses.has('snake')) {
+            this.registerGame('snake', UnifiedSnakeGame);
+        }
     }
     
     /**
@@ -71,16 +77,18 @@ class GameManager {
         if (typeof UnifiedTankBattleGame !== 'undefined') {
             this.registerGame('tank-battle', UnifiedTankBattleGame);
         }
-        
-        // For now, register placeholder classes that wrap existing functions for other games
-        this.registerGame('shooting', ShootingGameWrapper);
-        this.registerGame('space-invaders', SpaceInvadersGameWrapper);
-        this.registerGame('minesweeper', MinesweeperGameWrapper);
-        this.registerGame('snake', SnakeGameWrapper);
+        if (typeof UnifiedSpaceInvadersGame !== 'undefined') {
+            this.registerGame('space-invaders', UnifiedSpaceInvadersGame);
+        }
+        if (typeof UnifiedSnakeGame !== 'undefined') {
+            this.registerGame('snake', UnifiedSnakeGame);
+        }
         
         const registeredGames = [];
         if (typeof UnifiedMazeGame !== 'undefined') registeredGames.push('maze');
         if (typeof UnifiedTankBattleGame !== 'undefined') registeredGames.push('tank-battle');
+        if (typeof UnifiedSpaceInvadersGame !== 'undefined') registeredGames.push('space-invaders');
+        if (typeof UnifiedSnakeGame !== 'undefined') registeredGames.push('snake');
         
         console.log(`GameManager: Registered unified games - ${registeredGames.join(', ')} (new), others (wrappers)`);
     }
@@ -298,42 +306,6 @@ class MazeGameWrapper extends GameWrapper {
         super(gameType, config);
         if (typeof initMazeGame === 'function') {
             this.setOldFunctions(initMazeGame, resetMaze, closeMazeGame);
-        }
-    }
-}
-
-class ShootingGameWrapper extends GameWrapper {
-    constructor(gameType, config) {
-        super(gameType, config);
-        if (typeof initShootingGame === 'function') {
-            this.setOldFunctions(initShootingGame, resetShootingGame, closeShootingGame);
-        }
-    }
-}
-
-class SpaceInvadersGameWrapper extends GameWrapper {
-    constructor(gameType, config) {
-        super(gameType, config);
-        if (typeof initSpaceInvadersGame === 'function') {
-            this.setOldFunctions(initSpaceInvadersGame, resetSpaceInvadersGame, closeSpaceInvadersGame);
-        }
-    }
-}
-
-class MinesweeperGameWrapper extends GameWrapper {
-    constructor(gameType, config) {
-        super(gameType, config);
-        if (typeof initMinesweeperGame === 'function') {
-            this.setOldFunctions(initMinesweeperGame, resetMinesweeper, closeMinesweeperGame);
-        }
-    }
-}
-
-class SnakeGameWrapper extends GameWrapper {
-    constructor(gameType, config) {
-        super(gameType, config);
-        if (typeof initSnakeGame === 'function') {
-            this.setOldFunctions(initSnakeGame, resetSnake, closeSnakeGame);
         }
     }
 }

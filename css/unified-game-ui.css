@@ -512,6 +512,143 @@
     background: #45a049;
 }
 
+.snake-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3000;
+    background: rgba(5, 5, 10, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.snake-overlay.show {
+    display: flex;
+}
+
+.snake-header {
+    text-align: center;
+    color: #76FF03;
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px rgba(118, 255, 3, 0.6);
+}
+
+.snake-title {
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.snake-stats {
+    font-size: 18px;
+    color: #E0E0E0;
+}
+
+.snake-container {
+    background: #0b0b0f;
+    padding: 15px;
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.snake-canvas {
+    border: 2px solid rgba(118, 255, 3, 0.5);
+    border-radius: 12px;
+    max-width: 90vw;
+    max-height: 60vh;
+}
+
+.snake-hint {
+    margin-top: 12px;
+    color: #B3E5FC;
+    font-size: 14px;
+    text-align: center;
+}
+
+.snake-touch-controls {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.snake-touch-row {
+    display: flex;
+    gap: 12px;
+}
+
+.snake-touch-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    color: #FFF;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(6px);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.snake-touch-btn:active {
+    transform: scale(0.95);
+    background: rgba(118, 255, 3, 0.3);
+}
+
+.snake-touch-btn.empty {
+    visibility: hidden;
+}
+
+.snake-buttons {
+    margin-top: 18px;
+    display: flex;
+    gap: 12px;
+}
+
+.snake-button {
+    padding: 10px 20px;
+    border-radius: 999px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.snake-button-reset {
+    background: linear-gradient(135deg, #00C853, #B2FF59);
+    color: #0b0b0f;
+}
+
+.snake-button-continue {
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFF;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.snake-button:hover {
+    transform: translateY(-2px);
+}
+
+.snake-complete-message {
+    margin-top: 12px;
+    color: #FFF;
+    font-size: 18px;
+    display: none;
+}
+
+.snake-complete-message.show {
+    display: block;
+}
+
 /* Mobile optimizations */
 @media (max-width: 768px) {
     .tank-battle-container {

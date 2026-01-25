@@ -25,10 +25,8 @@ coreFiles.forEach(({ file, name, status }) => {
 // 检查游戏迁移状态
 const games = [
     { name: 'maze', unified: 'UnifiedMazeGame', wrapper: 'MazeGameWrapper', file: 'unified-maze-game.js', status: '✅ 已迁移' },
-    { name: 'shooting', unified: 'UnifiedShootingGame', wrapper: 'ShootingGameWrapper', file: 'unified-shooting-game.js', status: '⏳ 待迁移' },
     { name: 'space-invaders', unified: 'UnifiedSpaceInvadersGame', wrapper: 'SpaceInvadersGameWrapper', file: 'unified-space-invaders-game.js', status: '⏳ 待迁移' },
     { name: 'tank-battle', unified: 'UnifiedTankBattleGame', wrapper: 'TankBattleGameWrapper', file: 'unified-tank-battle-game.js', status: '✅ 已迁移' },
-    { name: 'minesweeper', unified: 'UnifiedMinesweeperGame', wrapper: 'MinesweeperGameWrapper', file: 'unified-minesweeper-game.js', status: '⏳ 待迁移' },
     { name: 'snake', unified: 'UnifiedSnakeGame', wrapper: 'SnakeGameWrapper', file: 'unified-snake-game.js', status: '⏳ 待迁移' }
 ];
 
@@ -60,7 +58,7 @@ try {
     console.log(`${!tankBattleWrapper ? '✅' : '⚠️'} 坦克大战 - 无TankBattleGameWrapper (正确)`);
     
     // 检查其他游戏注册
-    const otherGames = ['maze', 'shooting', 'space-invaders', 'minesweeper', 'snake'];
+    const otherGames = ['maze', 'space-invaders', 'snake'];
     otherGames.forEach(game => {
         const wrapperName = game.charAt(0).toUpperCase() + game.slice(1).replace('-', '') + 'Wrapper';
         const isRegistered = gameManagerCode.includes(`this.registerGame('${game}', ${wrapperName})`);

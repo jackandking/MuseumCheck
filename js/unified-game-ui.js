@@ -66,10 +66,8 @@ class UnifiedGameUI {
         const baseSizes = {
             puzzle: { min: 280, max: 400, aspectRatio: 1 },
             maze: { min: 280, max: 500, aspectRatio: 1 },
-            shooting: { min: 300, max: 600, aspectRatio: 4/3 },
             'space-invaders': { min: 300, max: 600, aspectRatio: 4/3 },
             'tank-battle': { min: 300, max: 600, aspectRatio: 4/3 },
-            minesweeper: { min: 280, max: 400, aspectRatio: 1 },
             snake: { min: 300, max: 500, aspectRatio: 1 }
         };
 
