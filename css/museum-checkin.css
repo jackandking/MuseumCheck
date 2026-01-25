@@ -1212,6 +1212,8 @@
 
         .puzzle-grid.size-3 {
             grid-template-columns: repeat(3, 1fr);
+            width: 360px;
+            height: 360px;
         }
 
         .puzzle-tile {
@@ -1222,6 +1224,10 @@
             cursor: pointer;
             transition: transform 0.15s ease;
             border: 2px solid #e9ecef;
+        }
+
+        .puzzle-grid.size-3 .puzzle-tile {
+            background-size: 360px 360px;
         }
 
         .puzzle-tile:hover:not(.empty) {

@@ -1785,27 +1785,45 @@
                 const taskIndexForGame = currentTaskIndex;
                 const gameType = selectRandomGame();
                 setTimeout(() => {
-                    if (gameType === 'puzzle') {
-                        initPuzzleGame(taskPhotos[taskIndexForGame], taskIndexForGame);
-                    } else if (gameType === 'maze') {
-                        initMazeGame(taskIndexForGame);
-                    } else if (gameType === 'shooting') {
-                        initShootingGame(taskIndexForGame);
-                    } else if (gameType === 'space-invaders') {
-                        initSpaceInvadersGame(taskIndexForGame);
-                    } else if (gameType === 'tank-battle') {
-                        initTankBattleGame(taskIndexForGame);
-                    } else if (gameType === 'snake') {
-                        // Open snake inline overlay instead of new window
-                        if (typeof initSnakeInlineGame === 'function') {
-                            initSnakeInlineGame(taskIndexForGame);
-                        } else {
-                            // Inline snake not available — skip opening new window to keep user in flow
-                            console.warn('initSnakeInlineGame not available');
+                    // Try new unified architecture first, fallback to old system
+                    if (typeof GameManager !== 'undefined') {
+                        // Use new unified game system
+                        const options = {};
+                        if (gameType === 'puzzle') {
+                            const photoUrl = taskPhotos[taskIndexForGame];
+                            if (photoUrl) {
+                                options.imageUrl = photoUrl;
+                                console.log(`[Puzzle] Using photo for task ${taskIndexForGame}: ${photoUrl.substring(0, 50)}...`);
+                            } else {
+                                console.warn(`[Puzzle] No photo found for task ${taskIndexForGame}, available keys: ${Object.keys(taskPhotos)}`);
+                            }
                         }
+                        
+                        GameManager.startGame(gameType, taskIndexForGame, options);
                     } else {
-                        // Default to minesweeper
-                        initMinesweeperGame(taskIndexForGame);
+                        // Fallback to old system
+                        if (gameType === 'puzzle') {
+                            initPuzzleGame(taskPhotos[taskIndexForGame], taskIndexForGame);
+                        } else if (gameType === 'maze') {
+                            initMazeGame(taskIndexForGame);
+                        } else if (gameType === 'shooting') {
+                            initShootingGame(taskIndexForGame);
+                        } else if (gameType === 'space-invaders') {
+                            initSpaceInvadersGame(taskIndexForGame);
+                        } else if (gameType === 'tank-battle') {
+                            initTankBattleGame(taskIndexForGame);
+                        } else if (gameType === 'snake') {
+                            // Open snake inline overlay instead of new window
+                            if (typeof initSnakeInlineGame === 'function') {
+                                initSnakeInlineGame(taskIndexForGame);
+                            } else {
+                                // Inline snake not available — skip opening new window to keep user in flow
+                                console.warn('initSnakeInlineGame not available');
+                            }
+                        } else {
+                            // Default to minesweeper
+                            initMinesweeperGame(taskIndexForGame);
+                        }
                     }
                 }, 800);
             }
@@ -4024,7 +4042,14 @@
                 if (typeof isDebugMode === 'function' && !isDebugMode()) {
                     resetPuzzleBtn.onclick = closePuzzleGame;
                 } else {
-                    resetPuzzleBtn.onclick = resetPuzzle;
+                    // Check if new game system is available
+                    if (typeof GameManager !== 'undefined' && GameManager.getCurrentGame()) {
+                        // Let the new system handle the button
+                        console.log('Using new game system for reset button');
+                    } else {
+                        // Fall back to old system
+                        resetPuzzleBtn.onclick = resetPuzzle;
+                    }
                 }
             }
 
