@@ -20,6 +20,7 @@ class BaseGame {
         this.endTime = null;
         this.sessionId = null;
         this.isDebugMode = typeof isDebugMode === 'function' && isDebugMode();
+        this.animationId = null;
         
         // UI elements
         this.overlay = null;
@@ -32,6 +33,9 @@ class BaseGame {
             reset: this.reset.bind(this),
             keydown: this.handleKeydown.bind(this)
         };
+
+        // Tracked event listeners for automatic cleanup
+        this.trackedEventListeners = [];
     }
     
     /**
@@ -88,10 +92,9 @@ class BaseGame {
         this.startTime = Date.now();
         this.score = 0;
         
-        // Hide complete message
-        if (this.completeMessage) {
-            this.completeMessage.classList.remove('show');
-        }
+        // Hide completion message and show overlay
+        this.hideCompletionMessage();
+        this.showOverlay();
         
         // Update reset button visibility
         this.updateResetButton();
@@ -158,10 +161,8 @@ class BaseGame {
         this.startTime = null;
         this.endTime = null;
         
-        // Hide complete message
-        if (this.completeMessage) {
-            this.completeMessage.classList.remove('show');
-        }
+        // Hide completion message
+        this.hideCompletionMessage();
         
         // Game-specific reset logic
         this.onReset();
@@ -179,9 +180,10 @@ class BaseGame {
         this.state = 'idle';
         
         // Hide overlay
-        if (this.overlay) {
-            this.overlay.classList.remove('show');
-        }
+        this.hideOverlay();
+
+        // Stop any running animation loop
+        this.cancelAnimationLoop();
         
         // Cleanup event listeners
         this.cleanupEventListeners();
@@ -259,6 +261,9 @@ class BaseGame {
         
         // Game-specific cleanup
         this.cleanupGameEvents();
+
+        // Remove tracked listeners
+        this.removeTrackedEventListeners();
     }
     
     /**
@@ -318,6 +323,87 @@ class BaseGame {
         // Play completion sound
         if (typeof playFireworkSound === 'function') {
             playFireworkSound();
+        }
+    }
+
+    /**
+     * Show the overlay element
+     */
+    showOverlay() {
+        if (this.overlay) {
+            this.overlay.classList.add('show');
+        }
+    }
+
+    /**
+     * Hide the overlay element
+     */
+    hideOverlay() {
+        if (this.overlay) {
+            this.overlay.classList.remove('show');
+        }
+    }
+
+    /**
+     * Hide completion message if visible
+     */
+    hideCompletionMessage() {
+        if (this.completeMessage) {
+            this.completeMessage.classList.remove('show');
+        }
+    }
+
+    /**
+     * Show completion message with custom updater
+     * @param {Function} updater - Receives completion element for custom updates
+     */
+    showCustomCompletionMessage(updater) {
+        if (!this.completeMessage) return;
+        if (typeof updater === 'function') {
+            updater(this.completeMessage);
+        }
+        this.completeMessage.classList.add('show');
+    }
+
+    /**
+     * Update a field within completion message
+     * @param {string} selector
+     * @param {string|number} value
+     */
+    updateCompletionField(selector, value) {
+        if (!this.completeMessage || !selector) return;
+        const element = this.completeMessage.querySelector(selector);
+        if (element) {
+            element.textContent = value;
+        }
+    }
+
+    /**
+     * Track event listeners for cleanup
+     */
+    addTrackedEventListener(target, eventName, handler, options) {
+        if (!target || !eventName || typeof handler !== 'function') return;
+        target.addEventListener(eventName, handler, options);
+        this.trackedEventListeners.push({ target, eventName, handler, options });
+    }
+
+    /**
+     * Remove all tracked listeners
+     */
+    removeTrackedEventListeners() {
+        this.trackedEventListeners.forEach(({ target, eventName, handler, options }) => {
+            target.removeEventListener(eventName, handler, options);
+        });
+        this.trackedEventListeners = [];
+    }
+
+    /**
+     * Cancel animation loop if active
+     */
+    cancelAnimationLoop() {
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
         }
     }
     

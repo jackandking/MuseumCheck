@@ -865,6 +865,11 @@
         // Render task cards
         function renderTasks() {
             const taskGrid = document.getElementById('taskGrid');
+            if (!taskGrid) {
+                console.warn('Task grid element not found, skipping renderTasks');
+                return;
+            }
+            
             taskGrid.innerHTML = '';
 
             if (childTasks.length === 0) {
@@ -1778,40 +1783,29 @@
             checkCompletion();
 
             // Show game as reward if photo was uploaded and setting is enabled
-            // Randomly select between puzzle game, maze game, shooting game, space invaders, and tank battle
+            // Randomly select between maze game, shooting game, space invaders, and tank battle
             if (showGame) {
                 // Delay slightly to let fireworks animation start
                 // Store current task index for closure
                 const taskIndexForGame = currentTaskIndex;
                 const gameType = selectRandomGame();
+                const options = {}; // Initialize options for GameManager
+                
                 setTimeout(() => {
                     // Try new unified architecture first, fallback to old system
                     if (typeof GameManager !== 'undefined') {
-                        // Use new unified game system
-                        const options = {};
-                        if (gameType === 'puzzle') {
-                            const photoUrl = taskPhotos[taskIndexForGame];
-                            if (photoUrl) {
-                                options.imageUrl = photoUrl;
-                                console.log(`[Puzzle] Using photo for task ${taskIndexForGame}: ${photoUrl.substring(0, 50)}...`);
-                            } else {
-                                console.warn(`[Puzzle] No photo found for task ${taskIndexForGame}, available keys: ${Object.keys(taskPhotos)}`);
-                            }
-                        }
-                        
                         GameManager.startGame(gameType, taskIndexForGame, options);
                     } else {
                         // Fallback to old system
-                        if (gameType === 'puzzle') {
-                            initPuzzleGame(taskPhotos[taskIndexForGame], taskIndexForGame);
-                        } else if (gameType === 'maze') {
+                        if (gameType === 'maze') {
                             initMazeGame(taskIndexForGame);
                         } else if (gameType === 'shooting') {
                             initShootingGame(taskIndexForGame);
                         } else if (gameType === 'space-invaders') {
                             initSpaceInvadersGame(taskIndexForGame);
                         } else if (gameType === 'tank-battle') {
-                            initTankBattleGame(taskIndexForGame);
+                            // Use new unified architecture
+                            GameManager.startGame(gameType, taskIndexForGame, options);
                         } else if (gameType === 'snake') {
                             // Open snake inline overlay instead of new window
                             if (typeof initSnakeInlineGame === 'function') {
@@ -1985,13 +1979,19 @@
             const total = childTasks.length;
             const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-            // Update text
-            document.getElementById('completedCount').textContent = completed;
+            // Update text - with null check
+            const completedCountElement = document.getElementById('completedCount');
+            if (completedCountElement) {
+                completedCountElement.textContent = completed;
+            }
             
-            // Update progress bar
-            document.getElementById('progressFill').style.width = percentage + '%';
+            // Update progress bar - with null check
+            const progressFillElement = document.getElementById('progressFill');
+            if (progressFillElement) {
+                progressFillElement.style.width = percentage + '%';
+            }
             
-            // Update stars display
+            // Update stars display - with null check
             const starsContainer = document.getElementById('progressStars');
             if (starsContainer && total > 0) {
                 let starsHTML = '';
@@ -4078,22 +4078,82 @@
             // Maze direction buttons
             const mazeUpBtn = document.getElementById('mazeUp');
             if (mazeUpBtn) {
-                mazeUpBtn.onclick = () => movePlayer(0, -1);
+                mazeUpBtn.onclick = () => {
+                    // Check if new game system is active
+                    if (typeof GameManager !== 'undefined' && GameManager.isGameActive() && GameManager.getCurrentGame()?.gameType === 'maze') {
+                        // Use new system movement
+                        const currentGame = GameManager.getCurrentGame();
+                        const currentPos = currentGame.playerPos;
+                        const newPos = { x: currentPos.x, y: currentPos.y - 1 };
+                        
+                        if (currentGame.canMoveTo(newPos.x, newPos.y)) {
+                            currentGame.movePlayer(newPos.x, newPos.y);
+                        }
+                        return;
+                    }
+                    // Fall back to old system
+                    movePlayer(0, -1);
+                };
             }
 
             const mazeDownBtn = document.getElementById('mazeDown');
             if (mazeDownBtn) {
-                mazeDownBtn.onclick = () => movePlayer(0, 1);
+                mazeDownBtn.onclick = () => {
+                    // Check if new game system is active
+                    if (typeof GameManager !== 'undefined' && GameManager.isGameActive() && GameManager.getCurrentGame()?.gameType === 'maze') {
+                        // Use new system movement
+                        const currentGame = GameManager.getCurrentGame();
+                        const currentPos = currentGame.playerPos;
+                        const newPos = { x: currentPos.x, y: currentPos.y + 1 };
+                        
+                        if (currentGame.canMoveTo(newPos.x, newPos.y)) {
+                            currentGame.movePlayer(newPos.x, newPos.y);
+                        }
+                        return;
+                    }
+                    // Fall back to old system
+                    movePlayer(0, 1);
+                };
             }
 
             const mazeLeftBtn = document.getElementById('mazeLeft');
             if (mazeLeftBtn) {
-                mazeLeftBtn.onclick = () => movePlayer(-1, 0);
+                mazeLeftBtn.onclick = () => {
+                    // Check if new game system is active
+                    if (typeof GameManager !== 'undefined' && GameManager.isGameActive() && GameManager.getCurrentGame()?.gameType === 'maze') {
+                        // Use new system movement
+                        const currentGame = GameManager.getCurrentGame();
+                        const currentPos = currentGame.playerPos;
+                        const newPos = { x: currentPos.x - 1, y: currentPos.y };
+                        
+                        if (currentGame.canMoveTo(newPos.x, newPos.y)) {
+                            currentGame.movePlayer(newPos.x, newPos.y);
+                        }
+                        return;
+                    }
+                    // Fall back to old system
+                    movePlayer(-1, 0);
+                };
             }
 
             const mazeRightBtn = document.getElementById('mazeRight');
             if (mazeRightBtn) {
-                mazeRightBtn.onclick = () => movePlayer(1, 0);
+                mazeRightBtn.onclick = () => {
+                    // Check if new game system is active
+                    if (typeof GameManager !== 'undefined' && GameManager.isGameActive() && GameManager.getCurrentGame()?.gameType === 'maze') {
+                        // Use new system movement
+                        const currentGame = GameManager.getCurrentGame();
+                        const currentPos = currentGame.playerPos;
+                        const newPos = { x: currentPos.x + 1, y: currentPos.y };
+                        
+                        if (currentGame.canMoveTo(newPos.x, newPos.y)) {
+                            currentGame.movePlayer(newPos.x, newPos.y);
+                        }
+                        return;
+                    }
+                    // Fall back to old system
+                    movePlayer(1, 0);
+                };
             }
 
             // Shooting game controls
@@ -5826,8 +5886,8 @@
         }
 
         // ===== Individual Game Settings =====
-        // All games enabled by default
-        const ALL_GAMES = ['puzzle', 'maze', 'shooting', 'space-invaders', 'tank-battle', 'minesweeper', 'snake'];
+        // All games enabled by default (puzzle removed for better child experience)
+        const ALL_GAMES = ['maze', 'shooting', 'space-invaders', 'tank-battle', 'minesweeper', 'snake'];
 
         function loadEnabledGames() {
             try {

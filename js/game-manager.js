@@ -9,6 +9,9 @@
  * - Backward compatibility layer
  */
 
+// Import unified game classes (will be available when scripts are loaded)
+// Note: These classes are loaded via separate script tags in HTML
+
 class GameManager {
     static games = new Map();
     static currentGame = null;
@@ -21,11 +24,30 @@ class GameManager {
     static init() {
         if (this.initialized) return;
         
-        // Register built-in game classes
+        console.log('GameManager: Initializing...');
+        
+        // Register built-in games
         this.registerBuiltinGames();
         
+        // Try to register unified games if they are available
+        this.tryRegisterUnifiedGames();
+        
         this.initialized = true;
-        console.log('GameManager initialized with games:', Array.from(this.gameClasses.keys()));
+        
+        const gameTypes = Array.from(this.gameClasses.keys());
+        console.log(`GameManager initialized with games: [${gameTypes.join(', ')}]`);
+    }
+    
+    /**
+     * Try to register unified games if they are available
+     */
+    static tryRegisterUnifiedGames() {
+        if (typeof UnifiedMazeGame !== 'undefined' && !this.gameClasses.has('maze')) {
+            this.registerGame('maze', UnifiedMazeGame);
+        }
+        if (typeof UnifiedTankBattleGame !== 'undefined' && !this.gameClasses.has('tank-battle')) {
+            this.registerGame('tank-battle', UnifiedTankBattleGame);
+        }
     }
     
     /**
@@ -43,17 +65,24 @@ class GameManager {
      */
     static registerBuiltinGames() {
         // Register migrated games with new unified architecture
-        this.registerGame('puzzle', UnifiedPuzzleGame);
+        if (typeof UnifiedMazeGame !== 'undefined') {
+            this.registerGame('maze', UnifiedMazeGame);
+        }
+        if (typeof UnifiedTankBattleGame !== 'undefined') {
+            this.registerGame('tank-battle', UnifiedTankBattleGame);
+        }
         
         // For now, register placeholder classes that wrap existing functions for other games
-        this.registerGame('maze', MazeGameWrapper);
         this.registerGame('shooting', ShootingGameWrapper);
         this.registerGame('space-invaders', SpaceInvadersGameWrapper);
-        this.registerGame('tank-battle', TankBattleGameWrapper);
         this.registerGame('minesweeper', MinesweeperGameWrapper);
         this.registerGame('snake', SnakeGameWrapper);
         
-        console.log('GameManager: Registered games - puzzle (new), others (wrappers)');
+        const registeredGames = [];
+        if (typeof UnifiedMazeGame !== 'undefined') registeredGames.push('maze');
+        if (typeof UnifiedTankBattleGame !== 'undefined') registeredGames.push('tank-battle');
+        
+        console.log(`GameManager: Registered unified games - ${registeredGames.join(', ')} (new), others (wrappers)`);
     }
     
     /**
@@ -286,16 +315,7 @@ class SpaceInvadersGameWrapper extends GameWrapper {
     constructor(gameType, config) {
         super(gameType, config);
         if (typeof initSpaceInvadersGame === 'function') {
-            this.setOldFunctions(initSpaceInvadersGame, null, closeSpaceInvadersGame);
-        }
-    }
-}
-
-class TankBattleGameWrapper extends GameWrapper {
-    constructor(gameType, config) {
-        super(gameType, config);
-        if (typeof initTankBattleGame === 'function') {
-            this.setOldFunctions(initTankBattleGame, resetTankBattleGame, closeTankBattleGame);
+            this.setOldFunctions(initSpaceInvadersGame, resetSpaceInvadersGame, closeSpaceInvadersGame);
         }
     }
 }

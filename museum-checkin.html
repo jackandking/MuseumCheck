@@ -560,10 +560,6 @@
                     <label class="settings-label">选择可奖励的小游戏：</label>
                     <div class="game-selection-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
                         <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
-                            <input type="checkbox" id="gameTogglePuzzle" class="game-toggle" data-game="puzzle" checked>
-                            <span>🧩 拼图</span>
-                        </label>
-                        <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
                             <input type="checkbox" id="gameToggleMaze" class="game-toggle" data-game="maze" checked>
                             <span>🏃 迷宫</span>
                         </label>
@@ -710,7 +706,7 @@
     </div>
 
     <!-- Tank Battle (坦克大战) Game Overlay -->
-    <div class="tank-battle-overlay" id="tankBattleOverlay">
+    <div class="tank-battle-overlay" id="tank-battleGameOverlay">
         <div class="tank-battle-header">
             <div class="tank-battle-title">🎖️ 坦克大战 🎖️</div>
             <div class="tank-battle-stats">
@@ -720,28 +716,37 @@
         <div class="tank-battle-container">
             <canvas class="tank-battle-canvas" id="tankBattleCanvas" width="320" height="320"></canvas>
         </div>
-        <div class="tank-battle-hint">使用方向键移动坦克，空格键发射炮弹！</div>
-        <div class="tb-touch-controls" id="tbTouchControls">
-            <div class="tb-dpad">
-                <button class="tb-dpad-btn empty"></button>
-                <button class="tb-dpad-btn" id="tbUpBtn">⬆️</button>
-                <button class="tb-dpad-btn empty"></button>
-                <button class="tb-dpad-btn" id="tbLeftBtn">⬅️</button>
-                <button class="tb-dpad-btn empty"></button>
-                <button class="tb-dpad-btn" id="tbRightBtn">➡️</button>
-                <button class="tb-dpad-btn empty"></button>
-                <button class="tb-dpad-btn" id="tbDownBtn">⬇️</button>
-                <button class="tb-dpad-btn empty"></button>
+        <div class="tank-controls">
+            <div class="tank-controls-row">
+                <button class="tank-control-btn empty"></button>
+                <button class="tank-control-btn" id="tbUpBtn">⬆️</button>
+                <button class="tank-control-btn empty"></button>
             </div>
-            <button class="tb-touch-btn tb-fire-btn" id="tbFireBtn">💥</button>
+            <div class="tank-controls-row">
+                <button class="tank-control-btn" id="tbLeftBtn">⬅️</button>
+                <button class="tank-control-btn empty"></button>
+                <button class="tank-control-btn" id="tbRightBtn">➡️</button>
+            </div>
+            <div class="tank-controls-row">
+                <button class="tank-control-btn empty"></button>
+                <button class="tank-control-btn" id="tbDownBtn">⬇️</button>
+                <button class="tank-control-btn empty"></button>
+            </div>
+            <div class="tank-controls-row">
+                <button class="tank-control-btn empty"></button>
+                <button class="tank-control-btn" id="tbFireBtn">🔥</button>
+                <button class="tank-control-btn empty"></button>
+            </div>
         </div>
-        <div class="tank-battle-buttons">
-            <button class="tank-battle-button tank-battle-button-reset" id="resetTankBattle">🔄 重新开始</button>
-            <button class="tank-battle-button tank-battle-button-continue" id="exitTankBattle">继续游览 ➡️</button>
+        <div style="margin-top: 10px;">
+            <button id="exitTankBattle">退出游戏</button>
+            <button id="resetTankBattle" style="display: none;">重新开始</button>
         </div>
-        <div class="tank-battle-complete-message" id="tankBattleCompleteMessage">
-            🎉 胜利！得分：<span id="tbFinalScore">0</span>
-        </div>
+    </div>
+    <div class="tank-battle-complete-message" id="tank-battleCompleteMessage">
+        <h2>游戏结束！</h2>
+        <p>最终得分：<span id="tbFinalScore">0</span></p>
+        <button onclick="closeTankBattleGame()">关闭</button>
     </div>
 
     <!-- Minesweeper (扫雷) Game Overlay -->
@@ -798,7 +803,10 @@
     <!-- Unified Game Architecture -->
     <script src="js/base-game.js"></script>
     <script src="js/game-manager.js"></script>
-    <script src="js/unified-puzzle-game.js"></script>
+    <script src="js/unified-maze-game.js"></script>
+    <script src="js/unified-tank-battle-game.js"></script>
+    <script src="js/unified-game-ui.js"></script>
+    <link rel="stylesheet" href="css/unified-game-ui.css">
     
     <!-- Shared Menu Component -->
     <script src="js/shared-menu.js"></script>

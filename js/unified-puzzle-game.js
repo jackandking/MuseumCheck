@@ -133,6 +133,114 @@ class UnifiedPuzzleGame extends BaseGame {
             
             console.log(`[${this.gameType}] Reset button rebound to new system`);
         }
+        
+        // Optimize UI using UnifiedGameUI
+        this.optimizeUI();
+        
+        // Listen for viewport changes
+        this.setupViewportListener();
+    }
+    
+    /**
+     * Optimize game UI using UnifiedGameUI
+     */
+    optimizeUI() {
+        if (typeof window !== 'undefined' && window.UnifiedGameUI) {
+            const ui = window.UnifiedGameUI;
+            
+            // Optimize game container
+            const size = ui.optimizeGameUI(
+                this.gameType,
+                '.puzzle-container',
+                '.puzzle-title',
+                '.puzzle-buttons'
+            );
+            
+            // Apply puzzle-specific optimizations
+            this.applyPuzzleOptimizations(size);
+            
+            console.log(`[${this.gameType}] UI optimized: ${size.width}x${size.height}`);
+        } else {
+            console.warn(`[${this.gameType}] UnifiedGameUI not available, using fallback sizing`);
+            this.applyFallbackSizing();
+        }
+    }
+    
+    /**
+     * Apply puzzle-specific optimizations
+     */
+    applyPuzzleOptimizations(size) {
+        // Update grid size based on available space
+        if (this.puzzleSize === 3) {
+            // 3x3 puzzle can use more space
+            const optimalGridSize = Math.min(size.width, 400);
+            this.grid.style.width = `${optimalGridSize}px`;
+            this.grid.style.height = `${optimalGridSize}px`;
+            
+            // Update tile size
+            const tileSize = Math.floor(optimalGridSize / 3);
+            const tiles = this.grid.querySelectorAll('.puzzle-tile');
+            tiles.forEach(tile => {
+                tile.style.width = `${tileSize}px`;
+                tile.style.height = `${tileSize}px`;
+            });
+            
+            console.log(`[${this.gameType}] 3x3 puzzle optimized: ${optimalGridSize}px, tile: ${tileSize}px`);
+        } else {
+            // 2x2 puzzle
+            const optimalGridSize = Math.min(size.width, 320);
+            this.grid.style.width = `${optimalGridSize}px`;
+            this.grid.style.height = `${optimalGridSize}px`;
+            
+            // Update tile size
+            const tileSize = Math.floor(optimalGridSize / 2);
+            const tiles = this.grid.querySelectorAll('.puzzle-tile');
+            tiles.forEach(tile => {
+                tile.style.width = `${tileSize}px`;
+                tile.style.height = `${tileSize}px`;
+            });
+            
+            console.log(`[${this.gameType}] 2x2 puzzle optimized: ${optimalGridSize}px, tile: ${tileSize}px`);
+        }
+    }
+    
+    /**
+     * Fallback sizing when UnifiedGameUI is not available
+     */
+    applyFallbackSizing() {
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const isMobile = viewportWidth <= 768;
+        const isSmallMobile = viewportWidth <= 360;
+        
+        let maxGridSize = Math.min(viewportWidth - 60, viewportHeight - 200);
+        
+        if (isSmallMobile) {
+            maxGridSize = Math.min(maxGridSize, 280);
+        } else if (isMobile) {
+            maxGridSize = Math.min(maxGridSize, 320);
+        } else {
+            maxGridSize = Math.min(maxGridSize, 400);
+        }
+        
+        // Apply size to grid
+        this.grid.style.width = `${maxGridSize}px`;
+        this.grid.style.height = `${maxGridSize}px`;
+        
+        console.log(`[${this.gameType}] Fallback sizing: grid=${maxGridSize}px`);
+    }
+    
+    /**
+     * Setup viewport change listener
+     */
+    setupViewportListener() {
+        this.viewportHandler = (event) => {
+            console.log(`[${this.gameType}] Viewport changed, re-optimizing UI`);
+            this.optimizeUI();
+            this.renderPuzzle(); // Re-render with new size
+        };
+        
+        window.addEventListener('gameViewportResize', this.viewportHandler);
     }
     
     /**
@@ -166,6 +274,18 @@ class UnifiedPuzzleGame extends BaseGame {
             // Image is loaded, completely reinitialize
             this.initializePuzzle();
             console.log(`[${this.gameType}] Puzzle reset completed (image already loaded)`);
+        }
+    }
+    
+    /**
+     * Game-specific cleanup
+     */
+    onCleanup() {
+        console.log(`[${this.gameType}] Cleaning up puzzle game...`);
+        
+        // Remove viewport listener
+        if (this.viewportHandler) {
+            window.removeEventListener('gameViewportResize', this.viewportHandler);
         }
     }
     
