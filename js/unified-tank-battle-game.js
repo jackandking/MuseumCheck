@@ -46,9 +46,9 @@ class UnifiedTankBattleGame extends BaseGame {
         this.TANK_SIZE = 28;
         this.BULLET_SIZE = 6;
         this.PLAYER_SPEED = 2.5;
-        this.ENEMY_SPEED = 1.2;
-        this.ENEMY_FIRE_COOLDOWN = 2500;
-        this.ENEMY_RANDOM_FIRE_CHANCE = 0.015;
+        this.ENEMY_SPEED = 0.9;
+        this.ENEMY_FIRE_COOLDOWN = 3500;
+        this.ENEMY_RANDOM_FIRE_CHANCE = 0.008;
         
         // Colors
         this.COLORS = {
@@ -108,15 +108,15 @@ class UnifiedTankBattleGame extends BaseGame {
     determineDifficulty(taskIndex) {
         if (taskIndex === 0) {
             return {
-                lives: 5,
-                enemyCount: 3,
-                wallCount: 6
+                lives: 6,
+                enemyCount: 2,
+                wallCount: 4
             };
         } else {
             return {
-                lives: 3,
-                enemyCount: 5,
-                wallCount: 10
+                lives: 4,
+                enemyCount: 4,
+                wallCount: 8
             };
         }
     }
@@ -569,10 +569,17 @@ class UnifiedTankBattleGame extends BaseGame {
         // Simple aiming: fire towards player general area
         const dx = this.player.x - enemy.x;
         const dy = this.player.y - enemy.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        bullet.vx = (dx / distance) * 4;
-        bullet.vy = (dy / distance) * 4;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+        const speed = 4;
+
+        if (absDx > absDy) {
+            bullet.vx = dx > 0 ? speed : -speed;
+            bullet.vy = 0;
+        } else {
+            bullet.vx = 0;
+            bullet.vy = dy > 0 ? speed : -speed;
+        }
         
         this.enemyBullets.push(bullet);
     }
