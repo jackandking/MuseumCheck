@@ -1738,6 +1738,7 @@
 
             const hasPhoto = !!taskPhotos[currentTaskIndex];
             const gameRewardEnabled = loadGameRewardSetting();
+            // Show game reward only if photo was uploaded and setting is enabled
             const showGame = hasPhoto && gameRewardEnabled;
 
             completedTasks.add(currentTaskIndex);
@@ -1801,11 +1802,9 @@
             // Upload firework to remote
             uploadFireworkEvent(currentTaskIndex);
             
-            // Check if all tasks complete
-            checkCompletion();
-
-            // Show game as reward if photo was uploaded and setting is enabled
+            // Show game as reward if setting is enabled
             // Present 3 random games for the user to choose
+            // IMPORTANT: Do this BEFORE checkCompletion to avoid any interruption
             if (showGame) {
                 // Delay slightly to let fireworks animation start
                 const taskIndexForGame = currentTaskIndex;
@@ -1815,6 +1814,9 @@
                     showGameChoiceOverlay(taskIndexForGame, options);
                 }, 800);
             }
+            
+            // Check if all tasks complete (do this after scheduling game reward)
+            checkCompletion();
         }
 
         // Celebrate with fireworks animation
@@ -6005,6 +6007,7 @@
             const overlay = document.getElementById('gameChoiceOverlay');
             const grid = document.getElementById('gameChoiceGrid');
             const skipBtn = document.getElementById('gameChoiceSkip');
+            
             if (!overlay || !grid) {
                 // Fallback to auto selection if overlay missing
                 const gameType = selectRandomGame();
@@ -6060,6 +6063,8 @@
 
             overlay.classList.add('show');
             overlay.setAttribute('aria-hidden', 'false');
+            // Clear any inline styles to let CSS take effect
+            overlay.style.cssText = '';
         }
 
         // Listen for game completion messages from iframe games
@@ -6243,4 +6248,11 @@
         window.addEventListener('DOMContentLoaded', function() {
             init();
             initFullscreenViewer();
+            
+            // Ensure game choice overlay is hidden on page load
+            const gameChoiceOverlay = document.getElementById('gameChoiceOverlay');
+            if (gameChoiceOverlay) {
+                gameChoiceOverlay.classList.remove('show');
+                gameChoiceOverlay.setAttribute('aria-hidden', 'true');
+            }
         });
