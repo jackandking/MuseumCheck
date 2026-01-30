@@ -11,6 +11,7 @@ class GameLauncher {
     constructor(options = {}) {
         this.baseUrl = options.baseUrl || '/games/';
         this.games = {
+            'maze': 'maze.html',
             'tank-battle': 'tank-battle.html',
             'space-invaders': 'space-invaders.html',
             'snake': 'snake.html'

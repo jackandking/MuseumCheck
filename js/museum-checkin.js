@@ -1658,27 +1658,27 @@
         }
 
         // Complete a task
-        function loadPuzzleGameSetting() {
+        function loadGameRewardSetting() {
             try {
-                const saved = localStorage.getItem('puzzleGameEnabled');
-                return saved === 'true';
+                const saved = localStorage.getItem('gameRewardEnabled');
+                return saved === null ? true : saved === 'true';
             } catch (error) {
-                console.error('Failed to load puzzle game setting:', error);
+                console.error('Failed to load game reward setting:', error);
                 return true;
             }
         }
 
-        function savePuzzleGameSetting(enabled) {
+        function saveGameRewardSetting(enabled) {
             try {
-                localStorage.setItem('puzzleGameEnabled', enabled ? 'true' : 'false');
+                localStorage.setItem('gameRewardEnabled', enabled ? 'true' : 'false');
             } catch (error) {
-                console.error('Failed to save puzzle game setting:', error);
+                console.error('Failed to save game reward setting:', error);
             }
         }
 
         // Expose helpers for any global handlers that expect them
-        window.loadPuzzleGameSetting = loadPuzzleGameSetting;
-        window.savePuzzleGameSetting = savePuzzleGameSetting;
+        window.loadGameRewardSetting = loadGameRewardSetting;
+        window.saveGameRewardSetting = saveGameRewardSetting;
 
         async function completeTask() {
             if (currentTaskIndex === null) return;
@@ -1737,8 +1737,8 @@
             }
 
             const hasPhoto = !!taskPhotos[currentTaskIndex];
-            const puzzleEnabled = loadPuzzleGameSetting();
-            const showGame = hasPhoto && puzzleEnabled;
+            const gameRewardEnabled = loadGameRewardSetting();
+            const showGame = hasPhoto && gameRewardEnabled;
 
             completedTasks.add(currentTaskIndex);
             saveCompletedTasks();
@@ -4010,11 +4010,11 @@
                 };
             }
 
-            // Puzzle game settings toggle
-            const puzzleToggle = document.getElementById('puzzleGameToggle');
-            if (puzzleToggle) {
-                puzzleToggle.addEventListener('change', (e) => {
-                    savePuzzleGameSetting(e.target.checked);
+            // Game reward settings toggle
+            const gameRewardToggle = document.getElementById('gameRewardToggle');
+            if (gameRewardToggle) {
+                gameRewardToggle.addEventListener('change', (e) => {
+                    saveGameRewardSetting(e.target.checked);
                     updateGameSelectionVisibility(e.target.checked);
                 });
             }
@@ -4024,34 +4024,6 @@
             gameToggles.forEach(toggle => {
                 toggle.addEventListener('change', handleGameToggleChange);
             });
-
-            // Puzzle game controls
-            const exitPuzzleBtn = document.getElementById('exitPuzzle');
-            if (exitPuzzleBtn) {
-                exitPuzzleBtn.onclick = () => window.closeUnifiedGame();
-            }
-
-            const resetPuzzleBtn = document.getElementById('resetPuzzle');
-            if (resetPuzzleBtn) {
-                if (typeof isDebugMode === 'function' && !isDebugMode()) {
-                    resetPuzzleBtn.onclick = () => window.closeUnifiedGame();
-                } else {
-                    // Check if new game system is available
-                    if (typeof GameManager !== 'undefined' && GameManager.getCurrentGame()) {
-                        // Let the new system handle the button
-                        console.log('Using new game system for reset button');
-                    } else {
-                        // Fall back to old system
-                        resetPuzzleBtn.onclick = resetPuzzle;
-                    }
-                }
-            }
-
-            const toggleRefBtn = document.getElementById('toggleReference');
-            if (toggleRefBtn) {
-                // Reference image toggling is handled by the unified puzzle game
-                // toggleRefBtn.onclick = toggleReferenceImage;
-            }
 
             // Maze game controls
             const exitMazeBtn = document.getElementById('exitMaze');
@@ -5810,11 +5782,11 @@
                 ageGroupSelector.value = ageGroup;
             }
 
-            // Load puzzle game toggle state
-            const puzzleGameEnabled = loadPuzzleGameSetting();
-            const puzzleToggle = document.getElementById('puzzleGameToggle');
-            if (puzzleToggle) {
-                puzzleToggle.checked = puzzleGameEnabled;
+            // Load game reward toggle state
+            const gameRewardEnabled = loadGameRewardSetting();
+            const gameRewardToggle = document.getElementById('gameRewardToggle');
+            if (gameRewardToggle) {
+                gameRewardToggle.checked = gameRewardEnabled;
             }
 
             // Initialize treasure check-in configuration for parent mode
@@ -5827,7 +5799,7 @@
             updateGameSelectionUI();
             
             // Update game selection visibility based on main toggle
-            updateGameSelectionVisibility(puzzleGameEnabled);
+            updateGameSelectionVisibility(gameRewardEnabled);
 
             // Show modal
             document.getElementById('settingsModal').classList.add('show');
@@ -6021,6 +5993,14 @@
             'snake': { name: '贪食蛇', icon: '🐍', desc: '越吃越长' }
         };
 
+        // Initialize GameLauncher for independent game HTML loading
+        const gameLauncher = new GameLauncher({
+            baseUrl: '/games/',
+            onClose: () => {
+                console.log('Game closed');
+            }
+        });
+
         function showGameChoiceOverlay(taskIndex, options = {}) {
             const overlay = document.getElementById('gameChoiceOverlay');
             const grid = document.getElementById('gameChoiceGrid');
@@ -6028,9 +6008,10 @@
             if (!overlay || !grid) {
                 // Fallback to auto selection if overlay missing
                 const gameType = selectRandomGame();
-                if (typeof GameManager !== 'undefined') {
-                    GameManager.startGame(gameType, taskIndex, options);
-                }
+                gameLauncher.launchGame(gameType, {
+                    museumId: currentMuseum?.id,
+                    taskIndex: taskIndex
+                });
                 return;
             }
 
@@ -6051,9 +6032,11 @@
                 button.addEventListener('click', () => {
                     overlay.classList.remove('show');
                     overlay.setAttribute('aria-hidden', 'true');
-                    if (typeof GameManager !== 'undefined') {
-                        GameManager.startGame(gameType, taskIndex, options);
-                    }
+                    // Launch game using GameLauncher (loads independent HTML)
+                    gameLauncher.launchGame(gameType, {
+                        museumId: currentMuseum?.id,
+                        taskIndex: taskIndex
+                    });
                 });
                 grid.appendChild(button);
             });
@@ -6078,6 +6061,19 @@
             overlay.classList.add('show');
             overlay.setAttribute('aria-hidden', 'false');
         }
+
+        // Listen for game completion messages from iframe games
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'game-complete') {
+                const { gameType, score, timeSeconds } = event.data;
+                console.log(`Game completed: ${gameType}, score: ${score}, time: ${timeSeconds}s`);
+                
+                // Award XP through GameRewardManager
+                if (typeof GameRewardManager !== 'undefined') {
+                    GameRewardManager.awardCompletion(gameType, score, timeSeconds);
+                }
+            }
+        });
 
         // ===== Fullscreen Image Viewer =====
         // Global state for fullscreen viewer

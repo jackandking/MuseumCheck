@@ -551,7 +551,7 @@
                             <div class="settings-hint" style="margin-top: 4px;">完成任务并上传照片后，随机解锁选中的小游戏作为奖励</div>
                         </div>
                         <label class="toggle-switch">
-                            <input type="checkbox" id="puzzleGameToggle">
+                            <input type="checkbox" id="gameRewardToggle">
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
@@ -594,28 +594,6 @@
     </div>
 
     <canvas class="fireworks-overlay" id="fireworksCanvas"></canvas>
-
-    <!-- Puzzle Game Overlay -->
-    <div class="puzzle-game-overlay" id="puzzleGameOverlay">
-        <div class="puzzle-header">
-            <div class="puzzle-title">🧩 拼图挑战</div>
-            <div class="puzzle-moves">移动次数：<span id="puzzleMoves">0</span></div>
-        </div>
-        <div class="puzzle-container">
-            <div class="puzzle-grid" id="puzzleGrid"></div>
-        </div>
-        <div class="puzzle-reference">
-            <button class="puzzle-reference-btn" id="toggleReference">查看原图 👀</button>
-            <img class="puzzle-reference-img" id="puzzleReferenceImg" alt="原图参考">
-        </div>
-        <div class="puzzle-buttons">
-            <button class="puzzle-button puzzle-button-reset" id="resetPuzzle">🔄 重新打乱</button>
-            <button class="puzzle-button puzzle-button-continue" id="exitPuzzle">继续游览 ➡️</button>
-        </div>
-        <div class="puzzle-complete-message" id="puzzleCompleteMessage">
-            🎉 恭喜完成！
-        </div>
-    </div>
 
     <!-- Maze Game Overlay -->
     <div class="maze-game-overlay game-overlay" id="mazeGameOverlay">
@@ -778,6 +756,9 @@
     <!-- Leaderboard Modal Template -->
     <!-- 排行榜模态框将通过leaderboard-template.js动态生成 -->
 
+    <!-- Game Launcher for Independent Game HTML -->
+    <script src="js/game-launcher.js"></script>
+    
     <!-- Unified Game Architecture -->
     <script src="js/base-game.js"></script>
     <script src="js/game-manager.js"></script>
