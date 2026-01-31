@@ -299,8 +299,7 @@
                     <div class="modal-stat-label">击杀</div>
                 </div>
             </div>
-            <button class="modal-btn" id="btnRestart">再玩一次</button>
-            <button class="modal-btn secondary" id="btnExit">返回</button>
+            <button class="modal-btn" id="btnContinue">继续游览 →</button>
         </div>
     </div>
 
@@ -579,8 +578,7 @@
             });
             
             // 按钮事件
-            document.getElementById('btnRestart').addEventListener('click', startGame);
-            document.getElementById('btnExit').addEventListener('click', () => {
+            document.getElementById('btnContinue').addEventListener('click', () => {
                 window.location.href = '/museum-checkin.html';
             });
         }
