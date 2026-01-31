@@ -430,7 +430,13 @@ class UnifiedMazeGame extends BaseGame {
      * Handle keyboard input
      */
     handleKeydownInput(e) {
-        if (this.state !== 'playing' || !this.overlay || !this.overlay.classList.contains('show')) {
+        // 检查游戏状态
+        if (this.state !== 'playing') {
+            return;
+        }
+        
+        // 如果有overlay（嵌入式模式），检查是否显示
+        if (this.overlay && !this.overlay.classList.contains('show')) {
             return;
         }
         

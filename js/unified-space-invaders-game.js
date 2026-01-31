@@ -58,7 +58,7 @@ class UnifiedSpaceInvadersGame extends BaseGame {
         this.customResetButton = document.getElementById('resetSpaceInvaders');
 
         if (!this.overlay) {
-            console.error('[space-invaders] Overlay element not found: spaceInvadersOverlay');
+            console.warn('[space-invaders] Running in standalone mode (no overlay element)');
         }
     }
 

@@ -373,11 +373,15 @@
                 <div class="game-stats">
                     <div class="stat-item">
                         <div class="stat-label">SCORE</div>
-                        <div class="stat-value" id="scoreText">0</div>
+                        <div class="stat-value" id="tbScore">0</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">LIVES</div>
-                        <div class="stat-value" id="livesText">❤️❤️❤️</div>
+                        <div class="stat-value" id="tbLives">3</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">ENEMIES</div>
+                        <div class="stat-value" id="tbEnemiesLeft">5</div>
                     </div>
                 </div>
             </div>
@@ -385,7 +389,7 @@
             <!-- 游戏区 -->
             <div class="game-area">
                 <div class="canvas-wrapper">
-                    <canvas id="gameCanvas" width="420" height="420"></canvas>
+                    <canvas id="tankBattleCanvas" width="420" height="420"></canvas>
                 </div>
             </div>
 
@@ -426,17 +430,18 @@
     <script src="../js/unified-tank-battle-game.js"></script>
 
     <script>
-        // 初始化游戏
-        const gameInstance = new UnifiedTankBattleGame({
+        // 初始化游戏（暴露到全局以便调试）
+        window.gameInstance = new UnifiedTankBattleGame({
             enableKeyboard: true,
             enableTouchControls: true
         });
+        const gameInstance = window.gameInstance;
 
         // 启动游戏
         async function startGame() {
             try {
                 await gameInstance.init(0, {});
-                gameInstance.show();
+                gameInstance.start();
             } catch (error) {
                 console.error('Game initialization error:', error);
             }

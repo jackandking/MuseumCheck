@@ -273,7 +273,11 @@
                 <div class="game-stats">
                     <div class="stat-item">
                         <div class="stat-label">SCORE</div>
-                        <div class="stat-value" id="scoreText">0</div>
+                        <div class="stat-value" id="siScore">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">LIVES</div>
+                        <div class="stat-value" id="siLives">3</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">WAVE</div>
@@ -285,7 +289,7 @@
             <!-- 游戏区 -->
             <div class="game-area">
                 <div class="canvas-wrapper">
-                    <canvas id="gameCanvas" width="420" height="420"></canvas>
+                    <canvas id="spaceInvadersCanvas" width="420" height="420"></canvas>
                 </div>
             </div>
 
@@ -303,7 +307,7 @@
             <div class="end-heading" id="endHeading">防卫成功！</div>
             <div class="end-stats-grid">
                 <div class="end-stat-card">
-                    <div class="end-stat-number" id="endScore">0</div>
+                    <div class="end-stat-number" id="siFinalScore">0</div>
                     <div class="end-stat-name">得分</div>
                 </div>
                 <div class="end-stat-card">
@@ -326,17 +330,18 @@
     <script src="../js/unified-space-invaders-game.js"></script>
 
     <script>
-        // 初始化游戏
-        const gameInstance = new UnifiedSpaceInvadersGame({
+        // 初始化游戏（暴露到全局以便调试）
+        window.gameInstance = new UnifiedSpaceInvadersGame({
             enableKeyboard: true,
             enableTouchControls: true
         });
+        const gameInstance = window.gameInstance;
 
         // 启动游戏
         async function startGame() {
             try {
                 await gameInstance.init(1, {});
-                gameInstance.show();
+                gameInstance.start();
             } catch (error) {
                 console.error('Game initialization error:', error);
             }

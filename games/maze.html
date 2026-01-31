@@ -249,7 +249,7 @@
                 <div class="game-title">🏃 迷宫冒险</div>
                 <div class="game-stats">
                     <span class="stat-label">步数：</span>
-                    <span class="stat-value" id="stepsText">0</span>
+                    <span class="stat-value" id="mazeSteps">0</span>
                 </div>
             </div>
 
@@ -304,17 +304,24 @@
         // 获取游戏上下文
         const gameContext = window.GameContextManager ? window.GameContextManager.getContext() : null;
         
-        // 初始化游戏
-        const gameInstance = new UnifiedMazeGame({
+        // 初始化游戏（暴露到全局以便调试）
+        window.gameInstance = new UnifiedMazeGame({
             enableKeyboard: true,
             enableTouchControls: true
         });
+        const gameInstance = window.gameInstance;
 
         // 启动游戏
         async function startGame() {
             try {
                 await gameInstance.init(0, {});
                 gameInstance.start();
+                
+                // 游戏启动后确保焦点
+                setTimeout(() => {
+                    document.body.focus();
+                    console.log('[Maze] Focus set to body, keyboard should work now');
+                }, 100);
             } catch (error) {
                 console.error('Game initialization error:', error);
             }
@@ -322,12 +329,17 @@
 
         // 关闭游戏并返回
         function closeGame() {
+            console.log('[Maze] closeGame called');
+            
             // 保存游戏结果
-            if (window.GameContextManager) {
-                const timeSeconds = Math.floor((Date.now() - gameInstance.startTime) / 1000);
+            if (window.GameContextManager && gameInstance) {
+                const startTime = gameInstance.startTime || Date.now();
+                const timeSeconds = Math.floor((Date.now() - startTime) / 1000);
                 const score = gameInstance.steps || 0;
                 
-                window.GameContextManager.saveResult({
+                console.log('[Maze] Saving game result:', { score, timeSeconds });
+                
+                const saved = window.GameContextManager.saveResult({
                     gameType: 'maze',
                     score: score,
                     timeSeconds: timeSeconds,
@@ -337,9 +349,14 @@
                         time: timeSeconds
                     }
                 });
+                
+                console.log('[Maze] Game result saved:', saved);
+            } else {
+                console.warn('[Maze] Cannot save game result - GameContextManager or gameInstance not available');
             }
             
             // 返回打卡页面
+            console.log('[Maze] Returning to checkin page');
             window.location.href = '/museum-checkin.html';
         }
 
@@ -355,6 +372,61 @@
             document.body.addEventListener('click', () => {
                 document.body.focus();
             });
+            
+            // 添加调试键盘监听器
+            document.addEventListener('keydown', (e) => {
+                console.log('[Maze Debug] Keydown event captured:', e.key, e.code);
+            }, true); // 使用捕获阶段
+            
+            // 绑定虚拟方向按钮
+            const setupVirtualControls = () => {
+                const upBtn = document.getElementById('mazeUp');
+                const downBtn = document.getElementById('mazeDown');
+                const leftBtn = document.getElementById('mazeLeft');
+                const rightBtn = document.getElementById('mazeRight');
+                
+                // 创建模拟键盘事件的辅助函数
+                const simulateKeyPress = (key) => {
+                    console.log('[Maze] Virtual button pressed:', key);
+                    const event = new KeyboardEvent('keydown', {
+                        key: key,
+                        code: key,
+                        bubbles: true,
+                        cancelable: true
+                    });
+                    gameInstance.handleKeydownInput(event);
+                };
+                
+                if (upBtn) {
+                    upBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        simulateKeyPress('ArrowUp');
+                    });
+                }
+                if (downBtn) {
+                    downBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        simulateKeyPress('ArrowDown');
+                    });
+                }
+                if (leftBtn) {
+                    leftBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        simulateKeyPress('ArrowLeft');
+                    });
+                }
+                if (rightBtn) {
+                    rightBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        simulateKeyPress('ArrowRight');
+                    });
+                }
+                
+                console.log('[Maze] Virtual controls setup complete');
+            };
+            
+            // 延迟绑定，确保游戏已初始化
+            setTimeout(setupVirtualControls, 500);
         });
 
         // 处理来自父窗口的消息
