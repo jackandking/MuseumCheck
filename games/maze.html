@@ -114,47 +114,7 @@
             margin: 10px 0;
         }
 
-        /* 控制区 */
-        .controls-section {
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(20px);
-            padding: 18px;
-            border-top: 2px solid rgba(52, 152, 219, 0.3);
-        }
-
-        .maze-controls {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            max-width: 300px;
-            margin: 0 auto;
-        }
-
-        .maze-control-btn {
-            width: 60px;
-            height: 60px;
-            border: 2px solid rgba(52, 152, 219, 0.5);
-            border-radius: 12px;
-            background: rgba(52, 152, 219, 0.2);
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .maze-control-btn:active {
-            background: rgba(52, 152, 219, 0.4);
-            transform: scale(0.95);
-        }
-
-        .maze-control-btn.empty {
-            background: transparent;
-            border: none;
-            cursor: default;
-        }
+        /* 虚拟键盘样式由 unified-game-controls.css 提供 */
 
         /* 游戏结束弹窗 */
         .game-end-modal {
@@ -258,23 +218,10 @@
                 <div class="canvas-wrapper">
                     <canvas id="mazeCanvas" width="280" height="280"></canvas>
                 </div>
-                <div class="game-hint">使用下方方向键或滑动屏幕移动小人</div>
+                <div class="game-hint">滑动屏幕移动小人到出口</div>
             </div>
 
-            <!-- 控制区 -->
-            <div class="controls-section">
-                <div class="maze-controls">
-                    <button class="maze-control-btn empty"></button>
-                    <button class="maze-control-btn" id="mazeUp">⬆️</button>
-                    <button class="maze-control-btn empty"></button>
-                    <button class="maze-control-btn" id="mazeLeft">⬅️</button>
-                    <button class="maze-control-btn empty"></button>
-                    <button class="maze-control-btn" id="mazeRight">➡️</button>
-                    <button class="maze-control-btn empty"></button>
-                    <button class="maze-control-btn" id="mazeDown">⬇️</button>
-                    <button class="maze-control-btn empty"></button>
-                </div>
-            </div>
+            <!-- 虚拟键盘由 UnifiedGameControls 自动创建 -->
         </div>
     </div>
 
@@ -293,10 +240,9 @@
         </div>
     </div>
 
-    <!-- 加载游戏上下文管理器 -->
-    <script src="../js/game-context-manager.js"></script>
-    
     <!-- 加载游戏脚本 -->
+    <script src="../js/unified-game-controls.js"></script>
+    <script src="../js/game-context-manager.js"></script>
     <script src="../js/base-game.js"></script>
     <script src="../js/unified-maze-game.js"></script>
 
@@ -377,56 +323,6 @@
             document.addEventListener('keydown', (e) => {
                 console.log('[Maze Debug] Keydown event captured:', e.key, e.code);
             }, true); // 使用捕获阶段
-            
-            // 绑定虚拟方向按钮
-            const setupVirtualControls = () => {
-                const upBtn = document.getElementById('mazeUp');
-                const downBtn = document.getElementById('mazeDown');
-                const leftBtn = document.getElementById('mazeLeft');
-                const rightBtn = document.getElementById('mazeRight');
-                
-                // 创建模拟键盘事件的辅助函数
-                const simulateKeyPress = (key) => {
-                    console.log('[Maze] Virtual button pressed:', key);
-                    const event = new KeyboardEvent('keydown', {
-                        key: key,
-                        code: key,
-                        bubbles: true,
-                        cancelable: true
-                    });
-                    gameInstance.handleKeydownInput(event);
-                };
-                
-                if (upBtn) {
-                    upBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        simulateKeyPress('ArrowUp');
-                    });
-                }
-                if (downBtn) {
-                    downBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        simulateKeyPress('ArrowDown');
-                    });
-                }
-                if (leftBtn) {
-                    leftBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        simulateKeyPress('ArrowLeft');
-                    });
-                }
-                if (rightBtn) {
-                    rightBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        simulateKeyPress('ArrowRight');
-                    });
-                }
-                
-                console.log('[Maze] Virtual controls setup complete');
-            };
-            
-            // 延迟绑定，确保游戏已初始化
-            setTimeout(setupVirtualControls, 500);
         });
 
         // 处理来自父窗口的消息

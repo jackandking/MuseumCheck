@@ -203,6 +203,8 @@
             align-items: center;
             justify-content: center;
             padding: 12px;
+            min-height: 0;
+            overflow: hidden;
         }
 
         .canvas-wrapper {
@@ -251,8 +253,91 @@
         .controls-section {
             background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(20px);
-            padding: 18px;
+            padding: 12px;
             border-top: 2px solid rgba(0, 255, 255, 0.3);
+            flex-shrink: 0;
+        }
+
+        /* 覆盖虚拟键盘的fixed定位，让它在文档流中 */
+        #tankBattleControls .ugc-container {
+            position: relative;
+            padding: 0 20px;
+            bottom: auto;
+            left: auto;
+            right: auto;
+        }
+
+        #tankBattleControls .ugc-dpad-fire {
+            justify-content: center !important;
+        }
+
+        /* Gaming-style 虚拟键盘按钮 */
+        #tankBattleControls .ugc-btn {
+            width: 50px !important;
+            height: 50px !important;
+            font-size: 18px !important;
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(0, 153, 255, 0.15)) !important;
+            border: 2px solid rgba(0, 255, 255, 0.5) !important;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1) !important;
+            transition: all 0.15s ease !important;
+            backdrop-filter: blur(10px) !important;
+        }
+
+        #tankBattleControls .ugc-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 153, 255, 0.25)) !important;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.5), inset 0 0 15px rgba(0, 255, 255, 0.2) !important;
+            transform: translateY(-1px) !important;
+        }
+
+        #tankBattleControls .ugc-btn:active {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.4), rgba(0, 153, 255, 0.35)) !important;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.7), inset 0 0 20px rgba(0, 255, 255, 0.3) !important;
+            transform: translateY(1px) scale(0.95) !important;
+        }
+
+        #tankBattleControls .ugc-dpad-fire {
+            gap: 8px !important;
+        }
+
+        #tankBattleControls .ugc-dpad {
+            gap: 6px !important;
+        }
+
+        /* 提示文字增强 */
+        #tankBattleControls .ugc-hints {
+            color: #00ffff !important;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.6) !important;
+            font-weight: 600 !important;
+        }
+
+        /* 小屏幕优化 - 保持触觉友好 */
+        @media (max-width: 480px) {
+            .canvas-wrapper {
+                max-width: 100%;
+            }
+            
+            #gameCanvas {
+                max-width: 100%;
+            }
+
+            #tankBattleControls .ugc-btn {
+                width: 48px !important;
+                height: 48px !important;
+                font-size: 18px !important;
+            }
+
+            #tankBattleControls .ugc-dpad-fire {
+                gap: 8px !important;
+            }
+        }
+
+        /* 超小屏幕 */
+        @media (max-width: 360px) {
+            #tankBattleControls .ugc-btn {
+                width: 44px !important;
+                height: 44px !important;
+                font-size: 16px !important;
+            }
         }
 
         /* 游戏结束弹窗 */
@@ -442,6 +527,10 @@
             try {
                 await gameInstance.init(0, {});
                 gameInstance.start();
+                
+                // 确保焦点以便键盘事件能被捕获
+                document.body.tabIndex = 0;
+                document.body.focus();
             } catch (error) {
                 console.error('Game initialization error:', error);
             }
@@ -471,7 +560,9 @@
         }
 
         // 页面加载时启动游戏
-        window.addEventListener('DOMContentLoaded', startGame);
+        window.addEventListener('DOMContentLoaded', () => {
+            startGame();
+        });
 
         // 处理来自父窗口的消息
         window.addEventListener('message', (event) => {

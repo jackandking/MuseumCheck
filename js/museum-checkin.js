@@ -5922,7 +5922,7 @@
                     return 10; // Default XP
                 }
                 
-                // Fixed XP games (puzzle, maze)
+                // Fixed XP games (maze)
                 if (rewards.base) {
                     return rewards.base;
                 }
@@ -5944,7 +5944,6 @@
             // Fallback XP calculation when VirtualPet not available
             _getFallbackXP(gameType, score, timeSeconds) {
                 const fallbacks = {
-                    'puzzle': 15,
                     'maze': 20,
                     'space-invaders': Math.max(15, Math.min(30, Math.floor(score / 10))),
                     'tank-battle': Math.max(20, Math.min(30, Math.floor(score / 5))),
@@ -5956,7 +5955,6 @@
             // Get display name for game type
             _getGameName(gameType) {
                 const names = {
-                    'puzzle': '拼图游戏',
                     'maze': '迷宫游戏',
                     'space-invaders': '小蜜蜂游戏',
                     'tank-battle': '坦克大战',

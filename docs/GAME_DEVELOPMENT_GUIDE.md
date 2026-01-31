@@ -26,59 +26,104 @@ button.addEventListener('click', (e) => {
 });
 ```
 
-## 完整实现模板
+## 推荐实现：使用共享模块（最佳实践）
+
+**优势：**
+- ✅ 不需要在每个游戏中重复代码
+- ✅ 统一的实现，避免不一致
+- ✅ 统一的键盘UX（方向键 + WASD）
+- ✅ 一次修复，所有游戏受益
+
+### 方式1：虚拟按钮 + 统一键盘控制（推荐）
 
 ```javascript
-// 绑定虚拟方向按钮
-const setupVirtualControls = () => {
-    const upBtn = document.getElementById('gameUp');
-    const downBtn = document.getElementById('gameDown');
-    const leftBtn = document.getElementById('gameLeft');
-    const rightBtn = document.getElementById('gameRight');
-    
-    // 创建模拟键盘事件的辅助函数
-    const simulateKeyPress = (key) => {
-        console.log('[Game] Virtual button pressed:', key);
-        const event = new KeyboardEvent('keydown', {
-            key: key,
-            code: key,
-            bubbles: true,
-            cancelable: true
-        });
-        gameInstance.handleKeydownInput(event);
-    };
-    
-    if (upBtn) {
-        upBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            simulateKeyPress('ArrowUp');
-        });
-    }
-    if (downBtn) {
-        downBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            simulateKeyPress('ArrowDown');
-        });
-    }
-    if (leftBtn) {
-        leftBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            simulateKeyPress('ArrowLeft');
-        });
-    }
-    if (rightBtn) {
-        rightBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            simulateKeyPress('ArrowRight');
-        });
-    }
-    
-    console.log('[Game] Virtual controls setup complete');
+// 1. 引入共享模块
+<script src="../js/shared-virtual-controls.js"></script>
+
+// 2. 统一设置虚拟按钮和键盘
+SharedVirtualControls.setupUnified({
+    gameInstance,
+    buttons: {
+        up: 'mazeUp',
+        down: 'mazeDown',
+        left: 'mazeLeft',
+        right: 'mazeRight'
+    },
+    keyboard: {
+        up: true,
+        down: true,
+        left: true,
+        right: true,
+        fire: false  // 如果游戏不需要发射
+    },
+    gameName: 'Maze'
+});
+```
+
+**统一键盘映射：**
+- ⬆️ 上：`ArrowUp` 或 `W`
+- ⬇️ 下：`ArrowDown` 或 `S`
+- ⬅️ 左：`ArrowLeft` 或 `A`
+- ➡️ 右：`ArrowRight` 或 `D`
+- 🔥 发射：`Space`
+
+### 方式2：仅虚拟按钮
+
+```javascript
+// 标准四方向按钮（迷宫、坦克、贪食蛇）
+SharedVirtualControls.setupStandard(gameInstance, 'game', 'GameName');
+
+// 或者：左右+发射按钮（小蜜蜂）
+SharedVirtualControls.setupWithFire(gameInstance, 'si', 'SpaceInvaders');
+
+// 或者：自定义配置
+SharedVirtualControls.setup({
+    gameInstance,
+    buttons: {
+        up: 'buttonId',
+        down: 'buttonId',
+        left: 'buttonId',
+        right: 'buttonId'
+    },
+    gameName: 'GameName'
+});
+```
+
+### 方式3：仅统一键盘控制
+
+```javascript
+// 适用于已有键盘处理但想统一UX的游戏
+SharedVirtualControls.setupKeyboard({
+    gameInstance,
+    actions: ['up', 'down', 'left', 'right', 'fire'],
+    gameName: 'GameName'
+});
+```
+
+## 手动实现（仅供参考）
+
+如果你需要完全自定义的实现，可以参考以下代码：
+
+```javascript
+// 创建模拟键盘事件的辅助函数
+const simulateKeyPress = (key) => {
+    const event = new KeyboardEvent('keydown', {
+        key: key,
+        code: key,
+        bubbles: true,
+        cancelable: true
+    });
+    gameInstance.handleKeydownInput(event);
 };
 
-// 延迟绑定，确保游戏已初始化
-setTimeout(setupVirtualControls, 500);
+// 绑定按钮
+document.getElementById('upBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    simulateKeyPress('ArrowUp');
+});
 ```
+
+**注意：** 推荐使用共享模块而不是手动实现。
 
 ## 测试要求
 

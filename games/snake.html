@@ -121,6 +121,8 @@
             align-items: center;
             justify-content: center;
             padding: 12px;
+            min-height: 0; /* 防止flex子元素溢出 */
+            overflow: hidden;
         }
 
         .canvas-wrapper {
@@ -169,8 +171,46 @@
         .controls-section {
             background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(20px);
-            padding: 18px;
+            padding: 12px;
             border-top: 2px solid rgba(50, 255, 100, 0.3);
+            flex-shrink: 0; /* 防止被压缩 */
+        }
+
+        /* 覆盖虚拟键盘的fixed定位，让它在文档流中 */
+        #snakeControls .ugc-container {
+            position: relative;
+            padding: 0 20px; /* 增加padding确保按钮不超出屏幕 */
+            bottom: auto;
+            left: auto;
+            right: auto;
+        }
+
+        #snakeControls .ugc-dpad-fire {
+            justify-content: center !important;
+        }
+
+        /* 确保虚拟键盘按钮大小合适 */
+        #snakeControls .ugc-btn {
+            width: 52px !important;
+            height: 52px !important;
+            font-size: 18px !important;
+        }
+
+        #snakeControls .ugc-dpad-fire {
+            gap: 6px !important;
+        }
+
+        #snakeControls .ugc-dpad {
+            gap: 4px !important;
+        }
+
+        /* 小屏幕优化 */
+        @media (max-width: 480px) {
+            #snakeControls .ugc-btn {
+                width: 44px !important;
+                height: 44px !important;
+                font-size: 16px !important;
+            }
         }
 
         /* 游戏结束弹窗 */
@@ -321,7 +361,6 @@
 
     <!-- 加载游戏脚本 -->
     <script src="../js/unified-game-controls.js"></script>
-    <!-- 加载游戏上下文管理器 -->
     <script src="../js/game-context-manager.js"></script>
     <script src="../js/base-game.js"></script>
     <script src="../js/unified-snake-game.js"></script>
@@ -339,6 +378,10 @@
             try {
                 await gameInstance.init(2, {});
                 gameInstance.start();
+                
+                // 确保焦点以便键盘事件能被捕获
+                document.body.tabIndex = 0;
+                document.body.focus();
             } catch (error) {
                 console.error('Game initialization error:', error);
             }
@@ -368,7 +411,9 @@
         }
 
         // 页面加载时启动游戏
-        window.addEventListener('DOMContentLoaded', startGame);
+        window.addEventListener('DOMContentLoaded', () => {
+            startGame();
+        });
 
         // 处理来自父窗口的消息
         window.addEventListener('message', (event) => {
