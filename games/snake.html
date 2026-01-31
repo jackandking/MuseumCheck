@@ -321,6 +321,8 @@
 
     <!-- 加载游戏脚本 -->
     <script src="../js/unified-game-controls.js"></script>
+    <!-- 加载游戏上下文管理器 -->
+    <script src="../js/game-context-manager.js"></script>
     <script src="../js/base-game.js"></script>
     <script src="../js/unified-snake-game.js"></script>
 
@@ -341,9 +343,27 @@
             }
         }
 
-        // 关闭游戏
+        // 关闭游戏并返回
         function closeGame() {
-            window.close() || (window.parent && window.parent.postMessage({ type: 'game-close' }, '*'));
+            // 保存游戏结果
+            if (window.GameContextManager && gameInstance) {
+                const timeSeconds = Math.floor((Date.now() - gameInstance.startTime) / 1000);
+                const score = gameInstance.score || 0;
+                
+                window.GameContextManager.saveResult({
+                    gameType: 'snake',
+                    score: score,
+                    timeSeconds: timeSeconds,
+                    pointsEarned: score,
+                    gameData: {
+                        length: gameInstance.snake?.length || 3,
+                        foodEaten: Math.floor(score / 10)
+                    }
+                });
+            }
+            
+            // 返回打卡页面
+            window.location.href = '/museum-checkin.html';
         }
 
         // 页面加载时启动游戏

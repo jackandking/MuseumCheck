@@ -6035,11 +6035,23 @@
                 button.addEventListener('click', () => {
                     overlay.classList.remove('show');
                     overlay.setAttribute('aria-hidden', 'true');
-                    // Launch game using GameLauncher (loads independent HTML)
-                    gameLauncher.launchGame(gameType, {
-                        museumId: currentMuseum?.id,
-                        taskIndex: taskIndex
-                    });
+                    
+                    // 保存游戏上下文
+                    if (window.GameContextManager) {
+                        window.GameContextManager.saveContext({
+                            museumId: currentMuseum?.id,
+                            museumName: currentMuseum?.name,
+                            taskIndex: taskIndex,
+                            museum: currentMuseum,
+                            currentTask: childTasks[taskIndex],
+                            completedTasks: Array.from(completedTasks),
+                            taskPhotos: taskPhotos,
+                            ageGroup: ageGroup
+                        });
+                    }
+                    
+                    // 跳转到游戏页面
+                    window.location.href = `/games/${gameType}.html`;
                 });
                 grid.appendChild(button);
             });
@@ -6255,4 +6267,42 @@
                 gameChoiceOverlay.classList.remove('show');
                 gameChoiceOverlay.setAttribute('aria-hidden', 'true');
             }
+            
+            // 检查是否从游戏页面返回
+            handleGameReturn();
         });
+        
+        /**
+         * 处理从游戏页面返回
+         */
+        function handleGameReturn() {
+            if (!window.GameContextManager) return;
+            
+            const gameResult = window.GameContextManager.getResult();
+            if (gameResult) {
+                console.log('[Game Return] Processing game result:', gameResult);
+                
+                // 显示游戏完成通知
+                if (window.achievementGamification) {
+                    const message = `${GAME_CHOICE_META[gameResult.gameType]?.name || '游戏'}完成！`;
+                    window.achievementGamification.showXPGainNotification(
+                        gameResult.pointsEarned || gameResult.score,
+                        message
+                    );
+                }
+                
+                // 奖励积分
+                if (gameResult.pointsEarned > 0 && window.achievementGamification) {
+                    window.achievementGamification.addXP(gameResult.pointsEarned);
+                }
+                
+                // 显示成就
+                if (gameResult.achievements && gameResult.achievements.length > 0) {
+                    // TODO: 显示成就通知
+                    console.log('[Game Return] Achievements unlocked:', gameResult.achievements);
+                }
+                
+                // 清除游戏结果
+                window.GameContextManager.clearResult();
+            }
+        }

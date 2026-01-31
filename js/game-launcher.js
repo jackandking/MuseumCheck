@@ -39,6 +39,7 @@ class GameLauncher {
         // 创建 iframe
         const iframe = document.createElement('iframe');
         iframe.src = gameUrl;
+        iframe.tabIndex = 0; // 允许iframe获得焦点
         iframe.style.cssText = `
             position: fixed;
             top: 0;
@@ -60,6 +61,17 @@ class GameLauncher {
         
         iframe.addEventListener('load', () => {
             console.log(`Game loaded: ${gameType}`);
+            
+            // 自动聚焦到iframe，确保键盘事件能被捕获
+            setTimeout(() => {
+                iframe.focus();
+                // 也尝试聚焦iframe内的document
+                try {
+                    iframe.contentWindow.focus();
+                } catch (e) {
+                    console.log('Could not focus iframe content window:', e);
+                }
+            }, 100);
             
             // 发送启动消息给 iframe
             iframe.contentWindow.postMessage({

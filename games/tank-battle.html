@@ -421,6 +421,7 @@
 
     <!-- 加载游戏脚本 -->
     <script src="../js/unified-game-controls.js"></script>
+    <script src="../js/game-context-manager.js"></script>
     <script src="../js/base-game.js"></script>
     <script src="../js/unified-tank-battle-game.js"></script>
 
@@ -441,9 +442,27 @@
             }
         }
 
-        // 关闭游戏
+        // 关闭游戏并返回
         function closeGame() {
-            window.close() || (window.parent && window.parent.postMessage({ type: 'game-close' }, '*'));
+            // 保存游戏结果
+            if (window.GameContextManager && gameInstance) {
+                const timeSeconds = Math.floor((Date.now() - gameInstance.startTime) / 1000);
+                const score = gameInstance.score || 0;
+                
+                window.GameContextManager.saveResult({
+                    gameType: 'tank-battle',
+                    score: score,
+                    timeSeconds: timeSeconds,
+                    pointsEarned: score,
+                    gameData: {
+                        enemiesDestroyed: gameInstance.enemiesDestroyed || 0,
+                        livesRemaining: gameInstance.lives || 0
+                    }
+                });
+            }
+            
+            // 返回打卡页面
+            window.location.href = '/museum-checkin.html';
         }
 
         // 页面加载时启动游戏

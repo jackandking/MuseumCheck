@@ -293,11 +293,17 @@
         </div>
     </div>
 
+    <!-- 加载游戏上下文管理器 -->
+    <script src="../js/game-context-manager.js"></script>
+    
     <!-- 加载游戏脚本 -->
     <script src="../js/base-game.js"></script>
     <script src="../js/unified-maze-game.js"></script>
 
     <script>
+        // 获取游戏上下文
+        const gameContext = window.GameContextManager ? window.GameContextManager.getContext() : null;
+        
         // 初始化游戏
         const gameInstance = new UnifiedMazeGame({
             enableKeyboard: true,
@@ -314,28 +320,51 @@
             }
         }
 
-        // 关闭游戏
+        // 关闭游戏并返回
         function closeGame() {
-            // 发送游戏完成消息给父窗口
-            if (window.parent && window.parent !== window) {
-                window.parent.postMessage({ 
-                    type: 'game-complete',
+            // 保存游戏结果
+            if (window.GameContextManager) {
+                const timeSeconds = Math.floor((Date.now() - gameInstance.startTime) / 1000);
+                const score = gameInstance.steps || 0;
+                
+                window.GameContextManager.saveResult({
                     gameType: 'maze',
-                    score: gameInstance.steps || 0,
-                    timeSeconds: Math.floor((Date.now() - gameInstance.startTime) / 1000)
-                }, '*');
+                    score: score,
+                    timeSeconds: timeSeconds,
+                    pointsEarned: Math.max(100 - score, 10), // 步数越少积分越高
+                    gameData: {
+                        steps: score,
+                        time: timeSeconds
+                    }
+                });
             }
-            // 尝试关闭窗口或通知父窗口
-            window.close() || (window.parent && window.parent.postMessage({ type: 'game-close' }, '*'));
+            
+            // 返回打卡页面
+            window.location.href = '/museum-checkin.html';
         }
 
         // 页面加载时启动游戏
-        window.addEventListener('DOMContentLoaded', startGame);
+        window.addEventListener('DOMContentLoaded', () => {
+            startGame();
+            
+            // 确保页面获得焦点以接收键盘事件
+            document.body.tabIndex = 0;
+            document.body.focus();
+            
+            // 添加点击事件确保焦点
+            document.body.addEventListener('click', () => {
+                document.body.focus();
+            });
+        });
 
         // 处理来自父窗口的消息
         window.addEventListener('message', (event) => {
             if (event.data.type === 'start-game') {
                 startGame();
+                // 确保焦点
+                setTimeout(() => {
+                    document.body.focus();
+                }, 100);
             }
         });
     </script>
