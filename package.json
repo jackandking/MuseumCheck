@@ -22,7 +22,20 @@
     "test:sanity:watch": "node scripts/run-sanity-agent.js watch",
     "test:sanity:ci": "node scripts/run-sanity-agent.js ci",
     "test:sanity:mobile": "node scripts/run-sanity-agent.js mobile",
-    "test:sanity:quick": "node scripts/run-sanity-agent.js quick"
+    "test:sanity:quick": "node scripts/run-sanity-agent.js quick",
+    "verify:pages": "node scripts/quick-page-check.js",
+    "verify:pages:fast": "node scripts/quick-page-check-simple.js",
+    "verify:pages:simple": "node scripts/quick-page-check-simple.js",
+    "verify:file-placement": "bash scripts/check-file-placement.sh",
+    "verify:docs-location": "bash scripts/check-docs-location.sh",
+    "verify:docs-consistency": "bash scripts/check-docs-consistency.sh",
+    "verify:docs-content": "node scripts/check-docs-content-consistency.js",
+    "test:games": "bash scripts/test-games-quick.sh",
+    "test:games:maze": "playwright test e2e/maze-game-auto.spec.ts",
+    "regression:test": "node scripts/regression-gatekeeper.js",
+    "regression:full": "npm test -- --coverage --verbose",
+    "regression:affected": "npm test -- --findRelatedTests",
+    "regression:report": "node scripts/regression-gatekeeper.js --dry-run"
   },
   "keywords": [
     "museum",
@@ -34,7 +47,10 @@
   "author": "jackandking",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.5.0"
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
+    "multer": "^2.0.2"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
@@ -56,5 +72,17 @@
     "setupFilesAfterEnv": [
       "<rootDir>/tests/setup.js"
     ]
-  }
+  },
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jackandking/MuseumCheck.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jackandking/MuseumCheck/issues"
+  },
+  "homepage": "https://github.com/jackandking/MuseumCheck#readme"
 }

@@ -1,3 +1,19 @@
+        // Utility function to get app base path for subdirectory deployments (e.g., /MuseumCheckDev/)
+        function getAppBasePath() {
+            const path = window.location.pathname;
+            const pathParts = path.split('/').filter(p => p);
+            
+            // Check if first path segment is a project subdirectory (not an html file or known folder)
+            if (pathParts.length > 0) {
+                const firstPart = pathParts[0];
+                if (!firstPart.endsWith('.html') && 
+                    !['admin', 'quiz', 'survey', 'tests', 'core', 'js', 'css', 'data', 'games', 'assets'].includes(firstPart)) {
+                    return '/' + firstPart;
+                }
+            }
+            return '';
+        }
+
         // Configuration
         const REMOTE_STORAGE_CONFIG = {
             API_ENDPOINT: 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore',
@@ -765,11 +781,23 @@
             }
 
             if (!museum) {
-                console.warn(`Museum ${museumId} not found via loader (Tier2/Tier1)`);
-                document.getElementById('museumName').textContent = '博物馆未找到';
-                document.getElementById('taskGrid').innerHTML = '<div class="loading">未找到该博物馆的信息</div>';
-                currentMuseum = null;
-                return;
+                console.warn(`Museum ${museumId} not found via loader (Tier2/Tier1), trying fallback to local data`);
+                
+                // Fallback to local MUSEUMS_META data
+                if (window.MUSEUMS_META && Array.isArray(window.MUSEUMS_META)) {
+                    museum = window.MUSEUMS_META.find(m => m.id === museumId);
+                    if (museum) {
+                        console.log(`✓ Found museum ${museumId} in local MUSEUMS_META fallback`);
+                    }
+                }
+                
+                if (!museum) {
+                    console.warn(`Museum ${museumId} not found in fallback data either`);
+                    document.getElementById('museumName').textContent = '博物馆未找到';
+                    document.getElementById('taskGrid').innerHTML = '<div class="loading">未找到该博物馆的信息</div>';
+                    currentMuseum = null;
+                    return;
+                }
             }
 
             currentMuseum = museum;
@@ -853,6 +881,11 @@
         // Render task cards
         function renderTasks() {
             const taskGrid = document.getElementById('taskGrid');
+            if (!taskGrid) {
+                console.warn('Task grid element not found, skipping renderTasks');
+                return;
+            }
+            
             taskGrid.innerHTML = '';
 
             if (childTasks.length === 0) {
@@ -1606,7 +1639,7 @@
             // Handle treasure contributor section visibility (for "添加镇馆之宝" tasks)
             const contributorSection = document.getElementById('treasureContributorSection');
             const treasureNameInput = document.getElementById('modalTreasureName');
-            const treasureImageInput = document.getElementById('modalTreasureImage');
+            const treasureImageInput = document.getElementById('modalTreasureUpload');
             const treasurePreview = document.getElementById('modalTreasurePreview');
             
             const isAddTreasureTask = title && title.includes('添加镇馆之宝');
@@ -1641,6 +1674,28 @@
         }
 
         // Complete a task
+        function loadGameRewardSetting() {
+            try {
+                const saved = localStorage.getItem('gameRewardEnabled');
+                return saved === null ? true : saved === 'true';
+            } catch (error) {
+                console.error('Failed to load game reward setting:', error);
+                return true;
+            }
+        }
+
+        function saveGameRewardSetting(enabled) {
+            try {
+                localStorage.setItem('gameRewardEnabled', enabled ? 'true' : 'false');
+            } catch (error) {
+                console.error('Failed to save game reward setting:', error);
+            }
+        }
+
+        // Expose helpers for any global handlers that expect them
+        window.loadGameRewardSetting = loadGameRewardSetting;
+        window.saveGameRewardSetting = saveGameRewardSetting;
+
         async function completeTask() {
             if (currentTaskIndex === null) return;
 
@@ -1651,7 +1706,9 @@
             
             if (isAddTreasureTask) {
                 const treasureName = document.getElementById('modalTreasureName').value.trim();
-                const treasureImage = document.getElementById('modalTreasureImage').value.trim();
+                // Get image URL from preview dataset (file inputs can't store URLs in value)
+                const treasurePreview = document.getElementById('modalTreasurePreview');
+                const treasureImage = (treasurePreview && treasurePreview.dataset.imageUrl) || '';
                 
                 // Validate: treasure name is required
                 if (!treasureName) {
@@ -1698,8 +1755,9 @@
             }
 
             const hasPhoto = !!taskPhotos[currentTaskIndex];
-            const puzzleEnabled = loadPuzzleGameSetting();
-            const showGame = hasPhoto && puzzleEnabled;
+            const gameRewardEnabled = loadGameRewardSetting();
+            // Show game reward only if photo was uploaded and setting is enabled
+            const showGame = hasPhoto && gameRewardEnabled;
 
             completedTasks.add(currentTaskIndex);
             saveCompletedTasks();
@@ -1762,41 +1820,21 @@
             // Upload firework to remote
             uploadFireworkEvent(currentTaskIndex);
             
-            // Check if all tasks complete
-            checkCompletion();
-
-            // Show game as reward if photo was uploaded and setting is enabled
-            // Randomly select between puzzle game, maze game, shooting game, space invaders, and tank battle
+            // Show game as reward if setting is enabled
+            // Present 3 random games for the user to choose
+            // IMPORTANT: Do this BEFORE checkCompletion to avoid any interruption
             if (showGame) {
                 // Delay slightly to let fireworks animation start
-                // Store current task index for closure
                 const taskIndexForGame = currentTaskIndex;
-                const gameType = selectRandomGame();
+                const options = {};
+
                 setTimeout(() => {
-                    if (gameType === 'puzzle') {
-                        initPuzzleGame(taskPhotos[taskIndexForGame], taskIndexForGame);
-                    } else if (gameType === 'maze') {
-                        initMazeGame(taskIndexForGame);
-                    } else if (gameType === 'shooting') {
-                        initShootingGame(taskIndexForGame);
-                    } else if (gameType === 'space-invaders') {
-                        initSpaceInvadersGame(taskIndexForGame);
-                    } else if (gameType === 'tank-battle') {
-                        initTankBattleGame(taskIndexForGame);
-                    } else if (gameType === 'snake') {
-                        // Open snake inline overlay instead of new window
-                        if (typeof initSnakeInlineGame === 'function') {
-                            initSnakeInlineGame(taskIndexForGame);
-                        } else {
-                            // Inline snake not available — skip opening new window to keep user in flow
-                            console.warn('initSnakeInlineGame not available');
-                        }
-                    } else {
-                        // Default to minesweeper
-                        initMinesweeperGame(taskIndexForGame);
-                    }
+                    showGameChoiceOverlay(taskIndexForGame, options);
                 }, 800);
             }
+            
+            // Check if all tasks complete (do this after scheduling game reward)
+            checkCompletion();
         }
 
         // Celebrate with fireworks animation
@@ -1955,13 +1993,19 @@
             const total = childTasks.length;
             const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-            // Update text
-            document.getElementById('completedCount').textContent = completed;
+            // Update text - with null check
+            const completedCountElement = document.getElementById('completedCount');
+            if (completedCountElement) {
+                completedCountElement.textContent = completed;
+            }
             
-            // Update progress bar
-            document.getElementById('progressFill').style.width = percentage + '%';
+            // Update progress bar - with null check
+            const progressFillElement = document.getElementById('progressFill');
+            if (progressFillElement) {
+                progressFillElement.style.width = percentage + '%';
+            }
             
-            // Update stars display
+            // Update stars display - with null check
             const starsContainer = document.getElementById('progressStars');
             if (starsContainer && total > 0) {
                 let starsHTML = '';
@@ -2673,14 +2717,7 @@
                         onProgress: (stage, progress) => updateUploadProgress(preview, stage)
                     });
                     
-                    // Update the image input with the URL
-                    if (imageInput) {
-                        imageInput.value = url;
-                        // Trigger input event to update any dependent UI
-                        imageInput.dispatchEvent(new Event('input'));
-                    }
-                    
-                    // Update preview with the uploaded image
+                    // Update preview with the uploaded image and store URL
                     if (preview) {
                         const img = document.createElement('img');
                         img.src = url;
@@ -2689,6 +2726,21 @@
                         preview.innerHTML = '';
                         preview.className = 'image-preview-container';
                         preview.appendChild(img);
+                        // Store URL in dataset for later retrieval
+                        preview.dataset.imageUrl = url;
+                    }
+                    
+                    // Store URL - use dataset for file inputs, value for text inputs
+                    if (imageInput) {
+                        if (imageInput.type === 'file') {
+                            // For file inputs, store in dataset
+                            imageInput.dataset.uploadedUrl = url;
+                        } else {
+                            // For text inputs, set value directly
+                            imageInput.value = url;
+                        }
+                        // Trigger input event to update any dependent UI
+                        imageInput.dispatchEvent(new Event('input'));
                     }
                     
                     console.log('✅ 图片上传成功:', url);
@@ -3499,7 +3551,19 @@
                     deleteBtn.style.display = 'flex';
                 }
                 
-                alert('已成功发布到大家的成就！感谢分享。');
+                alert('🎉 已成功发布到大家的成就！感谢分享。\n\n🏆 获得100积分奖励！');
+                
+                // Trigger poster published event for reward system
+                if (typeof EventBus !== 'undefined' && EventBus.getInstance()) {
+                    EventBus.getInstance().emit('poster:published', {
+                        posterId: recordId,
+                        title: title,
+                        imageUrl: safeImageUrl,
+                        userId: userName,
+                        museumId: museumId,
+                        timestamp: Date.now()
+                    });
+                }
                 
                 if (confirm('是否打开「大家的成就」查看？')) {
                     window.open('everyone-achievements.html', '_blank');
@@ -3648,9 +3712,35 @@
                     visitedMuseums.push(museumId);
                     localStorage.setItem('visitedMuseums', JSON.stringify(visitedMuseums));
                     console.log('Museum auto-marked as visited:', museumId);
+                    
+                    // 主动更新排行榜数据
+                    updateLeaderboardAfterCheckin();
                 }
             } catch (error) {
                 console.error('Error marking museum as visited:', error);
+            }
+        }
+
+        // 主动更新排行榜数据（打卡后）
+        function updateLeaderboardAfterCheckin() {
+            try {
+                // 打卡后，排行榜数据会在下次访问时自动更新
+                // 不需要模态框相关的刷新逻辑
+                console.log('[MuseumCheckin] Museum checked in, leaderboard will be updated on next visit');
+                
+                // 触发排行榜数据更新事件
+                const leaderboardUpdateEvent = new CustomEvent('leaderboard:update', {
+                    detail: { 
+                        type: 'museum_checkin',
+                        museumId: museumId,
+                        timestamp: Date.now()
+                    }
+                });
+                document.dispatchEvent(leaderboardUpdateEvent);
+                
+                console.log('[Leaderboard] Update event triggered after check-in');
+            } catch (error) {
+                console.error('Error updating leaderboard after check-in:', error);
             }
         }
 
@@ -3729,7 +3819,7 @@
             const modalSearchWikiBtn = document.getElementById('modalSearchWikiBtn');
             const modalSearchBaiduBtn = document.getElementById('modalSearchBaiduBtn');
             const modalTreasureNameInput = document.getElementById('modalTreasureName');
-            const modalTreasureImageInput = document.getElementById('modalTreasureImage');
+            const modalTreasureImageInput = document.getElementById('modalTreasureUpload');
             
             if (modalSearchWikiBtn) {
                 modalSearchWikiBtn.onclick = () => {
@@ -3745,7 +3835,7 @@
                         wikiSearchInput.value = treasureName;
                     }
                     // Set callback for wiki search to update modal image input
-                    window.currentImageInputId = 'modalTreasureImage';
+                    window.currentImageInputId = 'modalTreasureUpload';
                     window.currentPreviewId = 'modalTreasurePreview';
                     openWikiSearch();
                 };
@@ -3760,7 +3850,7 @@
                         return;
                     }
                     // Set callback context for baidu search
-                    window.currentImageInputId = 'modalTreasureImage';
+                    window.currentImageInputId = 'modalTreasureUpload';
                     window.currentPreviewId = 'modalTreasurePreview';
                     // Copy name to search input and perform baidu search
                     const wikiSearchInput = document.getElementById('wikiSearchInput');
@@ -3836,7 +3926,7 @@
             // Handler for modal treasure photo upload
             const modalTreasureUpload = document.getElementById('modalTreasureUpload');
             if (modalTreasureUpload) {
-                modalTreasureUpload.addEventListener('change', (e) => handlePhotoUpload(e, 'modalTreasureImage', 'modalTreasurePreview'));
+                modalTreasureUpload.addEventListener('change', (e) => handlePhotoUpload(e, 'modalTreasureUpload', 'modalTreasurePreview'));
             }
             
             // Handler for new treasure photo upload (settings page)
@@ -3948,11 +4038,11 @@
                 };
             }
 
-            // Puzzle game settings toggle
-            const puzzleToggle = document.getElementById('puzzleGameToggle');
-            if (puzzleToggle) {
-                puzzleToggle.addEventListener('change', (e) => {
-                    savePuzzleGameSetting(e.target.checked);
+            // Game reward settings toggle
+            const gameRewardToggle = document.getElementById('gameRewardToggle');
+            if (gameRewardToggle) {
+                gameRewardToggle.addEventListener('change', (e) => {
+                    saveGameRewardSetting(e.target.checked);
                     updateGameSelectionVisibility(e.target.checked);
                 });
             }
@@ -3963,37 +4053,17 @@
                 toggle.addEventListener('change', handleGameToggleChange);
             });
 
-            // Puzzle game controls
-            const exitPuzzleBtn = document.getElementById('exitPuzzle');
-            if (exitPuzzleBtn) {
-                exitPuzzleBtn.onclick = closePuzzleGame;
-            }
-
-            const resetPuzzleBtn = document.getElementById('resetPuzzle');
-            if (resetPuzzleBtn) {
-                if (typeof isDebugMode === 'function' && !isDebugMode()) {
-                    resetPuzzleBtn.onclick = closePuzzleGame;
-                } else {
-                    resetPuzzleBtn.onclick = resetPuzzle;
-                }
-            }
-
-            const toggleRefBtn = document.getElementById('toggleReference');
-            if (toggleRefBtn) {
-                toggleRefBtn.onclick = toggleReferenceImage;
-            }
-
             // Maze game controls
             const exitMazeBtn = document.getElementById('exitMaze');
             if (exitMazeBtn) {
-                exitMazeBtn.onclick = closeMazeGame;
+                exitMazeBtn.onclick = () => window.closeUnifiedGame();
             }
 
             const resetMazeBtn = document.getElementById('resetMaze');
             if (resetMazeBtn) {
                 if (typeof isDebugMode === 'function' && !isDebugMode()) {
                     resetMazeBtn.style.display = 'none';
-                    resetMazeBtn.onclick = closeMazeGame;
+                    resetMazeBtn.onclick = () => window.closeUnifiedGame();
                 } else {
                     resetMazeBtn.style.display = '';
                     resetMazeBtn.onclick = resetMaze;
@@ -4003,39 +4073,82 @@
             // Maze direction buttons
             const mazeUpBtn = document.getElementById('mazeUp');
             if (mazeUpBtn) {
-                mazeUpBtn.onclick = () => movePlayer(0, -1);
+                mazeUpBtn.onclick = () => {
+                    // Check if new game system is active
+                    if (typeof GameManager !== 'undefined' && GameManager.isGameActive() && GameManager.getCurrentGame()?.gameType === 'maze') {
+                        // Use new system movement
+                        const currentGame = GameManager.getCurrentGame();
+                        const currentPos = currentGame.playerPos;
+                        const newPos = { x: currentPos.x, y: currentPos.y - 1 };
+                        
+                        if (currentGame.canMoveTo(newPos.x, newPos.y)) {
+                            currentGame.movePlayer(newPos.x, newPos.y);
+                        }
+                        return;
+                    }
+                    // Fall back to old system
+                    movePlayer(0, -1);
+                };
             }
 
             const mazeDownBtn = document.getElementById('mazeDown');
             if (mazeDownBtn) {
-                mazeDownBtn.onclick = () => movePlayer(0, 1);
+                mazeDownBtn.onclick = () => {
+                    // Check if new game system is active
+                    if (typeof GameManager !== 'undefined' && GameManager.isGameActive() && GameManager.getCurrentGame()?.gameType === 'maze') {
+                        // Use new system movement
+                        const currentGame = GameManager.getCurrentGame();
+                        const currentPos = currentGame.playerPos;
+                        const newPos = { x: currentPos.x, y: currentPos.y + 1 };
+                        
+                        if (currentGame.canMoveTo(newPos.x, newPos.y)) {
+                            currentGame.movePlayer(newPos.x, newPos.y);
+                        }
+                        return;
+                    }
+                    // Fall back to old system
+                    movePlayer(0, 1);
+                };
             }
 
             const mazeLeftBtn = document.getElementById('mazeLeft');
             if (mazeLeftBtn) {
-                mazeLeftBtn.onclick = () => movePlayer(-1, 0);
+                mazeLeftBtn.onclick = () => {
+                    // Check if new game system is active
+                    if (typeof GameManager !== 'undefined' && GameManager.isGameActive() && GameManager.getCurrentGame()?.gameType === 'maze') {
+                        // Use new system movement
+                        const currentGame = GameManager.getCurrentGame();
+                        const currentPos = currentGame.playerPos;
+                        const newPos = { x: currentPos.x - 1, y: currentPos.y };
+                        
+                        if (currentGame.canMoveTo(newPos.x, newPos.y)) {
+                            currentGame.movePlayer(newPos.x, newPos.y);
+                        }
+                        return;
+                    }
+                    // Fall back to old system
+                    movePlayer(-1, 0);
+                };
             }
 
             const mazeRightBtn = document.getElementById('mazeRight');
             if (mazeRightBtn) {
-                mazeRightBtn.onclick = () => movePlayer(1, 0);
-            }
-
-            // Shooting game controls
-            const exitShootingBtn = document.getElementById('exitShooting');
-            if (exitShootingBtn) {
-                exitShootingBtn.onclick = closeShootingGame;
-            }
-
-            const resetShootingBtn = document.getElementById('resetShooting');
-            if (resetShootingBtn) {
-                if (typeof isDebugMode === 'function' && !isDebugMode()) {
-                    resetShootingBtn.style.display = 'none';
-                    resetShootingBtn.onclick = closeShootingGame;
-                } else {
-                    resetShootingBtn.style.display = '';
-                    resetShootingBtn.onclick = resetShootingGame;
-                }
+                mazeRightBtn.onclick = () => {
+                    // Check if new game system is active
+                    if (typeof GameManager !== 'undefined' && GameManager.isGameActive() && GameManager.getCurrentGame()?.gameType === 'maze') {
+                        // Use new system movement
+                        const currentGame = GameManager.getCurrentGame();
+                        const currentPos = currentGame.playerPos;
+                        const newPos = { x: currentPos.x + 1, y: currentPos.y };
+                        
+                        if (currentGame.canMoveTo(newPos.x, newPos.y)) {
+                            currentGame.movePlayer(newPos.x, newPos.y);
+                        }
+                        return;
+                    }
+                    // Fall back to old system
+                    movePlayer(1, 0);
+                };
             }
 
             // Close modals on background click
@@ -5052,11 +5165,12 @@
          */
         async function addUserTreasure() {
             const nameInput = document.getElementById('newTreasureName');
-            const imageInput = document.getElementById('newTreasureImage');
+            const imagePreview = document.getElementById('newTreasurePreview');
             const successEl = document.getElementById('addTreasureSuccess');
             
             const name = nameInput.value.trim();
-            const imageUrl = imageInput.value.trim() || DEFAULT_TREASURE_IMAGE;
+            // Get image URL from preview dataset (file inputs can't store URLs in value)
+            const imageUrl = (imagePreview && imagePreview.dataset.imageUrl) || DEFAULT_TREASURE_IMAGE;
             
             if (!name) {
                 showNotification('请输入镇馆之宝名称');
@@ -5398,12 +5512,6 @@
             const previewId = window.currentPreviewId || 'newTreasurePreview';
             
             try {
-                // Update input field
-                const imageInput = document.getElementById(inputId);
-                if (imageInput) {
-                    imageInput.value = imageUrl;
-                }
-                
                 // Update preview using DOM methods to prevent XSS
                 const preview = document.getElementById(previewId);
                 if (preview) {
@@ -5413,15 +5521,22 @@
                     img.alt = '预览';
                     preview.textContent = '';
                     preview.appendChild(img);
-                    // Store image URL for museum photo submission
+                    // Store image URL in dataset for later retrieval
                     preview.dataset.imageUrl = imageUrl;
-                    
-                    // Show museum photo submit button if this is museum photo preview
-                    if (previewId === 'modalMuseumPhotoPreview') {
-                        const submitBtn = document.getElementById('modalMuseumPhotoSubmitBtn');
-                        if (submitBtn) submitBtn.style.display = 'block';
-                    }
                 }
+                
+                // Update input field (skip for file inputs which can't store URLs)
+                const imageInput = document.getElementById(inputId);
+                if (imageInput && imageInput.type !== 'file') {
+                    imageInput.value = imageUrl;
+                }
+                
+                // Show museum photo submit button if this is museum photo preview
+                if (previewId === 'modalMuseumPhotoPreview') {
+                    const submitBtn = document.getElementById('modalMuseumPhotoSubmitBtn');
+                    if (submitBtn) submitBtn.style.display = 'block';
+                }
+                
                 // Also update settings modal preview if we're using that one
                 if (inputId === 'newTreasureImage') {
                     updateNewTreasurePreview(imageUrl);
@@ -5697,11 +5812,11 @@
                 ageGroupSelector.value = ageGroup;
             }
 
-            // Load puzzle game toggle state
-            const puzzleGameEnabled = loadPuzzleGameSetting();
-            const puzzleToggle = document.getElementById('puzzleGameToggle');
-            if (puzzleToggle) {
-                puzzleToggle.checked = puzzleGameEnabled;
+            // Load game reward toggle state
+            const gameRewardEnabled = loadGameRewardSetting();
+            const gameRewardToggle = document.getElementById('gameRewardToggle');
+            if (gameRewardToggle) {
+                gameRewardToggle.checked = gameRewardEnabled;
             }
 
             // Initialize treasure check-in configuration for parent mode
@@ -5714,7 +5829,7 @@
             updateGameSelectionUI();
             
             // Update game selection visibility based on main toggle
-            updateGameSelectionVisibility(puzzleGameEnabled);
+            updateGameSelectionVisibility(gameRewardEnabled);
 
             // Show modal
             document.getElementById('settingsModal').classList.add('show');
@@ -5728,31 +5843,9 @@
             }
         }
 
-        // ===== Puzzle Game Settings =====
-        function loadPuzzleGameSetting() {
-            try {
-                const saved = localStorage.getItem('puzzleGameEnabled');
-                // Default is true (enabled) - changed to default enabled
-                return saved === null ? true : saved === 'true';
-            } catch (error) {
-                console.error('Failed to load puzzle game setting:', error);
-                return true;  // Default to enabled
-            }
-        }
-
-        function savePuzzleGameSetting(enabled) {
-            try {
-                localStorage.setItem('puzzleGameEnabled', enabled ? 'true' : 'false');
-                return true;
-            } catch (error) {
-                console.error('Failed to save puzzle game setting:', error);
-                return false;
-            }
-        }
-
         // ===== Individual Game Settings =====
-        // All games enabled by default
-        const ALL_GAMES = ['puzzle', 'maze', 'shooting', 'space-invaders', 'tank-battle', 'minesweeper', 'snake'];
+        // All games enabled by default (puzzle removed for better child experience)
+        const ALL_GAMES = ['maze', 'space-invaders', 'tank-battle', 'snake'];
 
         function loadEnabledGames() {
             try {
@@ -5857,7 +5950,7 @@
                     return 10; // Default XP
                 }
                 
-                // Fixed XP games (puzzle, maze)
+                // Fixed XP games (maze)
                 if (rewards.base) {
                     return rewards.base;
                 }
@@ -5879,12 +5972,9 @@
             // Fallback XP calculation when VirtualPet not available
             _getFallbackXP(gameType, score, timeSeconds) {
                 const fallbacks = {
-                    'puzzle': 15,
                     'maze': 20,
-                    'shooting': Math.max(10, Math.min(30, Math.floor(score / 10))),
                     'space-invaders': Math.max(15, Math.min(30, Math.floor(score / 10))),
                     'tank-battle': Math.max(20, Math.min(30, Math.floor(score / 5))),
-                    'minesweeper': Math.max(10, Math.min(25, Math.floor((100 - Math.min(timeSeconds, 100)) * 0.3))),
                     'snake': Math.max(10, Math.min(30, Math.floor(score / 10)))
                 };
                 return fallbacks[gameType] || 10;
@@ -5893,12 +5983,9 @@
             // Get display name for game type
             _getGameName(gameType) {
                 const names = {
-                    'puzzle': '拼图游戏',
                     'maze': '迷宫游戏',
-                    'shooting': '射击游戏',
                     'space-invaders': '小蜜蜂游戏',
                     'tank-battle': '坦克大战',
-                    'minesweeper': '扫雷游戏',
                     'snake': '贪食蛇'
                 };
                 return names[gameType] || '游戏';
@@ -5910,2484 +5997,6 @@
             }
         };
 
-        // ===== Puzzle Game Logic =====
-        let puzzleState = [];
-        let puzzleMoves = 0;
-        let puzzleImageUrl = '';
-        let currentPuzzleSize = 2;  // Dynamic: 2 for 4-grid, 3 for 9-grid
-        const SHUFFLE_MOVES_BASE = 20;  // Base number of random moves for 2x2
-
-        // Calculate the empty cell value based on puzzle size
-        function getEmptyCell() {
-            return currentPuzzleSize * currentPuzzleSize - 1;
-        }
-
-        // Determine puzzle size based on task index
-        // First task (门口打卡, index 0) uses 2x2 (4-grid), subsequent tasks use 3x3 (9-grid)
-        function determinePuzzleSize(taskIndex) {
-            // First task uses easier 4-grid (2x2)
-            // Subsequent tasks use more challenging 9-grid (3x3)
-            return taskIndex === 0 ? 2 : 3;
-        }
-
-        // Initialize the puzzle game with a photo and optional task index for difficulty
-        function initPuzzleGame(imageUrl, taskIndex = 0) {
-            GameRewardManager.startNewSession();
-            puzzleImageUrl = imageUrl;
-            puzzleMoves = 0;
-            document.getElementById('puzzleMoves').textContent = '0';
-            
-            // Determine puzzle size based on task
-            currentPuzzleSize = determinePuzzleSize(taskIndex);
-            
-            // Update grid CSS class for 3x3 mode
-            const grid = document.getElementById('puzzleGrid');
-            if (grid) {
-                grid.classList.remove('size-3');
-                if (currentPuzzleSize === 3) {
-                    grid.classList.add('size-3');
-                }
-            }
-            
-            // Load pet data and update title with pet
-            const petData = loadPuzzlePetData();
-            const titleEl = document.querySelector('.puzzle-title');
-            if (titleEl) {
-                const baseTitle = currentPuzzleSize === 2 ? '四宫格挑战' : '九宫格挑战';
-                titleEl.textContent = `${petData.emoji} 🧩 ${baseTitle}`;
-            }
-            
-            // Set reference image
-            const refImg = document.getElementById('puzzleReferenceImg');
-            if (refImg) {
-                refImg.src = imageUrl;
-                refImg.classList.remove('show');
-            }
-            
-            // Create initial state based on puzzle size
-            const totalCells = currentPuzzleSize * currentPuzzleSize;
-            puzzleState = Array.from({ length: totalCells }, (_, i) => i);
-            
-            // Shuffle the puzzle (ensure it's solvable)
-            shufflePuzzle();
-            
-            // Render the puzzle
-            renderPuzzle();
-            
-            // Hide complete message
-            document.getElementById('puzzleCompleteMessage').classList.remove('show');
-            
-            // Show the puzzle overlay
-            document.getElementById('puzzleGameOverlay').classList.add('show');
-        }
-
-        // Load pet data for puzzle game
-        function loadPuzzlePetData() {
-            try {
-                const saved = localStorage.getItem('virtualPetData');
-                if (saved) {
-                    const petData = JSON.parse(saved);
-                    if (petData.adopted && petData.pet) {
-                        return {
-                            emoji: petData.pet.emoji,
-                            level: calculatePetLevel(petData.pet.totalXPSpent || 0)
-                        };
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to load pet data:', error);
-            }
-            return { emoji: '🐾', level: 1 };
-        }
-
-        // Calculate pet level from XP spent
-        function calculatePetLevel(xpSpent) {
-            if (xpSpent >= 500) return 5;
-            if (xpSpent >= 300) return 4;
-            if (xpSpent >= 150) return 3;
-            if (xpSpent >= 50) return 2;
-            return 1;
-        }
-
-        // Shuffle puzzle ensuring it's solvable
-        function shufflePuzzle() {
-            // Perform random valid moves to ensure solvability
-            const emptyCell = getEmptyCell();
-            const emptyIndex = puzzleState.indexOf(emptyCell);
-            let currentEmpty = emptyIndex;
-            
-            // More shuffle moves for larger puzzles
-            const shuffleMoves = currentPuzzleSize === 2 ? SHUFFLE_MOVES_BASE : SHUFFLE_MOVES_BASE * 3;
-            
-            for (let i = 0; i < shuffleMoves; i++) {
-                const neighbors = getValidMoves(currentEmpty);
-                const randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
-                
-                // Swap empty with random neighbor
-                puzzleState[currentEmpty] = puzzleState[randomNeighbor];
-                puzzleState[randomNeighbor] = emptyCell;
-                currentEmpty = randomNeighbor;
-            }
-        }
-
-        // Get valid moves for the empty cell
-        function getValidMoves(emptyIndex) {
-            const moves = [];
-            const row = Math.floor(emptyIndex / currentPuzzleSize);
-            const col = emptyIndex % currentPuzzleSize;
-            
-            // Up
-            if (row > 0) moves.push(emptyIndex - currentPuzzleSize);
-            // Down
-            if (row < currentPuzzleSize - 1) moves.push(emptyIndex + currentPuzzleSize);
-            // Left
-            if (col > 0) moves.push(emptyIndex - 1);
-            // Right
-            if (col < currentPuzzleSize - 1) moves.push(emptyIndex + 1);
-            
-            return moves;
-        }
-
-        // Render the puzzle grid
-        function renderPuzzle() {
-            const grid = document.getElementById('puzzleGrid');
-            if (!grid) return;
-            
-            grid.innerHTML = '';
-            
-            const gridSize = grid.offsetWidth || 280;
-            const tileSize = gridSize / currentPuzzleSize;
-            
-            const emptyCell = getEmptyCell();
-            
-            for (let i = 0; i < puzzleState.length; i++) {
-                const tile = document.createElement('div');
-                tile.className = 'puzzle-tile';
-                tile.dataset.index = i;
-                
-                const value = puzzleState[i];
-                
-                if (value === emptyCell) {
-                    // Empty cell
-                    tile.classList.add('empty');
-                } else {
-                    // Calculate background position for this tile
-                    const srcRow = Math.floor(value / currentPuzzleSize);
-                    const srcCol = value % currentPuzzleSize;
-                    
-                    tile.style.backgroundImage = `url(${puzzleImageUrl})`;
-                    tile.style.backgroundPosition = `-${srcCol * tileSize}px -${srcRow * tileSize}px`;
-                    
-                    // Check if tile is in correct position
-                    if (puzzleState[i] === i) {
-                        tile.classList.add('correct');
-                    }
-                    
-                    tile.addEventListener('click', () => handleTileClick(i));
-                }
-                
-                grid.appendChild(tile);
-            }
-        }
-
-        // Handle tile click
-        function handleTileClick(clickedIndex) {
-            const emptyCell = getEmptyCell();
-            const emptyIndex = puzzleState.indexOf(emptyCell);
-            const validMoves = getValidMoves(emptyIndex);
-            
-            if (validMoves.includes(clickedIndex)) {
-                // Swap tiles
-                puzzleState[emptyIndex] = puzzleState[clickedIndex];
-                puzzleState[clickedIndex] = emptyCell;
-                
-                // Update moves count
-                puzzleMoves++;
-                document.getElementById('puzzleMoves').textContent = puzzleMoves;
-                
-                // Re-render
-                renderPuzzle();
-                
-                // Check for completion
-                checkPuzzleComplete();
-            }
-        }
-
-        // Check if puzzle is complete
-        function checkPuzzleComplete() {
-            const isComplete = puzzleState.every((value, index) => value === index);
-            
-            if (isComplete) {
-                // Load pet data for celebration
-                const petData = loadPuzzlePetData();
-                
-                // Show completion message with pet celebration
-                const completeMsg = document.getElementById('puzzleCompleteMessage');
-                completeMsg.innerHTML = `${petData.emoji} 🎉 恭喜完成！<br><small style="font-size: 14px;">宠物等级 ${petData.level} 为你庆祝</small>`;
-                completeMsg.classList.add('show');
-                
-                // Play sound if available
-                if (typeof playFireworkSound === 'function') {
-                    playFireworkSound();
-                }
-                
-                // Award XP via unified GameRewardManager
-                GameRewardManager.awardCompletion('puzzle', puzzleMoves);
-                
-                // Auto-close after delay
-                setTimeout(() => {
-                    closePuzzleGame();
-                }, 2000);
-            }
-        }
-
-        // Reset/reshuffle the puzzle
-        function resetPuzzle() {
-            puzzleMoves = 0;
-            document.getElementById('puzzleMoves').textContent = '0';
-            document.getElementById('puzzleCompleteMessage').classList.remove('show');
-            shufflePuzzle();
-            renderPuzzle();
-        }
-
-        // Close the puzzle game
-        function closePuzzleGame() {
-            document.getElementById('puzzleGameOverlay').classList.remove('show');
-            document.getElementById('puzzleCompleteMessage').classList.remove('show');
-        }
-
-        // Toggle reference image visibility
-        function toggleReferenceImage() {
-            const refImg = document.getElementById('puzzleReferenceImg');
-            if (refImg) {
-                refImg.classList.toggle('show');
-            }
-        }
-
-        // ===== Maze Game Logic =====
-        let mazeGrid = [];
-        let mazeSize = 9;  // Dynamic: 9x9 for easy, 15x15 for hard (odd numbers for better maze generation)
-        let playerPos = { x: 1, y: 1 };
-        let exitPos = { x: 7, y: 7 };
-        let mazeSteps = 0;
-        let CELL_SIZE = 30;  // Dynamic based on maze size
-        let fogOfWarEnabled = false;  // Fog of war feature for harder difficulty
-        let visibleRadius = 2;        // Number of cells visible around player (fog of war)
-        const EASY_MAZE_SIZE = 9;   // 9x9 for first task
-        const HARD_MAZE_SIZE = 15;  // 15x15 for subsequent tasks
-        
-        // Determine maze size and cell size based on task index
-        // First task (门口打卡, index 0) uses easier 9x9 maze with no fog
-        // Subsequent tasks use more challenging 15x15 maze with fog of war
-        function determineMazeSize(taskIndex) {
-            if (taskIndex === 0) {
-                return { size: EASY_MAZE_SIZE, cellSize: 30, fogEnabled: false, fogRadius: 3 };  // Easy: no fog
-            } else {
-                return { size: HARD_MAZE_SIZE, cellSize: 18, fogEnabled: true, fogRadius: 2 };   // Hard: fog of war enabled
-            }
-        }
-        const WALL = 1;
-        const PATH = 0;
-        const PLAYER = 2;
-        const EXIT = 3;
-
-        // Generate a maze using recursive backtracking algorithm
-        function generateMaze() {
-            // Initialize maze with walls
-            mazeGrid = Array(mazeSize).fill(null).map(() => Array(mazeSize).fill(WALL));
-            
-            // Start from position (1, 1)
-            const stack = [];
-            const startX = 1;
-            const startY = 1;
-            
-            mazeGrid[startY][startX] = PATH;
-            stack.push({ x: startX, y: startY });
-            
-            const directions = [
-                { dx: 0, dy: -2 },  // Up
-                { dx: 0, dy: 2 },   // Down
-                { dx: -2, dy: 0 },  // Left
-                { dx: 2, dy: 0 }    // Right
-            ];
-            
-            while (stack.length > 0) {
-                const current = stack[stack.length - 1];
-                
-                // Shuffle directions using Fisher-Yates algorithm
-                const shuffledDirs = [...directions];
-                for (let i = shuffledDirs.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffledDirs[i], shuffledDirs[j]] = [shuffledDirs[j], shuffledDirs[i]];
-                }
-                
-                let found = false;
-                for (const dir of shuffledDirs) {
-                    const newX = current.x + dir.dx;
-                    const newY = current.y + dir.dy;
-                    
-                    if (newX > 0 && newX < mazeSize - 1 && 
-                        newY > 0 && newY < mazeSize - 1 && 
-                        mazeGrid[newY][newX] === WALL) {
-                        
-                        // Carve path
-                        mazeGrid[newY][newX] = PATH;
-                        mazeGrid[current.y + dir.dy / 2][current.x + dir.dx / 2] = PATH;
-                        
-                        stack.push({ x: newX, y: newY });
-                        found = true;
-                        break;
-                    }
-                }
-                
-                if (!found) {
-                    stack.pop();
-                }
-            }
-            
-            // Set start and exit positions
-            playerPos = { x: 1, y: 1 };
-            exitPos = { x: mazeSize - 2, y: mazeSize - 2 };
-            
-            // Ensure exit is reachable
-            mazeGrid[exitPos.y][exitPos.x] = PATH;
-        }
-
-        // Initialize the maze game with optional task index for difficulty
-        function initMazeGame(taskIndex = 0) {
-            GameRewardManager.startNewSession();
-            mazeSteps = 0;
-            document.getElementById('mazeSteps').textContent = '0';
-            
-            // Determine maze difficulty based on task index
-            const difficulty = determineMazeSize(taskIndex);
-            mazeSize = difficulty.size;
-            CELL_SIZE = difficulty.cellSize;
-            fogOfWarEnabled = difficulty.fogEnabled;  // Enable fog for harder difficulty
-            visibleRadius = difficulty.fogRadius;      // Set visible radius
-            
-            // Load pet data and update title
-            const petData = loadMazePetData();
-            const titleEl = document.querySelector('.maze-title');
-            if (titleEl) {
-                const baseTitle = fogOfWarEnabled ? '迷宫冒险（迷雾模式）' : '迷宫冒险（简单）';
-                titleEl.textContent = `${petData.emoji} 🏃 ${baseTitle}`;
-            }
-            
-            generateMaze();
-            renderMaze();
-            
-            // Hide complete message
-            document.getElementById('mazeCompleteMessage').classList.remove('show');
-            
-            // Show the maze overlay
-            document.getElementById('mazeGameOverlay').classList.add('show');
-            // Log debug status when opening maze
-            try {
-                const mazeDebug = (typeof isDebugMode === 'function') ? !!isDebugMode() : (!!window.__MC_DEBUG || new URLSearchParams(window.location.search).get('debug')==='1' || (localStorage && localStorage.getItem && localStorage.getItem('mc_debug')==='1'));
-                console.info('Maze opened debug check:', mazeDebug);
-            } catch(e){}
-            
-            // Setup keyboard controls
-            document.addEventListener('keydown', handleMazeKeydown);
-            
-            // Setup touch controls for mobile
-            setupMazeTouchControls();
-        }
-
-        // Load pet data for maze game
-        function loadMazePetData() {
-            try {
-                const saved = localStorage.getItem('virtualPetData');
-                if (saved) {
-                    const petData = JSON.parse(saved);
-                    if (petData.adopted && petData.pet) {
-                        return {
-                            emoji: petData.pet.emoji,
-                            level: calculatePetLevel(petData.pet.totalXPSpent || 0)
-                        };
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to load pet data:', error);
-            }
-            return { emoji: '🐾', level: 1 };
-        }
-
-        // Render the maze on canvas
-        function renderMaze() {
-            const canvas = document.getElementById('mazeCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Set canvas size based on maze
-            canvas.width = mazeSize * CELL_SIZE;
-            canvas.height = mazeSize * CELL_SIZE;
-            
-            // Clear canvas with fog color if fog of war enabled
-            if (fogOfWarEnabled) {
-                ctx.fillStyle = '#1a1a2e';  // Dark fog color
-            } else {
-                ctx.fillStyle = '#f0f0f0';
-            }
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Helper function to check if a cell is visible (within player's visible radius)
-            function isCellVisible(x, y) {
-                if (!fogOfWarEnabled) return true;
-                const dx = Math.abs(x - playerPos.x);
-                const dy = Math.abs(y - playerPos.y);
-                return dx <= visibleRadius && dy <= visibleRadius;
-            }
-            
-            // Helper function to get visibility alpha based on distance from player
-            function getVisibilityAlpha(x, y) {
-                if (!fogOfWarEnabled) return 1;
-                const dx = Math.abs(x - playerPos.x);
-                const dy = Math.abs(y - playerPos.y);
-                const distance = Math.max(dx, dy);
-                if (distance > visibleRadius) return 0;
-                // Fade out at the edges
-                return 1 - (distance / (visibleRadius + 1)) * 0.5;
-            }
-            
-            // Draw maze
-            for (let y = 0; y < mazeSize; y++) {
-                for (let x = 0; x < mazeSize; x++) {
-                    const cellX = x * CELL_SIZE;
-                    const cellY = y * CELL_SIZE;
-                    
-                    // Skip cells not visible in fog of war mode
-                    if (!isCellVisible(x, y)) continue;
-                    
-                    const alpha = getVisibilityAlpha(x, y);
-                    
-                    if (mazeGrid[y][x] === WALL) {
-                        // Wall
-                        ctx.fillStyle = fogOfWarEnabled ? `rgba(74, 74, 74, ${alpha})` : '#4a4a4a';
-                        ctx.fillRect(cellX, cellY, CELL_SIZE, CELL_SIZE);
-                        
-                        // Add 3D effect to walls
-                        ctx.fillStyle = fogOfWarEnabled ? `rgba(58, 58, 58, ${alpha})` : '#3a3a3a';
-                        ctx.fillRect(cellX + CELL_SIZE - 2, cellY, 2, CELL_SIZE);
-                        ctx.fillRect(cellX, cellY + CELL_SIZE - 2, CELL_SIZE, 2);
-                    } else {
-                        // Path
-                        ctx.fillStyle = fogOfWarEnabled ? `rgba(255, 255, 255, ${alpha})` : '#ffffff';
-                        ctx.fillRect(cellX, cellY, CELL_SIZE, CELL_SIZE);
-                    }
-                }
-            }
-            
-            // Draw exit (goal) - only if visible or always show for navigation
-            const exitVisible = isCellVisible(exitPos.x, exitPos.y);
-            if (exitVisible || !fogOfWarEnabled) {
-                const exitAlpha = fogOfWarEnabled ? getVisibilityAlpha(exitPos.x, exitPos.y) : 1;
-                ctx.globalAlpha = exitAlpha;
-                ctx.fillStyle = '#28a745';
-                ctx.fillRect(exitPos.x * CELL_SIZE + 4, exitPos.y * CELL_SIZE + 4, CELL_SIZE - 8, CELL_SIZE - 8);
-                ctx.fillStyle = '#fff';
-                ctx.font = '16px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('🏁', exitPos.x * CELL_SIZE + CELL_SIZE / 2, exitPos.y * CELL_SIZE + CELL_SIZE / 2);
-                ctx.globalAlpha = 1;
-            }
-            
-            // Draw player (always fully visible) - now using pet emoji
-            const petData = loadMazePetData();
-            
-            // Draw player background circle with glow
-            const glowColors = ['#667eea', '#7c8eec', '#9dabf0', '#c0c8f5', '#e0e4fa'];
-            ctx.fillStyle = glowColors[Math.min(petData.level - 1, 4)];
-            ctx.shadowColor = glowColors[Math.min(petData.level - 1, 4)];
-            ctx.shadowBlur = 10 + (petData.level * 2);
-            ctx.beginPath();
-            ctx.arc(
-                playerPos.x * CELL_SIZE + CELL_SIZE / 2,
-                playerPos.y * CELL_SIZE + CELL_SIZE / 2,
-                CELL_SIZE / 3,
-                0,
-                Math.PI * 2
-            );
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            
-            // Draw pet emoji as player
-            ctx.font = `${CELL_SIZE - 8}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(petData.emoji, playerPos.x * CELL_SIZE + CELL_SIZE / 2, playerPos.y * CELL_SIZE + CELL_SIZE / 2);
-            
-            // Draw fog gradient overlay for smooth edges (only in fog mode)
-            if (fogOfWarEnabled) {
-                const centerX = playerPos.x * CELL_SIZE + CELL_SIZE / 2;
-                const centerY = playerPos.y * CELL_SIZE + CELL_SIZE / 2;
-                const innerRadius = visibleRadius * CELL_SIZE * 0.7;
-                const outerRadius = (visibleRadius + 1) * CELL_SIZE;
-                
-                const gradient = ctx.createRadialGradient(centerX, centerY, innerRadius, centerX, centerY, outerRadius);
-                gradient.addColorStop(0, 'rgba(26, 26, 46, 0)');
-                gradient.addColorStop(0.7, 'rgba(26, 26, 46, 0.3)');
-                gradient.addColorStop(1, 'rgba(26, 26, 46, 0.9)');
-                
-                ctx.fillStyle = gradient;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-        }
-
-        // Move player in the maze
-        function movePlayer(dx, dy) {
-            const newX = playerPos.x + dx;
-            const newY = playerPos.y + dy;
-            
-            // Check if move is valid
-            if (newX >= 0 && newX < mazeSize && 
-                newY >= 0 && newY < mazeSize && 
-                mazeGrid[newY][newX] !== WALL) {
-                
-                playerPos.x = newX;
-                playerPos.y = newY;
-                mazeSteps++;
-                document.getElementById('mazeSteps').textContent = mazeSteps;
-                
-                renderMaze();
-                
-                // Check if reached exit
-                if (playerPos.x === exitPos.x && playerPos.y === exitPos.y) {
-                    checkMazeComplete();
-                }
-            }
-        }
-
-        // Handle keyboard input for maze
-        function handleMazeKeydown(e) {
-            if (!document.getElementById('mazeGameOverlay').classList.contains('show')) {
-                return;
-            }
-            
-            switch (e.key) {
-                case 'ArrowUp':
-                case 'w':
-                case 'W':
-                    e.preventDefault();
-                    movePlayer(0, -1);
-                    break;
-                case 'ArrowDown':
-                case 's':
-                case 'S':
-                    e.preventDefault();
-                    movePlayer(0, 1);
-                    break;
-                case 'ArrowLeft':
-                case 'a':
-                case 'A':
-                    e.preventDefault();
-                    movePlayer(-1, 0);
-                    break;
-                case 'ArrowRight':
-                case 'd':
-                case 'D':
-                    e.preventDefault();
-                    movePlayer(1, 0);
-                    break;
-            }
-        }
-
-        // Setup touch controls for mobile
-        function setupMazeTouchControls() {
-            const canvas = document.getElementById('mazeCanvas');
-            let touchStartX = 0;
-            let touchStartY = 0;
-            
-            canvas.addEventListener('touchstart', (e) => {
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-            }, { passive: true });
-            
-            canvas.addEventListener('touchend', (e) => {
-                const touchEndX = e.changedTouches[0].clientX;
-                const touchEndY = e.changedTouches[0].clientY;
-                
-                const dx = touchEndX - touchStartX;
-                const dy = touchEndY - touchStartY;
-                
-                const minSwipeDistance = 30;
-                
-                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > minSwipeDistance) {
-                    // Horizontal swipe
-                    if (dx > 0) {
-                        movePlayer(1, 0);  // Right
-                    } else {
-                        movePlayer(-1, 0);  // Left
-                    }
-                } else if (Math.abs(dy) > minSwipeDistance) {
-                    // Vertical swipe
-                    if (dy > 0) {
-                        movePlayer(0, 1);  // Down
-                    } else {
-                        movePlayer(0, -1);  // Up
-                    }
-                }
-            }, { passive: true });
-        }
-
-        // Check if maze is complete
-        function checkMazeComplete() {
-            // Load pet data for celebration
-            const petData = loadMazePetData();
-            
-            // Show completion message with pet celebration
-            const completeMsg = document.getElementById('mazeCompleteMessage');
-            completeMsg.innerHTML = `${petData.emoji} 🎉 成功脱出！<br><small style="font-size: 14px;">宠物等级 ${petData.level} 为你庆祝</small>`;
-            completeMsg.classList.add('show');
-            
-            // Play sound if available
-            if (typeof playFireworkSound === 'function') {
-                playFireworkSound();
-            }
-            
-            // Award XP via unified GameRewardManager
-            GameRewardManager.awardCompletion('maze', mazeSteps);
-            
-            // Auto-close after delay
-            setTimeout(() => {
-                closeMazeGame();
-            }, 2000);
-        }
-
-        // Reset the maze
-        function resetMaze() {
-            mazeSteps = 0;
-            document.getElementById('mazeSteps').textContent = '0';
-            document.getElementById('mazeCompleteMessage').classList.remove('show');
-            generateMaze();
-            renderMaze();
-        }
-
-        // Close the maze game
-        function closeMazeGame() {
-            document.getElementById('mazeGameOverlay').classList.remove('show');
-            document.getElementById('mazeCompleteMessage').classList.remove('show');
-            document.removeEventListener('keydown', handleMazeKeydown);
-        }
-
-        // ===== Shooting Game Logic =====
-        let shootingScore = 0;
-        let shootingTimeLeft = 30;
-        let shootingTimer = null;
-        let shootingTargets = [];
-        let shootingAnimationId = null;
-        let currentShootingDifficulty = 1;  // 1 for easy, 2 for hard
-        
-        const SHOOTING_EASY_TIME = 30;   // 30 seconds for first task
-        const SHOOTING_HARD_TIME = 20;   // 20 seconds for subsequent tasks
-        const SHOOTING_CANVAS_WIDTH = 320;
-        const SHOOTING_CANVAS_HEIGHT = 400;
-        const HIT_TOLERANCE = 10;        // Extra pixels for easier hitting
-        
-        // Target types with different points and speeds
-        const TARGET_TYPES = [
-            { emoji: '🎈', points: 10, speed: 2, size: 40 },    // Balloon - slow, easy
-            { emoji: '🦋', points: 20, speed: 3, size: 35 },    // Butterfly - medium
-            { emoji: '🐝', points: 30, speed: 4, size: 30 },    // Bee - fast, harder
-            { emoji: '🌟', points: 50, speed: 5, size: 25 },    // Star - fastest, bonus
-        ];
-        
-        // Determine shooting game difficulty based on task index
-        function determineShootingDifficulty(taskIndex) {
-            if (taskIndex === 0) {
-                return { 
-                    time: SHOOTING_EASY_TIME, 
-                    difficulty: 1,
-                    spawnRate: 1500,  // Slower spawn
-                    maxTargets: 5 
-                };
-            } else {
-                return { 
-                    time: SHOOTING_HARD_TIME, 
-                    difficulty: 2,
-                    spawnRate: 1000,  // Faster spawn
-                    maxTargets: 8 
-                };
-            }
-        }
-        
-        // Create a new target
-        function createShootingTarget(difficulty) {
-            // In hard mode, include more fast targets
-            const typeIndex = difficulty === 1 
-                ? Math.floor(Math.random() * 3)  // Easy: no star
-                : Math.floor(Math.random() * TARGET_TYPES.length);
-            
-            const targetType = TARGET_TYPES[typeIndex];
-            
-            return {
-                x: Math.random() * (SHOOTING_CANVAS_WIDTH - targetType.size),
-                y: SHOOTING_CANVAS_HEIGHT + targetType.size,
-                vx: (Math.random() - 0.5) * 2,  // Random horizontal drift
-                vy: -targetType.speed * (0.8 + Math.random() * 0.4),  // Upward with variation
-                ...targetType,
-                hit: false
-            };
-        }
-        
-        // Initialize the shooting game
-        function initShootingGame(taskIndex = 0) {
-            GameRewardManager.startNewSession();
-            const settings = determineShootingDifficulty(taskIndex);
-            
-            shootingScore = 0;
-            shootingTimeLeft = settings.time;
-            currentShootingDifficulty = settings.difficulty;
-            shootingTargets = [];
-            
-            document.getElementById('shootingScore').textContent = '0';
-            document.getElementById('shootingTime').textContent = shootingTimeLeft;
-            
-            // Update title to reflect difficulty
-            const titleEl = document.querySelector('.shooting-title');
-            if (titleEl) {
-                titleEl.textContent = settings.difficulty === 1 ? '🎯 射击大师（简单）' : '🎯 射击大师（困难）';
-            }
-            
-            // Hide complete message
-            document.getElementById('shootingCompleteMessage').classList.remove('show');
-            
-            // Show the shooting overlay
-            document.getElementById('shootingGameOverlay').classList.add('show');
-            // Log debug status when opening shooting
-            try { const sDebug = (typeof isDebugMode === 'function') ? !!isDebugMode() : (!!window.__MC_DEBUG || new URLSearchParams(window.location.search).get('debug')==='1' || (localStorage && localStorage.getItem && localStorage.getItem('mc_debug')==='1')); console.info('Shooting opened debug check:', sDebug); } catch(e){}
-            
-            // Setup canvas click/touch handler
-            const canvas = document.getElementById('shootingCanvas');
-            canvas.onclick = handleShootingClick;
-            canvas.ontouchstart = handleShootingTouch;
-            
-            // Start the game loop
-            startShootingGame(settings);
-        }
-        
-        // Start the shooting game
-        function startShootingGame(settings) {
-            // Clear any existing timer
-            if (shootingTimer) {
-                clearInterval(shootingTimer);
-            }
-            if (shootingAnimationId) {
-                cancelAnimationFrame(shootingAnimationId);
-            }
-            
-            // Spawn initial targets
-            for (let i = 0; i < 3; i++) {
-                shootingTargets.push(createShootingTarget(settings.difficulty));
-            }
-            
-            // Start countdown timer
-            shootingTimer = setInterval(() => {
-                shootingTimeLeft--;
-                document.getElementById('shootingTime').textContent = shootingTimeLeft;
-                
-                // Spawn new targets periodically
-                if (shootingTargets.length < settings.maxTargets && Math.random() < 0.5) {
-                    shootingTargets.push(createShootingTarget(settings.difficulty));
-                }
-                
-                if (shootingTimeLeft <= 0) {
-                    endShootingGame();
-                }
-            }, 1000);
-            
-            // Spawn targets at regular intervals
-            const spawnInterval = setInterval(() => {
-                if (shootingTimeLeft <= 0) {
-                    clearInterval(spawnInterval);
-                    return;
-                }
-                if (shootingTargets.length < settings.maxTargets) {
-                    shootingTargets.push(createShootingTarget(settings.difficulty));
-                }
-            }, settings.spawnRate);
-            
-            // Start animation loop
-            updateShootingGame();
-        }
-        
-        // Update and render the shooting game
-        function updateShootingGame() {
-            if (shootingTimeLeft <= 0) return;
-            
-            const canvas = document.getElementById('shootingCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Clear canvas
-            ctx.fillStyle = '#87CEEB';  // Sky blue background
-            ctx.fillRect(0, 0, SHOOTING_CANVAS_WIDTH, SHOOTING_CANVAS_HEIGHT);
-            
-            // Draw grass at bottom
-            ctx.fillStyle = '#228B22';
-            ctx.fillRect(0, SHOOTING_CANVAS_HEIGHT - 40, SHOOTING_CANVAS_WIDTH, 40);
-            
-            // Draw some clouds
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.beginPath();
-            ctx.arc(50, 50, 25, 0, Math.PI * 2);
-            ctx.arc(80, 50, 30, 0, Math.PI * 2);
-            ctx.arc(110, 50, 20, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.beginPath();
-            ctx.arc(250, 80, 20, 0, Math.PI * 2);
-            ctx.arc(275, 80, 25, 0, Math.PI * 2);
-            ctx.arc(295, 80, 18, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Update and draw targets
-            shootingTargets = shootingTargets.filter(target => {
-                if (target.hit) return false;
-                
-                // Update position
-                target.x += target.vx;
-                target.y += target.vy;
-                
-                // Bounce off walls
-                if (target.x < 0 || target.x > SHOOTING_CANVAS_WIDTH - target.size) {
-                    target.vx = -target.vx;
-                    target.x = Math.max(0, Math.min(SHOOTING_CANVAS_WIDTH - target.size, target.x));
-                }
-                
-                // Remove if off screen (top)
-                if (target.y < -target.size) {
-                    return false;
-                }
-                
-                // Draw target
-                ctx.font = `${target.size}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(target.emoji, target.x + target.size / 2, target.y + target.size / 2);
-                
-                return true;
-            });
-            
-            // Continue animation
-            shootingAnimationId = requestAnimationFrame(updateShootingGame);
-        }
-        
-        // Handle click on shooting canvas
-        function handleShootingClick(e) {
-            const canvas = document.getElementById('shootingCanvas');
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            checkShootingHit(x, y);
-        }
-        
-        // Handle touch on shooting canvas
-        function handleShootingTouch(e) {
-            e.preventDefault();
-            const canvas = document.getElementById('shootingCanvas');
-            const rect = canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
-            
-            checkShootingHit(x, y);
-        }
-        
-        // Check if a shot hit a target
-        function checkShootingHit(x, y) {
-            for (let i = shootingTargets.length - 1; i >= 0; i--) {
-                const target = shootingTargets[i];
-                const centerX = target.x + target.size / 2;
-                const centerY = target.y + target.size / 2;
-                const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-                
-                if (distance < target.size / 2 + HIT_TOLERANCE) {
-                    // Hit!
-                    target.hit = true;
-                    shootingScore += target.points;
-                    document.getElementById('shootingScore').textContent = shootingScore;
-                    
-                    // Show hit effect
-                    showHitEffect(target.x, target.y);
-                    
-                    // Play sound if available
-                    if (typeof playFireworkSound === 'function') {
-                        playFireworkSound();
-                    }
-                    
-                    break;  // Only hit one target per click
-                }
-            }
-        }
-        
-        // Show a visual hit effect
-        function showHitEffect(x, y) {
-            const canvas = document.getElementById('shootingCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Draw explosion effect
-            ctx.fillStyle = '#FFD700';
-            ctx.beginPath();
-            ctx.arc(x + 20, y + 20, 20, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.font = '24px Arial';
-            ctx.fillStyle = '#FF6B6B';
-            ctx.textAlign = 'center';
-            ctx.fillText('💥', x + 20, y + 20);
-        }
-        
-        // End the shooting game
-        function endShootingGame() {
-            // Clear timer and animation
-            if (shootingTimer) {
-                clearInterval(shootingTimer);
-                shootingTimer = null;
-            }
-            if (shootingAnimationId) {
-                cancelAnimationFrame(shootingAnimationId);
-                shootingAnimationId = null;
-            }
-            
-            // Show completion message
-            document.getElementById('finalScore').textContent = shootingScore;
-            document.getElementById('shootingCompleteMessage').classList.add('show');
-            
-            // Award XP via unified GameRewardManager
-            GameRewardManager.awardCompletion('shooting', shootingScore);
-            
-            // Auto-close after delay
-            setTimeout(() => {
-                closeShootingGame();
-            }, 2500);
-        }
-        
-        // Reset the shooting game
-        function resetShootingGame() {
-            // Stop current game
-            if (shootingTimer) {
-                clearInterval(shootingTimer);
-                shootingTimer = null;
-            }
-            if (shootingAnimationId) {
-                cancelAnimationFrame(shootingAnimationId);
-                shootingAnimationId = null;
-            }
-            
-            // Hide complete message
-            document.getElementById('shootingCompleteMessage').classList.remove('show');
-            
-            // Reinitialize with same difficulty
-            const settings = currentShootingDifficulty === 1 
-                ? { time: SHOOTING_EASY_TIME, difficulty: 1, spawnRate: 1500, maxTargets: 5 }
-                : { time: SHOOTING_HARD_TIME, difficulty: 2, spawnRate: 1000, maxTargets: 8 };
-            
-            shootingScore = 0;
-            shootingTimeLeft = settings.time;
-            shootingTargets = [];
-            
-            document.getElementById('shootingScore').textContent = '0';
-            document.getElementById('shootingTime').textContent = shootingTimeLeft;
-            
-            startShootingGame(settings);
-        }
-        
-        // Close the shooting game
-        function closeShootingGame() {
-            // Stop timers and animation
-            if (shootingTimer) {
-                clearInterval(shootingTimer);
-                shootingTimer = null;
-            }
-            if (shootingAnimationId) {
-                cancelAnimationFrame(shootingAnimationId);
-                shootingAnimationId = null;
-            }
-            
-            document.getElementById('shootingGameOverlay').classList.remove('show');
-            document.getElementById('shootingCompleteMessage').classList.remove('show');
-            
-            // Remove event listeners
-            const canvas = document.getElementById('shootingCanvas');
-            canvas.onclick = null;
-            canvas.ontouchstart = null;
-        }
-
-        // ===== Space Invaders (小蜜蜂) Game Logic =====
-        let siScore = 0;
-        let siLives = 3;
-        let siGameOver = false;
-        let siAnimationId = null;
-        let siPlayer = null;
-        let siBullets = [];
-        let siEnemies = [];
-        let siEnemyBullets = [];
-        let siExplosions = [];
-        let siEnemyDirection = 1;
-        let siEnemySpeed = 1;
-        let siKeys = { left: false, right: false, fire: false };
-        let siTouchLeft = false;
-        let siTouchRight = false;
-        let siLastFireTime = 0;
-        
-        const SI_CANVAS_WIDTH = 320;
-        const SI_CANVAS_HEIGHT = 400;
-        const SI_PLAYER_WIDTH = 50;      // Larger player for easier control
-        const SI_PLAYER_HEIGHT = 30;     // Larger player for easier control
-        const SI_PLAYER_SPEED = 8;       // Faster movement for better dodging
-        const SI_BULLET_SPEED = 12;      // Faster bullets for easier hitting
-        const SI_ENEMY_WIDTH = 40;       // Larger enemies = easier targets
-        const SI_ENEMY_HEIGHT = 30;      // Larger enemies = easier targets
-        const SI_FIRE_COOLDOWN = 200;    // Faster shooting for more fun
-        const SI_ENEMY_FIRE_CHANCE = 0.003;  // Enemies fire less often
-        const SI_MAX_BULLETS = 5;        // More bullets on screen
-        
-        const SI_ENEMY_COLORS = ['#FFD700', '#FF6B00', '#FF00FF', '#00FFFF'];
-        
-        // Initialize Space Invaders game
-        function initSpaceInvadersGame(taskIndex) {
-            GameRewardManager.startNewSession();
-            siScore = 0;
-            siLives = 5;                 // More lives for better sense of achievement
-            siGameOver = false;
-            siBullets = [];
-            siEnemies = [];
-            siEnemyBullets = [];
-            siExplosions = [];
-            siEnemyDirection = 1;
-            siEnemySpeed = taskIndex === 0 ? 0.5 : 0.8;  // Slower enemies for easier gameplay
-            siKeys = { left: false, right: false, fire: false };
-            siTouchLeft = false;
-            siTouchRight = false;
-            
-            // Initialize player
-            siPlayer = {
-                x: SI_CANVAS_WIDTH / 2 - SI_PLAYER_WIDTH / 2,
-                y: SI_CANVAS_HEIGHT - SI_PLAYER_HEIGHT - 15,
-                width: SI_PLAYER_WIDTH,
-                height: SI_PLAYER_HEIGHT,
-                invincible: false,
-                invincibleTime: 0
-            };
-            
-            // Initialize enemies - fewer enemies for easier completion
-            const rows = taskIndex === 0 ? 2 : 3;    // Fewer rows
-            const cols = taskIndex === 0 ? 5 : 6;    // Fewer columns
-            const startX = (SI_CANVAS_WIDTH - (cols * (SI_ENEMY_WIDTH + 8))) / 2;
-            const startY = 50;
-            
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < cols; col++) {
-                    siEnemies.push({
-                        x: startX + col * (SI_ENEMY_WIDTH + 8),
-                        y: startY + row * (SI_ENEMY_HEIGHT + 8),
-                        width: SI_ENEMY_WIDTH,
-                        height: SI_ENEMY_HEIGHT,
-                        type: row % 4,
-                        animFrame: 0,
-                        animTimer: 0
-                    });
-                }
-            }
-            
-            // Update UI
-            document.getElementById('siScore').textContent = '0';
-            document.getElementById('siLives').textContent = '5';
-            document.getElementById('spaceInvadersCompleteMessage').classList.remove('show');
-            
-            // Show overlay
-            document.getElementById('spaceInvadersOverlay').classList.add('show');
-            // Log debug status when opening space invaders
-            try { const siDebug = (typeof isDebugMode === 'function') ? !!isDebugMode() : (!!window.__MC_DEBUG || new URLSearchParams(window.location.search).get('debug')==='1' || (localStorage && localStorage.getItem && localStorage.getItem('mc_debug')==='1')); console.info('SpaceInvaders opened debug check:', siDebug); } catch(e){}
-            
-            // Setup keyboard events
-            document.addEventListener('keydown', siHandleKeyDown);
-            document.addEventListener('keyup', siHandleKeyUp);
-            
-            // Setup touch controls
-            setupSITouchControls();
-            
-            // Setup button handlers
-            const resetSI = document.getElementById('resetSpaceInvaders');
-            if (resetSI) {
-                if (typeof isDebugMode === 'function' && !isDebugMode()) {
-                    resetSI.style.display = 'none';
-                    resetSI.onclick = cleanupSpaceInvadersGame;
-                } else {
-                    resetSI.style.display = '';
-                    resetSI.onclick = () => { cleanupSpaceInvadersGame(); initSpaceInvadersGame(taskIndex); };
-                }
-            }
-            const exitSIBtn = document.getElementById('exitSpaceInvaders');
-            if (exitSIBtn) exitSIBtn.onclick = cleanupSpaceInvadersGame;
-            
-            // Start game loop
-            siGameLoop();
-        }
-        
-        function setupSITouchControls() {
-            const leftBtn = document.getElementById('siLeftBtn');
-            const rightBtn = document.getElementById('siRightBtn');
-            const fireBtn = document.getElementById('siFireBtn');
-            
-            leftBtn.ontouchstart = (e) => { e.preventDefault(); siTouchLeft = true; };
-            leftBtn.ontouchend = () => { siTouchLeft = false; };
-            leftBtn.onmousedown = () => { siTouchLeft = true; };
-            leftBtn.onmouseup = () => { siTouchLeft = false; };
-            
-            rightBtn.ontouchstart = (e) => { e.preventDefault(); siTouchRight = true; };
-            rightBtn.ontouchend = () => { siTouchRight = false; };
-            rightBtn.onmousedown = () => { siTouchRight = true; };
-            rightBtn.onmouseup = () => { siTouchRight = false; };
-            
-            fireBtn.ontouchstart = (e) => { e.preventDefault(); siFireBullet(); };
-            fireBtn.onmousedown = () => { siFireBullet(); };
-        }
-        
-        function siHandleKeyDown(e) {
-            if (siGameOver) return;
-            if (e.code === 'ArrowLeft' || e.code === 'KeyA') { siKeys.left = true; e.preventDefault(); }
-            if (e.code === 'ArrowRight' || e.code === 'KeyD') { siKeys.right = true; e.preventDefault(); }
-            if (e.code === 'Space') { siFireBullet(); e.preventDefault(); }
-        }
-        
-        function siHandleKeyUp(e) {
-            if (e.code === 'ArrowLeft' || e.code === 'KeyA') siKeys.left = false;
-            if (e.code === 'ArrowRight' || e.code === 'KeyD') siKeys.right = false;
-        }
-        
-        function siFireBullet() {
-            if (siGameOver) return;
-            const now = Date.now();
-            if (now - siLastFireTime < SI_FIRE_COOLDOWN) return;
-            if (siBullets.length >= SI_MAX_BULLETS) return;
-            
-            siLastFireTime = now;
-            siBullets.push({
-                x: siPlayer.x + siPlayer.width / 2 - 2,
-                y: siPlayer.y,
-                width: 4,
-                height: 12
-            });
-        }
-        
-        function siCreateExplosion(x, y) {
-            for (let i = 0; i < 12; i++) {
-                const angle = (Math.PI * 2 * i) / 12;
-                const speed = Math.random() * 3 + 2;
-                siExplosions.push({
-                    x: x, y: y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    life: 1,
-                    color: SI_ENEMY_COLORS[Math.floor(Math.random() * SI_ENEMY_COLORS.length)],
-                    size: Math.random() * 4 + 2
-                });
-            }
-        }
-        
-        function siGameLoop() {
-            if (siGameOver) return;
-            
-            siUpdate();
-            siRender();
-            siAnimationId = requestAnimationFrame(siGameLoop);
-        }
-        
-        function siUpdate() {
-            // Update player
-            if (siKeys.left || siTouchLeft) siPlayer.x -= SI_PLAYER_SPEED;
-            if (siKeys.right || siTouchRight) siPlayer.x += SI_PLAYER_SPEED;
-            siPlayer.x = Math.max(0, Math.min(SI_CANVAS_WIDTH - siPlayer.width, siPlayer.x));
-            
-            // Update bullets
-            siBullets = siBullets.filter(b => {
-                b.y -= SI_BULLET_SPEED;
-                return b.y + b.height > 0;
-            });
-            
-            // Update enemy bullets
-            siEnemyBullets = siEnemyBullets.filter(b => {
-                b.y += 4;
-                return b.y < SI_CANVAS_HEIGHT;
-            });
-            
-            // Update enemies
-            if (siEnemies.length > 0) {
-                let leftMost = SI_CANVAS_WIDTH, rightMost = 0;
-                siEnemies.forEach(e => {
-                    leftMost = Math.min(leftMost, e.x);
-                    rightMost = Math.max(rightMost, e.x + e.width);
-                });
-                
-                let shouldDrop = false;
-                if (siEnemyDirection > 0 && rightMost + siEnemySpeed >= SI_CANVAS_WIDTH) {
-                    siEnemyDirection = -1;
-                    shouldDrop = true;
-                } else if (siEnemyDirection < 0 && leftMost - siEnemySpeed <= 0) {
-                    siEnemyDirection = 1;
-                    shouldDrop = true;
-                }
-                
-                siEnemies.forEach(e => {
-                    e.x += siEnemySpeed * siEnemyDirection;
-                    if (shouldDrop) e.y += 20;
-                    e.animTimer++;
-                    if (e.animTimer > 20) { e.animFrame = (e.animFrame + 1) % 2; e.animTimer = 0; }
-                    
-                    // Random fire
-                    if (Math.random() < SI_ENEMY_FIRE_CHANCE) {
-                        siEnemyBullets.push({
-                            x: e.x + e.width / 2 - 2,
-                            y: e.y + e.height,
-                            width: 4,
-                            height: 10
-                        });
-                    }
-                    
-                    // Check if reached bottom
-                    if (e.y + e.height >= siPlayer.y) {
-                        siEndGame();
-                    }
-                });
-            }
-            
-            // Update explosions
-            siExplosions = siExplosions.filter(p => {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += 0.1;
-                p.life -= 0.03;
-                return p.life > 0;
-            });
-            
-            // Check collisions: bullets vs enemies
-            for (let i = siBullets.length - 1; i >= 0; i--) {
-                for (let j = siEnemies.length - 1; j >= 0; j--) {
-                    if (siIsColliding(siBullets[i], siEnemies[j])) {
-                        siCreateExplosion(siEnemies[j].x + siEnemies[j].width / 2, siEnemies[j].y + siEnemies[j].height / 2);
-                        siScore += 10 * (siEnemies[j].type + 1);
-                        document.getElementById('siScore').textContent = siScore;
-                        siBullets.splice(i, 1);
-                        siEnemies.splice(j, 1);
-                        break;
-                    }
-                }
-            }
-            
-            // Check collisions: enemy bullets vs player
-            if (!siPlayer.invincible) {
-                for (let i = siEnemyBullets.length - 1; i >= 0; i--) {
-                    if (siIsColliding(siEnemyBullets[i], siPlayer)) {
-                        siEnemyBullets.splice(i, 1);
-                        siPlayerHit();
-                        break;
-                    }
-                }
-            }
-            
-            // Update invincibility
-            if (siPlayer.invincible) {
-                siPlayer.invincibleTime--;
-                if (siPlayer.invincibleTime <= 0) siPlayer.invincible = false;
-            }
-            
-            // Check victory
-            if (siEnemies.length === 0) {
-                siEndGame(true);
-            }
-        }
-        
-        function siIsColliding(a, b) {
-            return a.x < b.x + b.width && a.x + a.width > b.x &&
-                   a.y < b.y + b.height && a.y + a.height > b.y;
-        }
-        
-        function siPlayerHit() {
-            siLives--;
-            document.getElementById('siLives').textContent = siLives;
-            siCreateExplosion(siPlayer.x + siPlayer.width / 2, siPlayer.y + siPlayer.height / 2);
-            
-            if (siLives <= 0) {
-                siEndGame();
-            } else {
-                siPlayer.invincible = true;
-                siPlayer.invincibleTime = 90;
-            }
-        }
-        
-        function siEndGame(victory = false) {
-            siGameOver = true;
-            if (victory) siScore += 100;
-            document.getElementById('siFinalScore').textContent = siScore;
-            document.getElementById('spaceInvadersCompleteMessage').classList.add('show');
-            
-            // Award XP via unified GameRewardManager
-            GameRewardManager.awardCompletion('space-invaders', siScore);
-        }
-        
-        function siRender() {
-            const canvas = document.getElementById('spaceInvadersCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Clear canvas
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, SI_CANVAS_WIDTH, SI_CANVAS_HEIGHT);
-            
-            // Draw stars
-            ctx.fillStyle = '#FFF';
-            for (let i = 0; i < 30; i++) {
-                const x = (i * 37) % SI_CANVAS_WIDTH;
-                const y = (i * 23) % SI_CANVAS_HEIGHT;
-                ctx.fillRect(x, y, 1, 1);
-            }
-            
-            // Draw player (blink when invincible)
-            if (!siPlayer.invincible || Math.floor(siPlayer.invincibleTime / 4) % 2 === 0) {
-                ctx.fillStyle = '#00FF00';
-                ctx.beginPath();
-                ctx.moveTo(siPlayer.x + siPlayer.width / 2, siPlayer.y);
-                ctx.lineTo(siPlayer.x + siPlayer.width, siPlayer.y + siPlayer.height);
-                ctx.lineTo(siPlayer.x + siPlayer.width * 0.7, siPlayer.y + siPlayer.height * 0.7);
-                ctx.lineTo(siPlayer.x + siPlayer.width * 0.3, siPlayer.y + siPlayer.height * 0.7);
-                ctx.lineTo(siPlayer.x, siPlayer.y + siPlayer.height);
-                ctx.closePath();
-                ctx.fill();
-                
-                // Cockpit
-                ctx.fillStyle = '#00CCFF';
-                ctx.beginPath();
-                ctx.arc(siPlayer.x + siPlayer.width / 2, siPlayer.y + siPlayer.height * 0.4, siPlayer.width * 0.12, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            
-            // Draw bullets
-            ctx.fillStyle = '#FFFF00';
-            ctx.shadowColor = '#FFFF00';
-            ctx.shadowBlur = 8;
-            siBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
-            ctx.shadowBlur = 0;
-            
-            // Draw enemy bullets
-            ctx.fillStyle = '#FF0000';
-            ctx.shadowColor = '#FF0000';
-            ctx.shadowBlur = 8;
-            siEnemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
-            ctx.shadowBlur = 0;
-            
-            // Draw enemies (bees)
-            siEnemies.forEach(e => {
-                const color = SI_ENEMY_COLORS[e.type];
-                const x = e.x, y = e.y, w = e.width, h = e.height;
-                
-                ctx.shadowColor = color;
-                ctx.shadowBlur = 8;
-                
-                // Body
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.ellipse(x + w / 2, y + h / 2, w / 2.5, h / 2.5, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Stripes
-                ctx.fillStyle = '#000';
-                ctx.fillRect(x + w * 0.25, y + h * 0.35, w * 0.5, h * 0.08);
-                ctx.fillRect(x + w * 0.2, y + h * 0.5, w * 0.6, h * 0.08);
-                
-                // Wings
-                const wingAngle = e.animFrame === 0 ? 0.3 : -0.3;
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                ctx.beginPath();
-                ctx.ellipse(x + w * 0.15, y + h * 0.3, w * 0.2, h * 0.12, wingAngle, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.ellipse(x + w * 0.85, y + h * 0.3, w * 0.2, h * 0.12, -wingAngle, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Eyes
-                ctx.fillStyle = '#FFF';
-                ctx.beginPath();
-                ctx.arc(x + w * 0.35, y + h * 0.35, w * 0.06, 0, Math.PI * 2);
-                ctx.arc(x + w * 0.65, y + h * 0.35, w * 0.06, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.shadowBlur = 0;
-            });
-            
-            // Draw explosions
-            siExplosions.forEach(p => {
-                ctx.globalAlpha = p.life;
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-                ctx.fill();
-            });
-            ctx.globalAlpha = 1;
-        }
-        
-        function cleanupSpaceInvadersGame() {
-            siGameOver = true;
-            if (siAnimationId) {
-                cancelAnimationFrame(siAnimationId);
-                siAnimationId = null;
-            }
-            
-            document.removeEventListener('keydown', siHandleKeyDown);
-            document.removeEventListener('keyup', siHandleKeyUp);
-            
-            document.getElementById('spaceInvadersOverlay').classList.remove('show');
-            document.getElementById('spaceInvadersCompleteMessage').classList.remove('show');
-        }
-
-        // ===== Tank Battle (坦克大战) Game Logic =====
-        let tbScore = 0;
-        let tbLives = 3;
-        let tbGameOver = false;
-        let tbAnimationId = null;
-        let tbPlayer = null;
-        let tbBullets = [];
-        let tbEnemies = [];
-        let tbEnemyBullets = [];
-        let tbExplosions = [];
-        let tbWalls = [];
-        let tbKeys = { up: false, down: false, left: false, right: false, fire: false };
-        let tbLastFireTime = 0;
-        let tbEnemiesKilled = 0;
-        let tbTotalEnemies = 5;
-        
-        const TB_CANVAS_WIDTH = 320;
-        const TB_CANVAS_HEIGHT = 320;
-        const TB_TILE_SIZE = 32;
-        const TB_TANK_SIZE = 28;
-        const TB_BULLET_SIZE = 6;
-        const TB_PLAYER_SPEED = 2.5;      // Faster player for easier control
-        const TB_ENEMY_SPEED = 1.2;       // Slower enemies for easier gameplay
-        const TB_BULLET_SPEED = 6;
-        const TB_FIRE_COOLDOWN = 400;     // Longer cooldown for more strategic play
-        const TB_ENEMY_FIRE_COOLDOWN = 2500;  // Enemies fire less often
-        const TB_ENEMY_RANDOM_FIRE_CHANCE = 0.015;  // Random fire probability per frame (lower = easier)
-        
-        const TB_COLORS = {
-            player: '#4CAF50',
-            playerBarrel: '#2E7D32',
-            enemy: '#F44336',
-            enemyBarrel: '#C62828',
-            bullet: '#FFD700',
-            wall: '#795548',
-            wallBorder: '#5D4037',
-            grass: '#1a1a1a'
-        };
-        
-        // Initialize Tank Battle game
-        function initTankBattleGame(taskIndex) {
-            GameRewardManager.startNewSession();
-            tbScore = 0;
-            tbLives = taskIndex === 0 ? 5 : 3;  // More lives for easier difficulty
-            tbGameOver = false;
-            tbBullets = [];
-            tbEnemies = [];
-            tbEnemyBullets = [];
-            tbExplosions = [];
-            tbWalls = [];
-            tbKeys = { up: false, down: false, left: false, right: false, fire: false };
-            tbEnemiesKilled = 0;
-            tbTotalEnemies = taskIndex === 0 ? 3 : 5;  // Fewer enemies for easier mode
-            
-            // Initialize player tank
-            tbPlayer = {
-                x: TB_CANVAS_WIDTH / 2 - TB_TANK_SIZE / 2,
-                y: TB_CANVAS_HEIGHT - TB_TANK_SIZE - 10,
-                width: TB_TANK_SIZE,
-                height: TB_TANK_SIZE,
-                direction: 'up',  // 'up', 'down', 'left', 'right'
-                invincible: false,
-                invincibleTime: 0
-            };
-            
-            // Generate walls (obstacles)
-            generateTBWalls(taskIndex);
-            
-            // Generate enemy tanks
-            generateTBEnemies();
-            
-            // Update UI
-            document.getElementById('tbScore').textContent = '0';
-            document.getElementById('tbLives').textContent = tbLives;
-            document.getElementById('tbEnemiesLeft').textContent = tbTotalEnemies - tbEnemiesKilled;
-            document.getElementById('tankBattleCompleteMessage').classList.remove('show');
-            
-            // Show overlay
-            document.getElementById('tankBattleOverlay').classList.add('show');
-            try { const tbDebug = (typeof isDebugMode === 'function') ? !!isDebugMode() : (!!window.__MC_DEBUG || new URLSearchParams(window.location.search).get('debug')==='1' || (localStorage && localStorage.getItem && localStorage.getItem('mc_debug')==='1')); console.info('TankBattle opened debug check:', tbDebug); } catch(e){}
-            
-            // Setup keyboard events
-            document.addEventListener('keydown', tbHandleKeyDown);
-            document.addEventListener('keyup', tbHandleKeyUp);
-            
-            // Setup touch controls
-            setupTBTouchControls();
-            
-            // Setup button handlers
-            const resetTB = document.getElementById('resetTankBattle');
-            if (resetTB) {
-                if (typeof isDebugMode === 'function' && !isDebugMode()) {
-                    resetTB.style.display = 'none';
-                    resetTB.onclick = cleanupTankBattleGame;
-                } else {
-                    resetTB.style.display = '';
-                    resetTB.onclick = () => { cleanupTankBattleGame(); initTankBattleGame(taskIndex); };
-                }
-            }
-            const exitTBBtn = document.getElementById('exitTankBattle');
-            if (exitTBBtn) exitTBBtn.onclick = cleanupTankBattleGame;
-            
-            // Start game loop
-            tbGameLoop();
-        }
-        
-        function generateTBWalls(taskIndex) {
-            tbWalls = [];
-            const wallCount = taskIndex === 0 ? 6 : 10;  // Fewer walls for easier mode
-            
-            // Create some walls in the middle of the battlefield
-            const positions = [
-                { x: 2, y: 3 }, { x: 3, y: 3 }, { x: 6, y: 3 }, { x: 7, y: 3 },
-                { x: 2, y: 6 }, { x: 3, y: 6 }, { x: 6, y: 6 }, { x: 7, y: 6 },
-                { x: 4, y: 4 }, { x: 5, y: 4 }, { x: 4, y: 5 }, { x: 5, y: 5 }
-            ];
-            
-            for (let i = 0; i < Math.min(wallCount, positions.length); i++) {
-                const pos = positions[i];
-                tbWalls.push({
-                    x: pos.x * TB_TILE_SIZE,
-                    y: pos.y * TB_TILE_SIZE,
-                    width: TB_TILE_SIZE,
-                    height: TB_TILE_SIZE,
-                    health: 2  // Walls can take 2 hits
-                });
-            }
-        }
-        
-        function generateTBEnemies() {
-            const spawnPositions = [
-                { x: TB_TILE_SIZE, y: TB_TILE_SIZE },
-                { x: TB_CANVAS_WIDTH - TB_TILE_SIZE - TB_TANK_SIZE, y: TB_TILE_SIZE },
-                { x: TB_CANVAS_WIDTH / 2 - TB_TANK_SIZE / 2, y: TB_TILE_SIZE },
-                { x: TB_TILE_SIZE, y: TB_TILE_SIZE * 3 },
-                { x: TB_CANVAS_WIDTH - TB_TILE_SIZE - TB_TANK_SIZE, y: TB_TILE_SIZE * 3 }
-            ];
-            
-            for (let i = 0; i < tbTotalEnemies; i++) {
-                const pos = spawnPositions[i % spawnPositions.length];
-                tbEnemies.push({
-                    x: pos.x + (i * 5) % 20,  // Slight offset to avoid overlap
-                    y: pos.y,
-                    width: TB_TANK_SIZE,
-                    height: TB_TANK_SIZE,
-                    direction: 'down',
-                    lastFireTime: Date.now() + i * 1000,  // Stagger initial fire times
-                    moveTimer: 0,
-                    moveDirection: Math.random() < 0.5 ? 1 : -1
-                });
-            }
-        }
-        
-        function setupTBTouchControls() {
-            const upBtn = document.getElementById('tbUpBtn');
-            const downBtn = document.getElementById('tbDownBtn');
-            const leftBtn = document.getElementById('tbLeftBtn');
-            const rightBtn = document.getElementById('tbRightBtn');
-            const fireBtn = document.getElementById('tbFireBtn');
-            
-            // Direction buttons
-            upBtn.ontouchstart = (e) => { e.preventDefault(); tbKeys.up = true; };
-            upBtn.ontouchend = () => { tbKeys.up = false; };
-            upBtn.onmousedown = () => { tbKeys.up = true; };
-            upBtn.onmouseup = () => { tbKeys.up = false; };
-            
-            downBtn.ontouchstart = (e) => { e.preventDefault(); tbKeys.down = true; };
-            downBtn.ontouchend = () => { tbKeys.down = false; };
-            downBtn.onmousedown = () => { tbKeys.down = true; };
-            downBtn.onmouseup = () => { tbKeys.down = false; };
-            
-            leftBtn.ontouchstart = (e) => { e.preventDefault(); tbKeys.left = true; };
-            leftBtn.ontouchend = () => { tbKeys.left = false; };
-            leftBtn.onmousedown = () => { tbKeys.left = true; };
-            leftBtn.onmouseup = () => { tbKeys.left = false; };
-            
-            rightBtn.ontouchstart = (e) => { e.preventDefault(); tbKeys.right = true; };
-            rightBtn.ontouchend = () => { tbKeys.right = false; };
-            rightBtn.onmousedown = () => { tbKeys.right = true; };
-            rightBtn.onmouseup = () => { tbKeys.right = false; };
-            
-            fireBtn.ontouchstart = (e) => { e.preventDefault(); tbFireBullet(); };
-            fireBtn.onmousedown = () => { tbFireBullet(); };
-        }
-        
-        function tbHandleKeyDown(e) {
-            if (tbGameOver) return;
-            switch (e.code) {
-                case 'ArrowUp':
-                case 'KeyW':
-                    tbKeys.up = true;
-                    e.preventDefault();
-                    break;
-                case 'ArrowDown':
-                case 'KeyS':
-                    tbKeys.down = true;
-                    e.preventDefault();
-                    break;
-                case 'ArrowLeft':
-                case 'KeyA':
-                    tbKeys.left = true;
-                    e.preventDefault();
-                    break;
-                case 'ArrowRight':
-                case 'KeyD':
-                    tbKeys.right = true;
-                    e.preventDefault();
-                    break;
-                case 'Space':
-                    tbFireBullet();
-                    e.preventDefault();
-                    break;
-            }
-        }
-        
-        function tbHandleKeyUp(e) {
-            switch (e.code) {
-                case 'ArrowUp':
-                case 'KeyW':
-                    tbKeys.up = false;
-                    break;
-                case 'ArrowDown':
-                case 'KeyS':
-                    tbKeys.down = false;
-                    break;
-                case 'ArrowLeft':
-                case 'KeyA':
-                    tbKeys.left = false;
-                    break;
-                case 'ArrowRight':
-                case 'KeyD':
-                    tbKeys.right = false;
-                    break;
-            }
-        }
-        
-        function tbFireBullet() {
-            if (tbGameOver) return;
-            const now = Date.now();
-            if (now - tbLastFireTime < TB_FIRE_COOLDOWN) return;
-            
-            tbLastFireTime = now;
-            
-            let bx, by, vx = 0, vy = 0;
-            switch (tbPlayer.direction) {
-                case 'up':
-                    bx = tbPlayer.x + tbPlayer.width / 2 - TB_BULLET_SIZE / 2;
-                    by = tbPlayer.y - TB_BULLET_SIZE;
-                    vy = -TB_BULLET_SPEED;
-                    break;
-                case 'down':
-                    bx = tbPlayer.x + tbPlayer.width / 2 - TB_BULLET_SIZE / 2;
-                    by = tbPlayer.y + tbPlayer.height;
-                    vy = TB_BULLET_SPEED;
-                    break;
-                case 'left':
-                    bx = tbPlayer.x - TB_BULLET_SIZE;
-                    by = tbPlayer.y + tbPlayer.height / 2 - TB_BULLET_SIZE / 2;
-                    vx = -TB_BULLET_SPEED;
-                    break;
-                case 'right':
-                    bx = tbPlayer.x + tbPlayer.width;
-                    by = tbPlayer.y + tbPlayer.height / 2 - TB_BULLET_SIZE / 2;
-                    vx = TB_BULLET_SPEED;
-                    break;
-            }
-            
-            tbBullets.push({
-                x: bx, y: by,
-                vx: vx, vy: vy,
-                width: TB_BULLET_SIZE,
-                height: TB_BULLET_SIZE,
-                isPlayer: true
-            });
-        }
-        
-        function tbEnemyFire(enemy) {
-            const now = Date.now();
-            if (now - enemy.lastFireTime < TB_ENEMY_FIRE_COOLDOWN) return;
-            
-            enemy.lastFireTime = now;
-            
-            let bx, by, vx = 0, vy = 0;
-            switch (enemy.direction) {
-                case 'up':
-                    bx = enemy.x + enemy.width / 2 - TB_BULLET_SIZE / 2;
-                    by = enemy.y - TB_BULLET_SIZE;
-                    vy = -TB_BULLET_SPEED * 0.7;  // Slower enemy bullets
-                    break;
-                case 'down':
-                    bx = enemy.x + enemy.width / 2 - TB_BULLET_SIZE / 2;
-                    by = enemy.y + enemy.height;
-                    vy = TB_BULLET_SPEED * 0.7;
-                    break;
-                case 'left':
-                    bx = enemy.x - TB_BULLET_SIZE;
-                    by = enemy.y + enemy.height / 2 - TB_BULLET_SIZE / 2;
-                    vx = -TB_BULLET_SPEED * 0.7;
-                    break;
-                case 'right':
-                    bx = enemy.x + enemy.width;
-                    by = enemy.y + enemy.height / 2 - TB_BULLET_SIZE / 2;
-                    vx = TB_BULLET_SPEED * 0.7;
-                    break;
-            }
-            
-            tbEnemyBullets.push({
-                x: bx, y: by,
-                vx: vx, vy: vy,
-                width: TB_BULLET_SIZE,
-                height: TB_BULLET_SIZE,
-                isPlayer: false
-            });
-        }
-        
-        function tbCreateExplosion(x, y) {
-            for (let i = 0; i < 10; i++) {
-                const angle = (Math.PI * 2 * i) / 10;
-                const speed = Math.random() * 2 + 1;
-                tbExplosions.push({
-                    x: x, y: y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    life: 1,
-                    color: ['#FFD700', '#FFA500', '#FF6347', '#FF4500'][Math.floor(Math.random() * 4)],
-                    size: Math.random() * 4 + 2
-                });
-            }
-        }
-        
-        function tbGameLoop() {
-            if (tbGameOver) return;
-            
-            tbUpdate();
-            tbRender();
-            tbAnimationId = requestAnimationFrame(tbGameLoop);
-        }
-        
-        function tbUpdate() {
-            // Update player
-            let newX = tbPlayer.x;
-            let newY = tbPlayer.y;
-            
-            if (tbKeys.up) {
-                newY -= TB_PLAYER_SPEED;
-                tbPlayer.direction = 'up';
-            }
-            if (tbKeys.down) {
-                newY += TB_PLAYER_SPEED;
-                tbPlayer.direction = 'down';
-            }
-            if (tbKeys.left) {
-                newX -= TB_PLAYER_SPEED;
-                tbPlayer.direction = 'left';
-            }
-            if (tbKeys.right) {
-                newX += TB_PLAYER_SPEED;
-                tbPlayer.direction = 'right';
-            }
-            
-            // Check collision with boundaries
-            newX = Math.max(0, Math.min(TB_CANVAS_WIDTH - tbPlayer.width, newX));
-            newY = Math.max(0, Math.min(TB_CANVAS_HEIGHT - tbPlayer.height, newY));
-            
-            // Check collision with walls
-            const playerRect = { x: newX, y: newY, width: tbPlayer.width, height: tbPlayer.height };
-            let canMove = true;
-            for (const wall of tbWalls) {
-                if (tbIsColliding(playerRect, wall)) {
-                    canMove = false;
-                    break;
-                }
-            }
-            
-            if (canMove) {
-                tbPlayer.x = newX;
-                tbPlayer.y = newY;
-            }
-            
-            // Update player bullets
-            tbBullets = tbBullets.filter(b => {
-                b.x += b.vx;
-                b.y += b.vy;
-                return b.x >= 0 && b.x <= TB_CANVAS_WIDTH && b.y >= 0 && b.y <= TB_CANVAS_HEIGHT;
-            });
-            
-            // Update enemy bullets
-            tbEnemyBullets = tbEnemyBullets.filter(b => {
-                b.x += b.vx;
-                b.y += b.vy;
-                return b.x >= 0 && b.x <= TB_CANVAS_WIDTH && b.y >= 0 && b.y <= TB_CANVAS_HEIGHT;
-            });
-            
-            // Update enemies
-            tbEnemies.forEach(enemy => {
-                enemy.moveTimer++;
-                
-                // Change direction periodically
-                if (enemy.moveTimer > 60 + Math.random() * 60) {
-                    enemy.moveTimer = 0;
-                    const dirs = ['up', 'down', 'left', 'right'];
-                    enemy.direction = dirs[Math.floor(Math.random() * dirs.length)];
-                }
-                
-                // Move enemy
-                let enX = enemy.x;
-                let enY = enemy.y;
-                
-                switch (enemy.direction) {
-                    case 'up': enY -= TB_ENEMY_SPEED; break;
-                    case 'down': enY += TB_ENEMY_SPEED; break;
-                    case 'left': enX -= TB_ENEMY_SPEED; break;
-                    case 'right': enX += TB_ENEMY_SPEED; break;
-                }
-                
-                // Check boundaries
-                enX = Math.max(0, Math.min(TB_CANVAS_WIDTH - enemy.width, enX));
-                enY = Math.max(0, Math.min(TB_CANVAS_HEIGHT - enemy.height, enY));
-                
-                // Check wall collision
-                const enemyRect = { x: enX, y: enY, width: enemy.width, height: enemy.height };
-                let enemyCanMove = true;
-                for (const wall of tbWalls) {
-                    if (tbIsColliding(enemyRect, wall)) {
-                        enemyCanMove = false;
-                        // Change direction when hitting wall
-                        const dirs = ['up', 'down', 'left', 'right'];
-                        enemy.direction = dirs[Math.floor(Math.random() * dirs.length)];
-                        break;
-                    }
-                }
-                
-                if (enemyCanMove) {
-                    enemy.x = enX;
-                    enemy.y = enY;
-                }
-                
-                // Enemy fires at player (with lower probability for easier gameplay)
-                if (Math.random() < TB_ENEMY_RANDOM_FIRE_CHANCE) {
-                    tbEnemyFire(enemy);
-                }
-            });
-            
-            // Update explosions
-            tbExplosions = tbExplosions.filter(p => {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life -= 0.03;
-                return p.life > 0;
-            });
-            
-            // Check collisions: player bullets vs enemies
-            for (let i = tbBullets.length - 1; i >= 0; i--) {
-                for (let j = tbEnemies.length - 1; j >= 0; j--) {
-                    if (tbIsColliding(tbBullets[i], tbEnemies[j])) {
-                        tbCreateExplosion(tbEnemies[j].x + tbEnemies[j].width / 2, tbEnemies[j].y + tbEnemies[j].height / 2);
-                        tbScore += 100;
-                        tbEnemiesKilled++;
-                        document.getElementById('tbScore').textContent = tbScore;
-                        document.getElementById('tbEnemiesLeft').textContent = tbTotalEnemies - tbEnemiesKilled;
-                        tbBullets.splice(i, 1);
-                        tbEnemies.splice(j, 1);
-                        
-                        // Check victory
-                        if (tbEnemies.length === 0) {
-                            tbEndGame(true);
-                        }
-                        break;
-                    }
-                }
-            }
-            
-            // Check collisions: player bullets vs walls
-            for (let i = tbBullets.length - 1; i >= 0; i--) {
-                for (let j = tbWalls.length - 1; j >= 0; j--) {
-                    if (tbIsColliding(tbBullets[i], tbWalls[j])) {
-                        tbWalls[j].health--;
-                        tbBullets.splice(i, 1);
-                        if (tbWalls[j].health <= 0) {
-                            tbCreateExplosion(tbWalls[j].x + tbWalls[j].width / 2, tbWalls[j].y + tbWalls[j].height / 2);
-                            tbWalls.splice(j, 1);
-                        }
-                        break;
-                    }
-                }
-            }
-            
-            // Check collisions: enemy bullets vs walls
-            for (let i = tbEnemyBullets.length - 1; i >= 0; i--) {
-                for (let j = tbWalls.length - 1; j >= 0; j--) {
-                    if (tbIsColliding(tbEnemyBullets[i], tbWalls[j])) {
-                        tbWalls[j].health--;
-                        tbEnemyBullets.splice(i, 1);
-                        if (tbWalls[j].health <= 0) {
-                            tbCreateExplosion(tbWalls[j].x + tbWalls[j].width / 2, tbWalls[j].y + tbWalls[j].height / 2);
-                            tbWalls.splice(j, 1);
-                        }
-                        break;
-                    }
-                }
-            }
-            
-            // Check collisions: enemy bullets vs player
-            if (!tbPlayer.invincible) {
-                for (let i = tbEnemyBullets.length - 1; i >= 0; i--) {
-                    if (tbIsColliding(tbEnemyBullets[i], tbPlayer)) {
-                        tbEnemyBullets.splice(i, 1);
-                        tbPlayerHit();
-                        break;
-                    }
-                }
-            }
-            
-            // Update invincibility
-            if (tbPlayer.invincible) {
-                tbPlayer.invincibleTime--;
-                if (tbPlayer.invincibleTime <= 0) tbPlayer.invincible = false;
-            }
-        }
-        
-        function tbIsColliding(a, b) {
-            return a.x < b.x + b.width && a.x + a.width > b.x &&
-                   a.y < b.y + b.height && a.y + a.height > b.y;
-        }
-        
-        function tbPlayerHit() {
-            tbLives--;
-            document.getElementById('tbLives').textContent = tbLives;
-            tbCreateExplosion(tbPlayer.x + tbPlayer.width / 2, tbPlayer.y + tbPlayer.height / 2);
-            
-            if (tbLives <= 0) {
-                tbEndGame(false);
-            } else {
-                tbPlayer.invincible = true;
-                tbPlayer.invincibleTime = 90;
-            }
-        }
-        
-        function tbEndGame(victory) {
-            tbGameOver = true;
-            if (victory) tbScore += 200;  // Bonus for winning
-            document.getElementById('tbFinalScore').textContent = tbScore;
-            document.getElementById('tankBattleCompleteMessage').classList.add('show');
-            
-            // Award XP via unified GameRewardManager
-            GameRewardManager.awardCompletion('tank-battle', tbScore);
-        }
-        
-        function tbRender() {
-            const canvas = document.getElementById('tankBattleCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Clear canvas with grass color
-            ctx.fillStyle = TB_COLORS.grass;
-            ctx.fillRect(0, 0, TB_CANVAS_WIDTH, TB_CANVAS_HEIGHT);
-            
-            // Draw grid lines (subtle)
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-            ctx.lineWidth = 1;
-            for (let x = 0; x <= TB_CANVAS_WIDTH; x += TB_TILE_SIZE) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, TB_CANVAS_HEIGHT);
-                ctx.stroke();
-            }
-            for (let y = 0; y <= TB_CANVAS_HEIGHT; y += TB_TILE_SIZE) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(TB_CANVAS_WIDTH, y);
-                ctx.stroke();
-            }
-            
-            // Draw walls
-            tbWalls.forEach(wall => {
-                ctx.fillStyle = TB_COLORS.wall;
-                ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
-                ctx.fillStyle = TB_COLORS.wallBorder;
-                ctx.fillRect(wall.x + wall.width - 3, wall.y, 3, wall.height);
-                ctx.fillRect(wall.x, wall.y + wall.height - 3, wall.width, 3);
-            });
-            
-            // Draw player tank
-            if (!tbPlayer.invincible || Math.floor(tbPlayer.invincibleTime / 5) % 2 === 1) {
-                drawTank(ctx, tbPlayer, TB_COLORS.player, TB_COLORS.playerBarrel);
-            }
-            
-            // Draw enemy tanks
-            tbEnemies.forEach(enemy => {
-                drawTank(ctx, enemy, TB_COLORS.enemy, TB_COLORS.enemyBarrel);
-            });
-            
-            // Draw bullets
-            ctx.fillStyle = TB_COLORS.bullet;
-            tbBullets.forEach(b => {
-                ctx.beginPath();
-                ctx.arc(b.x + b.width / 2, b.y + b.height / 2, TB_BULLET_SIZE / 2, 0, Math.PI * 2);
-                ctx.fill();
-            });
-            
-            ctx.fillStyle = '#FF6347';
-            tbEnemyBullets.forEach(b => {
-                ctx.beginPath();
-                ctx.arc(b.x + b.width / 2, b.y + b.height / 2, TB_BULLET_SIZE / 2, 0, Math.PI * 2);
-                ctx.fill();
-            });
-            
-            // Draw explosions
-            tbExplosions.forEach(p => {
-                ctx.globalAlpha = p.life;
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-                ctx.fill();
-            });
-            ctx.globalAlpha = 1;
-        }
-        
-        function drawTank(ctx, tank, bodyColor, barrelColor) {
-            const x = tank.x;
-            const y = tank.y;
-            const size = TB_TANK_SIZE;
-            
-            // Tank body
-            ctx.fillStyle = bodyColor;
-            ctx.fillRect(x + 2, y + 2, size - 4, size - 4);
-            
-            // Tank tracks
-            ctx.fillStyle = '#333';
-            if (tank.direction === 'up' || tank.direction === 'down') {
-                ctx.fillRect(x, y, 4, size);
-                ctx.fillRect(x + size - 4, y, 4, size);
-            } else {
-                ctx.fillRect(x, y, size, 4);
-                ctx.fillRect(x, y + size - 4, size, 4);
-            }
-            
-            // Tank turret (barrel)
-            ctx.fillStyle = barrelColor;
-            const centerX = x + size / 2;
-            const centerY = y + size / 2;
-            const barrelLength = size / 2;
-            const barrelWidth = 6;
-            
-            ctx.beginPath();
-            switch (tank.direction) {
-                case 'up':
-                    ctx.fillRect(centerX - barrelWidth / 2, y - barrelLength / 2 + 4, barrelWidth, barrelLength);
-                    break;
-                case 'down':
-                    ctx.fillRect(centerX - barrelWidth / 2, y + size - barrelLength / 2 - 4, barrelWidth, barrelLength);
-                    break;
-                case 'left':
-                    ctx.fillRect(x - barrelLength / 2 + 4, centerY - barrelWidth / 2, barrelLength, barrelWidth);
-                    break;
-                case 'right':
-                    ctx.fillRect(x + size - barrelLength / 2 - 4, centerY - barrelWidth / 2, barrelLength, barrelWidth);
-                    break;
-            }
-            
-            // Tank center (turret base)
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, size / 5, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        
-        function cleanupTankBattleGame() {
-            tbGameOver = true;
-            if (tbAnimationId) {
-                cancelAnimationFrame(tbAnimationId);
-                tbAnimationId = null;
-            }
-            
-            document.removeEventListener('keydown', tbHandleKeyDown);
-            document.removeEventListener('keyup', tbHandleKeyUp);
-            
-            document.getElementById('tankBattleOverlay').classList.remove('show');
-            document.getElementById('tankBattleCompleteMessage').classList.remove('show');
-        }
-
-        // ===== Minesweeper (扫雷) Game Logic =====
-        // Game state
-        let msGrid = [];
-        let msRows = 8;
-        let msCols = 8;
-        let msTotalMines = 10;
-        let msRemainingMines = 10;
-        let msRevealedCount = 0;
-        let msGameOver = false;
-        let msGameWon = false;
-        let msFlagMode = false;
-        let msTimerInterval = null;
-        let msTime = 0;
-        let msFirstClick = true;
-
-        function initMinesweeperGame(taskIndex = 0) {
-            GameRewardManager.startNewSession();
-            // Adjust difficulty based on task
-            if (taskIndex === 0) {
-                // Easier: 8x8 grid with 8 mines
-                msRows = 8;
-                msCols = 8;
-                msTotalMines = 8;
-            } else {
-                // Standard: 8x8 grid with 10 mines
-                msRows = 8;
-                msCols = 8;
-                msTotalMines = 10;
-            }
-            
-            msRemainingMines = msTotalMines;
-            msRevealedCount = 0;
-            msGameOver = false;
-            msGameWon = false;
-            msFlagMode = false;
-            msTime = 0;
-            msFirstClick = true;
-            
-            // Clear timer
-            if (msTimerInterval) {
-                clearInterval(msTimerInterval);
-                msTimerInterval = null;
-            }
-            
-            // Initialize empty grid
-            msGrid = [];
-            for (let r = 0; r < msRows; r++) {
-                msGrid[r] = [];
-                for (let c = 0; c < msCols; c++) {
-                    msGrid[r][c] = {
-                        mine: false,
-                        revealed: false,
-                        flagged: false,
-                        adjacentMines: 0
-                    };
-                }
-            }
-            
-            // Update UI
-            document.getElementById('msRemainingMines').textContent = msRemainingMines;
-            document.getElementById('msTimer').textContent = '0';
-            document.getElementById('minesweeperCompleteMessage').classList.remove('show');
-            document.getElementById('minesweeperCompleteMessage').classList.remove('lose');
-            
-            // Update flag mode button
-            const flagBtn = document.getElementById('flagModeToggle');
-            flagBtn.classList.remove('active');
-            flagBtn.onclick = toggleFlagMode;
-            
-            // Render grid
-            renderMinesweeperGrid();
-            
-            // Show overlay
-            document.getElementById('minesweeperOverlay').classList.add('show');
-
-            // Log debug mode status using centralized API if available
-            try {
-                if (window.MC_debugMode && typeof window.MC_debugMode.logStatus === 'function') {
-                    window.MC_debugMode.logStatus('Minesweeper opened');
-                } else if (window.MC_isDebug) {
-                    const r = !!window.MC_isDebug(true);
-                    console.info('Minesweeper debug check (legacy MC_isDebug):', r);
-                } else {
-                    const p = new URLSearchParams(window.location.search);
-                    const r = p.get('debug') === 'true' || p.get('debug') === '1' || (localStorage && localStorage.getItem && localStorage.getItem('mc_debug') === '1');
-                    console.info('Minesweeper debug check (fallback):', r);
-                }
-            } catch (e) { console.warn('Minesweeper debug log error', e); }
-
-            // Setup button handlers
-            const resetMS = document.getElementById('resetMinesweeper');
-            const exitMS = document.getElementById('exitMinesweeper');
-            // Determine debug mode using centralized checker if available
-            let msIsDebug = false;
-            try {
-                if (window.MC_debugMode && typeof window.MC_debugMode.isEnabled === 'function') {
-                    msIsDebug = !!window.MC_debugMode.isEnabled(true);
-                } else if (window.MC_isDebug) {
-                    msIsDebug = !!window.MC_isDebug(true);
-                } else {
-                    const p = new URLSearchParams(window.location.search);
-                    msIsDebug = p.get('debug') === 'true' || p.get('debug') === '1' || (localStorage && localStorage.getItem && localStorage.getItem('mc_debug') === '1');
-                }
-            } catch (e) { msIsDebug = false; }
-
-            try { console.info('Minesweeper debug check (final):', { msIsDebug }); } catch(e){}
-
-            if (resetMS) {
-                if (!msIsDebug) {
-                    // hide restart in normal mode; only allow exit
-                    resetMS.style.display = 'none';
-                    resetMS.onclick = cleanupMinesweeperGame;
-                } else {
-                    resetMS.style.display = '';
-                    resetMS.onclick = () => { cleanupMinesweeperGame(); initMinesweeperGame(taskIndex); };
-                }
-            }
-            if (exitMS) exitMS.onclick = cleanupMinesweeperGame;
-        }
-
-        function placeMines(excludeRow, excludeCol) {
-            // Place mines randomly, excluding the first clicked cell and its neighbors
-            let minesPlaced = 0;
-            while (minesPlaced < msTotalMines) {
-                const r = Math.floor(Math.random() * msRows);
-                const c = Math.floor(Math.random() * msCols);
-                
-                // Skip if already a mine or near first click
-                if (msGrid[r][c].mine) continue;
-                if (Math.abs(r - excludeRow) <= 1 && Math.abs(c - excludeCol) <= 1) continue;
-                
-                msGrid[r][c].mine = true;
-                minesPlaced++;
-            }
-            
-            // Calculate adjacent mine counts
-            for (let r = 0; r < msRows; r++) {
-                for (let c = 0; c < msCols; c++) {
-                    if (!msGrid[r][c].mine) {
-                        msGrid[r][c].adjacentMines = countAdjacentMines(r, c);
-                    }
-                }
-            }
-        }
-
-        function countAdjacentMines(row, col) {
-            let count = 0;
-            for (let dr = -1; dr <= 1; dr++) {
-                for (let dc = -1; dc <= 1; dc++) {
-                    if (dr === 0 && dc === 0) continue;
-                    const nr = row + dr;
-                    const nc = col + dc;
-                    if (nr >= 0 && nr < msRows && nc >= 0 && nc < msCols && msGrid[nr][nc].mine) {
-                        count++;
-                    }
-                }
-            }
-            return count;
-        }
-
-        function renderMinesweeperGrid() {
-            const gridEl = document.getElementById('minesweeperGrid');
-            gridEl.innerHTML = '';
-            gridEl.className = `minesweeper-grid size-${msCols}`;
-            
-            for (let r = 0; r < msRows; r++) {
-                for (let c = 0; c < msCols; c++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'minesweeper-cell';
-                    cell.dataset.row = r;
-                    cell.dataset.col = c;
-                    
-                    // Add event listeners
-                    cell.addEventListener('click', (e) => handleCellClick(r, c, e));
-                    cell.addEventListener('contextmenu', (e) => {
-                        e.preventDefault();
-                        handleCellRightClick(r, c);
-                    });
-                    
-                    // Long press for flag on mobile - store timer on cell element to avoid interference
-                    cell.addEventListener('touchstart', (e) => {
-                        cell._longPressTimer = setTimeout(() => {
-                            e.preventDefault();
-                            handleCellRightClick(r, c);
-                        }, 500);
-                    });
-                    cell.addEventListener('touchend', () => {
-                        if (cell._longPressTimer) {
-                            clearTimeout(cell._longPressTimer);
-                            cell._longPressTimer = null;
-                        }
-                    });
-                    cell.addEventListener('touchmove', () => {
-                        if (cell._longPressTimer) {
-                            clearTimeout(cell._longPressTimer);
-                            cell._longPressTimer = null;
-                        }
-                    });
-                    
-                    updateCellDisplay(cell, r, c);
-                    gridEl.appendChild(cell);
-                }
-            }
-        }
-
-        function updateCellDisplay(cell, row, col) {
-            const cellData = msGrid[row][col];
-            cell.className = 'minesweeper-cell';
-            cell.textContent = '';
-            
-            if (cellData.revealed) {
-                cell.classList.add('revealed');
-                if (cellData.mine) {
-                    cell.classList.add('mine');
-                    cell.textContent = '💣';
-                } else if (cellData.adjacentMines > 0) {
-                    cell.textContent = cellData.adjacentMines;
-                    cell.classList.add(`num-${cellData.adjacentMines}`);
-                }
-            } else if (cellData.flagged) {
-                cell.classList.add('flagged');
-                cell.textContent = '🚩';
-            }
-        }
-
-        function handleCellClick(row, col, event) {
-            if (msGameOver) return;
-            
-            const cellData = msGrid[row][col];
-            if (cellData.revealed || cellData.flagged) return;
-            
-            // In flag mode, toggle flag instead of revealing
-            if (msFlagMode) {
-                handleCellRightClick(row, col);
-                return;
-            }
-            
-            // First click: place mines and start timer
-            if (msFirstClick) {
-                msFirstClick = false;
-                placeMines(row, col);
-                startTimer();
-            }
-            
-            revealCell(row, col);
-            checkWinCondition();
-        }
-
-        function handleCellRightClick(row, col) {
-            if (msGameOver) return;
-            
-            const cellData = msGrid[row][col];
-            if (cellData.revealed) return;
-            
-            // Toggle flag
-            cellData.flagged = !cellData.flagged;
-            msRemainingMines += cellData.flagged ? -1 : 1;
-            
-            // Update display
-            document.getElementById('msRemainingMines').textContent = msRemainingMines;
-            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-            updateCellDisplay(cell, row, col);
-        }
-
-        function revealCell(row, col) {
-            if (row < 0 || row >= msRows || col < 0 || col >= msCols) return;
-            
-            const cellData = msGrid[row][col];
-            if (cellData.revealed || cellData.flagged) return;
-            
-            cellData.revealed = true;
-            msRevealedCount++;
-            
-            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-            updateCellDisplay(cell, row, col);
-            
-            // Hit a mine - game over
-            if (cellData.mine) {
-                endGame(false);
-                return;
-            }
-            
-            // If no adjacent mines, reveal neighbors
-            if (cellData.adjacentMines === 0) {
-                for (let dr = -1; dr <= 1; dr++) {
-                    for (let dc = -1; dc <= 1; dc++) {
-                        if (dr !== 0 || dc !== 0) {
-                            revealCell(row + dr, col + dc);
-                        }
-                    }
-                }
-            }
-        }
-
-        function toggleFlagMode() {
-            msFlagMode = !msFlagMode;
-            const flagBtn = document.getElementById('flagModeToggle');
-            if (msFlagMode) {
-                flagBtn.classList.add('active');
-            } else {
-                flagBtn.classList.remove('active');
-            }
-        }
-
-        function startTimer() {
-            msTimerInterval = setInterval(() => {
-                msTime++;
-                document.getElementById('msTimer').textContent = msTime;
-            }, 1000);
-        }
-
-        function checkWinCondition() {
-            // Win if all non-mine cells are revealed
-            const totalNonMines = msRows * msCols - msTotalMines;
-            if (msRevealedCount === totalNonMines) {
-                endGame(true);
-            }
-        }
-
-        function endGame(won) {
-            msGameOver = true;
-            msGameWon = won;
-            
-            // Stop timer
-            if (msTimerInterval) {
-                clearInterval(msTimerInterval);
-                msTimerInterval = null;
-            }
-            
-            // Reveal all mines
-            if (!won) {
-                for (let r = 0; r < msRows; r++) {
-                    for (let c = 0; c < msCols; c++) {
-                        if (msGrid[r][c].mine) {
-                            msGrid[r][c].revealed = true;
-                            const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
-                            updateCellDisplay(cell, r, c);
-                        }
-                    }
-                }
-            }
-            
-            // Show completion message
-            const msgEl = document.getElementById('minesweeperCompleteMessage');
-            if (won) {
-                msgEl.innerHTML = `🎉 胜利！用时：<span id="msFinalTime">${msTime}</span>秒`;
-                msgEl.classList.remove('lose');
-                
-                // Award XP via unified GameRewardManager (time-based)
-                GameRewardManager.awardCompletion('minesweeper', 0, msTime);
-            } else {
-                msgEl.innerHTML = `💥 踩雷了！用时：<span id="msFinalTime">${msTime}</span>秒`;
-                msgEl.classList.add('lose');
-            }
-            msgEl.classList.add('show');
-        }
-
-        function cleanupMinesweeperGame() {
-            msGameOver = true;
-            if (msTimerInterval) {
-                clearInterval(msTimerInterval);
-                msTimerInterval = null;
-            }
-            
-            document.getElementById('minesweeperOverlay').classList.remove('show');
-            document.getElementById('minesweeperCompleteMessage').classList.remove('show');
-        }
-
         // ===== Random Game Selection =====
         // Randomly select from enabled games only
         function selectRandomGame() {
@@ -8397,6 +6006,117 @@
             const randomIndex = Math.floor(Math.random() * games.length);
             return games[randomIndex];
         }
+
+        function selectRandomGames(count = 3) {
+            const enabledGames = loadEnabledGames();
+            const games = enabledGames.length > 0 ? enabledGames : ALL_GAMES;
+            const shuffled = [...games].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, Math.min(count, games.length));
+        }
+
+        const GAME_CHOICE_META = {
+            'maze': { name: '迷宫挑战', icon: '🧭', desc: '动脑找出口' },
+            'space-invaders': { name: '小蜜蜂', icon: '🐝', desc: '躲避反击' },
+            'tank-battle': { name: '坦克大战', icon: '🎖️', desc: '守护文物' },
+            'snake': { name: '贪食蛇', icon: '🐍', desc: '越吃越长' }
+        };
+
+        // Initialize GameLauncher for independent game HTML loading
+        const gameLauncher = new GameLauncher({
+            baseUrl: '/games/',
+            onClose: () => {
+                console.log('Game closed');
+            }
+        });
+
+        function showGameChoiceOverlay(taskIndex, options = {}) {
+            const overlay = document.getElementById('gameChoiceOverlay');
+            const grid = document.getElementById('gameChoiceGrid');
+            const skipBtn = document.getElementById('gameChoiceSkip');
+            
+            if (!overlay || !grid) {
+                // Fallback to auto selection if overlay missing
+                const gameType = selectRandomGame();
+                gameLauncher.launchGame(gameType, {
+                    museumId: currentMuseum?.id,
+                    taskIndex: taskIndex
+                });
+                return;
+            }
+
+            const choices = selectRandomGames(3);
+            grid.innerHTML = '';
+
+            choices.forEach((gameType) => {
+                const meta = GAME_CHOICE_META[gameType] || { name: '游戏', icon: '🎮', desc: '开始挑战' };
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'game-choice-card';
+                button.dataset.game = gameType;
+                button.innerHTML = `
+                    <div class="game-choice-icon">${meta.icon}</div>
+                    <div class="game-choice-name">${meta.name}</div>
+                    <div class="game-choice-desc">${meta.desc}</div>
+                `;
+                button.addEventListener('click', () => {
+                    overlay.classList.remove('show');
+                    overlay.setAttribute('aria-hidden', 'true');
+                    
+                    // 保存游戏上下文
+                    if (window.GameContextManager) {
+                        window.GameContextManager.saveContext({
+                            museumId: currentMuseum?.id,
+                            museumName: currentMuseum?.name,
+                            taskIndex: taskIndex,
+                            museum: currentMuseum,
+                            currentTask: childTasks[taskIndex],
+                            completedTasks: Array.from(completedTasks),
+                            taskPhotos: taskPhotos,
+                            ageGroup: ageGroup
+                        });
+                    }
+                    
+                    // 跳转到游戏页面 (使用 getAppBasePath 支持子目录部署)
+                    window.location.href = `${getAppBasePath()}/games/${gameType}.html`;
+                });
+                grid.appendChild(button);
+            });
+
+            if (skipBtn) {
+                skipBtn.onclick = () => {
+                    overlay.classList.remove('show');
+                    overlay.setAttribute('aria-hidden', 'true');
+                };
+            }
+
+            if (!overlay.dataset.bound) {
+                overlay.addEventListener('click', (event) => {
+                    if (event.target === overlay) {
+                        overlay.classList.remove('show');
+                        overlay.setAttribute('aria-hidden', 'true');
+                    }
+                });
+                overlay.dataset.bound = 'true';
+            }
+
+            overlay.classList.add('show');
+            overlay.setAttribute('aria-hidden', 'false');
+            // Clear any inline styles to let CSS take effect
+            overlay.style.cssText = '';
+        }
+
+        // Listen for game completion messages from iframe games
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'game-complete') {
+                const { gameType, score, timeSeconds } = event.data;
+                console.log(`Game completed: ${gameType}, score: ${score}, time: ${timeSeconds}s`);
+                
+                // Award XP through GameRewardManager
+                if (typeof GameRewardManager !== 'undefined') {
+                    GameRewardManager.awardCompletion(gameType, score, timeSeconds);
+                }
+            }
+        });
 
         // ===== Fullscreen Image Viewer =====
         // Global state for fullscreen viewer
@@ -8566,4 +6286,49 @@
         window.addEventListener('DOMContentLoaded', function() {
             init();
             initFullscreenViewer();
+            
+            // Ensure game choice overlay is hidden on page load
+            const gameChoiceOverlay = document.getElementById('gameChoiceOverlay');
+            if (gameChoiceOverlay) {
+                gameChoiceOverlay.classList.remove('show');
+                gameChoiceOverlay.setAttribute('aria-hidden', 'true');
+            }
+            
+            // 检查是否从游戏页面返回
+            handleGameReturn();
         });
+        
+        /**
+         * 处理从游戏页面返回
+         */
+        function handleGameReturn() {
+            if (!window.GameContextManager) return;
+            
+            const gameResult = window.GameContextManager.getResult();
+            if (gameResult) {
+                console.log('[Game Return] Processing game result:', gameResult);
+                
+                // 显示游戏完成通知
+                if (window.achievementGamification) {
+                    const message = `${GAME_CHOICE_META[gameResult.gameType]?.name || '游戏'}完成！`;
+                    window.achievementGamification.showXPGainNotification(
+                        gameResult.pointsEarned || gameResult.score,
+                        message
+                    );
+                }
+                
+                // 奖励积分
+                if (gameResult.pointsEarned > 0 && window.achievementGamification) {
+                    window.achievementGamification.addXP(gameResult.pointsEarned);
+                }
+                
+                // 显示成就
+                if (gameResult.achievements && gameResult.achievements.length > 0) {
+                    // TODO: 显示成就通知
+                    console.log('[Game Return] Achievements unlocked:', gameResult.achievements);
+                }
+                
+                // 清除游戏结果
+                window.GameContextManager.clearResult();
+            }
+        }

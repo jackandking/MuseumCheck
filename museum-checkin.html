@@ -9,6 +9,11 @@
     <link rel="dns-prefetch" href="//hm.baidu.com">
     <link rel="dns-prefetch" href="//static.hotjar.com">
     
+    <!-- Google Fonts for game choice overlay -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <script src="js/debug-mode.js"></script>
     
     <!-- Deferred Analytics Loading - Load after page becomes interactive -->
@@ -171,11 +176,137 @@
             .checkin-header h1 { font-size: 0.9em; }
             .menu-button, .settings-button { width: 40px; height: 40px; margin: 0 4px; }
         }
+
+        /* ===== Game Choice Overlay - Claymorphism Style (Inline for immediate effect) ===== */
+        .game-choice-overlay {
+            display: none !important;
+            position: fixed !important;
+            inset: 0 !important;
+            background: rgba(0, 0, 0, 0.4) !important;
+            z-index: 4000 !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 20px !important;
+            box-sizing: border-box !important;
+            backdrop-filter: blur(8px) !important;
+        }
+
+        .game-choice-overlay.show {
+            display: flex !important;
+        }
+
+        .game-choice-modal {
+            background: linear-gradient(135deg, #FDBCB4 0%, #ADD8E6 100%) !important;
+            border-radius: 24px !important;
+            width: 100% !important;
+            max-width: 520px !important;
+            padding: 32px 24px !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 2px 8px rgba(255, 255, 255, 0.5) !important;
+            text-align: center !important;
+            animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .game-choice-title {
+            font-family: 'Fredoka', sans-serif !important;
+            font-size: 28px !important;
+            font-weight: 700 !important;
+            color: #2D3748 !important;
+            margin-bottom: 8px !important;
+            text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.5) !important;
+        }
+
+        .game-choice-subtitle {
+            font-family: 'Nunito', sans-serif !important;
+            font-size: 16px !important;
+            color: #4A5568 !important;
+            margin-bottom: 24px !important;
+            font-weight: 500 !important;
+        }
+
+        .game-choice-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 16px !important;
+            margin-bottom: 20px !important;
+        }
+
+        .game-choice-card {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border-radius: 20px !important;
+            padding: 20px 12px !important;
+            border: 3px solid #2D3748 !important;
+            cursor: pointer !important;
+            box-shadow: 4px 4px 0 #2D3748, inset 0 2px 4px rgba(255, 255, 255, 0.8) !important;
+            transition: all 0.2s ease-out !important;
+        }
+
+        .game-choice-card:hover {
+            transform: translateY(-4px) !important;
+            box-shadow: 6px 6px 0 #2D3748, inset 0 2px 4px rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .game-choice-icon {
+            font-size: 48px !important;
+            margin-bottom: 8px !important;
+            display: block !important;
+            filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.1)) !important;
+        }
+
+        .game-choice-name {
+            font-family: 'Fredoka', sans-serif !important;
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            color: #2D3748 !important;
+            margin-bottom: 4px !important;
+        }
+
+        .game-choice-desc {
+            font-family: 'Nunito', sans-serif !important;
+            font-size: 12px !important;
+            color: #718096 !important;
+            font-weight: 500 !important;
+        }
+
+        .game-choice-skip {
+            width: 100% !important;
+            padding: 16px !important;
+            background: rgba(255, 255, 255, 0.8) !important;
+            border: 3px solid #2D3748 !important;
+            border-radius: 16px !important;
+            font-family: 'Fredoka', sans-serif !important;
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            color: #2D3748 !important;
+            cursor: pointer !important;
+            box-shadow: 4px 4px 0 #2D3748, inset 0 2px 4px rgba(255, 255, 255, 0.8) !important;
+            transition: all 0.2s ease-out !important;
+        }
+
+        .game-choice-skip:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 5px 5px 0 #2D3748, inset 0 2px 4px rgba(255, 255, 255, 0.8) !important;
+        }
+
+        @media (max-width: 480px) {
+            .game-choice-modal { padding: 24px 16px !important; }
+            .game-choice-title { font-size: 24px !important; }
+            .game-choice-card { padding: 16px 8px !important; }
+            .game-choice-icon { font-size: 36px !important; }
+            .game-choice-name { font-size: 14px !important; }
+            .game-choice-desc { font-size: 11px !important; }
+        }
     </style>
     
     
     <!-- Main CSS - Extracted to external file for better caching -->
-    <link rel="stylesheet" href="css/museum-checkin.css">
+    <link rel="stylesheet" href="css/museum-checkin.css?v=claymorphism">
+    <!-- Leaderboard Styles - Unified across all pages -->
+    <link rel="stylesheet" href="css/leaderboard.css">
     <!-- Virtual Pet and Achievement Gamification Styles - Load asynchronously -->
     <link rel="stylesheet" href="css/virtual-pet.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/achievement-gamification.css" media="print" onload="this.media='all'">
@@ -549,7 +680,7 @@
                             <div class="settings-hint" style="margin-top: 4px;">完成任务并上传照片后，随机解锁选中的小游戏作为奖励</div>
                         </div>
                         <label class="toggle-switch">
-                            <input type="checkbox" id="puzzleGameToggle">
+                            <input type="checkbox" id="gameRewardToggle">
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
@@ -558,16 +689,8 @@
                     <label class="settings-label">选择可奖励的小游戏：</label>
                     <div class="game-selection-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
                         <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
-                            <input type="checkbox" id="gameTogglePuzzle" class="game-toggle" data-game="puzzle" checked>
-                            <span>🧩 拼图</span>
-                        </label>
-                        <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
                             <input type="checkbox" id="gameToggleMaze" class="game-toggle" data-game="maze" checked>
                             <span>🏃 迷宫</span>
-                        </label>
-                        <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
-                            <input type="checkbox" id="gameToggleShooting" class="game-toggle" data-game="shooting" checked>
-                            <span>🎯 射击</span>
                         </label>
                         <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
                             <input type="checkbox" id="gameToggleSpaceInvaders" class="game-toggle" data-game="space-invaders" checked>
@@ -576,10 +699,6 @@
                         <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
                             <input type="checkbox" id="gameToggleTankBattle" class="game-toggle" data-game="tank-battle" checked>
                             <span>🎖️ 坦克大战</span>
-                        </label>
-                        <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
-                            <input type="checkbox" id="gameToggleMinesweeper" class="game-toggle" data-game="minesweeper" checked>
-                            <span>💣 扫雷</span>
                         </label>
                         <label class="game-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: #f8f9fa; border-radius: 8px;">
                             <input type="checkbox" id="gameToggleSnake" class="game-toggle" data-game="snake" checked>
@@ -605,164 +724,13 @@
 
     <canvas class="fireworks-overlay" id="fireworksCanvas"></canvas>
 
-    <!-- Puzzle Game Overlay -->
-    <div class="puzzle-game-overlay" id="puzzleGameOverlay">
-        <div class="puzzle-header">
-            <div class="puzzle-title">🧩 拼图挑战</div>
-            <div class="puzzle-moves">移动次数：<span id="puzzleMoves">0</span></div>
-        </div>
-        <div class="puzzle-container">
-            <div class="puzzle-grid" id="puzzleGrid"></div>
-        </div>
-        <div class="puzzle-reference">
-            <button class="puzzle-reference-btn" id="toggleReference">查看原图 👀</button>
-            <img class="puzzle-reference-img" id="puzzleReferenceImg" alt="原图参考">
-        </div>
-        <div class="puzzle-buttons">
-            <button class="puzzle-button puzzle-button-reset" id="resetPuzzle">🔄 重新打乱</button>
-            <button class="puzzle-button puzzle-button-continue" id="exitPuzzle">继续游览 ➡️</button>
-        </div>
-        <div class="puzzle-complete-message" id="puzzleCompleteMessage">
-            🎉 恭喜完成！
-        </div>
-    </div>
-
-    <!-- Maze Game Overlay -->
-    <div class="maze-game-overlay" id="mazeGameOverlay">
-        <div class="maze-header">
-            <div class="maze-title">🏃 迷宫冒险</div>
-            <div class="maze-steps">步数：<span id="mazeSteps">0</span></div>
-        </div>
-        <div class="maze-container">
-            <canvas class="maze-canvas" id="mazeCanvas" width="280" height="280"></canvas>
-        </div>
-        <div class="maze-hint">使用下方方向键或滑动屏幕移动小人</div>
-        <div class="maze-controls">
-            <button class="maze-control-btn empty"></button>
-            <button class="maze-control-btn" id="mazeUp">⬆️</button>
-            <button class="maze-control-btn empty"></button>
-            <button class="maze-control-btn" id="mazeLeft">⬅️</button>
-            <button class="maze-control-btn empty"></button>
-            <button class="maze-control-btn" id="mazeRight">➡️</button>
-            <button class="maze-control-btn empty"></button>
-            <button class="maze-control-btn" id="mazeDown">⬇️</button>
-            <button class="maze-control-btn empty"></button>
-        </div>
-        <div class="maze-buttons">
-            <button class="maze-button maze-button-reset" id="resetMaze">🔄 重新开始</button>
-            <button class="maze-button maze-button-continue" id="exitMaze">继续游览 ➡️</button>
-        </div>
-        <div class="maze-complete-message" id="mazeCompleteMessage">
-            🎉 成功逃脱！
-        </div>
-    </div>
-
-    <!-- Shooting Game Overlay -->
-    <div class="shooting-game-overlay" id="shootingGameOverlay">
-        <div class="shooting-header">
-            <div class="shooting-title">🎯 射击大师</div>
-            <div class="shooting-stats">
-                <span>得分：<span id="shootingScore">0</span></span>
-                <span>时间：<span id="shootingTime">30</span>秒</span>
-            </div>
-        </div>
-        <div class="shooting-container">
-            <canvas class="shooting-canvas" id="shootingCanvas" width="320" height="400"></canvas>
-        </div>
-        <div class="shooting-hint">点击或触摸屏幕射击目标</div>
-        <div class="shooting-buttons">
-            <button class="shooting-button shooting-button-reset" id="resetShooting">🔄 重新开始</button>
-            <button class="shooting-button shooting-button-continue" id="exitShooting">继续游览 ➡️</button>
-        </div>
-        <div class="shooting-complete-message" id="shootingCompleteMessage">
-            🎉 游戏结束！得分：<span id="finalScore">0</span>
-        </div>
-    </div>
-
-    <!-- Space Invaders (小蜜蜂) Game Overlay -->
-    <div class="space-invaders-overlay" id="spaceInvadersOverlay">
-        <div class="space-invaders-header">
-            <div class="space-invaders-title">🐝 经典小蜜蜂 🐝</div>
-            <div class="space-invaders-stats">
-                得分：<span id="siScore">0</span> | 生命：<span id="siLives">3</span>
-            </div>
-        </div>
-        <div class="space-invaders-container">
-            <canvas class="space-invaders-canvas" id="spaceInvadersCanvas" width="320" height="400"></canvas>
-        </div>
-        <div class="space-invaders-hint">移动飞船消灭小蜜蜂！</div>
-        <div class="si-touch-controls" id="siTouchControls">
-            <div class="si-touch-btn-group">
-                <button class="si-touch-btn" id="siLeftBtn">◀</button>
-                <button class="si-touch-btn" id="siRightBtn">▶</button>
-            </div>
-            <button class="si-touch-btn si-fire-btn" id="siFireBtn">🔥</button>
-        </div>
-        <div class="space-invaders-buttons">
-            <button class="space-invaders-button space-invaders-button-reset" id="resetSpaceInvaders">🔄 重新开始</button>
-            <button class="space-invaders-button space-invaders-button-continue" id="exitSpaceInvaders">继续游览 ➡️</button>
-        </div>
-        <div class="space-invaders-complete-message" id="spaceInvadersCompleteMessage">
-            🎉 游戏结束！得分：<span id="siFinalScore">0</span>
-        </div>
-    </div>
-
-    <!-- Tank Battle (坦克大战) Game Overlay -->
-    <div class="tank-battle-overlay" id="tankBattleOverlay">
-        <div class="tank-battle-header">
-            <div class="tank-battle-title">🎖️ 坦克大战 🎖️</div>
-            <div class="tank-battle-stats">
-                得分：<span id="tbScore">0</span> | 生命：<span id="tbLives">3</span> | 敌人：<span id="tbEnemiesLeft">5</span>
-            </div>
-        </div>
-        <div class="tank-battle-container">
-            <canvas class="tank-battle-canvas" id="tankBattleCanvas" width="320" height="320"></canvas>
-        </div>
-        <div class="tank-battle-hint">使用方向键移动坦克，空格键发射炮弹！</div>
-        <div class="tb-touch-controls" id="tbTouchControls">
-            <div class="tb-dpad">
-                <button class="tb-dpad-btn empty"></button>
-                <button class="tb-dpad-btn" id="tbUpBtn">⬆️</button>
-                <button class="tb-dpad-btn empty"></button>
-                <button class="tb-dpad-btn" id="tbLeftBtn">⬅️</button>
-                <button class="tb-dpad-btn empty"></button>
-                <button class="tb-dpad-btn" id="tbRightBtn">➡️</button>
-                <button class="tb-dpad-btn empty"></button>
-                <button class="tb-dpad-btn" id="tbDownBtn">⬇️</button>
-                <button class="tb-dpad-btn empty"></button>
-            </div>
-            <button class="tb-touch-btn tb-fire-btn" id="tbFireBtn">💥</button>
-        </div>
-        <div class="tank-battle-buttons">
-            <button class="tank-battle-button tank-battle-button-reset" id="resetTankBattle">🔄 重新开始</button>
-            <button class="tank-battle-button tank-battle-button-continue" id="exitTankBattle">继续游览 ➡️</button>
-        </div>
-        <div class="tank-battle-complete-message" id="tankBattleCompleteMessage">
-            🎉 胜利！得分：<span id="tbFinalScore">0</span>
-        </div>
-    </div>
-
-    <!-- Minesweeper (扫雷) Game Overlay -->
-    <div class="minesweeper-overlay" id="minesweeperOverlay">
-        <div class="minesweeper-header">
-            <div class="minesweeper-title">💣 扫雷挑战 💣</div>
-            <div class="minesweeper-stats">
-                剩余地雷：<span id="msRemainingMines">10</span> | 用时：<span id="msTimer">0</span>秒
-            </div>
-        </div>
-        <div class="minesweeper-container">
-            <div class="minesweeper-grid size-8" id="minesweeperGrid"></div>
-        </div>
-        <div class="minesweeper-hint">点击揭开方块，长按或开启标记模式插旗标记地雷！</div>
-        <div class="minesweeper-flag-toggle">
-            <button class="flag-toggle-btn" id="flagModeToggle">🚩 标记模式</button>
-        </div>
-        <div class="minesweeper-buttons">
-            <button class="minesweeper-button minesweeper-button-reset" id="resetMinesweeper">🔄 重新开始</button>
-            <button class="minesweeper-button minesweeper-button-continue" id="exitMinesweeper">继续游览 ➡️</button>
-        </div>
-        <div class="minesweeper-complete-message" id="minesweeperCompleteMessage">
-            🎉 胜利！用时：<span id="msFinalTime">0</span>秒
+    <!-- Game Choice Overlay -->
+    <div class="game-choice-overlay" id="gameChoiceOverlay" aria-hidden="true">
+        <div class="game-choice-modal" role="dialog" aria-modal="true" aria-labelledby="gameChoiceTitle">
+            <div class="game-choice-title" id="gameChoiceTitle">🎁 任务完成奖励</div>
+            <div class="game-choice-subtitle">随机推荐3个游戏，选择你最想玩的</div>
+            <div class="game-choice-grid" id="gameChoiceGrid"></div>
+            <button class="game-choice-skip" id="gameChoiceSkip" type="button">稍后再玩</button>
         </div>
     </div>
 
@@ -781,6 +749,7 @@
             <button class="poster-action-button" id="publishPosterButton" onclick="publishPosterFromCheckin()">
                 <span>📣</span>
                 <span>发布到大家的成就</span>
+                <span class="reward-hint">🏆 +100积分</span>
             </button>
             <button class="poster-action-button delete-button" id="deletePosterButton" onclick="deletePublishedPoster()" style="display: none;">
                 <span>🗑️</span>
@@ -789,14 +758,40 @@
         </div>
     </div>
 
+    <!-- Leaderboard Modal Template -->
+    <!-- 排行榜模态框将通过leaderboard-template.js动态生成 -->
 
-    <!-- Load dependencies -->
-    <script src="js/museum-image-cache.js"></script>
+    <!-- Game Launcher for Independent Game HTML -->
+    <script src="js/game-launcher.js"></script>
+    
+    <!-- 加载游戏上下文管理器 -->
+    <script src="js/game-context-manager.js"></script>
+    
+    <!-- Unified Game Architecture -->
+    <script src="js/base-game.js"></script>
+    <script src="js/game-manager.js"></script>
+    <script src="js/unified-maze-game.js"></script>
+    <script src="js/unified-game-controls.js"></script>
+    <script src="js/unified-space-invaders-game.js"></script>
+    <script src="js/unified-snake-game.js"></script>
+    <script src="js/unified-game-ui.js"></script>
+    <link rel="stylesheet" href="css/unified-game-ui.css">
+    
+    <!-- Shared Menu Component -->
+    <script src="js/shared-menu.js"></script>
+    <!-- Leaderboard Template Component -->
+    <script src="js/leaderboard-template.js"></script>
+    <!-- Museum Metadata for Fallback -->
+    <script src="js/museums-meta.js"></script>
+    <!-- Museum Data Loader -->
     <script src="js/museum-data-loader.js"></script>
     <script src="js/treasure-workflow-generator.js"></script>
     <script src="js/firework.js"></script>
     <script src="js/achievement-gamification.js"></script>
     <script src="js/virtual-pet.js"></script>
+    <script src="core/event-bus.js"></script>
+    <script src="shared-features/pet-reward-system/pet-reward-manager.js"></script>
+    <script src="quiz/js/points-manager.js"></script>
     <script src="js/baidu-image-search.js"></script>
     <script src="config/api-endpoints.js"></script>
     <script src="js/letmetry-cloud-api.js"></script>
@@ -810,6 +805,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof SharedMenu !== 'undefined') {
                 SharedMenu.init({ showHome: true, showMuseumFireworks: true });
+            }
+            
+            // Initialize PetRewardManager for handling poster rewards
+            if (typeof PetRewardManager !== 'undefined' && typeof EventBus !== 'undefined') {
+                const petRewardManager = new PetRewardManager({ eventBus: EventBus.getInstance() });
+                console.log('[PetRewardManager] Initialized for poster rewards');
             }
         });
     </script>
@@ -846,12 +847,12 @@
     <footer class="site-footer">
         <div class="footer-content">
             <p class="footer-text">
-                <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" class="footer-link">京ICP备2024092319号-6</a>
+                京ICP备2024092319号-6
             </p>
             <p class="footer-text">
-                <a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=11010802046500" target="_blank" rel="noopener noreferrer" class="footer-link">
+                
                     京公网安备11010802046500号
-                </a>
+                
             </p>
         </div>
     </footer>

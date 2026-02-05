@@ -8801,26 +8801,9 @@ main[role="main"] {
 }
 
 .entry-pet-stat .stat-value {
-    font-weight: 600;
+    font-weight: 700;
 }
 
-/* XP display in leaderboard entry */
-.entry-xp {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 13px;
-    color: #666;
-}
-
-.entry-xp .xp-icon {
-    color: #ffd700;
-}
-
-.entry-xp .xp-value {
-    font-weight: 600;
-    color: #333;
-}
 
 /* Pet emoji display in leaderboard */
 .entry-pet-emoji {
@@ -8875,6 +8858,13 @@ main[role="main"] {
     text-align: center;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
 }
+
+/* =====================================================
+   END OF STYLE.CSS
+   
+   Leaderboard styles moved to css/leaderboard.css
+   to avoid duplication across pages
+   ===================================================== */
 
 .footer-content {
     max-width: 1200px;

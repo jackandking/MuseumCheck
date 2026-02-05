@@ -25,7 +25,6 @@
  * Points Earning:
  * - Check-in task: 5 XP
  * - Photo upload: 10 XP  
- * - Puzzle game completion: 15 XP
  * - Maze game completion: 20 XP
  * - Shooting game: score/10 XP (min 10, max 30)
  * - Space Invaders: score/10 XP (min 15, max 30)
@@ -104,7 +103,6 @@ class VirtualPet {
     // Game completion XP rewards
     static get GAME_XP_REWARDS() {
         return {
-            puzzle: { base: 15, name: '拼图游戏' },
             maze: { base: 20, name: '迷宫游戏' },
             shooting: { min: 10, max: 30, divisor: 10, name: '射击游戏' },
             'space-invaders': { min: 15, max: 30, divisor: 10, name: '小蜜蜂' },
@@ -918,7 +916,7 @@ class VirtualPet {
         }
         
         if (gameReward.base) {
-            // Fixed reward games (puzzle, maze)
+            // Fixed reward games (maze)
             return gameReward.base;
         }
         
@@ -1001,6 +999,34 @@ class VirtualPet {
         
         // Update floating pet emoji
         this.updateFloatingPet();
+        
+        // 主动更新排行榜数据（宠物升级后）
+        this.updateLeaderboardAfterPetLevelUp(oldLevel, newLevel);
+    }
+    
+    // 主动更新排行榜数据（宠物升级后）
+    updateLeaderboardAfterPetLevelUp(oldLevel, newLevel) {
+        try {
+            // 宠物升级后，排行榜数据会在下次访问时自动更新
+            // 不需要模态框相关的刷新逻辑
+            console.log('[VirtualPet] Pet leveled up from', oldLevel, 'to', newLevel);
+            console.log('[VirtualPet] Leaderboard will be updated on next page visit');
+            
+            // 触发排行榜数据更新事件
+            const leaderboardUpdateEvent = new CustomEvent('leaderboard:update', {
+                detail: { 
+                    type: 'pet_level_up',
+                    oldLevel: oldLevel,
+                    newLevel: newLevel,
+                    timestamp: Date.now()
+                }
+            });
+            document.dispatchEvent(leaderboardUpdateEvent);
+            
+            console.log('[Leaderboard] Update event triggered after pet level up');
+        } catch (error) {
+            console.error('Error updating leaderboard after pet level up:', error);
+        }
     }
     
     // ===== LEVEL-BASED ANIMATIONS =====
