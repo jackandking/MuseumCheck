@@ -4182,8 +4182,8 @@ class MuseumCheckApp {
         this.setupAgeSelectorAutoHide();
         
         // Track page view to event wall
+        const pageName = this.getPageName();
         if (this.eventWallService) {
-            const pageName = this.getPageName();
             this.eventWallService.recordEvent(
                 'page_view',
                 '访问页面',
@@ -4191,6 +4191,14 @@ class MuseumCheckApp {
                 { pageName: pageName, pageUrl: window.location.href }
             );
         }
+        
+        // Track page view to Google Analytics
+        this.trackEvent('page_view', {
+            page_name: pageName,
+            page_location: window.location.href,
+            page_path: window.location.pathname,
+            page_title: document.title
+        });
     }
     
     /**
