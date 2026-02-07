@@ -535,34 +535,472 @@ const rateLimits = {
 
 ---
 
-## 📊 数据库表结构要求
+## 📊 数据库表结构要求（完整方案）
 
-### 表1: poster_likes
+### 概述
+
+点赞功能需要以下数据库变更：
+1. **新建表**: `poster_likes` - 存储点赞记录
+2. **可选新建表**: `like_notifications` - 存储点赞通知（如需通知功能）
+3. **修改现有表**: `achievement_posters` - 添加点赞数缓存字段（性能优化）
+
+---
+
+### 表1: poster_likes（点赞记录表）- **必需**
+
+#### 完整 DDL
 
 ```sql
-CREATE TABLE poster_likes (
-  id INT PRIMARY KEY AUTO_INCREMENT,
-  poster_id INT NOT NULL,
-  user_id VARCHAR(100) NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+CREATE TABLE IF NOT EXISTS poster_likes (
+  -- 主键
+  id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT COMMENT '点赞记录ID',
+  
+  -- 核心字段
+  poster_id INT UNSIGNED NOT NULL COMMENT '海报ID，关联 achievement_posters.id',
+  user_id VARCHAR(100) NOT NULL COMMENT '用户ID，匿名用户或登录用户的唯一标识',
+  
+  -- 时间戳
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '点赞时间',
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
+  
+  -- 唯一约束：一个用户只能对同一海报点赞一次
+  UNIQUE KEY uk_poster_user (poster_id, user_id),
+  
+  -- 性能索引
+  INDEX idx_poster_id (poster_id) COMMENT '按海报查询点赞',
+  INDEX idx_user_id (user_id) COMMENT '按用户查询点赞历史',
+  INDEX idx_created_at (created_at) COMMENT '按时间排序（最近点赞）'
+  
+) ENGINE=InnoDB 
+  DEFAULT CHARSET=utf8mb4 
+  COLLATE=utf8mb4_unicode_ci
+  COMMENT='成就海报点赞记录表';
+```
+
+#### 字段详细说明
+
+| 字段名 | 类型 | 约束 | 说明 | 示例值 |
+|--------|------|------|------|--------|
+| id | INT UNSIGNED | PK, AUTO_INCREMENT | 点赞记录唯一ID | 1, 2, 3... |
+| poster_id | INT UNSIGNED | NOT NULL | 海报ID（外键关联） | 123 |
+| user_id | VARCHAR(100) | NOT NULL | 用户唯一标识 | "user_abc_123" |
+| created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 点赞时间 | "2026-02-07 10:30:00" |
+| updated_at | DATETIME | ON UPDATE | 记录更新时间 | "2026-02-07 10:30:00" |
+
+#### 索引说明
+
+| 索引名 | 类型 | 字段 | 用途 | 预估查询性能 |
+|--------|------|------|------|--------------|
+| PRIMARY | 主键 | id | 唯一标识 | O(1) |
+| uk_poster_user | 唯一索引 | (poster_id, user_id) | 防止重复点赞 | O(log n) |
+| idx_poster_id | 普通索引 | poster_id | 查询某海报的所有点赞 | O(log n) |
+| idx_user_id | 普通索引 | user_id | 查询某用户的点赞历史 | O(log n) |
+| idx_created_at | 普通索引 | created_at | 按时间排序查询 | O(log n) |
+
+#### 数据示例
+
+```sql
+-- 插入示例数据
+INSERT INTO poster_likes (poster_id, user_id) VALUES
+(123, 'user_abc_123'),
+(123, 'user_xyz_456'),
+(124, 'user_abc_123'),
+(125, 'user_def_789');
+
+-- 查询示例
+SELECT * FROM poster_likes WHERE poster_id = 123;  -- 海报123的所有点赞
+SELECT * FROM poster_likes WHERE user_id = 'user_abc_123';  -- 用户的点赞历史
+```
+
+---
+
+### 表2: achievement_posters（修改现有表）- **推荐但可选**
+
+#### 修改目的
+
+添加 `like_count` 缓存字段，避免每次都 COUNT 查询，提升性能。
+
+#### DDL - 添加字段
+
+```sql
+-- 步骤1: 添加点赞数缓存字段
+ALTER TABLE achievement_posters 
+ADD COLUMN like_count INT UNSIGNED DEFAULT 0 
+COMMENT '点赞数缓存（冗余字段，提升查询性能）'
+AFTER visibility;
+
+-- 步骤2: 添加索引以支持排行榜查询
+ALTER TABLE achievement_posters 
+ADD INDEX idx_like_count (like_count DESC)
+COMMENT '点赞数排序索引（用于热门排行）';
+
+-- 步骤3: 初始化现有数据的点赞数（如果表中已有数据）
+UPDATE achievement_posters p
+SET like_count = (
+  SELECT COUNT(*) 
+  FROM poster_likes l 
+  WHERE l.poster_id = p.id
+);
+```
+
+#### 字段说明
+
+| 字段名 | 类型 | 约束 | 说明 | 何时更新 |
+|--------|------|------|------|----------|
+| like_count | INT UNSIGNED | DEFAULT 0 | 点赞数缓存 | 每次点赞/取消点赞时 +1/-1 |
+
+#### 数据一致性保证
+
+**方案1: 应用层维护（推荐）**
+```sql
+-- 点赞时
+BEGIN;
+INSERT INTO poster_likes (poster_id, user_id) VALUES (?, ?);
+UPDATE achievement_posters SET like_count = like_count + 1 WHERE id = ?;
+COMMIT;
+
+-- 取消点赞时
+BEGIN;
+DELETE FROM poster_likes WHERE poster_id = ? AND user_id = ?;
+UPDATE achievement_posters SET like_count = like_count - 1 WHERE id = ?;
+COMMIT;
+```
+
+**方案2: 数据库触发器（备选）**
+```sql
+-- 创建触发器：点赞时自动 +1
+DELIMITER $$
+CREATE TRIGGER trg_after_like_insert
+AFTER INSERT ON poster_likes
+FOR EACH ROW
+BEGIN
+  UPDATE achievement_posters 
+  SET like_count = like_count + 1 
+  WHERE id = NEW.poster_id;
+END$$
+
+-- 创建触发器：取消点赞时自动 -1
+CREATE TRIGGER trg_after_like_delete
+AFTER DELETE ON poster_likes
+FOR EACH ROW
+BEGIN
+  UPDATE achievement_posters 
+  SET like_count = GREATEST(like_count - 1, 0)
+  WHERE id = OLD.poster_id;
+END$$
+DELIMITER ;
+```
+
+**推荐**: 使用应用层维护，更灵活，易于测试和调试。
+
+#### 定期数据修复（可选）
+
+```sql
+-- 定时任务：每天凌晨修复不一致的数据
+UPDATE achievement_posters p
+SET like_count = (
+  SELECT COUNT(*) 
+  FROM poster_likes l 
+  WHERE l.poster_id = p.id
+)
+WHERE like_count != (
+  SELECT COUNT(*) 
+  FROM poster_likes l 
+  WHERE l.poster_id = p.id
+);
+```
+
+---
+
+### 表3: like_notifications（点赞通知表）- **可选**
+
+#### 完整 DDL
+
+```sql
+CREATE TABLE IF NOT EXISTS like_notifications (
+  -- 主键
+  id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT COMMENT '通知ID',
+  
+  -- 关联字段
+  poster_id INT UNSIGNED NOT NULL COMMENT '海报ID',
+  poster_owner_id VARCHAR(100) NOT NULL COMMENT '海报作者ID（接收通知的人）',
+  liker_user_id VARCHAR(100) NOT NULL COMMENT '点赞用户ID（触发通知的人）',
+  liker_user_name VARCHAR(100) DEFAULT NULL COMMENT '点赞用户昵称（冗余，避免JOIN）',
+  
+  -- 通知状态
+  is_read BOOLEAN DEFAULT FALSE COMMENT '是否已读',
+  read_at DATETIME DEFAULT NULL COMMENT '阅读时间',
+  
+  -- 时间戳
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '通知创建时间',
+  
+  -- 性能索引
+  INDEX idx_owner_unread (poster_owner_id, is_read, created_at DESC) 
+    COMMENT '查询用户未读通知（复合索引）',
+  INDEX idx_poster_id (poster_id) COMMENT '按海报查询通知',
+  INDEX idx_created_at (created_at) COMMENT '按时间排序'
+  
+) ENGINE=InnoDB 
+  DEFAULT CHARSET=utf8mb4 
+  COLLATE=utf8mb4_unicode_ci
+  COMMENT='点赞通知表';
+```
+
+#### 字段详细说明
+
+| 字段名 | 类型 | 约束 | 说明 | 示例值 |
+|--------|------|------|------|--------|
+| id | INT UNSIGNED | PK, AUTO_INCREMENT | 通知唯一ID | 1, 2, 3... |
+| poster_id | INT UNSIGNED | NOT NULL | 海报ID | 123 |
+| poster_owner_id | VARCHAR(100) | NOT NULL | 海报作者ID | "user_owner_123" |
+| liker_user_id | VARCHAR(100) | NOT NULL | 点赞用户ID | "user_abc_456" |
+| liker_user_name | VARCHAR(100) | NULL | 点赞用户昵称 | "张三" |
+| is_read | BOOLEAN | DEFAULT FALSE | 是否已读 | false |
+| read_at | DATETIME | NULL | 阅读时间 | "2026-02-07 11:00:00" |
+| created_at | DATETIME | DEFAULT NOW | 创建时间 | "2026-02-07 10:30:00" |
+
+#### 业务逻辑
+
+```sql
+-- 创建通知（点赞时）
+INSERT INTO like_notifications 
+  (poster_id, poster_owner_id, liker_user_id, liker_user_name)
+SELECT 
+  ?, 
+  p.user_name, 
+  ?, 
+  ?
+FROM achievement_posters p
+WHERE p.id = ?;
+
+-- 获取未读通知
+SELECT 
+  n.id,
+  n.poster_id,
+  n.liker_user_name,
+  n.created_at,
+  p.title AS poster_title
+FROM like_notifications n
+JOIN achievement_posters p ON n.poster_id = p.id
+WHERE n.poster_owner_id = ?
+  AND n.is_read = FALSE
+ORDER BY n.created_at DESC
+LIMIT 20;
+
+-- 标记已读
+UPDATE like_notifications 
+SET is_read = TRUE, read_at = NOW()
+WHERE id = ?;
+```
+
+---
+
+## 🔧 数据库迁移脚本
+
+### 完整迁移脚本（MySQL）
+
+```sql
+-- ============================================
+-- MuseumCheck 点赞功能数据库迁移脚本
+-- 版本: v1.0
+-- 创建日期: 2026-02-07
+-- ============================================
+
+-- 步骤1: 创建点赞记录表
+CREATE TABLE IF NOT EXISTS poster_likes (
+  id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT COMMENT '点赞记录ID',
+  poster_id INT UNSIGNED NOT NULL COMMENT '海报ID',
+  user_id VARCHAR(100) NOT NULL COMMENT '用户ID',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '点赞时间',
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   
   UNIQUE KEY uk_poster_user (poster_id, user_id),
   INDEX idx_poster_id (poster_id),
   INDEX idx_user_id (user_id),
   INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 步骤2: 修改现有表（添加缓存字段）
+ALTER TABLE achievement_posters 
+ADD COLUMN IF NOT EXISTS like_count INT UNSIGNED DEFAULT 0 
+COMMENT '点赞数缓存';
+
+ALTER TABLE achievement_posters 
+ADD INDEX IF NOT EXISTS idx_like_count (like_count DESC);
+
+-- 步骤3: 创建通知表（可选）
+CREATE TABLE IF NOT EXISTS like_notifications (
+  id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  poster_id INT UNSIGNED NOT NULL,
+  poster_owner_id VARCHAR(100) NOT NULL,
+  liker_user_id VARCHAR(100) NOT NULL,
+  liker_user_name VARCHAR(100) DEFAULT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  read_at DATETIME DEFAULT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  
+  INDEX idx_owner_unread (poster_owner_id, is_read, created_at DESC),
+  INDEX idx_poster_id (poster_id),
+  INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 步骤4: 验证表创建
+SELECT 'poster_likes' AS table_name, COUNT(*) AS row_count FROM poster_likes
+UNION ALL
+SELECT 'like_notifications', COUNT(*) FROM like_notifications;
+
+-- 步骤5: 记录迁移历史（建议创建迁移记录表）
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  version VARCHAR(50) PRIMARY KEY,
+  description VARCHAR(255),
+  applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO schema_migrations (version, description) 
+VALUES ('2026020701', '添加点赞功能相关表');
 ```
 
-### 表2: achievement_posters (需要修改)
+### 回滚脚本（如需要）
 
 ```sql
--- 可选：添加缓存字段以提高性能
-ALTER TABLE achievement_posters 
-ADD COLUMN like_count INT DEFAULT 0;
+-- ============================================
+-- 回滚脚本：移除点赞功能
+-- 警告：会删除所有点赞数据！
+-- ============================================
 
--- 可选：添加索引以支持排行榜查询
-ALTER TABLE achievement_posters 
-ADD INDEX idx_like_count (like_count);
+-- 步骤1: 删除通知表
+DROP TABLE IF EXISTS like_notifications;
+
+-- 步骤2: 删除点赞记录表
+DROP TABLE IF EXISTS poster_likes;
+
+-- 步骤3: 移除缓存字段
+ALTER TABLE achievement_posters DROP COLUMN IF EXISTS like_count;
+ALTER TABLE achievement_posters DROP INDEX IF EXISTS idx_like_count;
+
+-- 步骤4: 删除迁移记录
+DELETE FROM schema_migrations WHERE version = '2026020701';
+```
+
+---
+
+## 📈 数据库性能优化建议
+
+### 1. 索引优化
+
+```sql
+-- 分析索引使用情况
+EXPLAIN SELECT * FROM poster_likes WHERE poster_id = 123;
+EXPLAIN SELECT COUNT(*) FROM poster_likes WHERE poster_id = 123;
+
+-- 查看索引统计
+SHOW INDEX FROM poster_likes;
+```
+
+### 2. 查询优化
+
+```sql
+-- 优化前：使用子查询 COUNT（慢）
+SELECT 
+  p.*,
+  (SELECT COUNT(*) FROM poster_likes WHERE poster_id = p.id) AS like_count
+FROM achievement_posters p;
+
+-- 优化后：使用缓存字段（快）
+SELECT p.*, p.like_count 
+FROM achievement_posters p;
+
+-- 优化前：JOIN + COUNT（慢）
+SELECT p.*, COUNT(l.id) AS like_count
+FROM achievement_posters p
+LEFT JOIN poster_likes l ON p.id = l.poster_id
+GROUP BY p.id;
+
+-- 优化后：直接读缓存（快）
+SELECT p.*, p.like_count 
+FROM achievement_posters p;
+```
+
+### 3. 分区表（高流量场景）
+
+```sql
+-- 如果点赞记录超过千万级别，考虑按时间分区
+ALTER TABLE poster_likes 
+PARTITION BY RANGE (YEAR(created_at)) (
+  PARTITION p2024 VALUES LESS THAN (2025),
+  PARTITION p2025 VALUES LESS THAN (2026),
+  PARTITION p2026 VALUES LESS THAN (2027),
+  PARTITION p_future VALUES LESS THAN MAXVALUE
+);
+```
+
+---
+
+## 🔍 数据完整性检查
+
+### 检查脚本
+
+```sql
+-- 检查1: 验证唯一约束（不应该有重复点赞）
+SELECT poster_id, user_id, COUNT(*) AS duplicate_count
+FROM poster_likes
+GROUP BY poster_id, user_id
+HAVING COUNT(*) > 1;
+-- 预期结果：空（无重复）
+
+-- 检查2: 验证 like_count 缓存一致性
+SELECT 
+  p.id,
+  p.like_count AS cached_count,
+  COUNT(l.id) AS actual_count,
+  p.like_count - COUNT(l.id) AS difference
+FROM achievement_posters p
+LEFT JOIN poster_likes l ON p.id = l.poster_id
+GROUP BY p.id
+HAVING difference != 0;
+-- 预期结果：空（缓存与实际一致）
+
+-- 检查3: 验证是否有孤立的点赞记录（海报已删除）
+SELECT l.* 
+FROM poster_likes l
+LEFT JOIN achievement_posters p ON l.poster_id = p.id
+WHERE p.id IS NULL;
+-- 预期结果：空（无孤立记录）
+```
+
+---
+
+## 💾 备份和恢复建议
+
+### 备份策略
+
+```bash
+# 1. 备份点赞相关表
+mysqldump -u username -p database_name \
+  poster_likes like_notifications \
+  > like_feature_backup_$(date +%Y%m%d).sql
+
+# 2. 仅备份表结构
+mysqldump -u username -p --no-data database_name \
+  poster_likes like_notifications \
+  > like_feature_schema.sql
+
+# 3. 恢复
+mysql -u username -p database_name < like_feature_backup_20260207.sql
+```
+
+### 数据归档（可选）
+
+```sql
+-- 归档6个月前的点赞记录（如需要）
+CREATE TABLE poster_likes_archive LIKE poster_likes;
+
+INSERT INTO poster_likes_archive
+SELECT * FROM poster_likes
+WHERE created_at < DATE_SUB(NOW(), INTERVAL 6 MONTH);
+
+DELETE FROM poster_likes
+WHERE created_at < DATE_SUB(NOW(), INTERVAL 6 MONTH);
 ```
 
 ---
