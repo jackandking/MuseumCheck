@@ -107,6 +107,50 @@ test.describe('Leaderboard Page', () => {
         await expect(scoreLabel).toContainText('参观数量');
     });
 
+    test('should display user stats with actual data, not empty dashes', async ({ page }) => {
+        // Wait for data to load
+        await page.waitForTimeout(2000);
+        
+        const myRank = page.locator('#myRank');
+        const myScore = page.locator('#myScore');
+        
+        // Get the text content
+        const rankText = await myRank.textContent();
+        const scoreText = await myScore.textContent();
+        
+        // Validate that user stats show actual data
+        // The rank should either show a number (like "第 15 名") or "未上榜"
+        // It should NOT show "第 - 名" which indicates missing data
+        expect(rankText).toBeTruthy();
+        
+        // BUG: This test will fail because current implementation shows "第 - 名"
+        // Expected: Should show either "第 X 名" (with a number) or "未上榜"
+        // Actual: Shows "第 - 名" (dash indicates missing/empty data)
+        const hasValidRank = rankText?.includes('未上榜') || 
+                            (rankText?.includes('第') && 
+                             rankText?.includes('名') && 
+                             !rankText?.includes('-'));
+        
+        // Log the actual values for debugging
+        console.log('[Test] Rank text:', rankText);
+        console.log('[Test] Score text:', scoreText);
+        console.log('[Test] Has valid rank:', hasValidRank);
+        
+        // This assertion will catch the bug where rank shows "第 - 名"
+        expect(hasValidRank).toBe(true);
+        
+        // Score should also not be just "-"
+        // It should be either a number or "未上榜" state should be clear
+        if (rankText?.includes('未上榜')) {
+            // If not ranked, score being "-" is acceptable
+            expect(scoreText).toBe('-');
+        } else {
+            // If ranked, score should be a valid number, not "-"
+            expect(scoreText).not.toBe('-');
+            expect(scoreText).toMatch(/\d+/); // Should contain at least one digit
+        }
+    });
+
     test('should update score label when switching tabs', async ({ page }) => {
         const scoreLabel = page.locator('#scoreLabel');
         const petTab = page.locator('[data-ranking-type="pet"]');

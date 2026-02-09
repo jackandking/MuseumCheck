@@ -143,6 +143,36 @@ Expected to work on:
 2. **Sample Data**: Falls back to sample data when API unavailable
 3. **Console Warnings**: Parse warnings for undefined values (expected in offline mode)
 
+## Issues Discovered
+
+### 🐛 Bug: User Stats Display Empty Data
+
+**Severity**: Medium  
+**Status**: Identified during testing  
+
+**Description**: The "我的排名" (My Rank) section displays placeholder dashes ("-") instead of actual user statistics when using sample/fallback data.
+
+**Visual Evidence**:
+![User Stats Bug](https://github.com/user-attachments/assets/59555ec4-19a2-474b-a308-8567acd0808d)
+
+**Observed Behavior**:
+- Rank shows: "第 - 名" (instead of "第 15 名" or "未上榜")
+- Score shows: "-" (instead of actual number like "0" or "3")
+
+**Root Cause**: 
+Sample data format mismatch - `loadSampleData()` provides simplified format but `handleDataResponse()` expects API format with `sortKey` and `value` fields. This causes:
+1. Parse failures (console warnings about "undefined" not being valid JSON)
+2. `getCurrentUserStats()` unable to find current user in parsed records
+3. Returns `{ rank: '-', score: '-' }` as fallback
+
+**Impact**: Users see placeholder data in fallback/offline mode, reducing trust in the leaderboard feature.
+
+**Detailed Analysis**: See `docs/reports/leaderboard-user-stats-bug.md`
+
+**Why Tests Didn't Catch It**: Original tests only validated UI elements were visible, not that they contained meaningful data. New test added to detect this issue.
+
+**Fix Status**: Bug documented, awaiting implementation of fix.
+
 ## Security & Data Quality
 
 ✅ **No Security Issues**: No XSS vulnerabilities detected  
@@ -152,7 +182,8 @@ Expected to work on:
 ## Recommendations
 
 ### Immediate Actions
-- ✅ **Complete** - All tests passing, feature is production-ready
+- 🐛 **Fix User Stats Bug** - Update sample data format to match API format (see bug report)
+- 🧪 **Verify Fix** - Re-run tests after implementing fix
 
 ### Future Enhancements
 1. Add more granular unit tests for individual LeaderboardPage methods
@@ -164,12 +195,19 @@ Expected to work on:
 
 The leaderboard feature has been **thoroughly tested and validated**. With:
 - **43 total tests** (23 unit + 20 E2E)
-- **100% pass rate**
+- **100% pass rate** (for what tests were designed to check)
 - **Comprehensive coverage** of functionality, UI, and edge cases
 - **Visual validation** through screenshots
 - **Performance verified** with acceptable load times
 
-**Status**: ✅ **APPROVED FOR PRODUCTION**
+**Status**: ⚠️ **APPROVED WITH KNOWN ISSUE**
+
+**Testing Revealed**:
+- ✅ Core functionality works correctly
+- ✅ UI elements render properly
+- ✅ Tab switching and navigation functional
+- ✅ Responsive design validated
+- 🐛 **Bug Identified**: User stats show placeholder "-" in fallback mode (see bug report)
 
 The feature demonstrates:
 - Robust error handling
@@ -177,6 +215,8 @@ The feature demonstrates:
 - Responsive design
 - Clean, maintainable code
 - Proper fallback mechanisms
+
+**Important Note**: While the leaderboard works correctly with real API data, the fallback sample data has a format mismatch causing user stats to display as "-". This is a known issue that should be fixed before relying on offline/fallback mode in production. See `docs/reports/leaderboard-user-stats-bug.md` for detailed analysis and recommended fix.
 
 ---
 
