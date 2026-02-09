@@ -3945,7 +3945,7 @@ describe('Regression Tests - Previously Fixed Bugs', () => {
      * Bug: 手机上排行榜页面"我的排名"部分没有数据，无法知道自己排第几
      * Root Cause: getCurrentUserStats() 访问不存在的属性 visitedCount，而数据解析时存储为 visits
      * Fixed: 2026-02-09
-     * PR: https://github.com/jackandking/MuseumCheck/pull/[PR_NUMBER]
+     * Branch: copilot/fix-leaderboard-ranking-issue
      * 
      * Test ensures both museum and pet leaderboards correctly display user ranking data.
      */
