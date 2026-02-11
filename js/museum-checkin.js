@@ -102,7 +102,7 @@
                 // Support multiple response formats:
                 // 1. { items: [...] } or { Items: [...] } - DynamoDB direct format
                 // 2. { value: '[{...}]' } - JSON string in value field (used by KV store wildcard queries)
-                let itemsArray = null;
+                let itemsArray = [];
                 
                 if (data.items || data.Items) {
                     // Format 1: Direct items array
@@ -113,10 +113,7 @@
                         itemsArray = JSON.parse(data.value);
                     } catch (e) {
                         console.error('Failed to parse value field as JSON array:', e);
-                        itemsArray = [];
                     }
-                } else {
-                    itemsArray = [];
                 }
                 
                 for (const item of itemsArray) {
