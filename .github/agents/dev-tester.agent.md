@@ -4,8 +4,8 @@
 # To make this agent available, merge this file into the default repository branch.
 # For format details, see: https://gh.io/customagents/config
 
-name:dev-tester
-description:test e2e with browser in the dev env
+name: dev-tester
+description: test e2e with browser in the dev env
 ---
 
 # My Agent
