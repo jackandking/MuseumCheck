@@ -1456,7 +1456,7 @@ window.MUSEUMS_META = [
       "工艺",
       "文化"
     ],
-    "image": "https://img2.baidu.com/it/u=4244108941,2042509085&fm=253&fmt=auto&app=138?f=JPEG?w=1067&h=800",
+    "image": "https://img2.baidu.com/it/u=4244108941,2042509085&fm=253&fmt=auto&app=138&f=JPEG&w=1067&h=800",
     "hasCollections": true,
     "level": "二级"
   }
