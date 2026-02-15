@@ -7399,11 +7399,12 @@ class MuseumCheckApp {
             
             // If no museums were rendered, show appropriate message
             if (grid.children.length === 0) {
-                // Check if it's a search with no results vs actual data loading failure
+                // Check if it's a search with no results vs initial empty state
                 if (this.searchQuery && this.searchQuery.trim() !== '') {
                     this.showNoSearchResults(this.searchQuery);
                 } else {
-                    this.showError('博物馆数据载入失败，请刷新页面重试');
+                    // Show friendly prompt to search (API-based architecture)
+                    this.showSearchPrompt();
                 }
             }
         } catch (error) {
@@ -7426,6 +7427,30 @@ class MuseumCheckApp {
                 <div class="error-icon">⚠️</div>
                 <p>${message}</p>
                 <button onclick="location.reload()" class="retry-button">重新载入</button>
+            </div>
+        `;
+    }
+    
+    showSearchPrompt() {
+        const grid = document.getElementById('museumGrid');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        
+        // Hide loading indicator
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
+        
+        grid.innerHTML = `
+            <div class="search-prompt-message">
+                <div class="search-prompt-icon">🔍</div>
+                <h3>搜索博物馆，开始探索之旅！</h3>
+                <p class="search-prompt-hint">试试搜索：</p>
+                <div class="search-examples">
+                    <button onclick="document.getElementById('museumSearch').value='故宫';document.getElementById('museumSearch').dispatchEvent(new Event('input'));" class="example-btn">🏯 故宫</button>
+                    <button onclick="document.getElementById('museumSearch').value='自然博物馆';document.getElementById('museumSearch').dispatchEvent(new Event('input'));" class="example-btn">🦕 自然博物馆</button>
+                    <button onclick="document.getElementById('museumSearch').value='科技馆';document.getElementById('museumSearch').dispatchEvent(new Event('input'));" class="example-btn">🚀 科技馆</button>
+                    <button onclick="document.getElementById('museumSearch').value='上海';document.getElementById('museumSearch').dispatchEvent(new Event('input'));" class="example-btn">🌆 上海</button>
+                </div>
             </div>
         `;
     }
