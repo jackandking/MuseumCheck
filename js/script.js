@@ -4150,7 +4150,7 @@ class MuseumCheckApp {
         this.requestUserLocation();
         
         // Apply default filtering (show visited/favorited/browsed museums when no search)
-        this.filterMuseums();
+        await this.filterMuseums();
         
         this.renderMuseums();
         this.updateStats();
@@ -4748,9 +4748,9 @@ class MuseumCheckApp {
         const clearButton = document.getElementById('clearSearch');
         
         // Search input event listener
-        searchInput.addEventListener('input', (e) => {
+        searchInput.addEventListener('input', async (e) => {
             this.searchQuery = e.target.value.trim();
-            this.filterMuseums();
+            await this.filterMuseums();
             this.renderMuseums();
             this.toggleClearButton();
             
@@ -5382,7 +5382,7 @@ class MuseumCheckApp {
     }
 
     // Search functionality methods
-    filterMuseums() {
+    async filterMuseums() {
         console.log('🔍 [DEBUG] filterMuseums called:', {
             searchQuery: this.searchQuery,
             hasHomepageAdapter: !!this.homepageAdapter,
@@ -5393,7 +5393,8 @@ class MuseumCheckApp {
         if (this.homepageAdapter) {
             // Apply search
             if (this.searchQuery) {
-                this.homepageAdapter.search(this.searchQuery);
+                // Search is now async and uses OfficialMuseumSearch API
+                await this.homepageAdapter.search(this.searchQuery);
                 this.filteredMuseums = this.homepageAdapter.getFilteredMuseums();
                 
                 // Sort search results by recency (most recently browsed first)
@@ -5406,33 +5407,14 @@ class MuseumCheckApp {
             } else {
                 this.homepageAdapter.clearFilters();
                 
-                // No search query - show only browsed museums (by viewing history)
-                // Get IDs of museums to display from browsing history
-                const browsedIds = Object.keys(this.browsedMuseums);
+                // No search query - show empty list with prompt to search
+                // Since we no longer have MUSEUMS_META, we can't show "all museums"
+                // User must search to find museums
+                this.filteredMuseums = [];
                 
-                // If user has browsing history, filter to show only those
-                if (browsedIds.length > 0) {
-                    const allMuseums = this.homepageAdapter.getFilteredMuseums();
-                    this.filteredMuseums = allMuseums.filter(museum => this.browsedMuseums.hasOwnProperty(museum.id));
-                    
-                    // Sort by recency (most recently browsed first)
-                    this.filteredMuseums.sort((a, b) => {
-                        const timeA = this.browsedMuseums[a.id] || 0;
-                        const timeB = this.browsedMuseums[b.id] || 0;
-                        return timeB - timeA; // Most recent first
-                    });
-                    
-                    console.log('🔍 [DEBUG] filterMuseums (HomepageAdapter) - browsed:', {
-                        filteredCount: this.filteredMuseums.length,
-                        filteredIds: this.filteredMuseums.map(m => m.id)
-                    });
-                } else {
-                    // No browsing history, show all
-                    this.filteredMuseums = this.homepageAdapter.getFilteredMuseums();
-                    console.log('🔍 [DEBUG] filterMuseums (HomepageAdapter) - no browsed, showing all:', {
-                        totalCount: this.filteredMuseums.length
-                    });
-                }
+                console.log('🔍 [DEBUG] filterMuseums (HomepageAdapter) - no search query, showing empty:', {
+                    message: 'User must search to find museums'
+                });
             }
             
             return;
@@ -5499,11 +5481,11 @@ class MuseumCheckApp {
         });
     }
     
-    clearSearch() {
+    async clearSearch() {
         this.searchQuery = '';
         document.getElementById('museumSearch').value = '';
         // Apply default filtering (shows browsed museums by viewing history)
-        this.filterMuseums();
+        await this.filterMuseums();
         this.renderMuseums();
         this.toggleClearButton();
     }
@@ -7467,7 +7449,7 @@ class MuseumCheckApp {
         `;
     }
 
-    toggleMuseumVisit(museumId) {
+    async toggleMuseumVisit(museumId) {
         const index = this.visitedMuseums.indexOf(museumId);
         const museum = MUSEUMS.find(m => m.id === museumId);
         
@@ -7483,7 +7465,7 @@ class MuseumCheckApp {
                 }
             } catch (e) { console.warn('Error removing visitedMuseumsMeta entry:', e); }
             // Re-filter museums to update display (in case no search is active)
-            this.filterMuseums();
+            await this.filterMuseums();
             this.renderMuseums();
             
             // Track museum visit toggle
@@ -7521,7 +7503,7 @@ class MuseumCheckApp {
      * @param {Object} museum - The museum object
      * @param {string} ageGroup - The current age group (e.g., '7-12')
      */
-    checkAutoCheckin(museumId, museum, ageGroup) {
+    async checkAutoCheckin(museumId, museum, ageGroup) {
         // Skip if museum is already visited
         if (this.visitedMuseums.includes(museumId)) {
             return;
@@ -7597,7 +7579,7 @@ class MuseumCheckApp {
         this.triggerLargeRocket();
         this.saveVisitedMuseums();
         // Re-filter museums to update display (in case no search is active)
-        this.filterMuseums();
+        await this.filterMuseums();
         this.renderMuseums();
         
         // Show completion notification
@@ -7687,7 +7669,7 @@ class MuseumCheckApp {
         }
     }
 
-    toggleFavorite(museumId) {
+    async toggleFavorite(museumId) {
         const index = this.favoriteMuseums.indexOf(museumId);
         const museum = MUSEUMS.find(m => m.id === museumId);
         
@@ -7696,7 +7678,7 @@ class MuseumCheckApp {
             this.favoriteMuseums.splice(index, 1);
             this.saveFavoriteMuseums();
             // Re-filter museums to update display (in case no search is active)
-            this.filterMuseums();
+            await this.filterMuseums();
             this.renderMuseums();
             
             // Track favorite toggle
@@ -7710,7 +7692,7 @@ class MuseumCheckApp {
             this.favoriteMuseums.push(museumId);
             this.saveFavoriteMuseums();
             // Re-filter museums to update display (in case no search is active)
-            this.filterMuseums();
+            await this.filterMuseums();
             this.renderMuseums();
             
             // Track favorite toggle
