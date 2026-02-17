@@ -252,3 +252,127 @@ describe('Search Error Handling (Regression for 故宫 bug)', () => {
     });
   });
 });
+
+/**
+ * Regression Test: Museum ID Generation Bug
+ * 
+ * Bug: Cannot read properties of undefined (reading 'slice')
+ * Issue: When API returns museum with undefined/null location, generateMuseumId() fails
+ * 
+ * Fix: Use cleanLocation (guaranteed string) instead of original location parameter
+ */
+
+// Load OfficialMuseumSearch for testing
+require('../js/official-museum-search.js');
+
+describe('OfficialMuseumSearch - Museum ID Generation (Regression)', () => {
+  let searcher;
+
+  beforeEach(() => {
+    if (typeof OfficialMuseumSearch !== 'undefined') {
+      searcher = new OfficialMuseumSearch();
+    }
+  });
+
+  describe('generateMuseumId with missing/undefined location', () => {
+    test('should handle undefined location without throwing error', () => {
+      if (!searcher) {
+        console.warn('OfficialMuseumSearch not available, skipping test');
+        return;
+      }
+
+      expect(() => {
+        const id = searcher.generateMuseumId('故宫博物院', undefined);
+        expect(id).toBeDefined();
+        expect(typeof id).toBe('string');
+        expect(id).toMatch(/^museum-/);
+      }).not.toThrow();
+    });
+
+    test('should handle null location without throwing error', () => {
+      if (!searcher) {
+        console.warn('OfficialMuseumSearch not available, skipping test');
+        return;
+      }
+
+      expect(() => {
+        const id = searcher.generateMuseumId('故宫博物院', null);
+        expect(id).toBeDefined();
+        expect(typeof id).toBe('string');
+        expect(id).toMatch(/^museum-/);
+      }).not.toThrow();
+    });
+
+    test('should handle empty string location without throwing error', () => {
+      if (!searcher) {
+        console.warn('OfficialMuseumSearch not available, skipping test');
+        return;
+      }
+
+      expect(() => {
+        const id = searcher.generateMuseumId('故宫博物院', '');
+        expect(id).toBeDefined();
+        expect(typeof id).toBe('string');
+        expect(id).toMatch(/^museum-/);
+      }).not.toThrow();
+    });
+
+    test('should use fallback prefix "xx" when location is missing', () => {
+      if (!searcher) {
+        console.warn('OfficialMuseumSearch not available, skipping test');
+        return;
+      }
+
+      const id1 = searcher.generateMuseumId('故宫博物院', undefined);
+      const id2 = searcher.generateMuseumId('故宫博物院', null);
+      const id3 = searcher.generateMuseumId('故宫博物院', '');
+      
+      // All should use the fallback prefix 'xx'
+      expect(id1).toMatch(/^museum-xx-/);
+      expect(id2).toMatch(/^museum-xx-/);
+      expect(id3).toMatch(/^museum-xx-/);
+    });
+
+    test('should generate valid ID with normal location', () => {
+      if (!searcher) {
+        console.warn('OfficialMuseumSearch not available, skipping test');
+        return;
+      }
+
+      const id = searcher.generateMuseumId('故宫博物院', '北京');
+      expect(id).toBeDefined();
+      expect(id).toMatch(/^museum-北京-/);
+    });
+  });
+
+  describe('transformSearchResults with missing location', () => {
+    test('should handle API results with missing location fields', async () => {
+      if (!searcher) {
+        console.warn('OfficialMuseumSearch not available, skipping test');
+        return;
+      }
+
+      const apiResults = [
+        { name: '故宫博物院', location: undefined },
+        { name: '国家博物馆', location: null },
+        { name: '上海博物馆', location: '' },
+        { name: '南京博物院', location: '南京' }
+      ];
+
+      await expect(async () => {
+        const museums = await searcher.transformSearchResults(apiResults);
+        expect(museums).toHaveLength(4);
+        expect(museums[0].id).toBeDefined();
+        expect(museums[1].id).toBeDefined();
+        expect(museums[2].id).toBeDefined();
+        expect(museums[3].id).toBeDefined();
+        
+        // Verify all IDs are valid strings
+        museums.forEach(museum => {
+          expect(typeof museum.id).toBe('string');
+          expect(museum.id).toMatch(/^museum-/);
+        });
+      }).not.toThrow();
+    });
+  });
+});
