@@ -9,6 +9,14 @@
  * - 支持搜索、过滤、排序等功能
  * - 发布事件供其他模块订阅
  */
+
+// Error message constants for consistency
+const ERROR_MESSAGES = {
+  SEARCH_SERVICE_UNAVAILABLE: 'Search service unavailable',
+  SEARCH_FAILED: 'Search failed',
+  SEARCH_ERROR: 'Search error occurred'
+};
+
 class HomepageAdapter {
   constructor({ dataManager, eventBus, museumDataLoader } = {}) {
     // 核心依赖
@@ -147,7 +155,7 @@ class HomepageAdapter {
     // Use OfficialMuseumSearch for API-based search
     if (!this.officialSearch) {
       console.warn('OfficialMuseumSearch not available, cannot perform search');
-      this.lastSearchError = 'Search service unavailable';
+      this.lastSearchError = ERROR_MESSAGES.SEARCH_SERVICE_UNAVAILABLE;
       return;
     }
     
@@ -178,7 +186,7 @@ class HomepageAdapter {
         console.error('[HomepageAdapter] Search failed:', result.error);
         this.museums = [];
         this.filteredMuseums = [];
-        this.lastSearchError = result.error || 'Search failed';
+        this.lastSearchError = result.error || ERROR_MESSAGES.SEARCH_FAILED;
         
         // Emit error event
         if (this.eventBus) {
@@ -194,7 +202,7 @@ class HomepageAdapter {
       console.error('[HomepageAdapter] Search error:', error);
       this.museums = [];
       this.filteredMuseums = [];
-      this.lastSearchError = error.message || 'Search error occurred';
+      this.lastSearchError = error.message || ERROR_MESSAGES.SEARCH_ERROR;
       
       // Emit error event
       if (this.eventBus) {

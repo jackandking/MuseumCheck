@@ -7449,6 +7449,13 @@ class MuseumCheckApp {
             loadingIndicator.style.display = 'none';
         }
         
+        // Sanitize query to prevent XSS
+        const sanitizedQuery = (query || '').replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        
         // Determine if it's a network/blocking error
         const isNetworkError = errorMessage && (
             errorMessage.includes('fetch') || 
@@ -7464,18 +7471,36 @@ class MuseumCheckApp {
         grid.innerHTML = `
             <div class="search-error-message">
                 <div class="error-icon">🔍❌</div>
-                <h3>搜索"${query}"时发生错误</h3>
+                <h3>搜索"${sanitizedQuery}"时发生错误</h3>
                 <p class="error-detail">${helpText}</p>
                 <div class="error-actions">
-                    <button onclick="document.getElementById('museumSearch').value='${query}';app.filterMuseums().then(() => app.renderMuseums());" class="retry-button">🔄 重试搜索</button>
-                    <button onclick="document.getElementById('museumSearch').value='';app.clearSearch();" class="clear-button">✕ 清空搜索</button>
+                    <button id="retrySearchBtn" class="retry-button">🔄 重试搜索</button>
+                    <button id="clearSearchBtn" class="clear-button">✕ 清空搜索</button>
                 </div>
                 <details class="error-technical">
                     <summary>技术详情</summary>
-                    <code>${errorMessage || '未知错误'}</code>
+                    <code>${(errorMessage || '未知错误').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>
                 </details>
             </div>
         `;
+        
+        // Add event listeners instead of inline handlers
+        const retryBtn = document.getElementById('retrySearchBtn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', async () => {
+                document.getElementById('museumSearch').value = query;
+                await this.filterMuseums();
+                this.renderMuseums();
+            });
+        }
+        
+        const clearBtn = document.getElementById('clearSearchBtn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                document.getElementById('museumSearch').value = '';
+                this.clearSearch();
+            });
+        }
     }
     
     showSearchPrompt() {
