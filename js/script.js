@@ -170,6 +170,17 @@ const UtilityFunctions = {
     // String helpers
     sanitizeString: (str) => str ? str.trim() : '',
     
+    // HTML escaping to prevent XSS
+    escapeHtml: (str) => {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    },
+    
     truncateString: (str, maxLength) => {
         if (!str || str.length <= maxLength) return str;
         return str.substring(0, maxLength) + '...';
@@ -7449,12 +7460,9 @@ class MuseumCheckApp {
             loadingIndicator.style.display = 'none';
         }
         
-        // Sanitize query to prevent XSS
-        const sanitizedQuery = (query || '').replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
+        // Escape HTML to prevent XSS (using utility function for consistency)
+        const sanitizedQuery = UtilityFunctions.escapeHtml(query);
+        const sanitizedError = UtilityFunctions.escapeHtml(errorMessage);
         
         // Determine if it's a network/blocking error
         const isNetworkError = errorMessage && (
@@ -7479,16 +7487,17 @@ class MuseumCheckApp {
                 </div>
                 <details class="error-technical">
                     <summary>技术详情</summary>
-                    <code>${(errorMessage || '未知错误').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>
+                    <code>${sanitizedError || '未知错误'}</code>
                 </details>
             </div>
         `;
         
-        // Add event listeners instead of inline handlers
+        // Add event listeners instead of inline handlers (XSS prevention)
         const retryBtn = document.getElementById('retrySearchBtn');
         if (retryBtn) {
             retryBtn.addEventListener('click', async () => {
-                document.getElementById('museumSearch').value = query;
+                // Use original query (not sanitized HTML) for search input
+                document.getElementById('museumSearch').value = query || '';
                 await this.filterMuseums();
                 this.renderMuseums();
             });

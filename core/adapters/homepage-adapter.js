@@ -10,7 +10,7 @@
  * - 发布事件供其他模块订阅
  */
 
-// Error message constants for consistency
+// Error message constants for consistency (internal identifiers, not user-facing text)
 const ERROR_MESSAGES = {
   SEARCH_SERVICE_UNAVAILABLE: 'Search service unavailable',
   SEARCH_FAILED: 'Search failed',
