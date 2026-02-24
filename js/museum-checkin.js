@@ -818,6 +818,15 @@
 
             currentMuseum = museum;
 
+            // Save as last visited museum for game return fallback (移动端容错机制)
+            try {
+                if (museumId && museumId !== 'forbidden-city') {
+                    localStorage.setItem('lastVisitedMuseum', museumId);
+                }
+            } catch (e) {
+                console.warn('[Museum] Could not save lastVisitedMuseum to localStorage:', e);
+            }
+
             // Merge user-added treasures from localStorage into currentMuseum.collections
             // This ensures user-added treasures are available even if KV store save failed
             const userTreasures = loadUserAddedTreasures(museumId);
