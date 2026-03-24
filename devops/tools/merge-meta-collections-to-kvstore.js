@@ -35,7 +35,7 @@ function log(msg, color = 'reset') {
  * 从 meta 读取基础数据
  */
 function readMuseumFromMeta(museumId) {
-  const metaPath = path.join(__dirname, '../data/museums-meta.json');
+  const metaPath = path.join(__dirname, '../../data/museums-meta.json');
   const content = fs.readFileSync(metaPath, 'utf8');
   const museums = JSON.parse(content);
   return museums.find(m => m.id === museumId);

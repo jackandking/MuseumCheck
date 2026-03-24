@@ -124,7 +124,7 @@ const SAMPLE_COLLECTIONS = {
 };
 
 async function main() {
-  const metaPath = path.join(__dirname, '../data/museums-meta.json');
+  const metaPath = path.join(__dirname, '../../data/museums-meta.json');
   let metaData = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
 
   log(`\n🏛️  Adding collections data for ${metaData.length} museums...`, 'cyan');
@@ -216,7 +216,7 @@ async function main() {
 
   // Save report
   const timestamp = new Date().toISOString().split('T')[0];
-  const reportPath = path.join(__dirname, `../backup/collections-update-report-${timestamp}.json`);
+  const reportPath = path.join(__dirname, `../../backup/collections-update-report-${timestamp}.json`);
   fs.writeFileSync(reportPath, JSON.stringify({
     timestamp: new Date().toISOString(),
     totalMuseums: metaData.length,

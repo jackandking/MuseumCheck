@@ -10,8 +10,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const SCRIPT_PATH = path.join(__dirname, '..', 'script.js');
-const BACKUP_PATH = path.join(__dirname, '..', 'script.js.backup');
+const SCRIPT_PATH = path.join(__dirname, '..', '..', 'script.js');
+const BACKUP_PATH = path.join(__dirname, '..', '..', 'script.js.backup');
 
 // Based on validation results - indices to remove (duplicates and invalid entries)
 const INDICES_TO_REMOVE = [

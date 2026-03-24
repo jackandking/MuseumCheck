@@ -97,7 +97,7 @@ async function verifyMuseumStructure(museumData) {
 }
 
 async function main() {
-  const metaPath = path.join(__dirname, '../data/museums-meta.json');
+  const metaPath = path.join(__dirname, '../../data/museums-meta.json');
   const metaData = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
 
   log(`\n🔍 Verifying KV store uploads...`, 'cyan');
@@ -191,7 +191,7 @@ async function main() {
     });
   }
 
-  const verificationPath = path.join(__dirname, `../backup/kvstore-verification-${new Date().toISOString().split('T')[0]}.json`);
+  const verificationPath = path.join(__dirname, `../../backup/kvstore-verification-${new Date().toISOString().split('T')[0]}.json`);
   fs.writeFileSync(verificationPath, JSON.stringify(results, null, 2));
 
   log(`\n📄 Verification report saved to: ${verificationPath}`, 'blue');

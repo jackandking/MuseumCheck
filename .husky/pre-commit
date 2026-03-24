@@ -74,7 +74,7 @@ if [ -n "$STAGED_MD_FILES" ]; then
     echo ""
     
     # Run the docs location check script
-    if ! bash scripts/check-docs-location.sh; then
+    if ! bash devops/scripts/check-docs-location.sh; then
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "❌ COMMIT BLOCKED: Document location check failed"
@@ -97,7 +97,7 @@ if [ -n "$STAGED_MD_FILES" ]; then
     
     # ====== Check document consistency ======
     echo "� Checking document consistency..."
-    if ! bash scripts/check-docs-consistency.sh; then
+    if ! bash devops/scripts/check-docs-consistency.sh; then
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "❌ COMMIT BLOCKED: Document consistency check failed"
@@ -112,7 +112,7 @@ if [ -n "$STAGED_MD_FILES" ]; then
     
     # ====== Check document content consistency ======
     echo "📖 Checking document content consistency..."
-    if ! node scripts/check-docs-content-consistency.js; then
+    if ! node devops/scripts/check-docs-content-consistency.js; then
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "❌ COMMIT BLOCKED: Document content conflicts detected"
@@ -136,7 +136,7 @@ STAGED_FILES=$(git diff --cached --name-only)
 
 if [ -n "$STAGED_FILES" ]; then
     # Run the comprehensive file placement check script
-    if ! bash scripts/check-file-placement.sh; then
+    if ! bash devops/scripts/check-file-placement.sh; then
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "❌ COMMIT BLOCKED: File placement check failed"
@@ -164,14 +164,14 @@ STAGED_META_JSON=$(git diff --cached --name-only | grep "$META_JSON" || true)
 
 if [ -n "$STAGED_META_JSON" ]; then
     echo "🔄 museums-meta.json changed, regenerating museums-meta.js..."
-    node tools/generate-museums-meta-js.js
+    node devops/tools/generate-museums-meta-js.js
     git add "$META_JS"
     echo "✅ museums-meta.js updated and staged"
     echo ""
 fi
 
 # ====== Museum verification ======
-VERIFY_TOOL="node tools/verify-museum-official.js"
+VERIFY_TOOL="node devops/tools/verify-museum-official.js"
 SCRIPT_FILE="script.js"
 STAGED_SCRIPT=$(git diff --cached --name-only | grep "$SCRIPT_FILE" || true)
 

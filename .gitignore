@@ -13,6 +13,10 @@ e2e-screenshots/
 tmp/
 *.backup
 
+# DevOps runtime data
+devops/.local/
+!devops/.local/.gitkeep
+
 # IDE
 .vscode/
 .idea/
@@ -41,3 +45,6 @@ generate-v3-qr-codes.js
 
 # User uploads
 uploads/
+.venv/
+ref/snowpark_config.py
+explorations/
