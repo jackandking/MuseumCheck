@@ -73,7 +73,7 @@ window.MUSEUMS_META = [
       "民俗"
     ],
     "image": "https://upload.wikimedia.org/wikipedia/commons/3/31/Nanjing_Museum1.jpg",
-    "hasCollections": false,
+    "hasCollections": true,
     "level": "一级"
   },
   {
@@ -86,7 +86,7 @@ window.MUSEUMS_META = [
       "青铜器"
     ],
     "image": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Hubei_Provincial_Museum.JPG",
-    "hasCollections": false,
+    "hasCollections": true,
     "level": "一级"
   },
   {
@@ -99,7 +99,7 @@ window.MUSEUMS_META = [
       "古代文明"
     ],
     "image": "https://upload.wikimedia.org/wikipedia/commons/3/35/%E9%99%95%E8%A5%BF%E5%8E%86%E5%8F%B2%E5%8D%9A%E7%89%A9%E9%A6%86.jpg",
-    "hasCollections": false,
+    "hasCollections": true,
     "level": "一级"
   },
   {
@@ -198,12 +198,15 @@ window.MUSEUMS_META = [
     "name": "天津博物馆",
     "location": "天津",
     "tags": [
-      "近代史",
-      "文化",
+      "历史",
+      "青铜器",
+      "书画",
+      "瓷器",
+      "非遗",
       "天津"
     ],
-    "image": "",
-    "hasCollections": false,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/%E5%A4%A9%E6%B4%A5%E5%8D%9A%E7%89%A9%E9%A6%86.png/960px-%E5%A4%A9%E6%B4%A5%E5%8D%9A%E7%89%A9%E9%A6%86.png",
+    "hasCollections": true,
     "level": "一级"
   },
   {
@@ -372,7 +375,7 @@ window.MUSEUMS_META = [
       "科普教育"
     ],
     "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Beijing_Planetarium_%2820221112164636%29.jpg/1280px-Beijing_Planetarium_%2820221112164636%29.jpg",
-    "hasCollections": false,
+    "hasCollections": true,
     "level": "一级"
   },
   {
@@ -1156,7 +1159,21 @@ window.MUSEUMS_META = [
       "艺术发展"
     ],
     "image": "",
-    "hasCollections": false,
+    "hasCollections": true,
+    "level": "一级"
+  },
+  {
+    "id": "prince-kung-mansion",
+    "name": "恭王府",
+    "location": "北京",
+    "tags": [
+      "皇家府邸",
+      "清代建筑",
+      "园林艺术",
+      "福文化"
+    ],
+    "image": "",
+    "hasCollections": true,
     "level": "一级"
   },
   {
@@ -1363,8 +1380,8 @@ window.MUSEUMS_META = [
       "生物多样性",
       "地球演化"
     ],
-    "image": "",
-    "hasCollections": false,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/%E5%A4%A9%E6%B4%A5%E8%87%AA%E7%84%B6%E5%8D%9A%E7%89%A9%E9%A6%86_-_panoramio.jpg/960px-%E5%A4%A9%E6%B4%A5%E8%87%AA%E7%84%B6%E5%8D%9A%E7%89%A9%E9%A6%86_-_panoramio.jpg",
+    "hasCollections": true,
     "level": "一级"
   },
   {

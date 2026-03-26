@@ -15,7 +15,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '../..');
 const dataFile = path.join(root, 'museums-data.js');
 const outFile = path.join(root, 'data', 'museums-meta.json');
 

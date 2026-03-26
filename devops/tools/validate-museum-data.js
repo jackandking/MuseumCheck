@@ -18,7 +18,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const MUSEUMS_META_PATH = path.join(__dirname, '..', 'data', 'museums-meta.json');
+const MUSEUMS_META_PATH = path.join(__dirname, '..', '..', 'data', 'museums-meta.json');
 
 function validateMuseumData() {
     console.log('🔍 Museum Data Validation Tool');

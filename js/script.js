@@ -5442,6 +5442,30 @@ class MuseumCheckApp {
         // If there's a search query, filter museums by search criteria (all museums)
         if (this.searchQuery) {
             const query = this.searchQuery.toLowerCase();
+            // Pinyin-to-Chinese city mapping for pinyin search support
+            const PINYIN_MAP = {
+                'beijing': '北京', 'tianjin': '天津', 'shanghai': '上海', 'guangzhou': '广州',
+                'shenzhen': '深圳', 'chengdu': '成都', 'hangzhou': '杭州', 'wuhan': '武汉',
+                'xian': '西安', 'nanjing': '南京', 'chongqing': '重庆', 'suzhou': '苏州',
+                'kunming': '昆明', 'zhengzhou': '郑州', 'changsha': '长沙', 'jinan': '济南',
+                'shenyang': '沈阳', 'dalian': '大连', 'qingdao': '青岛', 'xiamen': '厦门',
+                'fuzhou': '福州', 'hefei': '合肥', 'nanchang': '南昌', 'guiyang': '贵阳',
+                'taiyuan': '太原', 'shijiazhuang': '石家庄', 'haerbin': '哈尔滨',
+                'changchun': '长春', 'lasa': '拉萨', 'huhehaote': '呼和浩特',
+                'yinchuan': '银川', 'xining': '西宁', 'wulumuqi': '乌鲁木齐',
+                'nanning': '南宁', 'haikou': '海口', 'lanzhou': '兰州',
+                'gugong': '故宫', 'bowuguan': '博物馆', 'bowuyuan': '博物院',
+                'lishi': '历史', 'ziran': '自然', 'kexue': '科学', 'yishu': '艺术',
+                'quanzhou': '泉州', 'luoyang': '洛阳', 'kaifeng': '开封',
+                'dunhuang': '敦煌', 'sanxingdui': '三星堆'
+            };
+            // Find Chinese equivalent for pinyin query (supports partial match)
+            let expandedQueries = [query];
+            for (const [pinyin, chinese] of Object.entries(PINYIN_MAP)) {
+                if (pinyin.startsWith(query) || query.startsWith(pinyin)) {
+                    expandedQueries.push(chinese.toLowerCase());
+                }
+            }
             this.filteredMuseums = MUSEUMS.filter(museum => {
                 // Safety check for undefined values
                 const name = museum.name || '';
@@ -5449,10 +5473,12 @@ class MuseumCheckApp {
                 const description = museum.description || '';
                 const tags = museum.tags || [];
                 
-                return name.toLowerCase().includes(query) ||
-                       location.toLowerCase().includes(query) ||
-                       description.toLowerCase().includes(query) ||
-                       tags.some(tag => (tag || '').toLowerCase().includes(query));
+                return expandedQueries.some(q =>
+                       name.toLowerCase().includes(q) ||
+                       location.toLowerCase().includes(q) ||
+                       description.toLowerCase().includes(q) ||
+                       tags.some(tag => (tag || '').toLowerCase().includes(q))
+                );
             });
             
             // Sort search results by recency (most recently browsed first)
@@ -7308,6 +7334,28 @@ class MuseumCheckApp {
                 }
             }
 
+            // Show welcome guide for new users (first visit only)
+            const welcomeGuide = document.getElementById('welcomeGuide');
+            if (welcomeGuide) {
+                if (isNewUser && !localStorage.getItem('welcomeGuideSeen')) {
+                    welcomeGuide.style.display = '';
+                    const closeBtn = document.getElementById('welcomeClose');
+                    const ctaBtn = document.getElementById('welcomeCta');
+                    const dismissGuide = () => {
+                        welcomeGuide.style.display = 'none';
+                        localStorage.setItem('welcomeGuideSeen', '1');
+                    };
+                    if (closeBtn) closeBtn.onclick = dismissGuide;
+                    if (ctaBtn) ctaBtn.onclick = () => {
+                        dismissGuide();
+                        const grid = document.getElementById('museumGrid');
+                        if (grid) grid.scrollIntoView({ behavior: 'smooth' });
+                    };
+                } else {
+                    welcomeGuide.style.display = 'none';
+                }
+            }
+
             // Sort museums before rendering (skip for returning users - already sorted by activity time)
             const sortedMuseums = isReturningUser ? museumsToRender : this.sortMuseums(museumsToRender);
 
@@ -7340,11 +7388,15 @@ class MuseumCheckApp {
                 // Generate museum image HTML if image URL is available
                 const museumImageHtml = museum.image 
                     ? `<div class="museum-image">
-                         <img src="${museum.image}" alt="${museum.name}" loading="lazy" onerror="this.parentElement.style.display='none'">
+                         <img src="${museum.image}" alt="${museum.name}" loading="lazy">
                          ${isVisited ? '<div class="visit-tag">已打卡</div>' : ''}
                        </div>`
                     : '';
                 
+                const wishList = JSON.parse(localStorage.getItem('wishMuseums') || '[]');
+                const isWished = wishList.includes(museum.id);
+                const wishBtnHtml = isVisited ? '' : `<button class="wish-btn ${isWished ? 'wished' : ''}" data-museum-id="${museum.id}" data-museum-name="${museum.name}" title="${isWished ? '已标记想去' : '标记想去'}">${isWished ? '✅ 已标记' : '🌟 想去'}</button>`;
+
                 card.innerHTML = `
                     ${museumImageHtml}
                     <div class="museum-card-content">
@@ -7352,10 +7404,10 @@ class MuseumCheckApp {
                             <div class="museum-info">
                                 <h3>
                                     ${museum.name}
-                                    ${isVisited && !this.assessmentHidden 
-                                        ? (hasAssessment 
+                                    ${isVisited && !this.assessmentHidden
+                                        ? (hasAssessment
                                             ? '<span class="assessment-label" aria-disabled="true" title="已完成亲子测评">🧡 已完成</span>'
-                                            : '<button class="assessment-button" data-museum="' + museum.id + '" title="亲子关系测评">🧡 亲子测评</button>') 
+                                            : '<button class="assessment-button" data-museum="' + museum.id + '" title="亲子关系测评">🧡 亲子测评</button>')
                                         : ''}
                                 </h3>
                                 <div class="museum-location">📍 ${locText}</div>
@@ -7364,15 +7416,46 @@ class MuseumCheckApp {
                         </div>
                         ${descHtml}
                         ${tagsHtml}
+                        ${wishBtnHtml}
                     </div>
                 `;
+
+                // Set up KV Store image fallback when meta image is unavailable
+                const cardImgEl = card.querySelector('.museum-image img');
+                if (cardImgEl) {
+                    cardImgEl.addEventListener('error', async function handleImgError() {
+                        cardImgEl.removeEventListener('error', handleImgError);
+                        const loader = window.museumDataLoader;
+                        if (loader && typeof loader.getMuseumImageUrl === 'function') {
+                            try {
+                                const fallbackUrl = await loader.getMuseumImageUrl(museum.id);
+                                if (fallbackUrl && fallbackUrl !== museum.image) {
+                                    // Hide container if fallback also fails to load
+                                    cardImgEl.addEventListener('error', function() {
+                                        if (cardImgEl.parentElement) {
+                                            cardImgEl.parentElement.style.display = 'none';
+                                        }
+                                    }, { once: true });
+                                    cardImgEl.src = fallbackUrl;
+                                    return;
+                                }
+                            } catch (e) {
+                                // fall through to hide
+                            }
+                        }
+                        if (cardImgEl.parentElement) {
+                            cardImgEl.parentElement.style.display = 'none';
+                        }
+                    });
+                }
 
                 // Add click event for the card (excluding checkbox, buttons)
                 // Navigate to v2 (museum-checkin.html) when clicking the card
                 card.addEventListener('click', (e) => {
-                    if (!e.target.classList.contains('visit-checkbox') && 
+                    if (!e.target.classList.contains('visit-checkbox') &&
                         !e.target.classList.contains('assessment-button') &&
-                        !e.target.classList.contains('favorite-button')) {
+                        !e.target.classList.contains('favorite-button') &&
+                        !e.target.classList.contains('wish-btn')) {
                         // Mark museum as browsed
                         this.markMuseumAsBrowsed(museum.id);
                         
@@ -7404,6 +7487,26 @@ class MuseumCheckApp {
                     assessmentButton.addEventListener('click', (e) => {
                         e.stopPropagation();
                         this.openAssessmentModal(museum.id);
+                    });
+                }
+
+                // Add wish button event
+                const wishBtn = card.querySelector('.wish-btn');
+                if (wishBtn) {
+                    wishBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const mid = wishBtn.dataset.museumId;
+                        const mname = wishBtn.dataset.museumName;
+                        const wishes = JSON.parse(localStorage.getItem('wishMuseums') || '[]');
+                        if (!wishes.includes(mid)) {
+                            wishes.push(mid);
+                            localStorage.setItem('wishMuseums', JSON.stringify(wishes));
+                            wishBtn.textContent = '✅ 已标记';
+                            wishBtn.classList.add('wished');
+                            if (this.eventWallService) {
+                                this.eventWallService.trackWish(mid, mname);
+                            }
+                        }
                     });
                 }
 
