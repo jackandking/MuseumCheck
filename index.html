@@ -648,24 +648,73 @@
     <!-- Nickname onboarding modal for first-time users -->
     <div class="modal" id="nicknameOnboardingModal" style="display: none;">
         <div class="modal-content" style="max-width: 360px; text-align: center; padding: 32px 24px;">
-            <div style="font-size: 48px; margin-bottom: 16px;">👶</div>
+            <div id="avatarUploadArea" style="width: 80px; height: 80px; margin: 0 auto 16px; border-radius: 50%; background: #f3f4f6; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; border: 3px dashed #d1d5db; transition: border-color 0.2s;" onclick="document.getElementById('avatarFileInput').click()">
+                <span id="avatarPlaceholder" style="font-size: 40px;">👶</span>
+                <img id="avatarPreview" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+            </div>
+            <input type="file" id="avatarFileInput" accept="image/*" style="display: none;">
+            <p style="margin: 0 0 12px 0; font-size: 12px; color: #9ca3af;">点击上方上传头像（可选）</p>
             <h2 style="margin: 0 0 16px 0; font-size: 20px; color: #1f2937;">给孩子起个昵称吧！</h2>
-            <input type="text" id="onboardingNicknameInput" 
+            <input type="text" id="onboardingNicknameInput"
                    style="width: 100%; padding: 12px 16px; font-size: 18px; border: 2px solid #e5e7eb; border-radius: 12px; text-align: center; margin-bottom: 12px; box-sizing: border-box;"
                    maxlength="10" placeholder="小明">
-            <p style="margin: 0 0 20px 0; font-size: 14px; color: #6b7280;">这个名字会出现在任务和成就海报上哦～</p>
+            <p style="margin: 0 0 20px 0; font-size: 14px; color: #6b7280;">昵称和头像会出现在成就海报上哦～</p>
             <div style="display: flex; gap: 12px; justify-content: center;">
-                <button id="skipOnboardingNickname" 
+                <button id="skipOnboardingNickname"
                         style="padding: 10px 20px; border: 1px solid #d1d5db; background: white; border-radius: 8px; font-size: 15px; color: #6b7280; cursor: pointer;">
                     暂时跳过
                 </button>
-                <button id="confirmOnboardingNickname" 
+                <button id="confirmOnboardingNickname"
                         style="padding: 10px 24px; border: none; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer;">
                     确定
                 </button>
             </div>
         </div>
     </div>
+    <script>
+    // Avatar upload handler for onboarding modal (index.html context)
+    (function() {
+        var fileInput = document.getElementById('avatarFileInput');
+        if (!fileInput) return;
+        fileInput.addEventListener('change', function() {
+            var file = this.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var img = new Image();
+                img.onload = function() {
+                    var canvas = document.createElement('canvas');
+                    var size = 150;
+                    canvas.width = size;
+                    canvas.height = size;
+                    var ctx = canvas.getContext('2d');
+                    var min = Math.min(img.width, img.height);
+                    var sx = (img.width - min) / 2;
+                    var sy = (img.height - min) / 2;
+                    ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+                    var dataURL = canvas.toDataURL('image/jpeg', 0.8);
+                    try { localStorage.setItem('childAvatarDataURL', dataURL); } catch(err) {}
+                    var preview = document.getElementById('avatarPreview');
+                    var placeholder = document.getElementById('avatarPlaceholder');
+                    var area = document.getElementById('avatarUploadArea');
+                    if (preview) { preview.src = dataURL; preview.style.display = 'block'; }
+                    if (placeholder) placeholder.style.display = 'none';
+                    if (area) area.style.borderStyle = 'solid';
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+        // Load existing avatar on modal show
+        var existing = localStorage.getItem('childAvatarDataURL');
+        if (existing) {
+            var preview = document.getElementById('avatarPreview');
+            var placeholder = document.getElementById('avatarPlaceholder');
+            if (preview) { preview.src = existing; preview.style.display = 'block'; }
+            if (placeholder) placeholder.style.display = 'none';
+        }
+    })();
+    </script>
 
     <!-- 汉堡菜单模态框 -->
     <div class="modal" id="mobileMenuModal" style="display: none;">
