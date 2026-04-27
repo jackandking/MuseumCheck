@@ -7,6 +7,12 @@
     
     <!-- SEO Meta Tags -->
     <meta name="description" content="查看您在博物馆打卡应用中获得的所有成就海报">
+    <link rel="canonical" href="https://museumcheck.cn/achievements.html">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://museumcheck.cn/achievements.html">
+    <meta property="og:title" content="我的成就 - 博物馆打卡">
+    <meta property="og:description" content="查看您在博物馆打卡应用中获得的所有成就海报。">
+    <meta property="og:image" content="https://museumcheck.cn/logo-og.png">
     
     <!-- Use main site CSS for consistent UX -->
     <link rel="stylesheet" href="css/style.css">
@@ -421,6 +427,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
                     </svg>
                 </button>
+                <img id="achievementAvatar" style="display:none; width:28px; height:28px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:4px;">
                 <span>🏆 我的成就</span>
                 <div class="header-actions">
                     <a class="link-button" href="everyone-achievements.html" title="查看大家的成就">👥 <span class="link-text">大家的成就</span></a>
@@ -492,6 +499,13 @@
         function init() {
             loadPosters();
             renderPosters();
+            // Load avatar into header
+            const avatar = localStorage.getItem('childAvatarDataURL');
+            const avatarEl = document.getElementById('achievementAvatar');
+            if (avatar && avatarEl) {
+                avatarEl.src = avatar;
+                avatarEl.style.display = 'inline';
+            }
         }
 
         // Refresh posters from localStorage

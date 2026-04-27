@@ -59,22 +59,12 @@
     function trackPageView() {
         if (window.eventWallService) {
             const pageName = getPageName();
-            const pageUrl = window.location.href;
-            
-            console.log('[Event Tracking] Recording page view:', pageName);
-            
             window.eventWallService.recordEvent(
                 'page_view',
                 '访问页面',
                 `访问 ${pageName}`,
-                { 
-                    pageName: pageName, 
-                    pageUrl: pageUrl,
-                    timestamp: Date.now()
-                }
+                { pageName: pageName }
             );
-        } else {
-            console.warn('[Event Tracking] EventWallService not available for page view tracking');
         }
     }
     

@@ -22,7 +22,7 @@ console.log('Test 2: Testing demo version...');
 const { execSync } = require('child_process');
 try {
     const output = execSync('node tools/search-museum-images-demo.js "故宫博物院" "清明上河图"', {
-        cwd: __dirname + '/..',
+        cwd: __dirname + '/../..',
         encoding: 'utf8'
     });
     assert(output.includes('DEMO MODE'), 'Demo should indicate demo mode');
@@ -40,7 +40,7 @@ try {
 console.log('Test 3: Testing main tool without API key...');
 try {
     execSync('node tools/search-museum-images.js "故宫博物院"', {
-        cwd: __dirname + '/..',
+        cwd: __dirname + '/../..',
         encoding: 'utf8'
     });
     console.error('❌ Should have thrown error without API key');
@@ -56,7 +56,7 @@ try {
 console.log('Test 4: Testing help message...');
 try {
     execSync('node tools/search-museum-images.js', {
-        cwd: __dirname + '/..',
+        cwd: __dirname + '/../..',
         encoding: 'utf8'
     });
     console.error('❌ Should have shown error for missing arguments');

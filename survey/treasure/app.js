@@ -10,10 +10,21 @@ const surveyConfig = {
     title: "猜猜哪个是首都博物馆的镇馆之宝？",
     question: "以下哪个是首都博物馆的镇馆之宝？",
     museumId: "beijing-capital-museum",
+    museumName: "首都博物馆",
     storageKey: "capitalMuseumTreasure.data",
     kvStoreEndpoint: "https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore",
     kvStoreKeyPrefix: "museum-data-"
 };
+
+// Override config from URL parameter ?museum=xxx (default: beijing-capital-museum)
+(function() {
+    const urlMuseum = new URLSearchParams(window.location.search).get('museum');
+    if (urlMuseum && urlMuseum !== surveyConfig.museumId) {
+        surveyConfig.museumId = urlMuseum;
+        surveyConfig.storageKey = urlMuseum + 'Treasure.data';
+        // Title/question/museumName will be updated after loading museum data
+    }
+})();
 
 /**
  * Fallback image for when treasure images fail to load
@@ -68,20 +79,21 @@ async function loadMuseumData() {
         const key = `${surveyConfig.kvStoreKeyPrefix}${surveyConfig.museumId}`;
         const sortKey = 'museum';
         const url = `${surveyConfig.kvStoreEndpoint}?key=${encodeURIComponent(key)}&sortKey=${encodeURIComponent(sortKey)}`;
-        
+
         const response = await fetch(url, { method: 'GET' });
         if (response.ok) {
             const result = await response.json();
             if (result && result.value) {
                 museumData = JSON.parse(result.value);
                 console.log('Loaded museum data from KV store (dynamic)');
+                updateConfigFromMuseumData();
                 return;
             }
         }
     } catch (error) {
         console.log('KV store fetch failed, trying static file:', error);
     }
-    
+
     // Fallback to static file (Tier 1)
     try {
         const response = await fetch(`/museums/${surveyConfig.museumId}.json`);
@@ -97,6 +109,18 @@ async function loadMuseumData() {
     // Final fallback: use hardcoded data
     museumData = getDefaultMuseumData();
     console.log('Using default museum data');
+    updateConfigFromMuseumData();
+}
+
+/**
+ * Updates surveyConfig title/question from loaded museum data
+ */
+function updateConfigFromMuseumData() {
+    if (museumData && museumData.name) {
+        surveyConfig.museumName = museumData.name;
+        surveyConfig.title = `猜猜哪个是${museumData.name}的镇馆之宝？`;
+        surveyConfig.question = `以下哪个是${museumData.name}的镇馆之宝？`;
+    }
 }
 
 /**
@@ -158,11 +182,16 @@ const defaultDistractors = [
  * Loads treasures from other museums for distractor options
  */
 async function loadDistractorTreasures() {
-    const otherMuseums = [
-        'forbidden-city',
-        'national-museum',
-        'shanghai-museum'
+    // Pick 3 distractor museums, excluding the current museum
+    const allMuseumIds = [
+        'forbidden-city', 'national-museum', 'shanghai-museum',
+        'beijing-capital-museum', 'tianjin-museum', 'shaanxi-history',
+        'hubei-museum', 'nanjing-museum'
     ];
+    const otherMuseums = allMuseumIds
+        .filter(id => id !== surveyConfig.museumId)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
     
     const distractors = [];
     
@@ -235,11 +264,20 @@ async function setupPageContent() {
         titleElement.textContent = surveyConfig.title;
     }
 
+    // Set document title
+    document.title = surveyConfig.title;
+
+    // Set museum name
+    const museumNameEl = document.getElementById('museumName');
+    if (museumNameEl) {
+        museumNameEl.textContent = surveyConfig.museumName || '';
+    }
+
     // Set museum image
     const museumImage = document.getElementById('museumImage');
     if (museumImage && museumData && museumData.image) {
         museumImage.src = museumData.image;
-        museumImage.alt = museumData.name || '首都博物馆';
+        museumImage.alt = museumData.name || surveyConfig.museumName;
     }
 
     // Set question text
@@ -419,8 +457,12 @@ document.addEventListener('DOMContentLoaded', initializeApp);
  */
 function showAd() {
     if (typeof ks !== 'undefined' && ks.navigateTo) {
+        // Pass museum param through ad flow so results load the right museum
+        const museumParam = surveyConfig.museumId !== 'beijing-capital-museum'
+            ? `&museum=${encodeURIComponent(surveyConfig.museumId)}`
+            : '';
         ks.navigateTo({
-            url: "/pages/rewardedWebview/rewardedWebview?target=survey/treasure&flow=rewarded",
+            url: `/pages/rewardedWebview/rewardedWebview?target=survey/treasure${museumParam}&flow=rewarded`,
         });
     } else {
         // Fallback for web browser - show results directly

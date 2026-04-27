@@ -5382,6 +5382,34 @@ class MuseumCheckApp {
     }
 
     // Search functionality methods
+
+    // Pinyin-to-Chinese expansion helper (shared by both adapter and fallback paths)
+    _expandPinyinQuery(query) {
+        const PINYIN_MAP = {
+            'beijing': '北京', 'tianjin': '天津', 'shanghai': '上海', 'guangzhou': '广州',
+            'shenzhen': '深圳', 'chengdu': '成都', 'hangzhou': '杭州', 'wuhan': '武汉',
+            'xian': '西安', 'nanjing': '南京', 'chongqing': '重庆', 'suzhou': '苏州',
+            'kunming': '昆明', 'zhengzhou': '郑州', 'changsha': '长沙', 'jinan': '济南',
+            'shenyang': '沈阳', 'dalian': '大连', 'qingdao': '青岛', 'xiamen': '厦门',
+            'fuzhou': '福州', 'hefei': '合肥', 'nanchang': '南昌', 'guiyang': '贵阳',
+            'taiyuan': '太原', 'shijiazhuang': '石家庄', 'haerbin': '哈尔滨',
+            'changchun': '长春', 'lasa': '拉萨', 'huhehaote': '呼和浩特',
+            'yinchuan': '银川', 'xining': '西宁', 'wulumuqi': '乌鲁木齐',
+            'nanning': '南宁', 'haikou': '海口', 'lanzhou': '兰州',
+            'gugong': '故宫', 'bowuguan': '博物馆', 'bowuyuan': '博物院',
+            'lishi': '历史', 'ziran': '自然', 'kexue': '科学', 'yishu': '艺术',
+            'quanzhou': '泉州', 'luoyang': '洛阳', 'kaifeng': '开封',
+            'dunhuang': '敦煌', 'sanxingdui': '三星堆'
+        };
+        const q = query.toLowerCase();
+        for (const [pinyin, chinese] of Object.entries(PINYIN_MAP)) {
+            if (pinyin.startsWith(q) || q.startsWith(pinyin)) {
+                return chinese;
+            }
+        }
+        return query;
+    }
+
     filterMuseums() {
         console.log('🔍 [DEBUG] filterMuseums called:', {
             searchQuery: this.searchQuery,
@@ -5393,8 +5421,21 @@ class MuseumCheckApp {
         if (this.homepageAdapter) {
             // Apply search
             if (this.searchQuery) {
-                this.homepageAdapter.search(this.searchQuery);
-                this.filteredMuseums = this.homepageAdapter.getFilteredMuseums();
+                // Try pinyin expansion before adapter search
+                const expandedQuery = this._expandPinyinQuery(this.searchQuery);
+                if (expandedQuery !== this.searchQuery) {
+                    // Search with both original and expanded query, merge results
+                    this.homepageAdapter.search(this.searchQuery);
+                    const origResults = [...this.homepageAdapter.getFilteredMuseums()];
+                    this.homepageAdapter.search(expandedQuery);
+                    const expandedResults = this.homepageAdapter.getFilteredMuseums();
+                    const seen = new Set(origResults.map(m => m.id));
+                    expandedResults.forEach(m => { if (!seen.has(m.id)) origResults.push(m); });
+                    this.filteredMuseums = origResults;
+                } else {
+                    this.homepageAdapter.search(this.searchQuery);
+                    this.filteredMuseums = this.homepageAdapter.getFilteredMuseums();
+                }
                 
                 // Sort search results by recency (most recently browsed first)
                 this.filteredMuseums.sort((a, b) => {
@@ -5442,6 +5483,12 @@ class MuseumCheckApp {
         // If there's a search query, filter museums by search criteria (all museums)
         if (this.searchQuery) {
             const query = this.searchQuery.toLowerCase();
+            // Use shared pinyin expansion helper
+            const expandedChinese = this._expandPinyinQuery(this.searchQuery);
+            let expandedQueries = [query];
+            if (expandedChinese !== this.searchQuery) {
+                expandedQueries.push(expandedChinese.toLowerCase());
+            }
             this.filteredMuseums = MUSEUMS.filter(museum => {
                 // Safety check for undefined values
                 const name = museum.name || '';
@@ -5449,10 +5496,12 @@ class MuseumCheckApp {
                 const description = museum.description || '';
                 const tags = museum.tags || [];
                 
-                return name.toLowerCase().includes(query) ||
-                       location.toLowerCase().includes(query) ||
-                       description.toLowerCase().includes(query) ||
-                       tags.some(tag => (tag || '').toLowerCase().includes(query));
+                return expandedQueries.some(q =>
+                       name.toLowerCase().includes(q) ||
+                       location.toLowerCase().includes(q) ||
+                       description.toLowerCase().includes(q) ||
+                       tags.some(tag => (tag || '').toLowerCase().includes(q))
+                );
             });
             
             // Sort search results by recency (most recently browsed first)
@@ -7308,6 +7357,28 @@ class MuseumCheckApp {
                 }
             }
 
+            // Show welcome guide for new users (first visit only)
+            const welcomeGuide = document.getElementById('welcomeGuide');
+            if (welcomeGuide) {
+                if (isNewUser && !localStorage.getItem('welcomeGuideSeen')) {
+                    welcomeGuide.style.display = '';
+                    const closeBtn = document.getElementById('welcomeClose');
+                    const ctaBtn = document.getElementById('welcomeCta');
+                    const dismissGuide = () => {
+                        welcomeGuide.style.display = 'none';
+                        localStorage.setItem('welcomeGuideSeen', '1');
+                    };
+                    if (closeBtn) closeBtn.onclick = dismissGuide;
+                    if (ctaBtn) ctaBtn.onclick = () => {
+                        dismissGuide();
+                        const grid = document.getElementById('museumGrid');
+                        if (grid) grid.scrollIntoView({ behavior: 'smooth' });
+                    };
+                } else {
+                    welcomeGuide.style.display = 'none';
+                }
+            }
+
             // Sort museums before rendering (skip for returning users - already sorted by activity time)
             const sortedMuseums = isReturningUser ? museumsToRender : this.sortMuseums(museumsToRender);
 
@@ -7345,6 +7416,10 @@ class MuseumCheckApp {
                        </div>`
                     : '';
                 
+                const wishList = JSON.parse(localStorage.getItem('wishMuseums') || '[]');
+                const isWished = wishList.includes(museum.id);
+                const wishBtnHtml = isVisited ? '' : `<button class="wish-btn ${isWished ? 'wished' : ''}" data-museum-id="${museum.id}" data-museum-name="${museum.name}" title="${isWished ? '已标记想去' : '标记想去'}">${isWished ? '✅ 已标记' : '🌟 想去'}</button>`;
+
                 card.innerHTML = `
                     ${museumImageHtml}
                     <div class="museum-card-content">
@@ -7352,10 +7427,10 @@ class MuseumCheckApp {
                             <div class="museum-info">
                                 <h3>
                                     ${museum.name}
-                                    ${isVisited && !this.assessmentHidden 
-                                        ? (hasAssessment 
+                                    ${isVisited && !this.assessmentHidden
+                                        ? (hasAssessment
                                             ? '<span class="assessment-label" aria-disabled="true" title="已完成亲子测评">🧡 已完成</span>'
-                                            : '<button class="assessment-button" data-museum="' + museum.id + '" title="亲子关系测评">🧡 亲子测评</button>') 
+                                            : '<button class="assessment-button" data-museum="' + museum.id + '" title="亲子关系测评">🧡 亲子测评</button>')
                                         : ''}
                                 </h3>
                                 <div class="museum-location">📍 ${locText}</div>
@@ -7364,6 +7439,7 @@ class MuseumCheckApp {
                         </div>
                         ${descHtml}
                         ${tagsHtml}
+                        ${wishBtnHtml}
                     </div>
                 `;
 
@@ -7399,9 +7475,10 @@ class MuseumCheckApp {
                 // Add click event for the card (excluding checkbox, buttons)
                 // Navigate to v2 (museum-checkin.html) when clicking the card
                 card.addEventListener('click', (e) => {
-                    if (!e.target.classList.contains('visit-checkbox') && 
+                    if (!e.target.classList.contains('visit-checkbox') &&
                         !e.target.classList.contains('assessment-button') &&
-                        !e.target.classList.contains('favorite-button')) {
+                        !e.target.classList.contains('favorite-button') &&
+                        !e.target.classList.contains('wish-btn')) {
                         // Mark museum as browsed
                         this.markMuseumAsBrowsed(museum.id);
                         
@@ -7433,6 +7510,26 @@ class MuseumCheckApp {
                     assessmentButton.addEventListener('click', (e) => {
                         e.stopPropagation();
                         this.openAssessmentModal(museum.id);
+                    });
+                }
+
+                // Add wish button event
+                const wishBtn = card.querySelector('.wish-btn');
+                if (wishBtn) {
+                    wishBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const mid = wishBtn.dataset.museumId;
+                        const mname = wishBtn.dataset.museumName;
+                        const wishes = JSON.parse(localStorage.getItem('wishMuseums') || '[]');
+                        if (!wishes.includes(mid)) {
+                            wishes.push(mid);
+                            localStorage.setItem('wishMuseums', JSON.stringify(wishes));
+                            wishBtn.textContent = '✅ 已标记';
+                            wishBtn.classList.add('wished');
+                            if (this.eventWallService) {
+                                this.eventWallService.trackWish(mid, mname);
+                            }
+                        }
                     });
                 }
 

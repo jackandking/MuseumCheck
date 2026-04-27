@@ -151,7 +151,7 @@ async function addMuseumLevel(metaPath, startIndex = 0, limit = null) {
 
 // CLI
 const args = process.argv.slice(2);
-const metaPath = path.join(__dirname, '../data/museums-meta.json');
+const metaPath = path.join(__dirname, '../../data/museums-meta.json');
 
 let startIndex = 0;
 let limit = null;

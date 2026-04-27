@@ -481,7 +481,7 @@ async function main() {
   if (regenerateMetaJs()) {
     success('JS 文件已重新生成');
   } else {
-    warn('未找到生成脚本，请手动运行: node tools/generate-museums-meta-js.js');
+    warn('未找到生成脚本，请手动运行: node devops/tools/generate-museums-meta-js.js');
   }
 
   // 步骤6：上传到 KV Store

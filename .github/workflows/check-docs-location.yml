@@ -63,7 +63,7 @@ jobs:
       
       - name: 📊 运行完整检查（含已存在文件）
         run: |
-          bash scripts/check-docs-location.sh
+          bash devops/scripts/check-docs-location.sh
       
       - name: 📧 发送失败通知
         if: failure()
