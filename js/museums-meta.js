@@ -176,7 +176,7 @@ window.MUSEUMS_META = [
       "考古",
       "历史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/f/f5/%E8%BE%BD%E5%AE%81%E7%9C%81%E5%8D%9A%E7%89%A9%E9%A6%86.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -189,7 +189,7 @@ window.MUSEUMS_META = [
       "孔子",
       "历史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/b/b5/%E5%B1%B1%E4%B8%9C%E5%8D%9A%E7%89%A9%E9%A6%86_-_panoramio.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -202,7 +202,7 @@ window.MUSEUMS_META = [
       "文化",
       "天津"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/b/b0/%E7%82%AB%E5%BD%A9%E6%B4%A5%E9%97%A831Tianjin_Museum.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -215,7 +215,7 @@ window.MUSEUMS_META = [
       "艺术",
       "绘画"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/7/7d/%E4%B8%AD%E5%9B%BD%E7%BE%8E%E6%9C%AF%E9%A6%86%E2%80%94%E2%80%94%E5%9C%A8%E7%8E%89%E5%85%B0%E8%8A%B1%E4%B8%AD_-_panoramio.jpg",
     "hasCollections": false,
     "level": "未定级"
   },
@@ -228,7 +228,7 @@ window.MUSEUMS_META = [
       "雪域高原",
       "佛教"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/8/86/TibetanMuseum.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -241,7 +241,7 @@ window.MUSEUMS_META = [
       "多民族",
       "西域文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/a/a0/%E9%95%87%E5%A2%93%E5%85%BD_%E6%96%B0%E7%96%86%E7%BB%B4%E5%90%BE%E5%B0%94%E8%87%AA%E6%B2%BB%E5%8C%BA%E5%8D%9A%E7%89%A9%E9%A6%86.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -254,7 +254,7 @@ window.MUSEUMS_META = [
       "西南文化",
       "边疆历史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/c/ca/Yunnan_Provincial_Museum_1.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -267,7 +267,7 @@ window.MUSEUMS_META = [
       "蒙古族",
       "游牧文明"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/f/ff/Inner_Mongolia_Museum.JPG",
     "hasCollections": false,
     "level": "一级"
   },
@@ -280,7 +280,7 @@ window.MUSEUMS_META = [
       "巴渝文化",
       "山城历史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/f/fe/%E9%87%8D%E5%BA%86%E4%B8%AD%E5%9B%BD%E4%B8%89%E5%B3%A1%E5%8D%9A%E7%89%A9%E9%A6%86_-_panoramio.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -293,7 +293,7 @@ window.MUSEUMS_META = [
       "多民族",
       "高原文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/d/db/%E9%9D%92%E6%B5%B7%E7%9C%81%E6%97%85%E6%B8%B8%E6%9D%A1%E4%BE%8B.pdf",
     "hasCollections": false,
     "level": "一级"
   },
@@ -306,7 +306,7 @@ window.MUSEUMS_META = [
       "中俄交流",
       "近代史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/c/c0/%E9%BB%91%E9%BE%99%E6%B1%9F%E7%9C%81%E5%8D%9A%E7%89%A9%E9%A6%86_01.JPG",
     "hasCollections": false,
     "level": "一级"
   },
@@ -358,7 +358,7 @@ window.MUSEUMS_META = [
       "交通运输",
       "工业发展"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/1/13/%E4%B8%AD%E5%9B%BD%E9%93%81%E9%81%93%E5%8D%9A%E7%89%A9%E9%A6%86%28%E6%80%BB%E9%A6%86%29_-_panoramio.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -397,7 +397,7 @@ window.MUSEUMS_META = [
       "广州历史",
       "海上丝绸之路"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/b/b0/Guangzhou_museum_%28exhibition%29.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -410,7 +410,7 @@ window.MUSEUMS_META = [
       "城市发展",
       "现代化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/c/c3/SZ_%E6%B7%B1%E5%9C%B3%E5%8D%9A%E7%89%A9%E9%A4%A8_Shenzhen_Museum_entrance_building_name_Aug-2010.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -423,7 +423,7 @@ window.MUSEUMS_META = [
       "丝绸之路",
       "唐文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/8/80/Xi%27an_200911_23.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -436,7 +436,7 @@ window.MUSEUMS_META = [
       "考古发现",
       "金沙文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/5/5d/%E6%88%90%E9%83%BD%E9%87%91%E6%B2%99%E9%81%97%E5%9D%80%E5%8D%9A%E7%89%A9%E9%A6%86-%E6%B5%81%E6%B5%AA%E7%9A%84%E7%8B%97%E7%8B%97_-_panoramio.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -449,7 +449,7 @@ window.MUSEUMS_META = [
       "爱国主义",
       "和平教育"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/a/a1/The_monument_in_the_front_of_Nanjing_Massacre_Memorial_Hall_%2820090614_9921%29.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -462,7 +462,7 @@ window.MUSEUMS_META = [
       "江南文化",
       "杭州历史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/0/07/South_Song_Dynasty_Imperial_Kiln_Museum_-_%E6%9D%AD%E5%B7%9E%E5%8D%97%E5%AE%8B%E5%AE%98%E7%AA%91%E5%8D%9A%E7%89%A9%E9%A6%86_-_panoramio.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -475,7 +475,7 @@ window.MUSEUMS_META = [
       "港口贸易",
       "商业历史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/6/67/South_Gate_of_Ningbo_Museum.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -488,7 +488,7 @@ window.MUSEUMS_META = [
       "水乡文化",
       "民族工业"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/5/5a/Wuxi_Museum_02_2013-04.JPG",
     "hasCollections": false,
     "level": "一级"
   },
@@ -501,7 +501,7 @@ window.MUSEUMS_META = [
       "江南文化",
       "现代发展"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/1/16/%E5%B8%B8%E5%B7%9E%E5%8D%9A%E7%89%A9%E9%A6%86_%E5%A4%A7%E5%8E%85.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -514,7 +514,7 @@ window.MUSEUMS_META = [
       "盐商文化",
       "园林艺术"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/4/43/%E6%89%AC%E5%B7%9E%E5%8D%9A%E7%89%A9%E9%A6%86_-_panoramio.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -527,7 +527,7 @@ window.MUSEUMS_META = [
       "安徽历史",
       "新安文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/e/e7/%E5%AE%89%E5%BE%BD%E5%8D%9A%E7%89%A9%E9%99%A2.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -540,7 +540,7 @@ window.MUSEUMS_META = [
       "江西历史",
       "陶瓷文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/8/89/Jiangxi_Sheng_Bowuguan_20120627-01.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -553,7 +553,7 @@ window.MUSEUMS_META = [
       "齐鲁文化",
       "济南历史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/b/b5/%E5%B1%B1%E4%B8%9C%E5%8D%9A%E7%89%A9%E9%A6%86_-_panoramio.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -566,7 +566,7 @@ window.MUSEUMS_META = [
       "青岛历史",
       "近代建筑"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/8/87/%E9%9D%92%E5%B2%9B%E5%B8%82%E5%8D%9A%E7%89%A9%E9%A6%86_2013-06-16.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -579,7 +579,7 @@ window.MUSEUMS_META = [
       "商代文明",
       "黄河文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/5/57/%E9%83%91%E5%B7%9E%E5%8D%9A%E7%89%A9%E9%A6%86_-_Zhengzhou_Museum_-_2014.03_-_panoramio.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -592,7 +592,7 @@ window.MUSEUMS_META = [
       "武汉历史",
       "长江文明"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/2/28/Wuhan_Museum.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -605,7 +605,7 @@ window.MUSEUMS_META = [
       "民族文化",
       "春城文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Kunming_Museum_3006.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -618,7 +618,7 @@ window.MUSEUMS_META = [
       "贵州历史",
       "山地文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/0/02/%E8%B4%B5%E5%B7%9E%E7%9C%81%E5%8D%9A%E7%89%A9%E9%A6%86%E9%93%9C%E8%BD%A6%E9%A9%AC.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -631,7 +631,7 @@ window.MUSEUMS_META = [
       "海洋文化",
       "侨乡文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/a/ac/Fujian_Museum.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -644,7 +644,7 @@ window.MUSEUMS_META = [
       "民族文化",
       "桂文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/7/71/%E5%B9%BF%E8%A5%BF%E5%A3%AE%E6%97%8F%E8%87%AA%E6%B2%BB%E5%8C%BA%E6%97%85%E6%B8%B8%E6%9D%A1%E4%BE%8B.pdf",
     "hasCollections": false,
     "level": "一级"
   },
@@ -657,7 +657,7 @@ window.MUSEUMS_META = [
       "热带文化",
       "海南历史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Hainan_Museum_01.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -670,7 +670,7 @@ window.MUSEUMS_META = [
       "河北历史",
       "中山国"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/3/35/%E6%B2%B3%E5%8C%97%E5%8D%9A%E7%89%A9%E9%99%A2_1546.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -683,7 +683,7 @@ window.MUSEUMS_META = [
       "煤炭文化",
       "古建筑"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/7/7c/Shanxi_Museum_-_pot_of_Jin_Marquis_Pi.JPG",
     "hasCollections": false,
     "level": "一级"
   },
@@ -696,7 +696,7 @@ window.MUSEUMS_META = [
       "自然生态",
       "蒙古族文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/4/43/2016%E5%B9%B4%E5%BA%A6%E5%85%A8%E5%9B%BD%E5%8D%9A%E7%89%A9%E9%A6%86%E5%90%8D%E5%BD%95.pdf",
     "hasCollections": false,
     "level": "一级"
   },
@@ -709,7 +709,7 @@ window.MUSEUMS_META = [
       "马踏飞燕",
       "敦煌文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/1/16/New_Exhibition_Building_of_the_Gansu_Provincial_Museum.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -722,7 +722,7 @@ window.MUSEUMS_META = [
       "高原文化",
       "民族医学"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/0/00/Sunset_of_the_Forbidden_City_2006.JPG",
     "hasCollections": false,
     "level": "一级"
   },
@@ -735,7 +735,7 @@ window.MUSEUMS_META = [
       "海洋文化",
       "近代开埠"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/a/a0/%E7%83%9F%E5%8F%B0%E5%B8%82%E5%8D%9A%E7%89%A9%E9%A6%86%E9%A6%86%E8%97%8F%E6%96%87%E7%89%A920240225_04.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -748,7 +748,7 @@ window.MUSEUMS_META = [
       "革命文化",
       "临沂历史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/8/8b/SSID-11390332_%E8%87%A8%E6%B2%82%E6%B4%97%E7%A1%AF%E6%B1%A0%E6%99%89%E5%A2%93.pdf",
     "hasCollections": false,
     "level": "一级"
   },
@@ -761,7 +761,7 @@ window.MUSEUMS_META = [
       "商业文化",
       "温州历史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Wenzhou_Museum_2016.5.11.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -774,7 +774,7 @@ window.MUSEUMS_META = [
       "越文化",
       "文人文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/5/50/Shaoxing_Museum_03_2012-07.JPG",
     "hasCollections": false,
     "level": "一级"
   },
@@ -787,7 +787,7 @@ window.MUSEUMS_META = [
       "江南文化",
       "嘉兴历史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Jiaxing_Museum_01_2017-04.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -800,7 +800,7 @@ window.MUSEUMS_META = [
       "制瓷工艺",
       "瓷都文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/a/af/Jingdezhen_China_Ceramics_Museum_20231020_15.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -813,7 +813,7 @@ window.MUSEUMS_META = [
       "海外交通",
       "泉州文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/8/89/Song_Dynasty_Ancient_Ship_of_Quanzhou_Bay_20061229.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -856,7 +856,7 @@ window.MUSEUMS_META = [
       "侨乡文化",
       "海岛文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/7/7b/%E5%8E%A6%E9%97%A8%E5%B8%82%E5%8D%9A%E7%89%A9%E9%A6%86_20250102_02.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -869,7 +869,7 @@ window.MUSEUMS_META = [
       "碉楼文化",
       "江门历史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/e/e7/%E7%8E%89%E6%BA%AA%E5%B8%82%E5%8D%9A%E7%89%A9%E9%A6%86-%E6%97%A9%E4%BE%8F%E7%BD%97%E7%BA%AA-%E4%BA%91%E5%8D%97%E6%98%93%E9%97%A8-%E6%81%90%E9%BE%99%E8%82%A0%E9%AA%A8.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -882,7 +882,7 @@ window.MUSEUMS_META = [
       "草原文化",
       "钢铁文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/6/6e/%E8%93%9D%E5%8D%B0%E8%8A%B1%E5%B8%83%E6%8A%98%E6%9E%9D%E8%8A%B1%E5%8D%89%E7%BA%B9%E5%8C%85%E5%A4%B4%E5%B8%83.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -895,7 +895,7 @@ window.MUSEUMS_META = [
       "长江文明",
       "水利文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/6/66/Yichang_Museum_35.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -908,7 +908,7 @@ window.MUSEUMS_META = [
       "洛阳历史",
       "牡丹文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/e/ea/%E6%B4%9B%E9%98%B3%E5%8D%9A%E7%89%A9%E9%A6%86_Bronze.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -921,7 +921,7 @@ window.MUSEUMS_META = [
       "历史名城",
       "文物考古"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/0/04/Jingzhou_Museum.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -934,7 +934,7 @@ window.MUSEUMS_META = [
       "桂北文化",
       "世界遗产"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/d/d2/Guilin_Bowuguan_2012.09.29_08-51-16.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -947,7 +947,7 @@ window.MUSEUMS_META = [
       "吉安历史",
       "书院文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/e/e7/Jiangxi_Sheng_Bowuguan_2014.10.04_13-50-52.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -960,7 +960,7 @@ window.MUSEUMS_META = [
       "上饶历史",
       "生态文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Xiangfulu_No.17_house_7106.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -973,7 +973,7 @@ window.MUSEUMS_META = [
       "赣州历史",
       "宋城文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/a/a1/%E5%BB%BA%E8%AE%BE%E4%B8%AD%E7%9A%84%E8%B5%A3%E5%B7%9E%E5%B8%82%E8%87%AA%E7%84%B6%E5%8D%9A%E7%89%A9%E9%A6%86_-_panoramio.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -986,7 +986,7 @@ window.MUSEUMS_META = [
       "九江历史",
       "长江文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/a/a1/%E4%B9%9D%E6%B1%9F%E5%B8%82%E5%8E%86%E5%8F%B2%E5%BB%BA%E7%AD%91%E4%BF%9D%E6%8A%A4%E6%9D%A1%E4%BE%8B.pdf",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1012,7 +1012,7 @@ window.MUSEUMS_META = [
       "丝绸之路",
       "商贸"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/d/d0/Shakuhachi_and_Paixiao_of_theTang_Dynasty_2011-07.JPG",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1025,7 +1025,7 @@ window.MUSEUMS_META = [
       "军事",
       "红色教育"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/b/ba/%E5%8D%97%E6%98%8C%E5%85%AB%E4%B8%80%E8%B5%B7%E4%B9%89%E7%BA%AA%E5%BF%B5%E9%A6%86_%E9%9B%95%E5%83%8F_20191016_142514.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1038,7 +1038,7 @@ window.MUSEUMS_META = [
       "长江文明",
       "山水文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/8/85/Lotus_Sutra_of_Ming_Dynasty_in_Zhenjiang_Museum_2011-10.JPG",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1051,7 +1051,7 @@ window.MUSEUMS_META = [
       "楚汉争霸",
       "彭城文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/c/cf/Xuzhou_Museum_01_2013-01.JPG",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1064,7 +1064,7 @@ window.MUSEUMS_META = [
       "工业遗产",
       "德式建筑"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/d/de/Tsingdao_Brewery.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1077,7 +1077,7 @@ window.MUSEUMS_META = [
       "观音文化",
       "渔业文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/3/35/NLC403-312001066911-131776_%E6%B3%B0%E5%AE%89%E7%B8%A3%E8%AA%8C_%E6%B8%85%E4%B9%BE%E9%9A%8647%E5%B9%B4%281782%29_%E5%8D%B7%E4%B8%80%E5%8D%81%E5%9B%9B.pdf",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1090,7 +1090,7 @@ window.MUSEUMS_META = [
       "桐城派",
       "安庆文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/8/82/The_Older_Place_of_Anhui_Provincial_Museum_2012-06.JPG",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1116,7 +1116,7 @@ window.MUSEUMS_META = [
       "现代文学",
       "鲁迅研究"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/9/92/Beijing_Lu_Xun_Museum_-_Lu_Xun_working_desk.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1129,7 +1129,7 @@ window.MUSEUMS_META = [
       "满族文化",
       "关东风情"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/1/17/%E5%90%89%E6%9E%97%E7%9C%81%E5%8D%9A%E7%89%A9%E9%99%A2%E6%96%B0%E9%99%A22017.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1142,7 +1142,7 @@ window.MUSEUMS_META = [
       "航空技术",
       "国防科技"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/8/84/China_Aviation_Museum.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1155,7 +1155,7 @@ window.MUSEUMS_META = [
       "影视文化",
       "艺术发展"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/9/94/China_National_Film_Museum_Star.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1168,7 +1168,7 @@ window.MUSEUMS_META = [
       "传统文化",
       "农业文明"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/8/81/China_National_Tea_Museum_3.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1181,7 +1181,7 @@ window.MUSEUMS_META = [
       "纺织技术",
       "工艺美术"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Lismete_by_Mascha_Mioni_at_the_China_National_SIlk_Museum%2C_Hangzhou.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1194,7 +1194,7 @@ window.MUSEUMS_META = [
       "工艺美术",
       "传统技艺"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/f/f8/%E8%BE%BD%E5%AE%81%E7%9C%81%E5%8D%9A%E7%89%A9%E9%A6%86%E6%A8%A1%E6%8B%9F%E5%88%B6%E9%99%B6%E7%93%B7%E5%9C%BA%E6%99%AF.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1207,7 +1207,7 @@ window.MUSEUMS_META = [
       "奥运文化",
       "体育精神"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/8/89/China_Sports_Museum.jpg",
     "hasCollections": false,
     "level": "未定级"
   },
@@ -1220,7 +1220,7 @@ window.MUSEUMS_META = [
       "农耕文明",
       "农业科技"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/0/00/Sunset_of_the_Forbidden_City_2006.JPG",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1233,7 +1233,7 @@ window.MUSEUMS_META = [
       "艺术教育",
       "文化传承"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/9/99/%E6%B8%85%E8%8F%AF%E5%A4%A7%E5%AD%B8%E8%97%9D%E8%A1%93%E5%8D%9A%E7%89%A9%E9%A4%A8.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1246,7 +1246,7 @@ window.MUSEUMS_META = [
       "考古学",
       "艺术研究"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/2/22/Dawenkou_Gui_Dazhucun.jpg",
     "hasCollections": false,
     "level": "未定级"
   },
@@ -1259,7 +1259,7 @@ window.MUSEUMS_META = [
       "兰州历史",
       "丝路重镇"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/1/14/Painted_pottery_spinning_wheel_with_triangle_design.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1272,7 +1272,7 @@ window.MUSEUMS_META = [
       "太原历史",
       "龙城风韵"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/0/00/The_Coal_Museum_of_China.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1285,7 +1285,7 @@ window.MUSEUMS_META = [
       "四大发明",
       "文化传播"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/0/0d/Yinshuabowuguan.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1311,7 +1311,7 @@ window.MUSEUMS_META = [
       "儿童成长",
       "社会进步"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/5/59/Banner_of_1995_NGO_Forum_on_Women_at_China_National_Museum_of_Women_and_Children_%2820210909153148%29.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1324,7 +1324,7 @@ window.MUSEUMS_META = [
       "文化多样性",
       "民族团结"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/b/b1/Monument_in_park_-_panoramio.jpg",
     "hasCollections": false,
     "level": "未定级"
   },
@@ -1337,7 +1337,7 @@ window.MUSEUMS_META = [
       "能源发展",
       "工业文明"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/f/f2/%E4%B8%AD%E5%9B%BD%E7%85%A4%E7%82%AD%E5%8D%9A%E7%89%A9%E9%A6%86%E5%A4%A7%E6%A5%BC%E5%86%85%E6%99%AF.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1350,7 +1350,7 @@ window.MUSEUMS_META = [
       "考古遗址",
       "原始社会"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/5/52/Banpo_Museus.JPG",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1363,7 +1363,7 @@ window.MUSEUMS_META = [
       "生物多样性",
       "地球演化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/6/62/%E5%A4%A9%E6%B4%A5%E8%87%AA%E7%84%B6%E5%8D%9A%E7%89%A9%E9%A6%86_-_panoramio.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1376,7 +1376,7 @@ window.MUSEUMS_META = [
       "红色文化",
       "近代史"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/a/ab/%E9%BB%84%E5%85%B4%E5%AF%B9%E7%AB%A0.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1389,7 +1389,7 @@ window.MUSEUMS_META = [
       "丝绸工艺",
       "江南文化"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/2/2c/Suzhou_Museum%2C_China_%282015%29_-_13.JPG",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1402,7 +1402,7 @@ window.MUSEUMS_META = [
       "治水文化",
       "生态文明"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/d/d3/%E4%B8%AD%E5%9B%BD%E6%B0%B4%E5%88%A9%E5%8D%9A%E7%89%A9%E9%A6%86%2C_2022-10-22_01.jpg",
     "hasCollections": false,
     "level": "一级"
   },
@@ -1500,9 +1500,24 @@ window.MUSEUMS_META = [
       "文化",
       "传统技艺"
     ],
-    "image": "",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/0/00/Sunset_of_the_Forbidden_City_2006.JPG",
     "hasCollections": true,
     "level": "三级"
+  },
+  {
+    "id": "yueyang-museum",
+    "name": "岳阳博物馆",
+    "location": "岳阳",
+    "tags": [
+      "历史",
+      "青铜器",
+      "楚文化",
+      "龙舟",
+      "湖湘文化"
+    ],
+    "image": "https://letmetry.cloud/images/building.jpg",
+    "hasCollections": true,
+    "level": "二级"
   }
 ];
 
