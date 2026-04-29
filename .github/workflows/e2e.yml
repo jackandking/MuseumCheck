@@ -8,6 +8,11 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
 jobs:
   e2e-smoke:
     if: github.event_name == 'pull_request'
@@ -25,17 +30,13 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: |
-          # Clean npm cache to avoid corruption issues
-          npm cache clean --force
-          # Try npm ci first, fallback to npm install if it fails
-          npm ci || npm install
+        run: npm ci
       
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       
       - name: Run smoke tests
-        run: npx playwright test e2e/homepage.spec.ts e2e/single-museum.spec.ts
+        run: npx playwright test e2e/homepage.spec.ts e2e/single-museum.spec.ts --project=chromium
       
       - name: Upload test results
         if: always()
@@ -66,11 +67,7 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: |
-          # Clean npm cache to avoid corruption issues
-          npm cache clean --force
-          # Try npm ci first, fallback to npm install if it fails
-          npm ci || npm install
+        run: npm ci
       
       - name: Install Playwright browsers
         run: npx playwright install --with-deps ${{ matrix.browser }}
