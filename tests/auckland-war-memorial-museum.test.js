@@ -14,5 +14,8 @@ describe('Auckland War Memorial Museum metadata', () => {
     expect(museum.tags).toEqual(
       expect.arrayContaining(['历史', '战争纪念', '毛利文化', '海外博物馆'])
     );
+    expect(museum.image).toMatch(/^https?:\/\/.+/);
+    expect(museum.hasCollections).toBe(true);
+    expect(museum.level).toBe('未定级');
   });
 });
