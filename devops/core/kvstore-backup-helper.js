@@ -32,11 +32,15 @@ async function readFromKVStore(museumId) {
     const sortKey = 'museum';
     const url = `${KV_ENDPOINT}?key=${encodeURIComponent(key)}&sortKey=${encodeURIComponent(sortKey)}`;
     const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error(`Failed to read from KV store for ${museumId}: HTTP ${response.status}`);
+      return null;
+    }
     const result = await response.json();
     if (!result || !result.value) return null;
     return JSON.parse(result.value);
   } catch (e) {
+    console.error(`Error reading from KV store for ${museumId}:`, e.message);
     return null;
   }
 }
@@ -116,7 +120,9 @@ function generateBackupReport() {
   const files = fs.readdirSync(BACKUP_DIR).filter(f => f.endsWith('.json'));
   const museumIds = new Set();
   files.forEach(f => {
-    const m = f.match(/write-[^-]+-([a-z0-9-]+)-\d{4}/);
+    // Pattern: write-<source>-<museumId>-<timestamp>.json
+    // Extract museumId by removing "write-" prefix, known source patterns, and timestamp suffix
+    const m = f.match(/^write-[^-]+-([a-z0-9][a-z0-9-]*[a-z0-9])-\d{4}-/);
     if (m) museumIds.add(m[1]);
   });
   return {

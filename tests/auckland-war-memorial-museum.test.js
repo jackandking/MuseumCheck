@@ -27,5 +27,7 @@ describe('Auckland War Memorial Museum metadata', () => {
     expect(yueyang).toBeTruthy();
     // Yueyang museum should not have Auckland museum's building photo
     expect(yueyang.image).not.toContain('Auckland_War_Memorial_Museum');
+    // Yueyang museum should still have a valid image URL
+    expect(yueyang.image).toMatch(/^https?:\/\/.+/);
   });
 });
