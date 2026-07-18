@@ -123,7 +123,7 @@ async function verifyMuseumInKVStore(museumId) {
 }
 
 async function main() {
-  const metaPath = path.join(__dirname, '../data/museums-meta.json');
+  const metaPath = path.join(__dirname, '../../data/museums-meta.json');
 
   if (!fs.existsSync(metaPath)) {
     log(`Error: museums-meta.json not found at ${metaPath}`, 'red');
@@ -188,7 +188,7 @@ async function main() {
 
   // Save upload report
   const timestamp = new Date().toISOString().split('T')[0];
-  const reportPath = path.join(__dirname, `../backup/kvstore-upload-report-${timestamp}.json`);
+  const reportPath = path.join(__dirname, `../../backup/kvstore-upload-report-${timestamp}.json`);
   const report = {
     timestamp: new Date().toISOString(),
     endpoint: KV_ENDPOINT,

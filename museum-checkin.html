@@ -4,7 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>孩子任务 - 博物馆打卡</title>
-    
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="博物馆亲子打卡体验，带孩子探索镇馆之宝，寓教于乐的博物馆互动指南。">
+    <link rel="canonical" href="https://museumcheck.cn/museum-checkin.html">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://museumcheck.cn/museum-checkin.html">
+    <meta property="og:title" content="孩子任务 - 博物馆打卡">
+    <meta property="og:description" content="博物馆亲子打卡体验，带孩子探索镇馆之宝，寓教于乐的博物馆互动指南。">
+    <meta property="og:image" content="https://museumcheck.cn/logo-og.png">
+
     <!-- Performance: Preconnect to analytics domains -->
     <link rel="dns-prefetch" href="//hm.baidu.com">
     <link rel="dns-prefetch" href="//static.hotjar.com">
@@ -328,7 +337,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
         </button>
-        <h1><span id="nicknameDisplay" class="nickname-display" title="点击修改昵称">小淘气</span>的孩子任务</h1>
+        <h1><img id="headerAvatar" class="header-avatar" style="display:none; width:32px; height:32px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:6px; cursor:pointer;" title="点击更换头像"><input type="file" id="headerAvatarInput" accept="image/*" style="display:none"><span id="nicknameDisplay" class="nickname-display" title="点击修改昵称">小淘气</span>的孩子任务</h1>
         <button class="settings-button" id="settingsButton" title="设置">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="settings-icon">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
@@ -402,7 +411,41 @@
             
             <h3 class="task-detail-title" id="modalTaskTitle"></h3>
             <div class="task-detail-description" id="modalDescription"></div>
-            
+
+            <!-- Parent Guide Section (China Film Museum custom experience) -->
+            <div class="parent-guide-section" id="parentGuideSection" style="display: none;">
+                <div class="parent-guide-header">
+                    <span class="parent-guide-icon">💡</span>
+                    <span class="parent-guide-title">家长讲解提示</span>
+                </div>
+                <ul class="parent-guide-list" id="parentGuideList"></ul>
+            </div>
+
+            <!-- Child Review Section (China Film Museum custom experience) -->
+            <div class="child-review-section" id="childReviewSection" style="display: none;">
+                <div class="child-review-header">
+                    <span class="child-review-icon">✏️</span>
+                    <span class="child-review-title">宝贝的评价</span>
+                </div>
+                <div class="child-review-prompts">
+                    <span class="review-prompt">我觉得…</span>
+                    <span class="review-prompt">我最喜欢…</span>
+                    <span class="review-prompt">这个宝物很…</span>
+                </div>
+                <textarea class="child-review-input" id="childReviewInput"
+                    placeholder="写下你对这件宝物的感受吧！（一句话就好）"
+                    maxlength="100" rows="2"></textarea>
+            </div>
+
+            <!-- Peer Reviews Section ("童言童语") -->
+            <div class="peer-reviews-section" id="peerReviewsSection" style="display: none;">
+                <div class="peer-reviews-header">
+                    <span class="peer-reviews-icon">💬</span>
+                    <span class="peer-reviews-title">其他小朋友说</span>
+                </div>
+                <div class="peer-reviews-list" id="peerReviewsList"></div>
+            </div>
+
             <!-- Treasure Photo Contributor Section (when treasure has no image) -->
             <div class="treasure-photo-contributor-modal" id="treasurePhotoContributorSection" style="display: none;">
                 <div class="treasure-photo-contributor-hint">
@@ -583,6 +626,18 @@
             </div>
             <div class="settings-section">
                 <h3>👶 孩子信息</h3>
+                <div class="settings-item">
+                    <label class="settings-label">孩子头像：</label>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div id="settingsAvatarArea" style="width: 48px; height: 48px; border-radius: 50%; background: #f3f4f6; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; border: 2px dashed #d1d5db; flex-shrink: 0;" onclick="document.getElementById('settingsAvatarInput').click()">
+                            <span id="settingsAvatarPlaceholder" style="font-size: 24px;">👶</span>
+                            <img id="settingsAvatarPreview" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                        </div>
+                        <input type="file" id="settingsAvatarInput" accept="image/*" style="display: none;">
+                        <span style="font-size: 13px; color: #6b7280;">点击更换头像</span>
+                    </div>
+                    <div class="settings-hint">头像会出现在成就海报上</div>
+                </div>
                 <div class="settings-item">
                     <label class="settings-label" for="childNicknameInput">孩子昵称：</label>
                     <div class="settings-input-group">

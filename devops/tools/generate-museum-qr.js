@@ -65,7 +65,7 @@ async function generateMuseumQRCode(museumId, outputFilename) {
         })();
 
         // Generate QR code
-        const outputPath = path.join(__dirname, '..', standardizedName);
+        const outputPath = path.join(__dirname, '..', '..', standardizedName);
         await QRCode.toFile(outputPath, url, QR_CODE_OPTIONS);
         
         console.log(`✓ QR code generated successfully: ${outputPath}`);

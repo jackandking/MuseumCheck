@@ -13,7 +13,7 @@ const path = require('path');
 
 // KV Store 配置 (只读)
 const KV_ENDPOINT = 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore';
-const BACKUP_DIR = path.join(__dirname, '../backup');
+const BACKUP_DIR = path.join(__dirname, '../../backup');
 
 // 要备份的关键 keys
 const KEYS_TO_BACKUP = [
@@ -24,7 +24,7 @@ const KEYS_TO_BACKUP = [
 
 // 从 museums-meta.json 获取所有博物馆 ID
 function getMuseumIds() {
-  const metaPath = path.join(__dirname, '../data/museums-meta.json');
+  const metaPath = path.join(__dirname, '../../data/museums-meta.json');
   if (!fs.existsSync(metaPath)) {
     console.error('❌ museums-meta.json 不存在');
     return [];

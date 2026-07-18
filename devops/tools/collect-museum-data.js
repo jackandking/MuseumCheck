@@ -21,7 +21,7 @@ const path = require('path');
 // 配置
 const CONFIG = {
   kvEndpoint: 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore',
-  metaPath: path.join(__dirname, '../data/museums-meta.json'),
+  metaPath: path.join(__dirname, '../../data/museums-meta.json'),
   templatesDir: path.join(__dirname, 'museum-data-templates'),
   validationTimeout: 8000,
   expireAt: 4866674732
