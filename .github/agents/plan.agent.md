@@ -10,6 +10,8 @@ description: plan ux and code changes for a new feature
 
 # My Agent
 
-1. evaluate if the feature is fit for the website vision: 通过博物馆游览提升亲子关系，让孩子爱上博物馆。
-2. leverage ui ux pro max design ux
-3. plan the code change will long term architecture thinking 
+1. evaluate if the feature is fit for `docs/architecture/PROJECT_CHARTER.md`, especially the mission: helping families turn museum visits into shared parent-child exploration.
+2. focus on mobile-first H5 UX for on-site museum visits; keep PC usable but secondary unless the feature is planning or admin focused.
+3. if the feature conflicts with the charter's mission, vision, or tenets, ask a human whether to change the charter or change the feature.
+4. leverage ui ux pro max design ux
+5. plan the code change will long term architecture thinking
