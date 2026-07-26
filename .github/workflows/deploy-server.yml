@@ -25,11 +25,12 @@ jobs:
 
       - name: Prepare deploy path
         run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "sudo mkdir -p ${{ secrets.DEPLOY_PATH }} && sudo chown ${{ secrets.SERVER_USER }}:${{ secrets.SERVER_USER }} ${{ secrets.DEPLOY_PATH }} && sudo find ${{ secrets.DEPLOY_PATH }} -mindepth 1 ! -name .user.ini -exec chown ${{ secrets.SERVER_USER }}:${{ secrets.SERVER_USER }} {} +"
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "sudo mkdir -p ${{ secrets.DEPLOY_PATH }}"
 
       - name: Deploy to server
         run: |
           rsync -avz --delete \
+            --rsync-path="sudo rsync" \
             --exclude '.git/' \
             --exclude '.github/' \
             --exclude 'node_modules/' \
@@ -47,4 +48,10 @@ jobs:
 
       - name: Set permissions
         run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "sudo find ${{ secrets.DEPLOY_PATH }} -mindepth 1 ! -name .user.ini -exec chown www:www {} + && sudo find ${{ secrets.DEPLOY_PATH }} -type d -exec chmod 755 {} + && sudo find ${{ secrets.DEPLOY_PATH }} -type f ! -name .user.ini -exec chmod 644 {} +"
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
+            set -e
+            DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
+            sudo find "$DEPLOY_PATH" -mindepth 1 \( -name .user.ini -o -path "$DEPLOY_PATH/.agents" -o -path "$DEPLOY_PATH/.agents/*" \) -prune -o -exec chown -h www:www {} +
+            sudo find "$DEPLOY_PATH" -type d \( -path "$DEPLOY_PATH/.agents" -o -path "$DEPLOY_PATH/.agents/*" \) -prune -o -exec chmod 755 {} +
+            sudo find "$DEPLOY_PATH" -type f ! -name .user.ini -exec chmod 644 {} +
+          '
