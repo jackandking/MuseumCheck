@@ -4,7 +4,10 @@
   // Normalize database/API rows to the internal poster format
   function normalizeRow(r){
     if(!r) return null;
-    const imageUrl = r.imageUrl || r.image_url || r.url || r.path || (r.data && r.data.image_url);
+    const rawImageUrl = r.imageUrl || r.image_url || r.url || r.path || (r.data && r.data.image_url);
+    const imageUrl = (typeof API_ENDPOINTS !== 'undefined' && typeof API_ENDPOINTS.normalizeImageUrl === 'function')
+      ? API_ENDPOINTS.normalizeImageUrl(rawImageUrl)
+      : rawImageUrl;
     if(!imageUrl) return null;
     return {
       id: r.id,
@@ -26,7 +29,7 @@
     }
 
     // Fallback: direct fetch to endpoint
-    const resp = await fetch((typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.MYSQL.QUERY : 'https://letmetry.cloud/mysql/query', {
+    const resp = await fetch((typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.MYSQL.QUERY : 'https://museumcheck.cn/mysql/query', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sql, params: [] })
@@ -144,7 +147,7 @@
         console.log('Poster deleted from database, ID:', poster.id);
       } else {
         // Fallback: direct fetch
-        const resp = await fetch((typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.MYSQL.DELETE : 'https://letmetry.cloud/mysql/delete', {
+        const resp = await fetch((typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.MYSQL.DELETE : 'https://museumcheck.cn/mysql/delete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ table: 'achievement_posters', id: poster.id })

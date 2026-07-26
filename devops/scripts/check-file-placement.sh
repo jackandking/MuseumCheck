@@ -37,10 +37,10 @@ check_file_placement() {
             ;;
         
         # 根目录允许的文件
-        "README.md"|"CHANGELOG.md"|"CONTRIBUTING.md"|"LICENSE.md"|\
+        "README.md"|"CHANGELOG.md"|"CONTRIBUTING.md"|"LICENSE.md"|"AGENTS.md"|\
         "package.json"|".gitignore"|"CNAME"|"robots.txt"|\
         "index.html"|"script.js"|"style.css"|"util.js"|\
-        "netlify.toml"|".copilot-mcp.json"|\
+        "netlify.toml"|".copilot-mcp.json"|"repomix.config.json"|\
         ".nojekyll"|"404.html"|"sitemap.xml"|"logo-og.png")
             return 0
             ;;

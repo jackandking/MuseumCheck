@@ -525,6 +525,7 @@
     </div>
   </div>
 
+  <script src="../config/api-endpoints.js"></script>
   <script src="../js/wikimedia-image-search.js"></script>
   <script src="../js/baidu-image-search.js"></script>
   <script src="../js/deepseek-api.js"></script>
@@ -765,7 +766,7 @@
         
         resultsContainer.innerHTML = autocompleteResults.map((museum, index) => {
           const icon = museum.image 
-            ? `<img src="${escapeHtml(museum.image)}" alt="" onerror="this.parentElement.innerHTML='🏛️'" />`
+            ? `<img src="${escapeHtml(normalizeImageUrl(museum.image))}" alt="" onerror="this.parentElement.innerHTML='🏛️'" />`
             : '🏛️';
           
           return `
@@ -1037,7 +1038,7 @@
               <div class="field-label">图片URL:</div>
               <div class="image-preview-container">
                 <div id="collection-image-preview-${index}">
-                  ${col.imageUrl ? `<img src="${col.imageUrl}" class="image-preview-thumb" onerror="this.parentElement.innerHTML='<div class=\\'image-preview-placeholder\\'>图片加载失败</div>'" />` : '<div class="image-preview-placeholder">暂无图片</div>'}
+                  ${col.imageUrl ? `<img src="${normalizeImageUrl(col.imageUrl)}" class="image-preview-thumb" onerror="this.parentElement.innerHTML='<div class=\\'image-preview-placeholder\\'>图片加载失败</div>'" />` : '<div class="image-preview-placeholder">暂无图片</div>'}
                 </div>
                 <div class="input-wrapper">
                   <div class="input-with-search">
@@ -1296,7 +1297,7 @@
         `;
         
         if (data.image) {
-          html += `<img src="${data.image}" alt="主图" class="preview-image" onerror="this.style.display='none'" />`;
+          html += `<img src="${normalizeImageUrl(data.image)}" alt="主图" class="preview-image" onerror="this.style.display='none'" />`;
         }
         
         if (data.collections && data.collections.length > 0) {
@@ -1305,7 +1306,7 @@
             html += `
               <div class="collection-item">
                 <div class="collection-name">${col.name}</div>
-                ${col.imageUrl ? `<img src="${col.imageUrl}" alt="${col.name}" class="preview-image" onerror="this.style.display='none'" />` : ''}
+                ${col.imageUrl ? `<img src="${normalizeImageUrl(col.imageUrl)}" alt="${col.name}" class="preview-image" onerror="this.style.display='none'" />` : ''}
                 <p>${col.description}</p>
               </div>
             `;
@@ -1943,7 +1944,7 @@
       }
       
       // Show loading state
-      container.innerHTML = '<img src="' + imageUrl + '" class="image-preview-thumb loading" />';
+      container.innerHTML = '<img src="' + normalizeImageUrl(imageUrl) + '" class="image-preview-thumb loading" />';
       
       // Load image
       const img = container.querySelector('img');
@@ -2249,8 +2250,18 @@
       return div.innerHTML;
     }
 
+    function normalizeImageUrl(url) {
+      if (typeof API_ENDPOINTS !== 'undefined' && typeof API_ENDPOINTS.normalizeImageUrl === 'function') {
+        return API_ENDPOINTS.normalizeImageUrl(url);
+      }
+      if (typeof window !== 'undefined' && typeof window.normalizeMuseumCheckImageUrl === 'function') {
+        return window.normalizeMuseumCheckImageUrl(url);
+      }
+      return url;
+    }
+
     /**
-     * Upload a local image file to letmetry.cloud
+     * Upload a local image file to the MuseumCheck API
      * Compresses the image for mobile-optimized display
      */
     async function uploadLocalImage() {
@@ -2309,7 +2320,7 @@
             <img src="${escapeHtml(url)}" alt="已上传图片" class="result-image" />
             <div class="result-info">
               <div class="result-name">📤 已上传的照片</div>
-              <div class="result-meta">存储于 letmetry.cloud</div>
+              <div class="result-meta">存储于 MuseumCheck</div>
             </div>
           </div>
         `;

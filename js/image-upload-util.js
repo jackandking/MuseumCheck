@@ -2,13 +2,13 @@
  * Image Upload Utility for MuseumCheck
  * 
  * Provides image upload functionality with compression for mobile optimization.
- * Uploads images to letmetry.cloud storage service.
+ * Uploads images to the MuseumCheck storage service.
  */
 
 class ImageUploader {
     constructor(config = {}) {
         this.config = {
-            endpoint: config.endpoint || ((typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.IMAGE.UPLOAD : 'https://letmetry.cloud/image/upload'),
+            endpoint: config.endpoint || ((typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.IMAGE.UPLOAD : 'https://museumcheck.cn/image/upload'),
             maxFileSizeMB: config.maxFileSizeMB || 10,
             // Compression settings optimized for mobile display
             targetWidth: config.targetWidth || 1200,   // Max width for mobile
@@ -16,6 +16,16 @@ class ImageUploader {
             quality: config.quality || 0.85,           // JPEG/WebP quality (0-1)
             format: config.format || 'image/jpeg'      // Output format
         };
+    }
+
+    normalizeImageUrl(url) {
+        if (typeof API_ENDPOINTS !== 'undefined' && typeof API_ENDPOINTS.normalizeImageUrl === 'function') {
+            return API_ENDPOINTS.normalizeImageUrl(url);
+        }
+        if (typeof window !== 'undefined' && typeof window.normalizeMuseumCheckImageUrl === 'function') {
+            return window.normalizeMuseumCheckImageUrl(url);
+        }
+        return url;
     }
 
     /**
@@ -92,7 +102,7 @@ class ImageUploader {
     }
 
     /**
-     * Upload image to letmetry.cloud
+     * Upload image to the MuseumCheck storage service
      * @param {File|Blob} file - The file or blob to upload
      * @param {Object} options - Upload options
      * @returns {Promise<string>} - URL of uploaded image
@@ -156,14 +166,14 @@ class ImageUploader {
         
         // Handle different response formats
         if (data.url) {
-            return data.url;
+            return this.normalizeImageUrl(data.url);
         } else if (data.fileUrl) {
-            return data.fileUrl;
+            return this.normalizeImageUrl(data.fileUrl);
         } else if (data.data && data.data.url) {
-            return data.data.url;
+            return this.normalizeImageUrl(data.data.url);
         } else if (data.success && data.filename) {
-            // Handle letmetry.cloud response format: {success: true, filename: "...", path: "...", destination: "..."}
-            // Extract base URL from endpoint (e.g., "https://letmetry.cloud/image/upload" -> "https://letmetry.cloud")
+            // Handle upload response format: {success: true, filename: "...", path: "...", destination: "..."}
+            // Extract base URL from endpoint (e.g., "https://museumcheck.cn/image/upload" -> "https://museumcheck.cn")
             const url = new URL(this.config.endpoint);
             const baseUrl = `${url.protocol}//${url.host}`;
             
@@ -191,7 +201,7 @@ class ImageUploader {
             sanitizedFilename = sanitizedFilename.split(/[\/\\]/).pop() || 'unnamed';
             
             // Files are served from /images/ directory on the server
-            return `${baseUrl}/images/${encodeURIComponent(sanitizedFilename)}`;
+            return this.normalizeImageUrl(`${baseUrl}/images/${encodeURIComponent(sanitizedFilename)}`);
         }
         
         throw new Error('上传响应格式无效');

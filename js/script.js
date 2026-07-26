@@ -84,7 +84,7 @@ const APP_CONFIG = {
     // Treasure Contributor Configuration
     TREASURE_CONTRIBUTOR: {
         REQUIRED_TREASURES: 3,              // Default number of treasures required to complete
-        FILE_UPLOAD_ENDPOINT: (typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.IMAGE.UPLOAD : 'https://letmetry.cloud/image/upload',  // File upload API
+        FILE_UPLOAD_ENDPOINT: (typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.IMAGE.UPLOAD : 'https://museumcheck.cn/image/upload',  // File upload API
         MAX_FILE_SIZE_MB: 10                // Maximum file size in MB
     },
     
@@ -169,6 +169,29 @@ const UtilityFunctions = {
     
     // String helpers
     sanitizeString: (str) => str ? str.trim() : '',
+
+    normalizeImageUrl: (url) => {
+        if (typeof API_ENDPOINTS !== 'undefined' && typeof API_ENDPOINTS.normalizeImageUrl === 'function') {
+            return API_ENDPOINTS.normalizeImageUrl(url);
+        }
+        if (typeof window !== 'undefined' && typeof window.normalizeMuseumCheckImageUrl === 'function') {
+            return window.normalizeMuseumCheckImageUrl(url);
+        }
+        return url;
+    },
+
+    normalizeMuseumImageUrls: (museum) => {
+        if (!museum) return museum;
+        museum.image = UtilityFunctions.normalizeImageUrl(museum.image);
+        if (Array.isArray(museum.collections)) {
+            museum.collections.forEach(collection => {
+                if (!collection) return;
+                collection.imageUrl = UtilityFunctions.normalizeImageUrl(collection.imageUrl);
+                collection.url = UtilityFunctions.normalizeImageUrl(collection.url);
+            });
+        }
+        return museum;
+    },
     
     truncateString: (str, maxLength) => {
         if (!str || str.length <= maxLength) return str;
@@ -1796,7 +1819,7 @@ class MuseumManager {
     }
     
     getMuseumById(museumId) {
-        return MUSEUMS.find(museum => museum.id === museumId);
+        return UtilityFunctions.normalizeMuseumImageUrls(MUSEUMS.find(museum => museum.id === museumId));
     }
     
     getVisitedMuseums() {
@@ -6367,13 +6390,14 @@ class MuseumCheckApp {
         const currentConfig = this.loadTreasureCheckinConfig();
         const selectedTreasures = currentConfig[museumId] || [];
 
-        // Build checkbox list
-        let html = '';
-        museum.collections.forEach((treasure, index) => {
-            const isSelected = selectedTreasures.includes(treasure.name);
-            const imageHtml = treasure.imageUrl 
-                ? `<img src="${treasure.imageUrl}" alt="${treasure.name}" class="treasure-item-image" loading="lazy">`
-                : '';
+	        // Build checkbox list
+	        let html = '';
+	        museum.collections.forEach((treasure, index) => {
+	            const isSelected = selectedTreasures.includes(treasure.name);
+	            const treasureImageUrl = UtilityFunctions.normalizeImageUrl(treasure.imageUrl);
+	            const imageHtml = treasureImageUrl
+	                ? `<img src="${treasureImageUrl}" alt="${treasure.name}" class="treasure-item-image" loading="lazy">`
+	                : '';
             
             html += `
                 <label class="treasure-checkbox-item ${isSelected ? 'selected' : ''}" data-index="${index}">
@@ -7409,12 +7433,13 @@ class MuseumCheckApp {
                 const checkboxDisabled = this.readonlyCheckboxes || !isVisited;
                 
                 // Generate museum image HTML if image URL is available
-                const museumImageHtml = museum.image 
-                    ? `<div class="museum-image">
-                         <img src="${museum.image}" alt="${museum.name}" loading="lazy">
-                         ${isVisited ? '<div class="visit-tag">已打卡</div>' : ''}
-                       </div>`
-                    : '';
+	                const museumImageUrl = UtilityFunctions.normalizeImageUrl(museum.image);
+	                const museumImageHtml = museumImageUrl
+	                    ? `<div class="museum-image">
+	                         <img src="${museumImageUrl}" alt="${museum.name}" loading="lazy">
+	                         ${isVisited ? '<div class="visit-tag">已打卡</div>' : ''}
+	                       </div>`
+	                    : '';
                 
                 const wishList = JSON.parse(localStorage.getItem('wishMuseums') || '[]');
                 const isWished = wishList.includes(museum.id);
@@ -7481,7 +7506,17 @@ class MuseumCheckApp {
                         !e.target.classList.contains('wish-btn')) {
                         // Mark museum as browsed
                         this.markMuseumAsBrowsed(museum.id);
-                        
+
+                        // Track museum visit to event wall before navigation
+                        if (this.eventWallService) {
+                            this.eventWallService.recordEvent(
+                                'visit',
+                                '访问博物馆',
+                                `查看 ${museum.name} 的详细信息`,
+                                { museumId: museum.id, museumName: museum.name }
+                            );
+                        }
+
                         // Navigate to v2 check-in page (museum-checkin.html)
                         const checkedRadio = document.querySelector('input[name="ageGroup"]:checked');
                         const ageGroup = checkedRadio ? checkedRadio.value : (this.currentAge || APP_CONFIG.DEFAULT_AGE);
@@ -8383,6 +8418,7 @@ class MuseumCheckApp {
      * @returns {string} HTML for the museum image section
      */
     generateMuseumImageSection(museum, effectiveImage, contributedPhoto) {
+        effectiveImage = UtilityFunctions.normalizeImageUrl(effectiveImage);
         // If we have an image (either from museum data or contributed), show it
         if (effectiveImage) {
             return `<div class="museum-image-section">
@@ -8456,7 +8492,7 @@ class MuseumCheckApp {
 
         // Check for contributed museum entrance photo
         const contributedPhoto = this.checklistManager ? this.checklistManager.getContributedMuseumPhoto(museum.id) : null;
-        const effectiveImage = museum.image || (contributedPhoto ? contributedPhoto.imageUrl : null);
+        const effectiveImage = UtilityFunctions.normalizeImageUrl(museum.image || (contributedPhoto ? contributedPhoto.imageUrl : null));
         
         // Generate museum image section HTML
         const museumImageSectionHtml = this.generateMuseumImageSection(museum, effectiveImage, contributedPhoto);
@@ -9380,7 +9416,7 @@ class MuseumCheckApp {
                 // Use Wikimedia Commons search
                 images = await this.searchWikimediaImages(query);
             } else {
-                // Use Baidu Image search via letmetry.cloud
+                // Use Baidu Image search via MuseumCheck API
                 if (typeof BaiduImageSearch !== 'undefined') {
                     const searcher = new BaiduImageSearch();
                     images = await searcher.searchTreasurePhotos(null, query);
@@ -9510,7 +9546,7 @@ class MuseumCheckApp {
         }
         
         try {
-            // Upload to letmetry.cloud
+            // Upload to MuseumCheck API
             const imageUrl = await this.uploadFileToLetMeTry(file);
             
             // Update preview
@@ -9536,7 +9572,7 @@ class MuseumCheckApp {
     }
     
     /**
-     * Upload file to letmetry.cloud
+     * Upload file to MuseumCheck API
      * @param {File} file - File to upload
      * @returns {Promise<string>} URL of uploaded file
      */
@@ -9555,16 +9591,16 @@ class MuseumCheckApp {
         
         const data = await response.json();
         
-        // Handle different response formats
-        if (data.url) {
-            return data.url;
-        } else if (data.fileUrl) {
-            return data.fileUrl;
-        } else if (data.data && data.data.url) {
-            return data.data.url;
+	        // Handle different response formats
+	        if (data.url) {
+	            return UtilityFunctions.normalizeImageUrl(data.url);
+	        } else if (data.fileUrl) {
+	            return UtilityFunctions.normalizeImageUrl(data.fileUrl);
+	        } else if (data.data && data.data.url) {
+	            return UtilityFunctions.normalizeImageUrl(data.data.url);
         } else if (data.success && data.filename) {
-            // Handle letmetry.cloud response format: {success: true, filename: "...", path: "...", destination: "..."}
-            // Extract base URL from endpoint (e.g., "https://letmetry.cloud/image/upload" -> "https://letmetry.cloud")
+            // Handle upload response format: {success: true, filename: "...", path: "...", destination: "..."}
+            // Extract base URL from endpoint (e.g., "https://museumcheck.cn/image/upload" -> "https://museumcheck.cn")
             const url = new URL(APP_CONFIG.TREASURE_CONTRIBUTOR.FILE_UPLOAD_ENDPOINT);
             const baseUrl = `${url.protocol}//${url.host}`;
             
@@ -9591,9 +9627,9 @@ class MuseumCheckApp {
             // Even if ../ patterns somehow remained, they cannot be executed
             sanitizedFilename = sanitizedFilename.split(/[\/\\]/).pop() || 'unnamed';
             
-            // Files are served from /images/ directory on the server
-            return `${baseUrl}/images/${sanitizedFilename}`;
-        }
+	            // Files are served from /images/ directory on the server
+	            return UtilityFunctions.normalizeImageUrl(`${baseUrl}/images/${sanitizedFilename}`);
+	        }
         
         throw new Error('Invalid upload response format');
     }
@@ -14831,7 +14867,7 @@ class MuseumCheckApp {
             if (window.museumDataLoader && typeof window.museumDataLoader.loadMuseum === 'function') {
                 const museum = await window.museumDataLoader.loadMuseum(museumId, useCache);
                 if (museum) {
-                    return museum;
+                    return UtilityFunctions.normalizeMuseumImageUrls(museum);
                 }
             }
             

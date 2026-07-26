@@ -1,9 +1,9 @@
-// Helper for interacting with letmetry.cloud minimal API (file upload + poster publish)
+// Helper for interacting with the MuseumCheck API (file upload + poster publish)
 // Supports configurable base URL and optional API key stored in localStorage under 'letmetry_api_key'
 
 const LetmetryAPI = (function(){
   // 使用集中配置，如果可用
-  const DEFAULT_BASE = (typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.BASE_URL : 'https://letmetry.cloud';
+  const DEFAULT_BASE = (typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.BASE_URL : 'https://museumcheck.cn';
   let base = DEFAULT_BASE;
   let apiKey = (typeof window !== 'undefined') ? (localStorage.getItem('letmetry_api_key') || window.LETMETRY_API_KEY || '') : '';
 
@@ -15,6 +15,16 @@ const LetmetryAPI = (function(){
 
   function setBaseUrl(url){ if (url) base = url.replace(/\/+$/,''); }
   function getBaseUrl(){ return base; }
+
+  function _normalizeLegacyImageUrl(url) {
+    if (typeof API_ENDPOINTS !== 'undefined' && typeof API_ENDPOINTS.normalizeImageUrl === 'function') {
+      return API_ENDPOINTS.normalizeImageUrl(url);
+    }
+    if (typeof window !== 'undefined' && typeof window.normalizeMuseumCheckImageUrl === 'function') {
+      return window.normalizeMuseumCheckImageUrl(url);
+    }
+    return url;
+  }
 
   async function _fetchJson(url, opts = {}){
     const headers = opts.headers || {};
@@ -34,7 +44,7 @@ const LetmetryAPI = (function(){
     // If it's already a full URL, return as-is
     try {
       const u = new URL(pathOrFilename);
-      if (u.protocol && u.host) return pathOrFilename;
+      if (u.protocol && u.host) return _normalizeLegacyImageUrl(pathOrFilename);
     } catch (e) {}
 
     // If contains '/images/' segment, take the basename after that
@@ -64,6 +74,7 @@ const LetmetryAPI = (function(){
         const candidate = json && (json.path || json.filename || json.originalname || json.file || (json.data && (json.data.path || json.data.filename)));
         extracted = _normalizeToPublicImageUrl(candidate);
       }
+      extracted = _normalizeLegacyImageUrl(extracted);
       return { ok: true, raw: json, url: extracted };
     } catch (e) {
       return { ok: false, error: e };

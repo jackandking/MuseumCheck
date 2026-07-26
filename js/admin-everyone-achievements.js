@@ -11,7 +11,10 @@
   function renderRow(r){
     const tr = document.createElement('tr');
     const id = r.id || r._id || r.ID || r.id_value || '';
-    const imgUrl = (r.imageUrl || r.image_url || r.url || null) || '';
+    const rawImgUrl = (r.imageUrl || r.image_url || r.url || null) || '';
+    const imgUrl = (typeof API_ENDPOINTS !== 'undefined' && typeof API_ENDPOINTS.normalizeImageUrl === 'function')
+      ? API_ENDPOINTS.normalizeImageUrl(rawImgUrl)
+      : rawImgUrl;
 
     tr.innerHTML = `
       <td>${id}</td>
@@ -41,7 +44,7 @@
         if (typeof LetmetryAPI !== 'undefined' && typeof LetmetryAPI.updateRecord === 'function'){
           await LetmetryAPI.updateRecord('achievement_posters', id, data);
         } else {
-          await fetch((typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.MYSQL.UPDATE : 'https://letmetry.cloud/mysql/update', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ table:'achievement_posters', id, data })});
+          await fetch((typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.MYSQL.UPDATE : 'https://museumcheck.cn/mysql/update', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ table:'achievement_posters', id, data })});
         }
         showMessage('保存成功');
         loadList();
@@ -55,7 +58,7 @@
         if (typeof LetmetryAPI !== 'undefined' && typeof LetmetryAPI.deleteRecord === 'function'){
           await LetmetryAPI.deleteRecord('achievement_posters', id);
         } else {
-          await fetch((typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.MYSQL.DELETE : 'https://letmetry.cloud/mysql/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ table:'achievement_posters', id })});
+          await fetch((typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.MYSQL.DELETE : 'https://museumcheck.cn/mysql/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ table:'achievement_posters', id })});
         }
         showMessage('删除成功');
         loadList();
@@ -75,7 +78,7 @@
       if (typeof LetmetryAPI !== 'undefined' && typeof LetmetryAPI.queryMysql === 'function'){
         rows = await LetmetryAPI.queryMysql(sql, []);
       } else {
-        const resp = await fetch((typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.MYSQL.QUERY : 'https://letmetry.cloud/mysql/query', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sql, params: [] }) });
+        const resp = await fetch((typeof API_ENDPOINTS !== 'undefined') ? API_ENDPOINTS.MYSQL.QUERY : 'https://museumcheck.cn/mysql/query', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sql, params: [] }) });
         rows = await resp.json();
         if (rows && rows.rows) rows = rows.rows;
       }

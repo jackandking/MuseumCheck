@@ -12,16 +12,39 @@
   // 主配置 - 只需修改这里即可切换环境
   // ============================================
   
-  // 自动检测环境：如果是本地开发，使用 localhost；生产环境使用 letmetry.cloud
-  const isLocalDevelopment = window && window.location && 
-    (window.location.hostname === 'localhost' || 
-     window.location.hostname === '127.0.0.1' || 
-     window.location.hostname === '0.0.0.0');
-  
-  const BASE_URL = isLocalDevelopment ? 'http://localhost:3000' : 'https://letmetry.cloud';
+  // 自动检测部署环境
+  const currentLocation = (typeof window !== 'undefined' && window.location) ? window.location : null;
+  const currentHostname = currentLocation ? currentLocation.hostname : '';
+
+  const isLocalDevelopment =
+    currentHostname === 'localhost' ||
+    currentHostname === '127.0.0.1' ||
+    currentHostname === '0.0.0.0';
+
+  const isGitHubPages = currentHostname.includes('github.io');
+  const isCloudServer =
+    currentHostname === 'museumcheck.cn' ||
+    currentHostname === 'www.museumcheck.cn';
+
+  let BASE_URL;
+  if (isLocalDevelopment) {
+    BASE_URL = 'http://localhost:3000';
+  } else if (isGitHubPages) {
+    // GitHub Pages 环境，使用云服务器后端
+    BASE_URL = 'https://museumcheck.cn';
+  } else if (isCloudServer) {
+    // 云服务器环境，使用同域名
+    BASE_URL = '';
+  } else {
+    // 默认使用云服务器后端
+    BASE_URL = 'https://museumcheck.cn';
+  }
+
+  const LEGACY_IMAGE_HOSTS = ['letmetry.cloud', 'www.letmetry.cloud'];
+  const CANONICAL_IMAGE_ORIGIN = 'https://museumcheck.cn';
   
   // 手动覆盖（取消注释切换）
-  // const BASE_URL = 'https://letmetry.cloud';
+  // const BASE_URL = 'https://museumcheck.cn';
   // const BASE_URL = 'http://localhost:3000';
 
   // ============================================
@@ -62,6 +85,9 @@
       IMAGES: `${BASE_URL}/images`
     },
 
+    LEGACY_IMAGE_HOSTS: LEGACY_IMAGE_HOSTS.slice(),
+    CANONICAL_IMAGE_ORIGIN,
+
     // 健康检查
     HEALTH: `${BASE_URL}/health`,
 
@@ -80,8 +106,33 @@
    */
   API_ENDPOINTS.getImageUrl = function(filename) {
     if (!filename) return null;
-    if (filename.startsWith('http')) return filename;
+    const normalized = this.normalizeImageUrl(filename);
+    if (normalized && normalized !== filename) return normalized;
+    if (filename.startsWith('http') || filename.startsWith('data:') || filename.startsWith('/')) return filename;
     return `${this.CDN.IMAGES}/${encodeURIComponent(filename)}`;
+  };
+
+  /**
+   * Rewrite legacy Letmetry-hosted image URLs to the MuseumCheck canonical host.
+   * This keeps old database rows working without rewriting stored data.
+   * @param {string} url - Image URL or path
+   * @returns {string} URL with legacy image host replaced, or original input
+   */
+  API_ENDPOINTS.normalizeImageUrl = function(url) {
+    if (!url || typeof url !== 'string') return url;
+    if (!url.includes('letmetry.cloud')) return url;
+
+    try {
+      const parsed = new URL(url);
+      if (!LEGACY_IMAGE_HOSTS.includes(parsed.hostname)) return url;
+      if (!parsed.pathname.startsWith('/images/')) return url;
+      return `${CANONICAL_IMAGE_ORIGIN}${parsed.pathname}${parsed.search}${parsed.hash}`;
+    } catch (e) {
+      return url.replace(
+        /^https?:\/\/(?:www\.)?letmetry\.cloud(?=\/images\/)/,
+        CANONICAL_IMAGE_ORIGIN
+      );
+    }
   };
 
   /**
@@ -117,6 +168,7 @@
   // Browser
   if (typeof window !== 'undefined') {
     window.API_ENDPOINTS = API_ENDPOINTS;
+    window.normalizeMuseumCheckImageUrl = API_ENDPOINTS.normalizeImageUrl.bind(API_ENDPOINTS);
   }
 
   // Node.js / CommonJS
