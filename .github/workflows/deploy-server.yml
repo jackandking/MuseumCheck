@@ -1,8 +1,8 @@
-name: Deploy Main to Cloud Server
+name: Deploy Prod to Cloud Server
 
 on:
   push:
-    branches: [main]
+    branches: [prod]
   workflow_dispatch:
 
 jobs:
