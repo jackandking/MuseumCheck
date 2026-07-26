@@ -25,7 +25,7 @@ jobs:
 
       - name: Prepare deploy path
         run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "sudo mkdir -p ${{ secrets.DEPLOY_PATH }} && sudo chown -R ${{ secrets.SERVER_USER }}:${{ secrets.SERVER_USER }} ${{ secrets.DEPLOY_PATH }}"
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "sudo mkdir -p ${{ secrets.DEPLOY_PATH }} && sudo chown ${{ secrets.SERVER_USER }}:${{ secrets.SERVER_USER }} ${{ secrets.DEPLOY_PATH }} && sudo find ${{ secrets.DEPLOY_PATH }} -mindepth 1 ! -name .user.ini -exec chown ${{ secrets.SERVER_USER }}:${{ secrets.SERVER_USER }} {} +"
 
       - name: Deploy to server
         run: |
@@ -36,6 +36,7 @@ jobs:
             --exclude 'tests/' \
             --exclude 'backup/' \
             --exclude '.agents/' \
+            --exclude '.user.ini' \
             --exclude 'devops/' \
             --exclude 'wiki/' \
             --exclude '*.md' \
@@ -46,4 +47,4 @@ jobs:
 
       - name: Set permissions
         run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "sudo chown -R www:www ${{ secrets.DEPLOY_PATH }} && sudo chmod -R 755 ${{ secrets.DEPLOY_PATH }}"
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "sudo find ${{ secrets.DEPLOY_PATH }} -mindepth 1 ! -name .user.ini -exec chown www:www {} + && sudo find ${{ secrets.DEPLOY_PATH }} -type d -exec chmod 755 {} + && sudo find ${{ secrets.DEPLOY_PATH }} -type f ! -name .user.ini -exec chmod 644 {} +"
