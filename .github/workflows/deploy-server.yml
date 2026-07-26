@@ -52,6 +52,6 @@ jobs:
             set -e
             DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
             sudo find "$DEPLOY_PATH" -mindepth 1 \( -name .user.ini -o -path "$DEPLOY_PATH/.agents" -o -path "$DEPLOY_PATH/.agents/*" \) -prune -o -exec chown -h www:www {} +
-            sudo find "$DEPLOY_PATH" -type d \( -path "$DEPLOY_PATH/.agents" -o -path "$DEPLOY_PATH/.agents/*" \) -prune -o -exec chmod 755 {} +
-            sudo find "$DEPLOY_PATH" -type f ! -name .user.ini -exec chmod 644 {} +
+            sudo find "$DEPLOY_PATH" \( -name .user.ini -o -path "$DEPLOY_PATH/.agents" -o -path "$DEPLOY_PATH/.agents/*" \) -prune -o -type d -exec chmod 755 {} +
+            sudo find "$DEPLOY_PATH" \( -name .user.ini -o -path "$DEPLOY_PATH/.agents" -o -path "$DEPLOY_PATH/.agents/*" \) -prune -o -type f -exec chmod 644 {} +
           '
