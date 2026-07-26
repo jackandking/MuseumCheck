@@ -31,7 +31,7 @@ jobs:
           NEW_ROOT_MD=$(git diff --name-only --diff-filter=AM origin/${{ github.base_ref }}..HEAD | grep "^[A-Z].*\.md$" || true)
           
           # 白名单（仅允许这些文件在根目录）
-          ALLOWED="README.md CHANGELOG.md CONTRIBUTING.md LICENSE.md"
+          ALLOWED="README.md CHANGELOG.md CONTRIBUTING.md LICENSE.md AGENTS.md"
           
           VIOLATIONS=""
           if [ -n "$NEW_ROOT_MD" ]; then
