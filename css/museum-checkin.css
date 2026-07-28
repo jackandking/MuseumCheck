@@ -14,6 +14,12 @@
             border: 2px solid rgba(255, 255, 255, 0.4);
         }
 
+        .task-card:focus-visible,
+        .visit-coach-button:focus-visible {
+            outline: 3px solid rgba(13, 148, 136, 0.55);
+            outline-offset: 3px;
+        }
+
         .task-card:hover {
             transform: translateY(-6px) scale(1.02);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
@@ -184,6 +190,72 @@
             border-radius: 16px;
             padding: 16px 20px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .visit-coach {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin: 0 0 14px;
+            padding: 16px 18px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(13, 148, 136, 0.14);
+            border-left: 5px solid #0D9488;
+            border-radius: 16px;
+            box-shadow: 0 4px 18px rgba(13, 148, 136, 0.12);
+        }
+
+        .visit-coach-copy {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .visit-coach-kicker {
+            margin-bottom: 4px;
+            color: #0f766e;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0;
+        }
+
+        .visit-coach-title {
+            margin: 0 0 4px;
+            color: #134e4a;
+            font-size: 18px;
+            line-height: 1.25;
+        }
+
+        .visit-coach-description {
+            margin: 0;
+            color: #475569;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .visit-coach-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            min-width: 96px;
+            min-height: 46px;
+            padding: 12px 14px;
+            border: 0;
+            border-radius: 14px;
+            background: #0D9488;
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(13, 148, 136, 0.26);
+            touch-action: manipulation;
+        }
+
+        .visit-coach-button:active {
+            transform: scale(0.98);
         }
 
         .progress-text {
@@ -552,6 +624,79 @@
 
             .title {
                 font-size: 28px;
+            }
+
+            .visit-coach {
+                align-items: stretch;
+                padding: 14px;
+            }
+
+            .visit-coach-title {
+                font-size: 17px;
+            }
+
+            .visit-coach-description {
+                font-size: 13px;
+            }
+
+            .visit-coach-button {
+                min-width: 88px;
+                padding: 10px 12px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            body {
+                padding: 14px;
+            }
+
+            .checkin-header,
+            .progress-container,
+            .visit-coach,
+            .task-grid {
+                max-width: 100%;
+            }
+
+            .progress-container {
+                margin-bottom: 14px;
+                padding: 12px 14px;
+            }
+
+            .progress-stars {
+                gap: 5px;
+                margin-bottom: 10px;
+            }
+
+            .progress-star {
+                font-size: 22px;
+            }
+
+            .task-grid {
+                gap: 12px;
+            }
+
+            .task-card {
+                min-height: 168px;
+                padding: 14px 12px;
+                border-radius: 18px;
+            }
+
+            .task-card-image {
+                height: 100px;
+            }
+
+            .task-icon {
+                font-size: 48px;
+                margin-bottom: 10px;
+            }
+
+            .task-title {
+                font-size: 15px;
+            }
+
+            .task-subtitle {
+                font-size: 12px;
+                line-height: 1.35;
             }
         }
 

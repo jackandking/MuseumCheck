@@ -2135,6 +2135,7 @@
 
             if (childTasks.length === 0) {
                 taskGrid.innerHTML = '<div class="loading">暂无任务</div>';
+                updateVisitCoach();
                 return;
             }
 
@@ -2158,6 +2159,8 @@
                 addCard.onclick = () => addNewTask();
                 taskGrid.appendChild(addCard);
             }
+
+            updateVisitCoach();
         }
 
         // Create a task card element
@@ -2271,8 +2274,68 @@
             }
 
             card.onclick = () => openTaskDetail(index);
+            card.tabIndex = 0;
+            card.setAttribute('role', 'button');
+            card.setAttribute('aria-label', `${completedTasks.has(index) ? '已完成：' : '开始任务：'}${title}${subtitle ? '，' + subtitle : ''}`);
+            card.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openTaskDetail(index);
+                }
+            });
 
             return card;
+        }
+
+        function getFirstIncompleteTaskIndex() {
+            for (let i = 0; i < childTasks.length; i++) {
+                if (!completedTasks.has(i)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        function updateVisitCoach() {
+            const coach = document.getElementById('visitCoach');
+            if (!coach) return;
+
+            const titleEl = document.getElementById('visitCoachTitle');
+            const descriptionEl = document.getElementById('visitCoachDescription');
+            const button = document.getElementById('visitCoachButton');
+
+            if (!titleEl || !descriptionEl || !button) return;
+
+            if (childTasks.length === 0) {
+                titleEl.textContent = '这个博物馆暂时没有任务';
+                descriptionEl.textContent = '可以从菜单回到首页，选择其他博物馆继续探索。';
+                button.style.display = 'none';
+                return;
+            }
+
+            const nextIndex = getFirstIncompleteTaskIndex();
+            if (nextIndex === -1) {
+                titleEl.textContent = '任务全部完成';
+                descriptionEl.textContent = '可以和孩子回顾最喜欢的展品，再查看或发布成就海报。';
+                button.textContent = '全部完成';
+                button.disabled = true;
+                button.style.display = 'inline-flex';
+                return;
+            }
+
+            const { title, subtitle } = parseTaskString(childTasks[nextIndex]);
+            titleEl.textContent = `先做第 ${nextIndex + 1} 个任务：${title}`;
+            descriptionEl.textContent = subtitle || '打开任务卡，孩子看展品，家长帮忙拍照或确认。';
+            button.textContent = nextIndex === 0 ? '开始第1个' : '继续下个';
+            button.disabled = false;
+            button.style.display = 'inline-flex';
+            button.onclick = () => {
+                const card = document.querySelectorAll('.task-card')[nextIndex];
+                if (card && typeof card.scrollIntoView === 'function') {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                openTaskDetail(nextIndex);
+            };
         }
 
         // Create poster card element
@@ -3376,6 +3439,8 @@
                     progressText.innerHTML = `已完成 <span id="completedCount">${completed}</span> 个任务`;
                 }
             }
+
+            updateVisitCoach();
         }
 
         // Save completed tasks to local storage
