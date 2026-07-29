@@ -72,11 +72,15 @@ The current product focus is H5 web. Mini-program-specific flows, platform APIs,
 
    Product evolution should be guided by real usage signals and direct user feedback, especially feedback from families using MuseumCheck during actual museum visits. Prefer evidence about where users get stuck, confused, delighted, or repeatedly ask for help over speculative feature ideas. Data should inform priorities and validation, while still respecting privacy, trust, and the real-world visit-first mission.
 
-12. Small architecture, strong contracts
+12. Useful and imperfect beats perfect and invisible
+
+   Promotion, distribution, and real-world use of a useful product matter more than waiting for a theoretically perfect product. MuseumCheck should reach families and museums once the core experience is helpful, honest, safe, and usable enough to learn from. Do not hide limitations or weaken trust, but prefer shipping small improvements, collecting feedback, and iterating over polishing in isolation.
+
+13. Small architecture, strong contracts
 
    Prefer plain, understandable HTML/CSS/JavaScript and existing repo patterns. Add abstractions only when they reduce real duplication or protect a cross-page contract.
 
-13. Backward compatibility is a feature
+14. Backward compatibility is a feature
 
    Existing localStorage keys, public URLs, database rows, image URLs, and deployed pages may already be in use. Preserve them or provide explicit migration/compatibility behavior.
 
