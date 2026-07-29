@@ -2,7 +2,7 @@
 
 Status: Active
 Audience: maintainers, contributors, and AI coding agents
-Last updated: 2026-07-26
+Last updated: 2026-07-29
 
 This document is the product and engineering north star for MuseumCheck. Any AI agent, regardless of vendor or model family, should use it as the first decision filter before proposing or making changes.
 
@@ -68,11 +68,15 @@ The current product focus is H5 web. Mini-program-specific flows, platform APIs,
 
    UI changes are not complete until they have been seen in a browser at realistic mobile and desktop sizes. Code review alone is not enough for visual or interaction work.
 
-11. Small architecture, strong contracts
+11. Data-informed, user-feedback-led
+
+   Product evolution should be guided by real usage signals and direct user feedback, especially feedback from families using MuseumCheck during actual museum visits. Prefer evidence about where users get stuck, confused, delighted, or repeatedly ask for help over speculative feature ideas. Data should inform priorities and validation, while still respecting privacy, trust, and the real-world visit-first mission.
+
+12. Small architecture, strong contracts
 
    Prefer plain, understandable HTML/CSS/JavaScript and existing repo patterns. Add abstractions only when they reduce real duplication or protect a cross-page contract.
 
-12. Backward compatibility is a feature
+13. Backward compatibility is a feature
 
    Existing localStorage keys, public URLs, database rows, image URLs, and deployed pages may already be in use. Preserve them or provide explicit migration/compatibility behavior.
 
