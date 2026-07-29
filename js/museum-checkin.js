@@ -1927,13 +1927,8 @@
 
             updatePageTitle();
             
-            // Check if this is a first-time user and show nickname onboarding modal
-            if (!hasSetNickname()) {
-                // Show nickname onboarding modal for first-time users after a short delay
-                setTimeout(() => {
-                    showNicknameOnboardingModal();
-                }, 800); // Slightly longer delay to ensure page is fully loaded
-            }
+            // updatePageTitle() creates a default nickname if needed. Keep first-time
+            // visitors on the task path instead of blocking them with a setup modal.
             
             // Load museum data first (await ensures tasks/render have data)
             await loadMuseumData();
