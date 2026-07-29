@@ -1,6 +1,30 @@
 import { test, expect } from '@playwright/test';
 import { trackConsoleErrors } from './helpers/assertions';
 
+async function mockRemoteStorage(page, kvWrites: any[] = []) {
+  await page.route('**/default/keyValueStore', async route => {
+    const request = route.request();
+    const postData = request.postData();
+    if (request.method() === 'POST' && postData) {
+      try {
+        kvWrites.push(JSON.parse(postData));
+      } catch (error) {
+        kvWrites.push({ parseError: true, raw: postData });
+      }
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+  });
+  await page.route('**/mysql/query', route => {
+    route.fulfill({ status: 200, contentType: 'application/json', body: '{"rows":[]}' });
+  });
+}
+
+function visitSignalTypes(kvWrites: any[]) {
+  return kvWrites
+    .filter(write => write.key === 'museumcheck-visit-signals')
+    .map(write => JSON.parse(write.value).signalType);
+}
+
 test.describe('Museum check-in mobile visit guide', () => {
   test.use({
     viewport: { width: 390, height: 844 },
@@ -8,18 +32,10 @@ test.describe('Museum check-in mobile visit guide', () => {
     hasTouch: true,
   });
 
-  test.beforeEach(async ({ page }) => {
-    await page.route('**/default/keyValueStore', route => {
-      route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
-    });
-    await page.route('**/mysql/query', route => {
-      route.fulfill({ status: 200, contentType: 'application/json', body: '{"rows":[]}' });
-    });
-  });
-
   test('guides an on-site mobile visitor into the first task', async ({ page }) => {
     const assertNoConsoleErrors = trackConsoleErrors(page);
     const letmetryRequests: string[] = [];
+    await mockRemoteStorage(page);
 
     page.on('request', request => {
       if (request.url().includes('letmetry.cloud')) {
@@ -80,6 +96,7 @@ test.describe('Museum check-in mobile visit guide', () => {
   test('does not block a brand-new visitor with nickname onboarding', async ({ page }) => {
     const assertNoConsoleErrors = trackConsoleErrors(page);
     const letmetryRequests: string[] = [];
+    await mockRemoteStorage(page);
 
     page.on('request', request => {
       if (request.url().includes('letmetry.cloud')) {
@@ -113,6 +130,71 @@ test.describe('Museum check-in mobile visit guide', () => {
 
     expect(nicknameState.childNickname).toMatch(/^用户[0-9a-f]{6}$/);
     expect(nicknameState.nicknameHasBeenSet).toBeNull();
+    expect(letmetryRequests).toEqual([]);
+    assertNoConsoleErrors();
+  });
+
+  test('captures first-task funnel and lightweight feedback', async ({ page }) => {
+    const assertNoConsoleErrors = trackConsoleErrors(page);
+    const letmetryRequests: string[] = [];
+    const kvWrites: any[] = [];
+    await mockRemoteStorage(page, kvWrites);
+
+    page.on('request', request => {
+      if (request.url().includes('letmetry.cloud')) {
+        letmetryRequests.push(request.url());
+      }
+    });
+
+    await page.addInitScript(() => {
+      localStorage.clear();
+      localStorage.setItem('childNickname', '反馈小朋友');
+      localStorage.setItem('ageGroup', '7-12');
+      localStorage.setItem('childModeEnabled', 'false');
+      localStorage.setItem('gameRewardEnabled', 'false');
+      localStorage.setItem('nicknameHasBeenSet', 'true');
+    });
+
+    await page.goto('/museum-checkin.html?museum=forbidden-city&age=7-12');
+    await expect(page.locator('#museumName')).toContainText('故宫博物院');
+    await page.waitForSelector('.task-card', { timeout: 10000 });
+
+    await page.locator('#visitCoachButton').click();
+    await expect(page.locator('#taskModal')).toHaveClass(/show/);
+    await page.locator('#completeButton').click();
+
+    const feedback = page.locator('#visitFeedback');
+    await expect(feedback).toBeVisible();
+    await expect(page.locator('#visitFeedbackQuestion')).toContainText('第 1 个任务');
+
+    await page.locator('[data-feedback-rating="helpful"]').click();
+    await expect(page.locator('#visitFeedbackThanks')).toBeVisible();
+
+    await expect.poll(() => visitSignalTypes(kvWrites)).toEqual(
+      expect.arrayContaining([
+        'checkin_open',
+        'task_open',
+        'task_complete',
+        'first_task_complete',
+        'visit_feedback',
+      ])
+    );
+
+    const feedbackWrite = kvWrites.find(write => {
+      if (write.key !== 'museumcheck-visit-signals') return false;
+      return JSON.parse(write.value).signalType === 'visit_feedback';
+    });
+    expect(feedbackWrite).toBeDefined();
+
+    const feedbackValue = JSON.parse(feedbackWrite.value);
+    expect(feedbackValue.parameters).toEqual(expect.objectContaining({
+      rating: 'helpful',
+      taskIndex: 0,
+      taskTitle: '门口打卡',
+    }));
+    expect(feedbackValue.visitorId).toMatch(/^visitor-/);
+    expect(feedbackValue).not.toHaveProperty('childNickname');
+
     expect(letmetryRequests).toEqual([]);
     assertNoConsoleErrors();
   });

@@ -258,6 +258,120 @@
             transform: scale(0.98);
         }
 
+        .visit-feedback {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 0 14px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(13, 148, 136, 0.16);
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+        }
+
+        .visit-feedback[hidden],
+        .visit-feedback-form[hidden],
+        .visit-feedback-thanks[hidden] {
+            display: none;
+        }
+
+        .visit-feedback-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .visit-feedback-copy {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .visit-feedback-kicker {
+            margin-bottom: 2px;
+            color: #0f766e;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0;
+        }
+
+        .visit-feedback-question {
+            color: #1f2937;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .visit-feedback-actions,
+        .visit-feedback-form-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .visit-feedback-button,
+        .visit-feedback-submit,
+        .visit-feedback-skip {
+            min-height: 44px;
+            padding: 10px 13px;
+            border-radius: 12px;
+            border: 1px solid rgba(13, 148, 136, 0.24);
+            background: #0D9488;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .visit-feedback-button.secondary,
+        .visit-feedback-skip {
+            background: white;
+            color: #0f766e;
+        }
+
+        .visit-feedback-form {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .visit-feedback-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .visit-feedback textarea {
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            padding: 10px 12px;
+            border: 1px solid rgba(15, 23, 42, 0.14);
+            border-radius: 12px;
+            color: #1f2937;
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.45;
+            resize: vertical;
+        }
+
+        .visit-feedback textarea:focus {
+            border-color: #0D9488;
+            outline: 2px solid rgba(13, 148, 136, 0.18);
+            outline-offset: 1px;
+        }
+
+        .visit-feedback-thanks {
+            color: #0f766e;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+
         .progress-text {
             font-size: 16px;
             font-weight: 600;
@@ -643,6 +757,24 @@
                 min-width: 88px;
                 padding: 10px 12px;
             }
+
+            .visit-feedback-main {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .visit-feedback-actions,
+            .visit-feedback-form-actions {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: 100%;
+            }
+
+            .visit-feedback-button,
+            .visit-feedback-submit,
+            .visit-feedback-skip {
+                width: 100%;
+            }
         }
 
         @media (max-width: 420px) {
@@ -653,6 +785,7 @@
             .checkin-header,
             .progress-container,
             .visit-coach,
+            .visit-feedback,
             .task-grid {
                 max-width: 100%;
             }
