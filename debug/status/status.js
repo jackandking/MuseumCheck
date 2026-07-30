@@ -39,6 +39,12 @@
     }
   }
 
+  function cacheBustedUrl(pathOrUrl) {
+    const url = new URL(absoluteUrl(pathOrUrl));
+    url.searchParams.set('_debug_ts', Date.now().toString());
+    return url.href;
+  }
+
   function endpointOrigin(endpoint) {
     if (endpoint == null) return '-';
     const url = absoluteUrl(endpoint || '/');
@@ -84,8 +90,8 @@
     }
   }
 
-  async function readTextResource(pathOrUrl) {
-    const url = absoluteUrl(pathOrUrl);
+  async function readTextResource(pathOrUrl, options = {}) {
+    const url = options.cacheBust ? cacheBustedUrl(pathOrUrl) : absoluteUrl(pathOrUrl);
     const { response, durationMs } = await fetchWithTimeout(url);
     const body = await response.text();
     return { url, status: response.status, ok: response.ok, body, durationMs };
@@ -93,7 +99,7 @@
 
   async function loadDeploymentMetadata() {
     try {
-      const result = await readTextResource('./status.json');
+      const result = await readTextResource('./status.json', { cacheBust: true });
       const deployment = JSON.parse(result.body);
       state.deployment = deployment;
       $('metadataBadge').textContent = deployment.environment === 'repository-fallback' ? '占位' : '已生成';
@@ -202,9 +208,9 @@
     renderSummary();
   }
 
-  async function checkTextResource(id, name, pathOrUrl, expectedText) {
+  async function checkTextResource(id, name, pathOrUrl, expectedText, options = {}) {
     try {
-      const result = await readTextResource(pathOrUrl);
+      const result = await readTextResource(pathOrUrl, options);
       if (!result.ok) {
         return { id, name, state: 'fail', detail: `${result.status} ${result.url}` };
       }
@@ -324,11 +330,11 @@
     renderRuntime();
 
     const asyncResults = await Promise.all([
-      checkTextResource('metadata', 'Deployment metadata', './status.json', '"app"'),
-      checkTextResource('debug-page', 'Debug page', './', '部署与连通性状态'),
-      checkTextResource('api-config', 'API config script', '../../config/api-endpoints.js', 'API_ENDPOINTS'),
-      checkTextResource('checkin-page', 'Check-in page', '../../museum-checkin.html', 'museum-checkin.js'),
-      checkTextResource('checkin-js', 'Check-in script', '../../js/museum-checkin.js', 'museumcheck-visit-signals')
+      checkTextResource('metadata', 'Deployment metadata', './status.json', '"app"', { cacheBust: true }),
+      checkTextResource('debug-page', 'Debug page', './', '部署与连通性状态', { cacheBust: true }),
+      checkTextResource('api-config', 'API config script', '../../config/api-endpoints.js', 'API_ENDPOINTS', { cacheBust: true }),
+      checkTextResource('checkin-page', 'Check-in page', '../../museum-checkin.html', 'museum-checkin.js', { cacheBust: true }),
+      checkTextResource('checkin-js', 'Check-in script', '../../js/museum-checkin.js', 'museumcheck-visit-signals', { cacheBust: true })
     ]);
 
     state.checks = [
