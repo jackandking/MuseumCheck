@@ -12,15 +12,12 @@ test.describe('Debug status page', () => {
       }
     });
 
-    await page.route('**/health', route => {
-      route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
-    });
-
     await page.goto('/debug/status/');
 
     await expect(page.locator('h1')).toContainText('部署与连通性状态');
     await expect(page.locator('#environmentValue')).not.toHaveText('-');
     await expect(page.locator('#baseUrlValue')).toContainText('localhost:3000');
+    await expect(page.locator('#apiHealthResult')).toHaveText('未检查');
     await expect(page.locator('[data-check-name="legacy-image-rewrite"] .check-state')).toContainText('OK');
     await expect(page.locator('[data-check-name="api-hosts"] .check-state')).toContainText('OK');
     await expect(page.locator('[data-check-name="runtime-resources"] .check-state')).toContainText('OK');

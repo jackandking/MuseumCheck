@@ -281,6 +281,47 @@ h2 {
   line-height: 1.45;
 }
 
+.api-probe {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.api-probe button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.inline-result {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.inline-result[data-state="ok"] {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.inline-result[data-state="warn"] {
+  color: var(--warn);
+  font-weight: 700;
+}
+
+.inline-result[data-state="fail"] {
+  color: var(--fail);
+  font-weight: 700;
+}
+
 .checks-list {
   display: grid;
   gap: 10px;
@@ -367,6 +408,11 @@ h2 {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
+  }
+
+  .api-probe {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .debug-shell {

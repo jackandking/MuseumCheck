@@ -313,7 +313,6 @@
       { id: 'api-config', name: 'API config script', state: 'pending', detail: '读取 config/api-endpoints.js' },
       { id: 'checkin-page', name: 'Check-in page', state: 'pending', detail: '读取 museum-checkin.html' },
       { id: 'checkin-js', name: 'Check-in script', state: 'pending', detail: '读取 js/museum-checkin.js' },
-      { id: 'api-health', name: 'API health', state: 'pending', detail: '请求 health endpoint' },
       { id: 'api-hosts', name: 'API host policy', state: 'pending', detail: '检查 API host' },
       { id: 'legacy-image-rewrite', name: 'Legacy image rewrite', state: 'pending', detail: '检查旧图片 URL 兼容' },
       { id: 'runtime-resources', name: 'Runtime resource hosts', state: 'pending', detail: '检查本页资源 host' }
@@ -329,8 +328,7 @@
       checkTextResource('debug-page', 'Debug page', './', '部署与连通性状态'),
       checkTextResource('api-config', 'API config script', '../../config/api-endpoints.js', 'API_ENDPOINTS'),
       checkTextResource('checkin-page', 'Check-in page', '../../museum-checkin.html', 'museum-checkin.js'),
-      checkTextResource('checkin-js', 'Check-in script', '../../js/museum-checkin.js', 'museumcheck-visit-signals'),
-      checkHealthEndpoint()
+      checkTextResource('checkin-js', 'Check-in script', '../../js/museum-checkin.js', 'museumcheck-visit-signals')
     ]);
 
     state.checks = [
@@ -356,6 +354,7 @@
       `Workflow: ${deployment.workflow || '-'} run ${deployment.runId || '-'}`,
       `Deployed at: ${deployment.deployedAt || '-'}`,
       `API health: ${endpointLabel(api.HEALTH)}`,
+      `API health probe: ${$('apiHealthResult').textContent || '未检查'}`,
       `API base: ${endpointLabel(api.BASE_URL)}`,
       `Viewport: ${window.innerWidth}x${window.innerHeight}`,
       `Failures: ${failed.length ? failed.map(check => check.name).join(', ') : 'none'}`,
@@ -389,9 +388,24 @@
     }
   }
 
+  async function runHealthProbe() {
+    const result = $('apiHealthResult');
+    const button = $('apiHealthButton');
+    result.dataset.state = 'idle';
+    result.textContent = '检查中';
+    button.disabled = true;
+
+    const check = await checkHealthEndpoint();
+    result.dataset.state = check.state === 'ok' ? 'ok' : 'warn';
+    result.textContent = check.detail;
+    button.disabled = false;
+    renderSummary();
+  }
+
   function bindActions() {
     $('refreshButton').addEventListener('click', runDiagnostics);
     $('copySummaryButton').addEventListener('click', copySummary);
+    $('apiHealthButton').addEventListener('click', runHealthProbe);
     window.addEventListener('resize', renderRuntime);
   }
 
