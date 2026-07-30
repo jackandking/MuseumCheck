@@ -26,6 +26,11 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Generate debug status metadata
+        run: node devops/scripts/write-debug-status.js
+        env:
+          DEBUG_STATUS_ENVIRONMENT: prod-github-pages
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

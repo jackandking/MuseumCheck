@@ -13,6 +13,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Generate debug status metadata
+        run: node devops/scripts/write-debug-status.js
+        env:
+          DEBUG_STATUS_ENVIRONMENT: prod-cloud-server
+
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
