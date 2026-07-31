@@ -313,7 +313,7 @@
     
     
     <!-- Main CSS - Extracted to external file for better caching -->
-    <link rel="stylesheet" href="css/museum-checkin.css?v=feedback-loop-20260729">
+    <link rel="stylesheet" href="css/museum-checkin.css?v=activation-nudge-20260731">
     <!-- Leaderboard Styles - Unified across all pages -->
     <link rel="stylesheet" href="css/leaderboard.css">
     <!-- Virtual Pet and Achievement Gamification Styles - Load asynchronously -->
@@ -359,8 +359,13 @@
             <div class="visit-coach-kicker">现场参观</div>
             <h2 class="visit-coach-title" id="visitCoachTitle">先完成第 1 个任务</h2>
             <p class="visit-coach-description" id="visitCoachDescription">打开任务卡，孩子看展品，家长帮忙拍照或确认。</p>
+            <ol class="visit-coach-steps" id="visitCoachSteps" aria-label="现场快速开始">
+                <li><span>1</span>看实物</li>
+                <li><span>2</span>拍照或确认</li>
+                <li><span>3</span>收起手机继续逛</li>
+            </ol>
         </div>
-        <button class="visit-coach-button" id="visitCoachButton" type="button">开始任务</button>
+        <button class="visit-coach-button" id="visitCoachButton" type="button">2分钟开始</button>
     </section>
 
     <div class="progress-container">
@@ -902,7 +907,7 @@
         });
     </script>
     
-    <script src="js/museum-checkin.js?v=feedback-loop-20260729"></script>
+    <script src="js/museum-checkin.js?v=activation-nudge-20260731"></script>
 
     <!-- Wiki Image Search Modal -->
     <div class="wiki-search-modal" id="wikiSearchModal">

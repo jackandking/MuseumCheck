@@ -235,6 +235,48 @@
             line-height: 1.45;
         }
 
+        .visit-coach-steps {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .visit-coach-steps[hidden] {
+            display: none;
+        }
+
+        .visit-coach-steps li {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            min-height: 28px;
+            padding: 5px 9px 5px 6px;
+            border-radius: 999px;
+            background: rgba(13, 148, 136, 0.08);
+            color: #134e4a;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.15;
+            white-space: nowrap;
+        }
+
+        .visit-coach-steps span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0D9488;
+            color: #fff;
+            font-size: 11px;
+            line-height: 1;
+            flex: 0 0 auto;
+        }
+
         .visit-coach-button {
             display: inline-flex;
             align-items: center;
@@ -742,6 +784,7 @@
 
             .visit-coach {
                 align-items: stretch;
+                flex-direction: column;
                 padding: 14px;
             }
 
@@ -755,6 +798,7 @@
 
             .visit-coach-button {
                 min-width: 88px;
+                width: 100%;
                 padding: 10px 12px;
             }
 

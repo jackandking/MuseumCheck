@@ -2555,6 +2555,7 @@
 
             const titleEl = document.getElementById('visitCoachTitle');
             const descriptionEl = document.getElementById('visitCoachDescription');
+            const steps = document.getElementById('visitCoachSteps');
             const button = document.getElementById('visitCoachButton');
 
             if (!titleEl || !descriptionEl || !button) return;
@@ -2562,6 +2563,7 @@
             if (childTasks.length === 0) {
                 titleEl.textContent = '这个博物馆暂时没有任务';
                 descriptionEl.textContent = '可以从菜单回到首页，选择其他博物馆继续探索。';
+                if (steps) steps.hidden = true;
                 button.style.display = 'none';
                 return;
             }
@@ -2570,6 +2572,7 @@
             if (nextIndex === -1) {
                 titleEl.textContent = '任务全部完成';
                 descriptionEl.textContent = '可以和孩子回顾最喜欢的展品，再查看或发布成就海报。';
+                if (steps) steps.hidden = true;
                 button.textContent = '全部完成';
                 button.disabled = true;
                 button.style.display = 'inline-flex';
@@ -2579,7 +2582,8 @@
             const { title, subtitle } = parseTaskString(childTasks[nextIndex]);
             titleEl.textContent = `先做第 ${nextIndex + 1} 个任务：${title}`;
             descriptionEl.textContent = subtitle || '打开任务卡，孩子看展品，家长帮忙拍照或确认。';
-            button.textContent = nextIndex === 0 ? '开始第1个' : '继续下个';
+            if (steps) steps.hidden = false;
+            button.textContent = nextIndex === 0 ? '2分钟开始' : '继续下个';
             button.disabled = false;
             button.style.display = 'inline-flex';
             button.onclick = () => {

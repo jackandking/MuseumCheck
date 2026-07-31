@@ -60,6 +60,8 @@ test.describe('Museum check-in mobile visit guide', () => {
     await expect(visitCoach).toBeVisible();
     await expect(page.locator('#visitCoachTitle')).toContainText('先做第 1 个任务');
     await expect(page.locator('#visitCoachDescription')).toContainText('门口');
+    await expect(page.locator('#visitCoachSteps')).toContainText('看实物');
+    await expect(page.locator('#visitCoachSteps')).toContainText('收起手机继续逛');
 
     const coachBox = await visitCoach.boundingBox();
     expect(coachBox).not.toBeNull();
@@ -68,7 +70,7 @@ test.describe('Museum check-in mobile visit guide', () => {
 
     const startButton = page.locator('#visitCoachButton');
     await expect(startButton).toBeVisible();
-    await expect(startButton).toContainText('开始第1个');
+    await expect(startButton).toContainText('2分钟开始');
     const buttonBox = await startButton.boundingBox();
     expect(buttonBox).not.toBeNull();
     expect(buttonBox!.height).toBeGreaterThanOrEqual(44);
