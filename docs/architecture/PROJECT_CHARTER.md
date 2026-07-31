@@ -2,7 +2,7 @@
 
 Status: Active
 Audience: maintainers, contributors, and AI coding agents
-Last updated: 2026-07-29
+Last updated: 2026-07-31
 
 This document is the product and engineering north star for MuseumCheck. Any AI agent, regardless of vendor or model family, should use it as the first decision filter before proposing or making changes.
 
@@ -25,6 +25,74 @@ MuseumCheck should become the simplest trusted companion for Chinese families vi
 Museum coverage is not limited to China. The current product voice, language, family assumptions, and onboarding flows should prioritize Chinese families first, while the data model and architecture should allow museums worldwide to be added without special-case rewrites.
 
 The current product focus is H5 web. Mini-program-specific flows, platform APIs, and packaging should be ignored unless the maintainer explicitly asks for them. Mobile H5 is the primary experience because MuseumCheck is expected to be used during museum visits. PC should remain usable, especially for planning, administration, and longer content work, but PC polish is secondary to on-site mobile UX.
+
+## Success Metrics
+
+The north star metric is a successful family visit session: a mobile H5 session where a family opens a museum check-in page, starts the first mission, completes at least one age-appropriate task, and does not hit a blocking error.
+
+Use this metric because MuseumCheck should make the real museum visit better. Raw page views, long screen time, and novelty interactions are secondary unless they help families notice exhibits, talk together, and keep moving through the museum.
+
+### Primary Product Metrics
+
+1. Visit activation
+
+   Measure `checkin_open -> task_open`. This shows whether families understand what to do after opening a museum page. The first target is more than 70% of check-in opens leading to a task being opened.
+
+2. First task completion
+
+   Measure `checkin_open -> first_task_complete`. This is the most important early UX metric because a family at the museum entrance should quickly complete one useful step. The first target is more than 40% of check-in opens leading to first task completion.
+
+3. Meaningful visit depth
+
+   Measure completed task count per visit session, grouped as `0`, `1`, `2-3`, `4+`, and `all`. Optimize for useful progress during a real visit, not for long screen time.
+
+4. User feedback signal
+
+   Measure feedback submitted after task completion, helpful vs. not helpful feedback, and not-helpful reasons by task and museum. Direct feedback from on-site families should outweigh speculative feature ideas.
+
+5. Share or publish outcome
+
+   Measure poster creation, achievement publishing, and public wall contribution. These outcomes indicate that the visit became memorable enough to save or share.
+
+### Guardrail Metrics
+
+1. Mobile reliability
+
+   Track JavaScript errors, failed static assets, failed API requests, check-in page load success, and frontend requests to `letmetry.cloud`. Frontend `letmetry.cloud` requests should remain zero.
+
+2. Instant access
+
+   Track time to first useful screen, time until the first task is visible, and task modal open latency on mobile. Keep the H5 entry fast on imperfect museum networks.
+
+3. Privacy
+
+   Anonymous visit signals must not include child nicknames or unnecessary personal data. Local progress should stay local unless the user explicitly publishes or shares it.
+
+4. Trust and content quality
+
+   Track broken images, missing museum metadata, inaccurate task reports, and legacy image rewrite success. Trust beats novelty.
+
+### Growth And Operations Metrics
+
+1. Museum coverage
+
+   Track usable museum pages, museums with complete tasks/images/metadata, and new global museums that can be added without code rewrites.
+
+2. Real-world distribution
+
+   Track QR-code entry sessions, family sharing, and museum/operator usage where available.
+
+3. Repeat family use
+
+   Track anonymous returning visitor sessions and multi-museum usage without weakening privacy defaults.
+
+4. Deployment and regression health
+
+   Track prod deploy success rate, time from push to live, page verification pass rate, targeted Playwright pass rate, and whether `/debug/status/` reports the expected prod commit. Prod deploy success should stay above 95%.
+
+### Metric-Driven Iteration Rule
+
+When choosing the next autonomous product improvement, prefer the smallest change that improves one of the primary product metrics without harming the guardrails. If evidence is missing, first add privacy-preserving instrumentation or lightweight user feedback. If a proposed improvement optimizes traffic, screen time, or visual novelty at the expense of real-world visit quality, it conflicts with this charter and needs human discussion.
 
 ## Product Tenets
 
