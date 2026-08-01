@@ -19,7 +19,8 @@ const CRITICAL_PAGES = [
     'survey/index.html',
     'fireworks.html',
     'event-wall.html',
-    'debug/status/index.html'
+    'debug/status/index.html',
+    'admin/visit-metrics.html'
 ];
 
 // 颜色输出
