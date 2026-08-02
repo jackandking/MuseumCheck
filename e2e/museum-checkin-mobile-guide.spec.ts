@@ -70,20 +70,22 @@ test.describe('Museum check-in mobile visit guide', () => {
 
     const startButton = page.locator('#visitCoachButton');
     await expect(startButton).toBeVisible();
-    await expect(startButton).toContainText('2分钟开始');
+    await expect(startButton).toContainText('开始第 1 个任务');
     const buttonBox = await startButton.boundingBox();
     expect(buttonBox).not.toBeNull();
-    expect(buttonBox!.height).toBeGreaterThanOrEqual(44);
+    expect(buttonBox!.height).toBeGreaterThanOrEqual(54);
 
     const firstTask = page.locator('.task-card').first();
+    await expect(firstTask).toHaveClass(/next-task/);
     await expect(firstTask).toHaveAttribute('role', 'button');
-    await expect(firstTask).toHaveAttribute('aria-label', /开始任务：门口打卡/);
+    await expect(firstTask).toHaveAttribute('aria-label', /从这里开始：门口打卡/);
 
     await startButton.click();
 
     const taskModal = page.locator('#taskModal');
     await expect(taskModal).toHaveClass(/show/);
     await expect(page.locator('#modalTaskTitle')).toContainText('门口打卡');
+    await expect(page.locator('#completeButton')).toContainText('完成第 1 个任务');
 
     await page.locator('#completeButton').click();
     await expect(taskModal).not.toHaveClass(/show/);
@@ -175,6 +177,8 @@ test.describe('Museum check-in mobile visit guide', () => {
     await expect.poll(() => visitSignalTypes(kvWrites)).toEqual(
       expect.arrayContaining([
         'checkin_open',
+        'first_task_cta_visible',
+        'first_task_cta_click',
         'task_open',
         'task_complete',
         'first_task_complete',
@@ -196,6 +200,19 @@ test.describe('Museum check-in mobile visit guide', () => {
     }));
     expect(feedbackValue.visitorId).toMatch(/^visitor-/);
     expect(feedbackValue).not.toHaveProperty('childNickname');
+
+    const taskOpenWrite = kvWrites.find(write => {
+      if (write.key !== 'museumcheck-visit-signals') return false;
+      return JSON.parse(write.value).signalType === 'task_open';
+    });
+    expect(taskOpenWrite).toBeDefined();
+
+    const taskOpenValue = JSON.parse(taskOpenWrite.value);
+    expect(taskOpenValue.parameters).toEqual(expect.objectContaining({
+      source: 'visit_coach',
+      taskIndex: 0,
+      taskTitle: '门口打卡',
+    }));
 
     expect(letmetryRequests).toEqual([]);
     assertNoConsoleErrors();

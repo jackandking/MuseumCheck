@@ -79,6 +79,8 @@
         const visitStartedAt = Date.now();
         const openedTaskIndices = new Set();
         let visitOpenSignalSent = false;
+        let firstTaskCtaVisibleSignalSent = false;
+        let firstTaskCtaClickSignalSent = false;
         let firstTaskCompletionSignalSent = false;
         let allTasksCompletionSignalSent = false;
         let exitIncompleteSignalSent = false;
@@ -186,10 +188,67 @@
             });
         }
 
-        function trackTaskOpened(taskIndex) {
+        function trackFirstTaskCtaVisible() {
+            if (
+                firstTaskCtaVisibleSignalSent ||
+                !visitOpenSignalSent ||
+                childTasks.length === 0 ||
+                completedTasks.has(0)
+            ) {
+                return;
+            }
+
+            const button = document.getElementById('visitCoachButton');
+            if (!button || button.disabled || button.style.display === 'none') return;
+
+            const checkVisibility = () => {
+                if (firstTaskCtaVisibleSignalSent) return;
+                const rect = button.getBoundingClientRect();
+                const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+                const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+                const isVisible = rect.width > 0 &&
+                    rect.height > 0 &&
+                    rect.top >= 0 &&
+                    rect.left >= 0 &&
+                    rect.bottom <= viewportHeight &&
+                    rect.right <= viewportWidth;
+
+                if (!isVisible) return;
+                firstTaskCtaVisibleSignalSent = true;
+                sendVisitSignal('first_task_cta_visible', {
+                    ...getTaskSignalPayload(0),
+                    source: 'visit_coach',
+                    ctaText: button.textContent.trim(),
+                    viewportWidth,
+                    viewportHeight
+                });
+            };
+
+            if (window.requestAnimationFrame) {
+                window.requestAnimationFrame(checkVisibility);
+            } else {
+                setTimeout(checkVisibility, 0);
+            }
+        }
+
+        function trackFirstTaskCtaClick(taskIndex) {
+            if (taskIndex !== 0 || firstTaskCtaClickSignalSent) return;
+            firstTaskCtaClickSignalSent = true;
+            const button = document.getElementById('visitCoachButton');
+            sendVisitSignal('first_task_cta_click', {
+                ...getTaskSignalPayload(0),
+                source: 'visit_coach',
+                ctaText: button ? button.textContent.trim() : ''
+            });
+        }
+
+        function trackTaskOpened(taskIndex, extraParameters = {}) {
             if (openedTaskIndices.has(taskIndex)) return;
             openedTaskIndices.add(taskIndex);
-            sendVisitSignal('task_open', getTaskSignalPayload(taskIndex));
+            sendVisitSignal('task_open', {
+                ...getTaskSignalPayload(taskIndex),
+                ...extraParameters
+            });
         }
 
         function trackTaskCompletedSignal(taskIndex, extraParameters = {}) {
@@ -2212,6 +2271,7 @@
             renderTasks();
             updateProgress();
             trackCheckinOpened();
+            trackFirstTaskCtaVisible();
             checkCompletion(); // Check if all tasks complete
             
             // Pet adoption prompt moved to checkCompletion() - only show after all tasks complete
@@ -2420,9 +2480,12 @@
         function createTaskCard(task, index) {
             const card = document.createElement('div');
             card.className = 'task-card';
+            const isNextTask = index === getFirstIncompleteTaskIndex();
             
             if (completedTasks.has(index)) {
                 card.classList.add('completed');
+            } else if (isNextTask) {
+                card.classList.add('next-task');
             }
 
             // Extract icon and title from task string
@@ -2482,10 +2545,14 @@
             const wasReportedComplete = reportedTasks.has(index);
             const reportedBadgeHtml = wasReportedComplete ? 
                 `<div class="reported-completion-badge">🙋 报告不存在</div>` : '';
+            const nextTaskBadgeHtml = isNextTask && !completedTasks.has(index)
+                ? '<div class="next-task-badge">从这里开始</div>'
+                : '';
             
             card.innerHTML = `
                 ${badgeHtml}
                 ${reportedBadgeHtml}
+                ${nextTaskBadgeHtml}
                 <div class="completion-badge">✓</div>
                 <div class="task-visual-container">
                     ${imageUrl ? `<img src="${imageUrl}" class="task-card-image" alt="${title}" style="display:none" />` : ''}
@@ -2526,14 +2593,14 @@
                 }
             }
 
-            card.onclick = () => openTaskDetail(index);
+            card.onclick = () => openTaskDetail(index, 'task_card');
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', `${completedTasks.has(index) ? '已完成：' : '开始任务：'}${title}${subtitle ? '，' + subtitle : ''}`);
+            card.setAttribute('aria-label', `${completedTasks.has(index) ? '已完成：' : isNextTask ? '从这里开始：' : '开始任务：'}${title}${subtitle ? '，' + subtitle : ''}`);
             card.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
-                    openTaskDetail(index);
+                    openTaskDetail(index, 'task_card');
                 }
             });
 
@@ -2583,16 +2650,18 @@
             titleEl.textContent = `先做第 ${nextIndex + 1} 个任务：${title}`;
             descriptionEl.textContent = subtitle || '打开任务卡，孩子看展品，家长帮忙拍照或确认。';
             if (steps) steps.hidden = false;
-            button.textContent = nextIndex === 0 ? '2分钟开始' : '继续下个';
+            button.textContent = nextIndex === 0 ? '开始第 1 个任务' : `继续第 ${nextIndex + 1} 个任务`;
             button.disabled = false;
             button.style.display = 'inline-flex';
             button.onclick = () => {
+                trackFirstTaskCtaClick(nextIndex);
                 const card = document.querySelectorAll('.task-card')[nextIndex];
                 if (card && typeof card.scrollIntoView === 'function') {
                     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
-                openTaskDetail(nextIndex);
+                openTaskDetail(nextIndex, 'visit_coach');
             };
+            trackFirstTaskCtaVisible();
         }
 
         // Create poster card element
@@ -2941,12 +3010,12 @@
         }
 
         // Open task detail modal
-        function openTaskDetail(index) {
+        function openTaskDetail(index, source = 'task_card') {
             currentTaskIndex = index;
             const task = childTasks[index];
             const { icon, title, subtitle } = parseTaskString(task);
             const isCompleted = completedTasks.has(index);
-            trackTaskOpened(index);
+            trackTaskOpened(index, { source });
 
             const modalIconEl = document.getElementById('modalIcon');
             if (modalIconEl) modalIconEl.textContent = icon;
@@ -3104,7 +3173,7 @@
                 completeButton.disabled = true;
                 completeButton.style.opacity = '0.6';
             } else {
-                completeButton.textContent = '完成任务 🎉';
+                completeButton.textContent = index === 0 ? '我找到了，完成第 1 个任务' : '完成任务 🎉';
                 completeButton.disabled = false;
                 completeButton.style.opacity = '1';
             }

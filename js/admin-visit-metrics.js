@@ -19,6 +19,8 @@
 
   const SIGNAL_LABELS = {
     checkin_open: '打开打卡页',
+    first_task_cta_visible: '首任务按钮可见',
+    first_task_cta_click: '点击首任务按钮',
     task_open: '打开任务',
     task_complete: '完成任务',
     first_task_complete: '完成首任务',
@@ -129,7 +131,11 @@
       'completedCount',
       'hasPhoto',
       'gameRewardShown',
-      'reportedTreasureName'
+      'reportedTreasureName',
+      'source',
+      'ctaText',
+      'viewportWidth',
+      'viewportHeight'
     ];
     const sanitized = {};
     allowed.forEach(key => {

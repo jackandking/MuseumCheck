@@ -41,6 +41,12 @@ test.describe('Visit metrics dashboard', () => {
     const kvPayload = {
       value: JSON.stringify([
         visitSignal('checkin_open', 's1'),
+        visitSignal('first_task_cta_visible', 's1', {
+          parameters: { taskIndex: 0, taskTitle: '门口打卡', source: 'visit_coach', ctaText: '开始第 1 个任务' },
+        }),
+        visitSignal('first_task_cta_click', 's1', {
+          parameters: { taskIndex: 0, taskTitle: '门口打卡', source: 'visit_coach', ctaText: '开始第 1 个任务' },
+        }),
         visitSignal('task_open', 's1', { parameters: { taskIndex: 0, taskTitle: '门口打卡' } }),
         visitSignal('first_task_complete', 's1', { parameters: { taskIndex: 0, taskTitle: '门口打卡' } }),
         visitSignal('visit_feedback', 's1', { parameters: { taskIndex: 0, taskTitle: '门口打卡', rating: 'helpful', comment: '' } }),
@@ -77,6 +83,7 @@ test.describe('Visit metrics dashboard', () => {
     await expect(page.locator('#museumList')).toContainText('故宫博物院');
     await expect(page.locator('#museumList')).toContainText('大英博物馆');
     await expect(page.locator('#feedbackList')).toContainText('按钮不明显');
+    await expect(page.locator('#signalTableBody')).toContainText('首任务按钮可见');
     await expect(page.locator('#signalTableBody')).toContainText('完成首任务');
     await expect(page.locator('body')).not.toContainText('visitor-s1');
     await expect(page.locator('body')).not.toContainText('s1');
