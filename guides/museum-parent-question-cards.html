@@ -132,14 +132,37 @@
     .section-heading p { margin: 0; color: var(--muted); }
     .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
     .card {
+      position: relative;
       min-height: 194px;
       padding: 23px;
       border: 1px solid var(--line);
       background: rgba(255, 253, 248, .76);
     }
+    .card:hover { border-color: var(--red); }
     .card-number { color: var(--red); font-size: 12px; font-weight: 900; letter-spacing: .12em; }
     .card-title { margin: 17px 0 8px; font-size: 22px; line-height: 1.25; }
     .card p { margin: 0; color: #59635d; font-size: 15px; }
+    .card-choice {
+      display: inline-flex;
+      margin-top: 20px;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .check.done { border-color: var(--green); background: rgba(255, 253, 248, .98); }
+    .check.done .card-choice { color: var(--white); background: var(--green); border-color: var(--green); }
+    .selection-note {
+      margin: -10px 0 22px;
+      padding: 15px 18px;
+      border-left: 4px solid var(--red);
+      color: var(--green);
+      background: rgba(255, 253, 248, .68);
+    }
+    .selection-note strong { display: block; margin-bottom: 3px; }
+    .selection-note span { color: var(--muted); font-size: 14px; }
     .howto { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
     .howto-item { padding-top: 18px; border-top: 2px solid var(--ink); }
     .howto-item strong { display: block; margin-bottom: 7px; font-family: "Songti SC", "STSong", serif; font-size: 21px; }
@@ -159,7 +182,6 @@
     .footer { max-width: 1120px; margin: 0 auto; padding: 34px 24px 54px; color: var(--muted); font-size: 13px; }
     .check { display: inline-flex; align-items: flex-start; gap: 10px; cursor: pointer; }
     .check input { width: 18px; height: 18px; margin-top: 4px; accent-color: var(--red); }
-    .check.done .card-title { color: var(--muted); text-decoration: line-through; }
     @media (max-width: 760px) {
       .topbar { padding: 16px 18px; }
       .hero { display: block; padding: 42px 18px 62px; }
@@ -213,7 +235,7 @@
             <a class="button primary" href="#cards">开始使用提问卡</a>
             <button class="button secondary" type="button" id="printButton">打印 / 保存 PDF</button>
           </div>
-          <p class="hero-note">适合 5～12 岁孩子 · 不用注册 · 手机可用 · 家长先看一眼就能开始</p>
+          <p class="hero-note">适合不同年龄的孩子 · 不用注册 · 手机可用 · 家长先看一眼就能开始</p>
         </div>
         <aside class="field-note" aria-label="提问卡使用提示">
           <div class="field-note-label">现场记录 · 01</div>
@@ -226,23 +248,24 @@
       <section class="section tinted" id="cards">
         <div class="section-inner">
           <div class="section-heading">
-            <div class="eyebrow">12 个现场问题</div>
-            <h2>一次只选一个，问完就继续走。</h2>
-            <p>不要把 12 个问题全部问完。挑一个孩子愿意看的展品，问一个问题，然后把注意力还给展品。</p>
+            <div class="eyebrow">问题库 · 任选一个</div>
+            <h2>不是任务清单，是临场可挑的问题。</h2>
+            <p>你不需要做完 12 个，也不是选中后排除。面对不同年龄、不同展品和不同心情，挑一个当下合适的就够了。</p>
           </div>
+          <div class="selection-note"><strong>让孩子自己挑，通常比家长替他挑更有用。</strong>不知道选哪个时，先试：“它让你想到生活里的什么？”<span>勾选只是把问题标记出来，不是划掉或排除；现场通常问一个，合适时再换一个。</span></div>
           <div class="cards">
-            <label class="card check"><input type="checkbox"><span><span class="card-number">看见</span><span class="card-title">你第一眼看到了什么？</span><span><p>不纠正答案，让孩子决定从哪里开始。</p></span></span></label>
-            <label class="card check"><input type="checkbox"><span><span class="card-number">看见</span><span class="card-title">哪一个细节最奇怪？</span><span><p>奇怪通常比“漂亮”更容易打开观察。</p></span></span></label>
-            <label class="card check"><input type="checkbox"><span><span class="card-number">看见</span><span class="card-title">如果只能带走一个细节，你选哪个？</span><span><p>让孩子练习选择，而不是记住全部。</p></span></span></label>
-            <label class="card check"><input type="checkbox"><span><span class="card-number">猜测</span><span class="card-title">你觉得它原来是做什么的？</span><span><p>先听猜测，最后再一起看说明。</p></span></span></label>
-            <label class="card check"><input type="checkbox"><span><span class="card-number">猜测</span><span class="card-title">它可能被谁使用过？</span><span><p>把文物和真实的人联系起来。</p></span></span></label>
-            <label class="card check"><input type="checkbox"><span><span class="card-number">猜测</span><span class="card-title">如果它会说话，会说什么？</span><span><p>适合孩子不想听讲解时，换一种入口。</p></span></span></label>
-            <label class="card check"><input type="checkbox"><span><span class="card-number">联系</span><span class="card-title">它让你想到生活里的什么？</span><span><p>不必“联系正确”，想到什么都可以。</p></span></span></label>
-            <label class="card check"><input type="checkbox"><span><span class="card-number">联系</span><span class="card-title">你在哪儿见过相似的形状或颜色？</span><span><p>从展柜走回孩子熟悉的世界。</p></span></span></label>
-            <label class="card check"><input type="checkbox"><span><span class="card-number">联系</span><span class="card-title">它和刚才看到的有什么不同？</span><span><p>比较两个展品，比背年代更有参与感。</p></span></span></label>
-            <label class="card check"><input type="checkbox"><span><span class="card-number">选择</span><span class="card-title">你愿意再看它 10 秒吗？</span><span><p>把“继续逛”交给孩子一个小选择。</p></span></span></label>
-            <label class="card check"><input type="checkbox"><span><span class="card-number">选择</span><span class="card-title">下一个展品，你想自己选还是我选？</span><span><p>给一点控制感，抵触通常会少一点。</p></span></span></label>
-            <label class="card check"><input type="checkbox"><span><span class="card-number">带走</span><span class="card-title">回家后你想把哪件事讲给别人听？</span><span><p>不要求复述知识，只留下一个记忆。</p></span></span></label>
+            <label class="card check"><input type="checkbox"><span><span class="card-number">看见</span><span class="card-title">你第一眼看到了什么？</span><span><p>不纠正答案，让孩子决定从哪里开始。</p><span class="card-choice">选用这个问题</span></span></label>
+            <label class="card check"><input type="checkbox"><span><span class="card-number">看见</span><span class="card-title">哪一个细节最奇怪？</span><span><p>奇怪通常比“漂亮”更容易打开观察。</p><span class="card-choice">选用这个问题</span></span></label>
+            <label class="card check"><input type="checkbox"><span><span class="card-number">看见</span><span class="card-title">如果只能带走一个细节，你选哪个？</span><span><p>让孩子练习选择，而不是记住全部。</p><span class="card-choice">选用这个问题</span></span></label>
+            <label class="card check"><input type="checkbox"><span><span class="card-number">猜测</span><span class="card-title">你觉得它原来是做什么的？</span><span><p>先听猜测，最后再一起看说明。</p><span class="card-choice">选用这个问题</span></span></label>
+            <label class="card check"><input type="checkbox"><span><span class="card-number">猜测</span><span class="card-title">它可能被谁使用过？</span><span><p>把文物和真实的人联系起来。</p><span class="card-choice">选用这个问题</span></span></label>
+            <label class="card check"><input type="checkbox"><span><span class="card-number">猜测</span><span class="card-title">如果它会说话，会说什么？</span><span><p>适合孩子不想听讲解时，换一种入口。</p><span class="card-choice">选用这个问题</span></span></label>
+            <label class="card check"><input type="checkbox"><span><span class="card-number">联系</span><span class="card-title">它让你想到生活里的什么？</span><span><p>不必“联系正确”，想到什么都可以。</p><span class="card-choice">选用这个问题</span></span></label>
+            <label class="card check"><input type="checkbox"><span><span class="card-number">联系</span><span class="card-title">你在哪儿见过相似的形状或颜色？</span><span><p>从展柜走回孩子熟悉的世界。</p><span class="card-choice">选用这个问题</span></span></label>
+            <label class="card check"><input type="checkbox"><span><span class="card-number">联系</span><span class="card-title">它和刚才看到的有什么不同？</span><span><p>比较两个展品，比背年代更有参与感。</p><span class="card-choice">选用这个问题</span></span></label>
+            <label class="card check"><input type="checkbox"><span><span class="card-number">选择</span><span class="card-title">你愿意再看它 10 秒吗？</span><span><p>把“继续逛”交给孩子一个小选择。</p><span class="card-choice">选用这个问题</span></span></label>
+            <label class="card check"><input type="checkbox"><span><span class="card-number">选择</span><span class="card-title">下一个展品，你想自己选还是我选？</span><span><p>给一点控制感，抵触通常会少一点。</p><span class="card-choice">选用这个问题</span></span></label>
+            <label class="card check"><input type="checkbox"><span><span class="card-number">带走</span><span class="card-title">回家后你想把哪件事讲给别人听？</span><span><p>不要求复述知识，只留下一个记忆。</p><span class="card-choice">选用这个问题</span></span></label>
           </div>
         </div>
       </section>
@@ -256,6 +279,34 @@
           <div class="howto-item"><strong>只问一个问题</strong><p>孩子愿意看，就多停留；不愿意看，就继续走。今天只成功一次也够了。</p></div>
           <div class="howto-item"><strong>先听猜测</strong><p>不要立刻纠正。孩子的猜测是他和展品建立关系的第一步。</p></div>
           <div class="howto-item"><strong>允许跳过</strong><p>“不想看”也是有效反馈。让孩子保留选择权，比完成清单更重要。</p></div>
+        </div>
+      </section>
+
+      <section class="section tinted">
+        <div class="section-inner">
+          <div class="section-heading">
+            <div class="eyebrow">参观前的铺垫</div>
+            <h2>兴趣有时从出发前就开始了。</h2>
+            <p>如果孩子对历史或某个主题还没有兴趣，不必直接要求他在展厅里产生兴趣。出发前看一张图、读一小段相关故事，或者留一个“到了现场想找找看”的问题，就已经是在搭桥。</p>
+          </div>
+          <div class="howto">
+            <div class="howto-item"><strong>看一件相关的东西</strong><p>一本书、一张展品图，甚至家里一个相似的器物都可以。</p></div>
+            <div class="howto-item"><strong>留一个未解的问题</strong><p>不要提前讲完答案，让孩子到现场去找一个细节。</p></div>
+            <div class="howto-item"><strong>把历史连回生活</strong><p>问“它像不像我们身边的什么”，让知识迁移发生在熟悉的经验里。</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-heading">
+          <div class="eyebrow">如果孩子本来就不感兴趣</div>
+          <h2>提问卡不是唯一入口。</h2>
+          <p>有些孩子需要声音、同伴或一个更短的目标，才愿意靠近展品。不要把“不喜欢”变成一场需要攻克的任务。</p>
+        </div>
+        <div class="howto">
+          <div class="howto-item"><strong>借助声音</strong><p>试试讲解器或讲解员，让孩子先听一个具体故事，再回头看展品。</p></div>
+          <div class="howto-item"><strong>带一个同伴</strong><p>和另一个孩子一起去，互相发现和比较，常常比单独参观更容易坚持。</p></div>
+          <div class="howto-item"><strong>缩短目标</strong><p>今天只找一件“有点奇怪”的东西，看到大半程想出去也可以算完成。</p></div>
         </div>
       </section>
 
@@ -274,7 +325,11 @@
       const checks = [...document.querySelectorAll('.check')];
       checks.forEach((item) => {
         const input = item.querySelector('input');
-        input.addEventListener('change', () => item.classList.toggle('done', input.checked));
+        const choice = item.querySelector('.card-choice');
+        input.addEventListener('change', () => {
+          item.classList.toggle('done', input.checked);
+          choice.textContent = input.checked ? '已选用 · 再点取消' : '选用这个问题';
+        });
       });
       document.getElementById('printButton').addEventListener('click', () => window.print());
     }());
