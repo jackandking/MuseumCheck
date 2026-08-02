@@ -26,11 +26,29 @@ Museum coverage is not limited to China. The current product voice, language, fa
 
 The current product focus is H5 web. Mini-program-specific flows, platform APIs, and packaging should be ignored unless the maintainer explicitly asks for them. Mobile H5 is the primary experience because MuseumCheck is expected to be used during museum visits. PC should remain usable, especially for planning, administration, and longer content work, but PC polish is secondary to on-site mobile UX.
 
+The current stage priority is to become a useful, trusted companion for Chinese families visiting major museums in China. Global museum coverage, deeper museum-operator tooling, and broader platform expansion are valid long-term directions, but should not displace proving the family visit experience and its distribution model first.
+
 ## Success Metrics
 
-The north star metric is a successful family visit session: a mobile H5 session where a family opens a museum check-in page, starts the first mission, completes at least one age-appropriate task, and does not hit a blocking error.
+The north star metric is a successful family visit session. Define it as:
+
+```text
+checkin_open -> task_open -> first_task_complete
+```
+
+with no blocking error during the flow. Count this on mobile visit sessions, deduplicate refreshes where practical, and keep the signal anonymous.
 
 Use this metric because MuseumCheck should make the real museum visit better. Raw page views, long screen time, and novelty interactions are secondary unless they help families notice exhibits, talk together, and keep moving through the museum.
+
+### Acquisition Metrics
+
+Track whether real families can find and enter the product:
+
+1. Museum page visits, grouped by museum and city.
+2. QR-code entry sessions, grouped by museum and placement where available.
+3. Search impressions and clicks for museum-specific pages.
+4. Shared-link opens and poster or achievement shares.
+5. Museums or family organizations actively distributing MuseumCheck.
 
 ### Primary Product Metrics
 
@@ -90,9 +108,20 @@ Use this metric because MuseumCheck should make the real museum visit better. Ra
 
    Track prod deploy success rate, time from push to live, page verification pass rate, targeted Playwright pass rate, and whether `/debug/status/` reports the expected prod commit. Prod deploy success should stay above 95%.
 
+### Growth Guardrails
+
+Growth must not be purchased by weakening the product mission or trust:
+
+1. Do not optimize for page views, screen time, or game time when they do not improve a real museum visit.
+2. Do not generate large volumes of thin or inaccurate museum pages solely for search traffic.
+3. Do not require registration or expose unnecessary child information to increase sharing or retention.
+4. Do not use invented museum facts, images, or recommendations to make pages appear more complete.
+
 ### Metric-Driven Iteration Rule
 
 When choosing the next autonomous product improvement, prefer the smallest change that improves one of the primary product metrics without harming the guardrails. If evidence is missing, first add privacy-preserving instrumentation or lightweight user feedback. If a proposed improvement optimizes traffic, screen time, or visual novelty at the expense of real-world visit quality, it conflicts with this charter and needs human discussion.
+
+For larger changes, record which evidence supports the direction, which acquisition, activation, or value metric it is expected to improve, and which guardrail could be harmed. If no evidence exists, label the work as an experiment and define a reversible validation step.
 
 ## Product Tenets
 
@@ -144,11 +173,19 @@ When choosing the next autonomous product improvement, prefer the smallest chang
 
    Promotion, distribution, and real-world use of a useful product matter more than waiting for a theoretically perfect product. MuseumCheck should reach families and museums once the core experience is helpful, honest, safe, and usable enough to learn from. Do not hide limitations or weaken trust, but prefer shipping small improvements, collecting feedback, and iterating over polishing in isolation.
 
-13. Small architecture, strong contracts
+13. Distribution is part of the product
+
+   For an on-site experience, QR codes, museum partnerships, family content, and shareable visit outcomes are product pathways, not marketing work detached from the product. Every important museum experience should have a credible way for a family to discover it and enter it at the right moment.
+
+14. Evidence before expansion
+
+   Larger product directions should be supported by at least one meaningful evidence source: real family feedback, observed on-site use, privacy-preserving behavior data, museum-operator demand, or search and distribution data. When evidence is missing, prefer a small reversible experiment over a broad feature expansion.
+
+15. Small architecture, strong contracts
 
    Prefer plain, understandable HTML/CSS/JavaScript and existing repo patterns. Add abstractions only when they reduce real duplication or protect a cross-page contract.
 
-14. Backward compatibility is a feature
+16. Backward compatibility is a feature
 
    Existing localStorage keys, public URLs, database rows, image URLs, and deployed pages may already be in use. Preserve them or provide explicit migration/compatibility behavior.
 
