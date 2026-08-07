@@ -14,11 +14,13 @@ The product should make a real visit better. It should help parents guide attent
 
 ## Vision
 
-MuseumCheck should become the simplest trusted companion for Chinese families visiting museums anywhere in the world:
+MuseumCheck should become the simplest trusted companion for Chinese families visiting museums anywhere in the world. Its defining promise is not merely to generate a plausible itinerary, but to help a family take a reliable first step and continue exploring together during a real visit:
 
 - Families can open it instantly from an H5 web page, including QR-code entry at museum sites.
 - Children can complete age-appropriate missions during a real museum visit.
 - Parents get enough guidance to start meaningful conversations without becoming tour guides or teachers.
+- The first task, the next recommendation, and the language used can adapt to the child's age, interests, time, and observed progress.
+- Museum facts, exhibit names, images, and availability are traceable, reviewable, and clearly separated from AI-generated suggestions.
 - Museums can onboard their own pages, tasks, images, and public activity walls with minimal operational burden.
 - The system remains small, resilient, inexpensive to run, privacy-conscious, and easy for AI agents to improve safely.
 
@@ -72,6 +74,10 @@ Track whether real families can find and enter the product:
 
    Measure poster creation, achievement publishing, and public wall contribution. These outcomes indicate that the visit became memorable enough to save or share.
 
+6. Successful family visit session
+
+   Treat `checkin_open -> task_open -> first_task_complete` as the minimum successful session. When available, record a second signal of value: a helpful feedback response or a second task opened/completed. Do not use page views or time-on-page as a substitute for this outcome.
+
 ### Guardrail Metrics
 
 1. Mobile reliability
@@ -89,6 +95,10 @@ Track whether real families can find and enter the product:
 4. Trust and content quality
 
    Track broken images, missing museum metadata, inaccurate task reports, and legacy image rewrite success. Trust beats novelty.
+
+5. Content provenance and recovery
+
+   Track the proportion of featured exhibits with a source or verification state, reports that an exhibit is unavailable or inaccurate, and the time to review or correct those reports. AI-generated wording must never hide uncertainty in the underlying museum facts.
 
 ### Growth And Operations Metrics
 
@@ -181,11 +191,23 @@ For larger changes, record which evidence supports the direction, which acquisit
 
    Larger product directions should be supported by at least one meaningful evidence source: real family feedback, observed on-site use, privacy-preserving behavior data, museum-operator demand, or search and distribution data. When evidence is missing, prefer a small reversible experiment over a broad feature expansion.
 
-15. Small architecture, strong contracts
+15. Facts fixed, expression adaptive
+
+   Museum facts, exhibit identity, location, images, availability, and provenance must come from structured, reviewable data. AI may adapt questions, explanations, difficulty, ordering, and tone, but must not invent or silently upgrade uncertain facts.
+
+16. The visit path beats the feature list
+
+   The default experience should make one useful on-site action obvious. Achievements, games, pets, rankings, assessments, and sharing are supporting layers and must not compete with the first task.
+
+17. Real feedback beats model intuition
+
+   Prefer evidence from families who actually used the product during a visit—completion, abandonment, helpfulness, corrections, and repeat use—over speculative AI feature ideas.
+
+18. Small architecture, strong contracts
 
    Prefer plain, understandable HTML/CSS/JavaScript and existing repo patterns. Add abstractions only when they reduce real duplication or protect a cross-page contract.
 
-16. Backward compatibility is a feature
+19. Backward compatibility is a feature
 
    Existing localStorage keys, public URLs, database rows, image URLs, and deployed pages may already be in use. Preserve them or provide explicit migration/compatibility behavior.
 
