@@ -11,6 +11,7 @@ const path = require('path');
 // 重要页面列表
 const CRITICAL_PAGES = [
     'index.html',
+    'pilot.html',
     'museum-checkin.html', 
     'everyone-achievements.html',
     'achievements.html',

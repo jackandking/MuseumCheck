@@ -57,6 +57,7 @@
         const savedAgeGroup = localStorage.getItem('ageGroup');
         const ageGroup = savedAgeGroup || urlParams.get('age') || '7-12';
         const editMode = urlParams.get('edit') === 'true';
+        const pilotContext = getPilotContextFromUrl(urlParams);
 
         // =====================================================
         // EventWallService moved to event-wall-service.js (shared module)
@@ -107,6 +108,39 @@
         const CHINA_FILM_MUSEUM_ID = 'china-film-museum';
         const PRINCE_KUNG_MANSION_ID = 'prince-kung-mansion';
 
+        function getPilotContextFromUrl(params) {
+            const rawCohort = params.get('pilot');
+            if (!rawCohort) return null;
+
+            const cohort = /^[a-z0-9][a-z0-9-]{0,39}$/.test(rawCohort) ? rawCohort : 'early-family';
+            const pilotSessionId = /^pilot-[a-z0-9-]{8,80}$/.test(params.get('pilotSession') || '')
+                ? params.get('pilotSession')
+                : '';
+            const format = ['family', 'camp', 'school', 'friends'].includes(params.get('format'))
+                ? params.get('format')
+                : 'family';
+            const group = ['2-3', '4-8', '9-20', '21-plus'].includes(params.get('group'))
+                ? params.get('group')
+                : '2-3';
+            const duration = ['under-60', '60-90', '90-120', '120-plus'].includes(params.get('duration'))
+                ? params.get('duration')
+                : '60-90';
+
+            return { cohort, pilotSessionId, format, group, duration };
+        }
+
+        function getPilotDisplayName() {
+            if (!pilotContext) return '';
+            return pilotContext.cohort === 'one-camp' ? '一初夏令营共创试用' : '早期共创试用';
+        }
+
+        function applyPilotVisitMode() {
+            if (!pilotContext) return;
+            const kicker = document.getElementById('visitCoachKicker');
+            if (kicker) kicker.textContent = getPilotDisplayName();
+            document.body.classList.add('pilot-visit');
+        }
+
         function generateVisitId(prefix) {
             const randomPart = Math.random().toString(36).slice(2, 10);
             return `${prefix}-${Date.now()}-${randomPart}`;
@@ -155,6 +189,13 @@
                     totalTasks: childTasks.length,
                     secondsSinceOpen: Math.max(0, Math.round((Date.now() - visitStartedAt) / 1000)),
                     timestamp: Date.now(),
+                    pilotContext: pilotContext ? {
+                        cohort: pilotContext.cohort,
+                        pilotSessionId: pilotContext.pilotSessionId,
+                        format: pilotContext.format,
+                        group: pilotContext.group,
+                        duration: pilotContext.duration
+                    } : undefined,
                     parameters
                 };
                 const body = JSON.stringify({
@@ -182,7 +223,7 @@
             if (visitOpenSignalSent || !currentMuseum || childTasks.length === 0) return;
             visitOpenSignalSent = true;
             sendVisitSignal('checkin_open', {
-                source: editMode ? 'edit' : 'visit',
+                source: editMode ? 'edit' : (pilotContext ? 'pilot' : 'visit'),
                 taskCount: childTasks.length,
                 restoredCompletedCount: completedTasks.size
             });
@@ -334,7 +375,9 @@
 
             const taskPayload = getTaskSignalPayload(taskIndex);
             visitFeedbackContext = taskPayload;
-            question.textContent = `${taskPayload.taskNumber === 1 ? '第 1 个任务' : '刚才这一步'}有帮助吗？`;
+            question.textContent = pilotContext && taskPayload.taskNumber === 1
+                ? '这次试用的第 1 个任务有帮助吗？'
+                : `${taskPayload.taskNumber === 1 ? '第 1 个任务' : '刚才这一步'}有帮助吗？`;
             actions.hidden = false;
             form.hidden = true;
             thanks.hidden = true;
@@ -2230,6 +2273,7 @@
 
             // Check if child mode is enabled and hide settings button
             applyChildMode();
+            applyPilotVisitMode();
             
             // Initialize achievement gamification system
             if (typeof AchievementGamification !== 'undefined') {
