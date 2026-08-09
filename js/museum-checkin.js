@@ -179,7 +179,7 @@
 
         function getPilotDisplayName() {
             if (!pilotContext) return '';
-            return pilotContext.cohort === 'one-camp' ? '一初夏令营共创试用' : '早期共创试用';
+            return '受邀共创试用';
         }
 
         function applyPilotVisitMode() {

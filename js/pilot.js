@@ -22,8 +22,8 @@
     const SESSION_PATTERN = /^pilot-[a-z0-9-]{8,80}$/;
     const COHORTS = {
         'one-camp': {
-            name: '一初夏令营共创试用',
-            inviteLine: '给一初夏令营的一张现场任务卡',
+            name: '受邀共创试用',
+            inviteLine: '给这次真实参观的一张现场任务卡',
             summary: '不用安装，不用注册。先按真实活动准备，到馆后完成第 1 个任务，再告诉我们哪里顺、哪里不顺。'
         }
     };
