@@ -12,6 +12,7 @@
 
     const STORAGE_KEY = 'museumcheckPilotContext:v1';
     const SIGNAL_KEY = 'museumcheck-visit-signals';
+    const PERSONAL_MUSEUMS_KEY = 'museumcheck-personal-museums-v1';
     const SIGNAL_TTL_SECONDS = 90 * 24 * 60 * 60;
     const AGE_VALUES = ['3-6', '7-12', '13-18'];
     const FORMAT_VALUES = ['family', 'camp', 'school', 'friends'];
@@ -79,6 +80,37 @@
                 String(museum.name).toLowerCase() === query ||
                 museumLabel(museum).toLowerCase() === query;
         }) || null;
+    }
+
+    function createPersonalMuseum(name, city) {
+        const normalizedName = String(name || '').trim();
+        const normalizedCity = String(city || '').trim();
+        if (!normalizedName) return null;
+
+        try {
+            const saved = JSON.parse(root.localStorage.getItem(PERSONAL_MUSEUMS_KEY) || '[]');
+            const museums = Array.isArray(saved) ? saved : [];
+            const existing = museums.find(museum => museum
+                && museum.name === normalizedName
+                && String(museum.city || '') === normalizedCity);
+            if (existing) return existing;
+
+            const museum = {
+                id: `personal-${Date.now().toString(36)}`,
+                name: normalizedName,
+                city: normalizedCity,
+                location: normalizedCity,
+                createdAt: Date.now(),
+                reviewStatus: 'pending',
+                visibility: 'private'
+            };
+            museums.push(museum);
+            root.localStorage.setItem(PERSONAL_MUSEUMS_KEY, JSON.stringify(museums));
+            return museum;
+        } catch (error) {
+            console.warn('[Pilot] Could not save personal museum:', error);
+            return null;
+        }
     }
 
     function buildCheckinUrl(context) {
@@ -157,6 +189,7 @@
         const baseContext = normalizePilotContext({ cohort, pilotSessionId: sessionId });
         const form = document.getElementById('pilotForm');
         const museumInput = document.getElementById('museumInput');
+        const personalMuseumCity = document.getElementById('personalMuseumCity');
         const datalist = document.getElementById('museumOptions');
         const error = document.getElementById('pilotError');
 
@@ -184,17 +217,28 @@
             event.preventDefault();
             if (error) error.hidden = true;
 
-            const museum = resolveMuseum(museumInput.value, museums);
+            let museum = resolveMuseum(museumInput.value, museums);
+            const formData = new FormData(form);
             if (!museum) {
-                if (error) {
-                    error.textContent = '请从建议中选择一个具体博物馆，这样我们才能打开对应的现场任务。';
-                    error.hidden = false;
+                const city = formData.get('personalMuseumCity');
+                if (!String(city || '').trim()) {
+                    if (error) {
+                        error.textContent = '这家馆还未收录，请补充所在城市后继续。';
+                        error.hidden = false;
+                    }
+                    if (personalMuseumCity) personalMuseumCity.focus();
+                    return;
                 }
-                museumInput.focus();
-                return;
+                museum = createPersonalMuseum(museumInput.value, city);
+                if (!museum) {
+                    if (error) {
+                        error.textContent = '暂时无法保存这家博物馆，请检查浏览器存储后重试。';
+                        error.hidden = false;
+                    }
+                    return;
+                }
             }
 
-            const formData = new FormData(form);
             const context = normalizePilotContext({
                 cohort,
                 pilotSessionId: sessionId,

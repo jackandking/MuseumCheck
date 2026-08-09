@@ -62,9 +62,14 @@
 
                 <label class="pilot-field" for="museumInput">
                     <span>计划去哪里</span>
-                    <small>输入博物馆名或城市，再从建议中选择</small>
+                    <small>已收录馆可从建议中选择；未收录馆也可直接填写</small>
                     <input id="museumInput" name="museum" list="museumOptions" autocomplete="off" inputmode="search" placeholder="例如：故宫博物院｜北京" required>
                     <datalist id="museumOptions"></datalist>
+                </label>
+
+                <label class="pilot-field" for="personalMuseumCity">
+                    <span>所在城市 <small>未收录馆时填写</small></span>
+                    <input id="personalMuseumCity" name="personalMuseumCity" autocomplete="address-level2" inputmode="text" placeholder="例如：自贡">
                 </label>
 
                 <div class="pilot-two-column">
@@ -121,6 +126,6 @@
 
     <script src="js/museums-meta.js"></script>
     <script src="config/api-endpoints.js"></script>
-    <script src="js/pilot.js?v=1"></script>
+    <script src="js/pilot.js?v=private-museum-20260809"></script>
 </body>
 </html>
