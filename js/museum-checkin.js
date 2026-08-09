@@ -88,6 +88,54 @@
         let visitFeedbackListenersReady = false;
         let visitFeedbackContext = null;
 
+        const PERSONAL_MUSEUMS_KEY = 'museumcheck-personal-museums-v1';
+
+        function getPersonalMuseum(id) {
+            try {
+                const museums = JSON.parse(localStorage.getItem(PERSONAL_MUSEUMS_KEY) || '[]');
+                return museums.find(museum => museum && museum.id === id) || null;
+            } catch (error) {
+                console.warn('Unable to read personal museums:', error);
+                return null;
+            }
+        }
+
+        function isPersonalMuseum() {
+            return Boolean(currentMuseum && currentMuseum.isPersonalMuseum);
+        }
+
+        function isPersonalTreasureTask(task) {
+            return isPersonalMuseum() && typeof task === 'string' && task.includes('宝贝');
+        }
+
+        function isPersonalEntranceTask(task) {
+            return isPersonalMuseum() && typeof task === 'string' && task.includes('在门口留一张照片');
+        }
+
+        function buildPersonalMuseumTasks() {
+            return [
+                '📸 在门口留一张照片：拍下博物馆门口或外观（可选）',
+                '✨ 最想带朋友看的宝贝：找到一件想推荐给朋友的展品',
+                '🔎 最让孩子好奇的宝贝：找到一件让孩子想多问几句的展品',
+                '🏛️ 最能代表这家馆的宝贝：找到一件你们觉得最有代表性的展品'
+            ];
+        }
+
+        function savePersonalMuseumEntrance(imageUrl) {
+            try {
+                const key = `personalMuseumEntrance_${museumId}`;
+                localStorage.setItem(key, JSON.stringify({
+                    museumId,
+                    museumName: currentMuseum ? currentMuseum.name : '',
+                    imageUrl: imageUrl || '',
+                    reviewStatus: 'pending',
+                    timestamp: Date.now()
+                }));
+            } catch (error) {
+                console.warn('Unable to save personal museum entrance:', error);
+            }
+        }
+
         // =====================================================
         // 镇馆之宝不存在报告功能
         // Treasure Not Found Report Feature
@@ -2340,10 +2388,26 @@
         async function loadMuseumData() {
             // Load museum data via tiered loader (Tier2 -> Tier1). Tier3 is deprecated.
             let museum = null;
+            const personalMuseum = getPersonalMuseum(museumId);
+            if (personalMuseum) {
+                museum = {
+                    id: personalMuseum.id,
+                    name: personalMuseum.name,
+                    city: personalMuseum.city || '',
+                    location: personalMuseum.location || personalMuseum.city || '现场探索',
+                    collections: [],
+                    checklists: { child: {} },
+                    isPersonalMuseum: true
+                };
+            }
             if (window.museumDataLoader && typeof window.museumDataLoader.loadMuseum === 'function') {
                 try {
+                    if (museum) {
+                        // A visitor-created museum is intentionally local-only; do not fetch or publish it.
+                    } else {
                     museum = await window.museumDataLoader.loadMuseum(museumId, false); // Don't use cache
                     console.log(`Loaded museum ${museumId} via museumDataLoader`);
+                    }
                 } catch (error) {
                     console.warn('Error loading museum with museumDataLoader:', error);
                 }
@@ -2370,6 +2434,14 @@
             }
 
             currentMuseum = museum;
+
+            if (isPersonalMuseum()) {
+                document.getElementById('museumName').textContent = currentMuseum.name;
+                childTasks = buildPersonalMuseumTasks();
+                renderTasks();
+                updateProgress();
+                return;
+            }
 
             // Merge user-added treasures from localStorage into currentMuseum.collections
             // This ensures user-added treasures are available even if KV store save failed
@@ -3058,6 +3130,7 @@
             currentTaskIndex = index;
             const task = childTasks[index];
             const { icon, title, subtitle } = parseTaskString(task);
+            const personalTreasureTask = isPersonalTreasureTask(task);
             const isCompleted = completedTasks.has(index);
             trackTaskOpened(index, { source });
 
@@ -3322,11 +3395,22 @@
             const treasurePreview = document.getElementById('modalTreasurePreview');
             
             const isAddTreasureTask = title && title.includes('添加镇馆之宝');
+            const isContributionTask = isAddTreasureTask || personalTreasureTask;
+            const treasureReasonInput = document.getElementById('modalTreasureReason');
+            const treasureNameLabel = document.getElementById('modalTreasureNameLabel');
+            const personalReasonGroup = document.getElementById('personalTreasureReasonGroup');
+            const photoSection = document.getElementById('photoSection');
             
-            if (isAddTreasureTask) {
+            if (isContributionTask) {
                 contributorSection.style.display = 'block';
+                if (photoSection) photoSection.style.display = personalTreasureTask ? 'none' : '';
+                if (personalReasonGroup) personalReasonGroup.style.display = personalTreasureTask ? 'block' : 'none';
+                if (treasureNameLabel) treasureNameLabel.innerHTML = personalTreasureTask
+                    ? '展品名称或描述 <span style="color: #dc2626;">*</span>'
+                    : '🏺 镇馆之宝名称 <span style="color: #dc2626;">*</span>';
                 // Clear previous values
                 treasureNameInput.value = '';
+                if (treasureReasonInput) treasureReasonInput.value = '';
                 treasureImageInput.value = '';
                 treasurePreview.textContent = '📷';
                 treasurePreview.className = 'image-preview-placeholder';
@@ -3335,6 +3419,7 @@
                 const savedTreasureData = getContributedTreasureForTask(index);
                 if (savedTreasureData) {
                     treasureNameInput.value = savedTreasureData.name || '';
+                    if (treasureReasonInput) treasureReasonInput.value = savedTreasureData.reason || '';
                     if (savedTreasureData.imageUrl) {
                         treasureImageInput.value = savedTreasureData.imageUrl;
                         const img = document.createElement('img');
@@ -3347,6 +3432,8 @@
                 }
             } else {
                 contributorSection.style.display = 'none';
+                if (personalReasonGroup) personalReasonGroup.style.display = 'none';
+                if (photoSection) photoSection.style.display = '';
             }
 
             // ── Custom Museums: Parent Guide & Child Review ──
@@ -3473,28 +3560,41 @@
         async function completeTask() {
             if (currentTaskIndex === null) return;
 
-            // Check if this is an "添加镇馆之宝" task and validate/save data
+            // Check whether this task collects a visitor's exhibit discovery.
             const task = childTasks[currentTaskIndex];
             const { title, subtitle } = parseTaskString(task);
             const isAddTreasureTask = title && title.includes('添加镇馆之宝');
+            const isPersonalDiscoveryTask = isPersonalTreasureTask(task);
+            const isPersonalEntrance = isPersonalEntranceTask(task);
             
-            if (isAddTreasureTask) {
+            if (isAddTreasureTask || isPersonalDiscoveryTask) {
                 const treasureName = document.getElementById('modalTreasureName').value.trim();
+                const treasureReason = (document.getElementById('modalTreasureReason')?.value || '').trim();
                 // Get image URL from preview dataset (file inputs can't store URLs in value)
                 const treasurePreview = document.getElementById('modalTreasurePreview');
                 const treasureImage = (treasurePreview && treasurePreview.dataset.imageUrl) || '';
                 
-                // Validate: treasure name is required
+                // A photo is optional. A name/description and the family's reason make the
+                // discovery reviewable without claiming it is an official treasure.
                 if (!treasureName) {
-                    alert('请输入镇馆之宝的名称！');
+                    alert(isPersonalDiscoveryTask ? '请写下展品名称或简单描述。' : '请输入镇馆之宝的名称！');
                     document.getElementById('modalTreasureName').focus();
                     return;
                 }
+                if (isPersonalDiscoveryTask && !treasureReason) {
+                    alert('请写下一句为什么选它。');
+                    document.getElementById('modalTreasureReason').focus();
+                    return;
+                }
                 
-                // Save the contributed treasure data (also saves to KV store)
+                // Personal museums remain local-only. Their data is marked pending so it
+                // can be reviewed before any future public promotion.
                 await saveContributedTreasure(currentTaskIndex, {
                     name: treasureName,
                     imageUrl: treasureImage || '',
+                    reason: treasureReason,
+                    role: isPersonalDiscoveryTask ? currentTaskIndex + 1 : null,
+                    reviewStatus: isPersonalDiscoveryTask ? 'pending' : null,
                     taskIndex: currentTaskIndex,
                     museumId: museumId,
                     museumName: currentMuseum ? currentMuseum.name : '',
@@ -3529,6 +3629,9 @@
             }
 
             const hasPhoto = !!taskPhotos[currentTaskIndex];
+            if (isPersonalEntrance) {
+                savePersonalMuseumEntrance(taskPhotos[currentTaskIndex] || '');
+            }
             const gameRewardEnabled = loadGameRewardSetting();
             // Show game reward only if photo was uploaded and setting is enabled
             const showGame = hasPhoto && gameRewardEnabled;
@@ -3539,7 +3642,7 @@
             
             // ===== EVENT WALL TRACKING: Task Completion =====
             // Track individual task completion to event wall
-            if (eventWallService && currentMuseum && task) {
+            if (!isPersonalMuseum() && eventWallService && currentMuseum && task) {
                 const { title, subtitle } = parseTaskString(task);
                 const taskDescription = title + (subtitle ? ` - ${subtitle}` : '');
                 eventWallService.trackTaskComplete(
@@ -3610,7 +3713,9 @@
             });
 
             // Upload firework to remote
-            uploadFireworkEvent(completedTaskIndex);
+            if (!isPersonalMuseum()) {
+                uploadFireworkEvent(completedTaskIndex);
+            }
             
             // Show game as reward if setting is enabled
             // Present 3 random games for the user to choose
@@ -4050,8 +4155,14 @@
                 // Also save to the global contributed treasures list
                 saveToGlobalContributedTreasures(treasureData);
                 
+                // Existing public-museum contributions keep their legacy persistence path.
+                // A visitor-created museum is deliberately not published or added to the
+                // shared catalogue before a reviewer approves it.
+                if (isPersonalMuseum()) {
+                    return;
+                }
+
                 // Add to current museum's collections and save to KV store (Tier 2)
-                // This ensures the treasure is persisted remotely like the settings page does
                 if (currentMuseum && treasureData.name) {
                     const newTreasure = {
                         name: treasureData.name,

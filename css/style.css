@@ -4120,6 +4120,54 @@ main[role="main"] {
     margin-bottom: 20px !important;
 }
 
+.personal-museum-setup {
+    width: min(100%, 360px);
+    margin: 12px 0 14px;
+    padding: 16px;
+    text-align: left;
+    background: #ffffff;
+    border: 1px solid #c7ebe5;
+    border-radius: 14px;
+    box-shadow: 0 6px 16px rgba(20, 149, 139, 0.08);
+}
+
+.personal-museum-name {
+    margin-bottom: 12px;
+    color: #147d75;
+    font-weight: 700;
+    text-align: center;
+}
+
+.personal-museum-setup label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 7px;
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.personal-museum-setup label span {
+    color: #718096;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.personal-museum-setup input {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid #b7d9d4;
+    border-radius: 10px;
+    color: #1f2937;
+    font: inherit;
+}
+
+.personal-museum-setup .retry-button {
+    width: 100%;
+}
+
 .clear-search-btn {
     background-color: var(--primary-color);
     color: white;

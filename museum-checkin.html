@@ -515,8 +515,12 @@
             <div class="treasure-contributor-section" id="treasureContributorSection" style="display: none;">
                 <div class="add-treasure-form">
                     <div class="add-treasure-input-group">
-                        <label for="modalTreasureName">🏺 镇馆之宝名称 <span style="color: #dc2626;">*</span></label>
+                        <label for="modalTreasureName" id="modalTreasureNameLabel">🏺 镇馆之宝名称 <span style="color: #dc2626;">*</span></label>
                         <input type="text" id="modalTreasureName" placeholder="例如：唐三彩骆驼载乐俑" maxlength="50">
+                    </div>
+                    <div class="add-treasure-input-group" id="personalTreasureReasonGroup" style="display: none;">
+                        <label for="modalTreasureReason">为什么选它？ <span style="color: #dc2626;">*</span></label>
+                        <textarea id="modalTreasureReason" placeholder="写下孩子的一句话发现或推荐理由" maxlength="120" rows="3"></textarea>
                     </div>
                     
                     <div class="add-treasure-input-group">
