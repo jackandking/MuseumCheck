@@ -20,7 +20,7 @@
     const DURATION_VALUES = ['under-60', '60-90', '90-120', '120-plus'];
     const COHORT_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
     const SESSION_PATTERN = /^pilot-[a-z0-9-]{8,80}$/;
-    const INVITE_CODE_PATTERN = /^[A-Z0-9][A-Z0-9-]{3,31}$/;
+    const INVITE_CODE_PATTERN = /^[A-Z0-9]{6}$/;
     const COHORTS = {
         'one-camp': {
             name: '受邀共创试用',

@@ -164,7 +164,7 @@
             const pilotSessionId = /^pilot-[a-z0-9-]{8,80}$/.test(params.get('pilotSession') || '')
                 ? params.get('pilotSession')
                 : '';
-            const inviteCode = /^[A-Z0-9][A-Z0-9-]{3,31}$/.test((params.get('invite') || '').toUpperCase())
+            const inviteCode = /^[A-Z0-9]{6}$/.test((params.get('invite') || '').toUpperCase())
                 ? params.get('invite').toUpperCase()
                 : '';
             const format = ['family', 'camp', 'school', 'friends'].includes(params.get('format'))

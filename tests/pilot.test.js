@@ -20,7 +20,8 @@ describe('invited pilot context', () => {
     });
 
     test('keeps invite codes controlled and anonymous', () => {
-        expect(normalizeInviteCode(' sh-tech-01 ')).toBe('SH-TECH-01');
+        expect(normalizeInviteCode(' 7k4d9q ')).toBe('7K4D9Q');
+        expect(normalizeInviteCode('SH-TECH-01')).toBe('');
         expect(normalizeInviteCode('姓名-13800000000')).toBe('');
         expect(normalizeInviteCode('<script>')).toBe('');
     });
@@ -35,7 +36,7 @@ describe('invited pilot context', () => {
         const context = normalizePilotContext({
             cohort: 'one-camp',
             pilotSessionId: 'pilot-12345678-session',
-            inviteCode: 'SH-TECH-01',
+            inviteCode: '7K4D9Q',
             age: '7-12',
             museumId: 'forbidden-city',
             museumName: '故宫博物院',
@@ -49,7 +50,7 @@ describe('invited pilot context', () => {
 
         expect(context).toEqual(expect.objectContaining({
             cohort: 'one-camp',
-            inviteCode: 'SH-TECH-01',
+            inviteCode: '7K4D9Q',
             age: '7-12',
             museumId: 'forbidden-city',
             city: '北京',
@@ -65,7 +66,7 @@ describe('invited pilot context', () => {
         const url = buildCheckinUrl({
             cohort: 'one-camp',
             pilotSessionId: 'pilot-12345678-session',
-            inviteCode: 'SH-TECH-01',
+            inviteCode: '7K4D9Q',
             age: '3-6',
             museumId: 'forbidden-city',
             format: 'family',
@@ -78,7 +79,7 @@ describe('invited pilot context', () => {
         expect(parsed.searchParams.get('museum')).toBe('forbidden-city');
         expect(parsed.searchParams.get('age')).toBe('3-6');
         expect(parsed.searchParams.get('pilot')).toBe('one-camp');
-        expect(parsed.searchParams.get('invite')).toBe('SH-TECH-01');
+        expect(parsed.searchParams.get('invite')).toBe('7K4D9Q');
         expect(parsed.searchParams.get('format')).toBe('family');
         expect(parsed.search).not.toContain('name');
         expect(parsed.search).not.toContain('phone');
