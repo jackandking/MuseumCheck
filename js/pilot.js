@@ -20,6 +20,7 @@
     const DURATION_VALUES = ['under-60', '60-90', '90-120', '120-plus'];
     const COHORT_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
     const SESSION_PATTERN = /^pilot-[a-z0-9-]{8,80}$/;
+    const INVITE_CODE_PATTERN = /^[A-Z0-9][A-Z0-9-]{3,31}$/;
     const COHORTS = {
         'one-camp': {
             name: '受邀共创试用',
@@ -35,6 +36,11 @@
     function normalizeCohort(value) {
         const normalized = String(value || '').trim().toLowerCase();
         return COHORT_PATTERN.test(normalized) ? normalized : 'early-family';
+    }
+
+    function normalizeInviteCode(value) {
+        const normalized = String(value || '').trim().toUpperCase();
+        return INVITE_CODE_PATTERN.test(normalized) ? normalized : '';
     }
 
     function createSessionId(now, randomValue) {
@@ -55,6 +61,7 @@
             version: 1,
             cohort: normalizeCohort(input.cohort),
             pilotSessionId,
+            inviteCode: normalizeInviteCode(input.inviteCode),
             age: allowed(input.age, AGE_VALUES, '7-12'),
             museumId: String(input.museumId || '').trim().slice(0, 80),
             museumName: String(input.museumName || '').trim().slice(0, 120),
@@ -126,6 +133,7 @@
             group: normalized.group,
             duration: normalized.duration
         });
+        if (normalized.inviteCode) params.set('invite', normalized.inviteCode);
         return `museum-checkin.html?${params.toString()}`;
     }
 
@@ -151,6 +159,7 @@
             pilotContext: {
                 cohort: normalized.cohort,
                 pilotSessionId: normalized.pilotSessionId,
+                inviteCode: normalized.inviteCode,
                 age: normalized.age,
                 museumId: normalized.museumId,
                 city: normalized.city,
@@ -183,21 +192,24 @@
         const document = root.document;
         const params = new URLSearchParams(root.location.search);
         const cohort = normalizeCohort(params.get('pilot'));
+        const inviteCode = normalizeInviteCode(params.get('invite'));
         const config = getCohortConfig(cohort);
         const museums = Array.isArray(root.MUSEUMS_META) ? root.MUSEUMS_META : [];
         const sessionId = createSessionId();
-        const baseContext = normalizePilotContext({ cohort, pilotSessionId: sessionId });
+        const baseContext = normalizePilotContext({ cohort, pilotSessionId: sessionId, inviteCode });
         const form = document.getElementById('pilotForm');
         const museumInput = document.getElementById('museumInput');
         const personalMuseumCity = document.getElementById('personalMuseumCity');
         const datalist = document.getElementById('museumOptions');
         const error = document.getElementById('pilotError');
+        const inviteCodeInput = document.getElementById('inviteCodeInput');
 
         document.title = `${config.name}｜MuseumCheck`;
         const inviteLine = document.getElementById('pilotInviteLine');
         const summary = document.getElementById('pilotSummary');
         if (inviteLine) inviteLine.textContent = config.inviteLine;
         if (summary) summary.textContent = config.summary;
+        if (inviteCodeInput && inviteCode) inviteCodeInput.value = inviteCode;
 
         if (datalist) {
             const fragment = document.createDocumentFragment();
@@ -242,6 +254,7 @@
             const context = normalizePilotContext({
                 cohort,
                 pilotSessionId: sessionId,
+                inviteCode: formData.get('inviteCode'),
                 age: formData.get('age'),
                 museumId: museum.id,
                 museumName: museum.name,
@@ -275,6 +288,7 @@
     return {
         STORAGE_KEY,
         normalizeCohort,
+        normalizeInviteCode,
         normalizePilotContext,
         createSessionId,
         resolveMuseum,

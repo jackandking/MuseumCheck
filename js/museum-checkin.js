@@ -164,6 +164,9 @@
             const pilotSessionId = /^pilot-[a-z0-9-]{8,80}$/.test(params.get('pilotSession') || '')
                 ? params.get('pilotSession')
                 : '';
+            const inviteCode = /^[A-Z0-9][A-Z0-9-]{3,31}$/.test((params.get('invite') || '').toUpperCase())
+                ? params.get('invite').toUpperCase()
+                : '';
             const format = ['family', 'camp', 'school', 'friends'].includes(params.get('format'))
                 ? params.get('format')
                 : 'family';
@@ -174,7 +177,7 @@
                 ? params.get('duration')
                 : '60-90';
 
-            return { cohort, pilotSessionId, format, group, duration };
+            return { cohort, pilotSessionId, inviteCode, format, group, duration };
         }
 
         function getPilotDisplayName() {
@@ -240,6 +243,7 @@
                     pilotContext: pilotContext ? {
                         cohort: pilotContext.cohort,
                         pilotSessionId: pilotContext.pilotSessionId,
+                        inviteCode: pilotContext.inviteCode,
                         format: pilotContext.format,
                         group: pilotContext.group,
                         duration: pilotContext.duration

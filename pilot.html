@@ -38,7 +38,7 @@
                     <p class="pilot-eyebrow">试用前 30 秒</p>
                     <h2 id="pilotFormTitle">按这次参观来准备</h2>
                 </div>
-                <span class="pilot-card-count">5 项</span>
+                <span class="pilot-card-count">6 项</span>
             </div>
 
             <form id="pilotForm" novalidate>
@@ -104,6 +104,12 @@
                     </select>
                 </label>
 
+                <label class="pilot-field" for="inviteCodeInput">
+                    <span>邀请码 <small>可选</small></span>
+                    <small>受邀共创家庭可填写，用来记录这次试用来源；不关联姓名或联系方式。</small>
+                    <input id="inviteCodeInput" name="inviteCode" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text" maxlength="32" placeholder="例如：SH-TECH-01">
+                </label>
+
                 <p class="pilot-error" id="pilotError" role="alert" hidden></p>
 
                 <button class="pilot-submit" type="submit">
@@ -126,6 +132,6 @@
 
     <script src="js/museums-meta.js"></script>
     <script src="config/api-endpoints.js"></script>
-    <script src="js/pilot.js?v=anonymous-pilot-20260809"></script>
+    <script src="js/pilot.js?v=invite-codes-20260811"></script>
 </body>
 </html>
