@@ -25,7 +25,7 @@
         'one-camp': {
             name: '受邀共创试用',
             inviteLine: '给这次真实参观的一张现场任务卡',
-            summary: '不用安装，不用注册。先按真实活动准备，到馆后完成第 1 个任务，再告诉我们哪里顺、哪里不顺。'
+            summary: '不用安装，不用注册。先选计划去的馆，看看现场的第一个小任务；合适再开始。'
         }
     };
 
@@ -141,7 +141,7 @@
         return COHORTS[normalizeCohort(cohort)] || {
             name: 'MuseumCheck 早期共创试用',
             inviteLine: '给这次真实参观的一张任务卡',
-            summary: '不用安装，不用注册。到馆后打开第 1 个任务，完成后告诉我们这一步有没有帮助。'
+            summary: '不用安装，不用注册。先选计划去的馆，看看现场的第一个小任务；合适再开始。'
         };
     }
 
@@ -203,6 +203,13 @@
         const datalist = document.getElementById('museumOptions');
         const error = document.getElementById('pilotError');
         const inviteCodeInput = document.getElementById('inviteCodeInput');
+        const preview = document.getElementById('pilotPreview');
+        const previewTitle = document.getElementById('pilotPreviewTitle');
+        const previewCopy = document.getElementById('pilotPreviewCopy');
+        const prep = document.getElementById('pilotPrep');
+        const submitLabel = document.getElementById('pilotSubmitLabel');
+        const cardCount = document.getElementById('pilotCardCount');
+        let previewing = false;
 
         document.title = `${config.name}｜MuseumCheck`;
         const inviteLine = document.getElementById('pilotInviteLine');
@@ -231,17 +238,46 @@
 
             let museum = resolveMuseum(museumInput.value, museums);
             const formData = new FormData(form);
+            let isPersonalMuseum = false;
             if (!museum) {
                 const city = formData.get('personalMuseumCity');
                 if (!String(city || '').trim()) {
                     if (error) {
-                        error.textContent = '这家馆还未收录，请补充所在城市后继续。';
+                        error.textContent = '请选择一个具体博物馆，或填写完整馆名和所在城市。';
                         error.hidden = false;
                     }
-                    if (personalMuseumCity) personalMuseumCity.focus();
+                    museumInput.focus();
                     return;
                 }
-                museum = createPersonalMuseum(museumInput.value, city);
+                isPersonalMuseum = true;
+                museum = { id: 'personal-preview', name: String(museumInput.value || '').trim(), location: String(city || '').trim() };
+            }
+
+            if (!previewing) {
+                const previewContext = normalizePilotContext({
+                    cohort,
+                    pilotSessionId: sessionId,
+                    inviteCode: formData.get('inviteCode'),
+                    museumId: museum.id,
+                    museumName: museum.name,
+                    city: museum.location || formData.get('personalMuseumCity')
+                });
+                if (previewTitle) previewTitle.textContent = `在${museum.name}，先找一件让孩子想多看一会儿的东西`;
+                if (previewCopy) previewCopy.textContent = '站在展厅入口，问孩子：第一眼最想走向哪里？先不用急着解释，一起走过去看看。';
+                if (preview) preview.hidden = false;
+                if (prep) prep.hidden = false;
+                if (submitLabel) submitLabel.textContent = '从这家馆开始探索';
+                if (cardCount) cardCount.textContent = '已选馆';
+                previewing = true;
+                sendSignal('pilot_preview_open', previewContext, { museumKnown: !isPersonalMuseum });
+                if (preview && typeof preview.scrollIntoView === 'function') {
+                    preview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+                return;
+            }
+
+            if (isPersonalMuseum) {
+                museum = createPersonalMuseum(museumInput.value, formData.get('personalMuseumCity'));
                 if (!museum) {
                     if (error) {
                         error.textContent = '暂时无法保存这家博物馆，请检查浏览器存储后重试。';

@@ -21,8 +21,8 @@
 
         <section class="pilot-brief" aria-labelledby="pilotTitle">
             <div class="pilot-invite-line" id="pilotInviteLine">给这次真实参观的一张任务卡</div>
-            <h1 id="pilotTitle">先用一个小任务，看看孩子会不会更愿意观察</h1>
-            <p class="pilot-summary" id="pilotSummary">不用安装，不用注册。到馆后打开第 1 个任务，完成后告诉我们这一步有没有帮助。</p>
+            <h1 id="pilotTitle">先看看，这次参观能从哪里开始</h1>
+            <p class="pilot-summary" id="pilotSummary">不用安装，不用注册。先选计划去的馆，看看现场的第一个小任务；合适再开始。</p>
             <div class="pilot-route" aria-label="试用步骤">
                 <div><span>到馆</span><strong>打开链接</strong></div>
                 <div class="pilot-route-line" aria-hidden="true"></div>
@@ -35,13 +35,37 @@
         <section class="pilot-card" aria-labelledby="pilotFormTitle">
             <div class="pilot-card-heading">
                 <div>
-                    <p class="pilot-eyebrow">试用前 30 秒</p>
-                    <h2 id="pilotFormTitle">按这次参观来准备</h2>
+                    <p class="pilot-eyebrow">先选参观地点</p>
+                    <h2 id="pilotFormTitle">想去哪里看看？</h2>
                 </div>
-                <span class="pilot-card-count">6 项</span>
+                <span class="pilot-card-count" id="pilotCardCount">1 步</span>
             </div>
 
             <form id="pilotForm" novalidate>
+                <label class="pilot-field" for="museumInput">
+                    <span>计划去哪里</span>
+                    <small>已收录馆可从建议中选择；未收录馆也可直接填写</small>
+                    <input id="museumInput" name="museum" list="museumOptions" autocomplete="off" inputmode="search" placeholder="例如：故宫博物院｜北京" required>
+                    <datalist id="museumOptions"></datalist>
+                </label>
+
+                <label class="pilot-field" for="personalMuseumCity">
+                    <span>所在城市 <small>未收录馆时填写</small></span>
+                    <input id="personalMuseumCity" name="personalMuseumCity" autocomplete="address-level2" inputmode="text" placeholder="例如：自贡">
+                </label>
+
+                <section class="pilot-preview" id="pilotPreview" hidden aria-live="polite">
+                    <p class="pilot-preview-kicker">到馆后，第 1 个任务会像这样开始</p>
+                    <h3 id="pilotPreviewTitle">先找一件让孩子想多看一会儿的东西</h3>
+                    <p id="pilotPreviewCopy">站在展厅入口，问孩子：第一眼最想走向哪里？先不用急着解释，一起走过去看看。</p>
+                    <span class="pilot-preview-note">不合适随时退出，不需要完成全部任务</span>
+                </section>
+
+                <section class="pilot-prep" id="pilotPrep" hidden aria-labelledby="pilotPrepTitle">
+                    <div class="pilot-prep-heading">
+                        <h3 id="pilotPrepTitle">要不要顺手准备一下？</h3>
+                        <p>这些都已选好默认值，不改也可以直接开始。</p>
+                    </div>
                 <fieldset class="pilot-fieldset">
                     <legend>孩子年龄段</legend>
                     <div class="pilot-choice-grid pilot-choice-grid-age">
@@ -59,18 +83,6 @@
                         </label>
                     </div>
                 </fieldset>
-
-                <label class="pilot-field" for="museumInput">
-                    <span>计划去哪里</span>
-                    <small>已收录馆可从建议中选择；未收录馆也可直接填写</small>
-                    <input id="museumInput" name="museum" list="museumOptions" autocomplete="off" inputmode="search" placeholder="例如：故宫博物院｜北京" required>
-                    <datalist id="museumOptions"></datalist>
-                </label>
-
-                <label class="pilot-field" for="personalMuseumCity">
-                    <span>所在城市 <small>未收录馆时填写</small></span>
-                    <input id="personalMuseumCity" name="personalMuseumCity" autocomplete="address-level2" inputmode="text" placeholder="例如：自贡">
-                </label>
 
                 <div class="pilot-two-column">
                     <label class="pilot-field" for="formatSelect">
@@ -109,11 +121,12 @@
                     <small>受邀共创家庭可填写，用来记录这次试用来源；不关联姓名或联系方式。</small>
                     <input id="inviteCodeInput" name="inviteCode" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text" maxlength="6" pattern="[A-Za-z0-9]{6}" placeholder="例如：7K4D9Q">
                 </label>
+                </section>
 
                 <p class="pilot-error" id="pilotError" role="alert" hidden></p>
 
                 <button class="pilot-submit" type="submit">
-                    <span>准备好第 1 个任务</span>
+                    <span id="pilotSubmitLabel">先看看第 1 个任务</span>
                     <span aria-hidden="true">→</span>
                 </button>
             </form>
@@ -132,6 +145,6 @@
 
     <script src="js/museums-meta.js"></script>
     <script src="config/api-endpoints.js"></script>
-    <script src="js/pilot.js?v=invite-codes-20260811"></script>
+    <script src="js/pilot.js?v=preview-first-20260813"></script>
 </body>
 </html>

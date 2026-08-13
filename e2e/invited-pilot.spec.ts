@@ -35,7 +35,7 @@ test.describe('invited pilot mobile flow', () => {
     });
 
     await page.goto('/pilot.html?pilot=one-camp');
-    await expect(page.locator('#pilotInviteLine')).toContainText('一初夏令营');
+    await expect(page.locator('#pilotInviteLine')).toContainText('给这次真实参观');
     await expect(page.locator('#pilotTitle')).toBeVisible();
     await expect(page.locator('#pilotForm')).toBeVisible();
 
@@ -43,15 +43,18 @@ test.describe('invited pilot mobile flow', () => {
     expect(submitBox).not.toBeNull();
     expect(submitBox!.height).toBeGreaterThanOrEqual(58);
 
-    await page.locator('input[name="age"][value="7-12"]').check();
     await page.locator('#museumInput').fill('故宫博物院｜北京');
+    await page.locator('.pilot-submit').click();
+
+    await expect(page.locator('#pilotPreview')).toBeVisible();
+    await expect(page.locator('#pilotPreviewTitle')).toContainText('故宫博物院');
     await page.locator('#formatSelect').selectOption('camp');
     await page.locator('#groupSelect').selectOption('9-20');
     await page.locator('#durationSelect').selectOption('90-120');
     await page.locator('.pilot-submit').click();
 
     await page.waitForURL(/museum-checkin\.html\?.*museum=forbidden-city/);
-    await expect(page.locator('#visitCoachKicker')).toContainText('一初夏令营共创试用');
+    await expect(page.locator('#visitCoachKicker')).toContainText('受邀共创试用');
     await expect(page.locator('#museumName')).toContainText('故宫博物院');
     await expect(page.locator('#visitCoachButton')).toBeVisible();
 
@@ -76,7 +79,7 @@ test.describe('invited pilot mobile flow', () => {
     await expect(page.locator('#visitFeedbackQuestion')).toContainText('这次试用的第 1 个任务');
 
     await expect.poll(() => signals(kvWrites).map(signal => signal.signalType)).toEqual(
-      expect.arrayContaining(['pilot_open', 'pilot_started', 'checkin_open', 'first_task_complete'])
+      expect.arrayContaining(['pilot_open', 'pilot_preview_open', 'pilot_started', 'checkin_open', 'first_task_complete'])
     );
     const checkinOpen = signals(kvWrites).find(signal => signal.signalType === 'checkin_open');
     expect(checkinOpen.parameters.source).toBe('pilot');

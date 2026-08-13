@@ -84,4 +84,8 @@ describe('invited pilot context', () => {
         expect(parsed.search).not.toContain('name');
         expect(parsed.search).not.toContain('phone');
     });
+
+    test('keeps the preview signal name separate from a real pilot start', () => {
+        expect('pilot_preview_open').not.toBe('pilot_started');
+    });
 });
