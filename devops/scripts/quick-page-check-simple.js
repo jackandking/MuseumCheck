@@ -21,7 +21,8 @@ const CRITICAL_PAGES = [
     'fireworks.html',
     'event-wall.html',
     'debug/status/index.html',
-    'admin/visit-metrics.html'
+    'admin/visit-metrics.html',
+    'admin/pilot-metrics.html'
 ];
 
 // 颜色输出
