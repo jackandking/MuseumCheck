@@ -58,6 +58,9 @@
         const ageGroup = savedAgeGroup || urlParams.get('age') || '7-12';
         const editMode = urlParams.get('edit') === 'true';
         const pilotContext = getPilotContextFromUrl(urlParams);
+        const togetherEventId = /^[a-z0-9][a-z0-9-]{2,39}$/.test(urlParams.get('together') || '')
+            ? urlParams.get('together')
+            : '';
 
         // =====================================================
         // EventWallService moved to event-wall-service.js (shared module)
@@ -248,6 +251,7 @@
                         group: pilotContext.group,
                         duration: pilotContext.duration
                     } : undefined,
+                    togetherEventId: togetherEventId || undefined,
                     parameters
                 };
                 const body = JSON.stringify({
