@@ -104,6 +104,17 @@
     });
     return ids.size;
   }
+  function publicAliases(payload, eventId) {
+    const aliases = new Map();
+    parseItems(payload).forEach(item => {
+      try {
+        const signal = typeof item.value === 'string' ? JSON.parse(item.value) : item.value;
+        const alias = cleanText(signal && signal.alias, 12);
+        if (signal && signal.type === 'together_join' && signal.eventId === eventId && signal.joinId && signal.showAlias && alias) aliases.set(signal.joinId, alias);
+      } catch (_) {}
+    });
+    return Array.from(aliases.values());
+  }
   function publicEventsFromPayload(payload) {
     const seen = new Set();
     return parseItems(payload).map(item => {
@@ -113,9 +124,11 @@
       .filter(event => eventIsReady(event) && !seen.has(event.eventId) && seen.add(event.eventId));
   }
   function endpoint() { return root && root.API_ENDPOINTS && root.API_ENDPOINTS.KV_STORE; }
-  function writeJoin(event, joinId, mode) {
+  function writeJoin(event, joinId, mode, alias, showAlias) {
     const now = Date.now();
-    const payload = { type:'together_join', eventId:event.eventId, joinId, mode: mode === 'share' ? 'share' : 'easy', timestamp:now };
+    const publicAlias = showAlias ? cleanText(alias, 12) : '';
+    const payload = { type:'together_join', eventId:event.eventId, joinId, mode: mode === 'share' ? 'share' : 'easy', showAlias:Boolean(publicAlias), timestamp:now };
+    if (publicAlias) payload.alias = publicAlias;
     const body = JSON.stringify({ key:KEY, sortKey:`join-${event.eventId}-${joinId}`, value:JSON.stringify(payload), expireAt:Math.floor(now / 1000) + TTL });
     if (!root || typeof root.fetch !== 'function' || !endpoint()) return Promise.resolve();
     return root.fetch(endpoint(), { method:'POST', headers:{'Content-Type':'application/json'}, body, keepalive:true }).catch(() => undefined);
@@ -140,6 +153,13 @@
     return root.fetch(`${endpoint()}?key=${encodeURIComponent(KEY)}&sortKey=*`, {cache:'no-store'})
       .then(response => response.ok ? response.json() : null)
       .then(payload => countJoins(payload, event.eventId)).catch(() => 0);
+  }
+  function loadAttendance(event) {
+    if (!root || typeof root.fetch !== 'function' || !endpoint()) return Promise.resolve({ count:0, aliases:[] });
+    return root.fetch(`${endpoint()}?key=${encodeURIComponent(KEY)}&sortKey=*`, {cache:'no-store'})
+      .then(response => response.ok ? response.json() : null)
+      .then(payload => ({ count:countJoins(payload, event.eventId), aliases:publicAliases(payload, event.eventId) }))
+      .catch(() => ({ count:0, aliases:[] }));
   }
   function loadCounts(events) {
     if (!root || typeof root.fetch !== 'function' || !endpoint()) return Promise.resolve(new Map());
@@ -282,12 +302,24 @@
       : `在${museum.name}，各家按自己的节奏逛；最后可选地把一件“孩子发现”拼成共同地图。`;
     const storageKey = eventKey(event); let saved = null;
     try { saved = JSON.parse(storageGet(storageKey) || 'null'); } catch (_) {}
+    function renderAttendance() {
+      loadAttendance(event).then(attendance => {
+        byId('attendance').textContent = attendance.count ? `目前有 ${attendance.count} 组家庭加入这场同行探索。` : '你是第一组加入的家庭。';
+        const rollcall = byId('familyRollcall'); const aliases = byId('familyAliases');
+        if (!rollcall || !aliases) return;
+        aliases.replaceChildren(...attendance.aliases.map(alias => {
+          const chip = root.document.createElement('span'); chip.className = 'family-alias'; chip.textContent = alias; return chip;
+        }));
+        rollcall.hidden = attendance.aliases.length === 0;
+      });
+    }
+    renderAttendance();
     function renderJoined() {
       joinCard.hidden = true; joinedCard.hidden = false;
       const alias = cleanText(saved && saved.alias, 12) || '你们';
       byId('joinedTitle').textContent = `${alias}，先按自己的节奏出发。`;
       byId('startVisit').href = buildVisitUrl(event, museum, saved && saved.ageGroup, saved && saved.mode);
-      loadCount(event).then(count => { byId('attendance').textContent = count ? `目前有 ${count} 组家庭加入这场同行探索。` : '你是第一组加入的家庭。'; });
+      renderAttendance();
       const discoveries = byId('eventDiscoveries'); const grid = byId('eventDiscoveriesGrid');
       if (discoveries && grid && root.MuseumCheckFamilyPhotos) {
         root.MuseumCheckFamilyPhotos.renderEventPhotos(grid, event.eventId).then(photos => { discoveries.hidden = photos.length === 0; });
@@ -303,12 +335,13 @@
       error.hidden = true;
       const mode = root.document.querySelector('input[name="mode"]:checked').value;
       const ageGroup = AGE_GROUPS[byId('joinAgeGroup').value] ? byId('joinAgeGroup').value : event.ageGroup;
-      saved = { alias, ageGroup, mode, joinId:createJoinId(), joinedAt:Date.now(), event }; storageSet(storageKey, JSON.stringify(saved));
-      writeJoin(event, saved.joinId, mode).finally(renderJoined);
+      const showAlias = byId('showAlias').checked;
+      saved = { alias, ageGroup, mode, showAlias, joinId:createJoinId(), joinedAt:Date.now(), event }; storageSet(storageKey, JSON.stringify(saved));
+      writeJoin(event, saved.joinId, mode, alias, showAlias).finally(renderJoined);
     });
   }
   if (root && root.document) {
     if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', init, {once:true}); else init();
   }
-  return { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, publicEventsFromPayload, myActivities, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS, LEGACY_EVENTS };
+  return { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, publicAliases, publicEventsFromPayload, myActivities, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS, LEGACY_EVENTS };
 });

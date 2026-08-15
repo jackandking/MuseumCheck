@@ -1,4 +1,4 @@
-const { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, publicEventsFromPayload, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS, LEGACY_EVENTS } = require('../js/together.js');
+const { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, publicAliases, publicEventsFromPayload, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS, LEGACY_EVENTS } = require('../js/together.js');
 
 describe('同行探索活动入口', () => {
   test('only accepts controlled event configuration', () => {
@@ -21,6 +21,16 @@ describe('同行探索活动入口', () => {
       { value: 'not-json' }
     ]) };
     expect(countJoins(payload, 'shanghai-sunday-1')).toBe(1);
+  });
+
+  test('only returns aliases a family chose to show for this activity', () => {
+    const payload = { value: JSON.stringify([
+      { value: JSON.stringify({ type:'together_join', eventId:'shanghai-sunday-1', joinId:'a', alias:'小小探险队', showAlias:true }) },
+      { value: JSON.stringify({ type:'together_join', eventId:'shanghai-sunday-1', joinId:'b', alias:'不公开的家', showAlias:false }) },
+      { value: JSON.stringify({ type:'together_join', eventId:'another-event', joinId:'c', alias:'别场活动', showAlias:true }) },
+      { value: JSON.stringify({ type:'together_join', eventId:'shanghai-sunday-1', joinId:'a', alias:'重复写入', showAlias:true }) }
+    ]) };
+    expect(publicAliases(payload, 'shanghai-sunday-1')).toEqual(['重复写入']);
   });
 
   test('builds an on-site visit link without aliases or contact information', () => {
@@ -82,11 +92,12 @@ describe('同行探索活动入口', () => {
     expect(PUBLIC_EVENTS[0].ageGroup).toBe('7-12');
   });
 
-  test('activity page keeps photo sharing scoped to joined families and removes aliases', () => {
+  test('activity page keeps photo sharing scoped to joined families and supports explicit temporary aliases', () => {
     const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'together.html'), 'utf8');
     expect(html).toContain('只给本场同行家庭看');
     expect(html).toContain('eventDiscoveriesGrid');
-    expect(html).not.toContain('家庭昵称');
+    expect(html).toContain('showAlias');
+    expect(html).toContain('familyAliases');
     expect(html).toContain('createAgeGroup');
     expect(html).toContain('joinAgeGroup');
     expect(html).toContain('createPublicEvent');

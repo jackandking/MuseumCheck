@@ -57,6 +57,12 @@
         <div><dt>规模</dt><dd id="eventLimit">-</dd></div>
       </dl>
       <p class="privacy-note">不交换联系方式，不展示孩子照片或实时位置。每家自己买票、自己安排节奏。</p>
+      <section class="family-rollcall" id="familyRollcall" hidden aria-labelledby="familyRollcallTitle">
+        <p class="eyebrow">已经约好一起逛</p>
+        <h3 id="familyRollcallTitle">已报名的家庭</h3>
+        <p>只展示报名时主动留下的临时称号，不含联系方式或孩子信息。</p>
+        <div class="family-aliases" id="familyAliases"></div>
+      </section>
     </section>
 
     <section class="join-card" id="joinCard" hidden aria-labelledby="joinTitle">
@@ -65,8 +71,9 @@
         <span class="step">1 分钟</span>
       </div>
       <form id="joinForm" novalidate>
-        <label for="familyAlias">这次想怎么称呼你们？<small>只在你的手机里保存，不公开展示</small></label>
+        <label for="familyAlias">这次想怎么称呼你们？<small>默认展示给查看本场活动的家庭；可以在下面关掉。</small></label>
         <input id="familyAlias" maxlength="12" autocomplete="off" placeholder="例如：小小探险队" required>
+        <label class="alias-choice" for="showAlias"><input id="showAlias" type="checkbox" checked> <span>让其他家庭看到这个临时称号<small>只显示这几个字，不显示联系方式、孩子信息或实时位置。</small></span></label>
         <label for="joinAgeGroup">孩子年龄段<small>用于匹配进入后的任务；和本场主要适龄不同也可以参加。</small></label>
         <select id="joinAgeGroup" required><option value="3-6">3–6 岁｜观察与发现</option><option value="7-12">7–12 岁｜探索与提问</option><option value="13-18">13–18 岁｜主题讨论</option></select>
         <fieldset>
@@ -124,6 +131,6 @@
   <script src="config/api-endpoints.js?v=together-20260814"></script>
   <script src="js/museums-meta.js?v=together-20260814"></script>
   <script src="js/family-photo-sharing.js?v=together-photos-20260815"></script>
-  <script src="js/together.js?v=together-recovery-20260815b"></script>
+  <script src="js/together.js?v=together-family-aliases-20260815"></script>
 </body>
 </html>
