@@ -6,6 +6,8 @@
 })(typeof window !== 'undefined' ? window : null, function(root) {
   'use strict';
   const KEY = 'museumcheck-together-events';
+  const PUBLIC_EVENT_KEY = 'museumcheck-together-public-events';
+  const CREATED_EVENT_PREFIX = 'museumcheckTogetherCreated:';
   const TTL = 90 * 24 * 60 * 60;
   const EVENT_PATTERN = /^[a-z0-9][a-z0-9-]{2,39}$/;
   const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -39,6 +41,7 @@
     };
   }
   function eventKey(event) { return `museumcheckTogether:${event.eventId}`; }
+  function createdEventKey(event) { return `${CREATED_EVENT_PREFIX}${event.eventId}`; }
   function getMuseum(event) {
     const museums = Array.isArray(root && root.MUSEUMS_META) ? root.MUSEUMS_META : [];
     return museums.find(museum => museum && museum.id === event.museumId) || null;
@@ -47,6 +50,21 @@
   function createEventId() { return `visit-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`; }
   function storageGet(key) { try { return root.localStorage.getItem(key); } catch (_) { return ''; } }
   function storageSet(key, value) { try { root.localStorage.setItem(key, value); } catch (_) {} }
+  function storageItems(prefix) {
+    const items = [];
+    try {
+      for (let index = 0; index < root.localStorage.length; index += 1) {
+        const key = root.localStorage.key(index);
+        if (key && key.indexOf(prefix) === 0) items.push({ key, value: root.localStorage.getItem(key) });
+      }
+    } catch (_) {}
+    return items;
+  }
+  function saveCreatedEvent(event) {
+    const normalized = normalizeEvent(event);
+    if (!eventIsReady(normalized)) return;
+    storageSet(createdEventKey(normalized), JSON.stringify({ event:normalized, createdAt:Date.now() }));
+  }
   function buildVisitUrl(event, museum, selectedAgeGroup, mode) {
     const params = new URLSearchParams({ museum: museum.id, format: 'friends', together: event.eventId });
     const ageGroup = AGE_GROUPS[selectedAgeGroup] ? selectedAgeGroup : event.ageGroup;
@@ -81,6 +99,14 @@
     });
     return ids.size;
   }
+  function publicEventsFromPayload(payload) {
+    const seen = new Set();
+    return parseItems(payload).map(item => {
+      try { return typeof item.value === 'string' ? JSON.parse(item.value) : item.value; } catch (_) { return null; }
+    }).filter(signal => signal && signal.type === 'together_public_event' && signal.event)
+      .map(signal => ({ ...normalizeEvent(signal.event), status:'recruiting' }))
+      .filter(event => eventIsReady(event) && !seen.has(event.eventId) && seen.add(event.eventId));
+  }
   function endpoint() { return root && root.API_ENDPOINTS && root.API_ENDPOINTS.KV_STORE; }
   function writeJoin(event, joinId, mode) {
     const now = Date.now();
@@ -88,6 +114,21 @@
     const body = JSON.stringify({ key:KEY, sortKey:`join-${event.eventId}-${joinId}`, value:JSON.stringify(payload), expireAt:Math.floor(now / 1000) + TTL });
     if (!root || typeof root.fetch !== 'function' || !endpoint()) return Promise.resolve();
     return root.fetch(endpoint(), { method:'POST', headers:{'Content-Type':'application/json'}, body, keepalive:true }).catch(() => undefined);
+  }
+  function writePublicEvent(event) {
+    const normalized = normalizeEvent(event);
+    if (!eventIsReady(normalized) || !root || typeof root.fetch !== 'function' || !endpoint()) return Promise.resolve(false);
+    const now = Date.now();
+    const payload = { type:'together_public_event', event:{ ...normalized, status:'recruiting' }, timestamp:now };
+    const body = JSON.stringify({ key:PUBLIC_EVENT_KEY, sortKey:`event-${normalized.eventId}`, value:JSON.stringify(payload), expireAt:Math.floor(now / 1000) + TTL });
+    return root.fetch(endpoint(), { method:'POST', headers:{'Content-Type':'application/json'}, body, keepalive:true })
+      .then(response => response.ok).catch(() => false);
+  }
+  function loadPublicEvents() {
+    if (!root || typeof root.fetch !== 'function' || !endpoint()) return Promise.resolve([]);
+    return root.fetch(`${endpoint()}?key=${encodeURIComponent(PUBLIC_EVENT_KEY)}&sortKey=*`, {cache:'no-store'})
+      .then(response => response.ok ? response.json() : null)
+      .then(publicEventsFromPayload).catch(() => []);
   }
   function loadCount(event) {
     if (!root || typeof root.fetch !== 'function' || !endpoint()) return Promise.resolve(0);
@@ -115,12 +156,34 @@
     if (elapsed >= 0 && elapsed < 5 * 60 * 60 * 1000) return 'ongoing';
     return event.status === 'recruiting' && elapsed < 0 ? 'recruiting' : 'past';
   }
-  function buildActivityRow(event, museum, count, state) {
+  function myActivities() {
+    const activities = new Map();
+    const remember = (event, kind) => {
+      const normalized = normalizeEvent(event);
+      if (!eventIsReady(normalized) || activities.has(normalized.eventId)) return;
+      activities.set(normalized.eventId, { event:normalized, kind });
+    };
+    storageItems(CREATED_EVENT_PREFIX).forEach(item => {
+      try { remember(JSON.parse(item.value).event, '我发起的活动'); } catch (_) {}
+    });
+    storageItems('museumcheckTogether:').forEach(item => {
+      try {
+        const saved = JSON.parse(item.value);
+        if (saved && saved.event) remember(saved.event, '已报名');
+        else {
+          const legacy = PUBLIC_EVENTS.find(event => event.eventId === item.key.slice('museumcheckTogether:'.length));
+          if (legacy) remember(legacy, '已报名');
+        }
+      } catch (_) {}
+    });
+    return Array.from(activities.values()).sort((a, b) => `${a.event.date}${a.event.time}`.localeCompare(`${b.event.date}${b.event.time}`));
+  }
+  function buildActivityRow(event, museum, count, state, tagOverride) {
     const row = root.document.createElement(state === 'recruiting' ? 'a' : 'article');
     row.className = `activity-row${state === 'ongoing' ? ' activity-row--ongoing' : ''}`;
     if (state === 'recruiting') row.href = buildEventUrl(event);
     const capacity = Math.max(0, event.limit - count);
-    const tag = state === 'ongoing' ? '正在进行 · 匿名旁观' : '正在招募';
+    const tag = tagOverride || (state === 'ongoing' ? '正在进行 · 匿名旁观' : '正在招募');
     const detail = state === 'ongoing'
       ? `已有 ${count} 组家庭加入，正各自从第一张任务开始。`
       : `${humanDate(event.date, event.time)} · ${AGE_GROUPS[event.ageGroup] || '亲子同行'}`;
@@ -134,9 +197,23 @@
     lobby.hidden = false;
     const host = byId('createHost'); if (host) host.appendChild(emptyCard);
     emptyCard.hidden = false;
-    const visible = PUBLIC_EVENTS.map(event => ({ ...event, ...normalizeEvent(event) }))
-      .map(event => ({ event, museum:getMuseum(event) })).filter(item => item.museum);
-    loadCounts(visible.map(item => item.event)).then(counts => {
+    const savedActivities = myActivities();
+    const myList = byId('myActivityList'); const mySection = byId('myActivities');
+    if (myList && mySection) {
+      const myRows = savedActivities.map(item => {
+        const museum = getMuseum(item.event);
+        return museum ? buildActivityRow(item.event, museum, 0, 'recruiting', item.kind) : null;
+      }).filter(Boolean);
+      myList.replaceChildren(...myRows);
+      mySection.hidden = myRows.length === 0;
+    }
+    loadPublicEvents().then(remoteEvents => {
+      const events = new Map();
+      PUBLIC_EVENTS.forEach(event => events.set(event.eventId, { ...event, ...normalizeEvent(event) }));
+      remoteEvents.forEach(event => { if (!events.has(event.eventId)) events.set(event.eventId, event); });
+      const visible = Array.from(events.values()).map(event => ({ event, museum:getMuseum(event) })).filter(item => item.museum);
+      return loadCounts(visible.map(item => item.event)).then(counts => ({ visible, counts }));
+    }).then(({ visible, counts }) => {
       const now = Date.now(); const recruiting = []; const ongoing = [];
       visible.forEach(item => {
         const state = publicEventState(item.event, now); if (state === 'recruiting') recruiting.push({...item, state}); if (state === 'ongoing') ongoing.push({...item, state});
@@ -172,11 +249,20 @@
       });
       const dateInput = byId('createDate');
       dateInput.min = new Date().toISOString().slice(0, 10);
-      byId('createForm').addEventListener('submit', function(eventObject) {
+      byId('createForm').addEventListener('submit', async function(eventObject) {
         eventObject.preventDefault();
         const error = byId('createError'); const museumId = createMuseum.value; const date = dateInput.value; const time = byId('createTime').value; const limit = byId('createLimit').value; const ageGroup = byId('createAgeGroup').value;
         if (!museumId || !DATE_PATTERN.test(date) || !TIME_PATTERN.test(time) || !AGE_GROUPS[ageGroup]) { error.textContent = '选好博物馆、日期、时间和主要适龄段后就能生成。'; error.hidden = false; return; }
-        const next = new URL(root.location.href); next.search = new URLSearchParams({ event:createEventId(), museum:museumId, date, time, limit, ageGroup }).toString(); root.location.assign(next.toString());
+        const created = normalizeEvent({ eventId:createEventId(), museumId, date, time, limit, ageGroup });
+        saveCreatedEvent(created);
+        if (byId('createPublicEvent').checked) {
+          const button = eventObject.currentTarget.querySelector('button[type="submit"]');
+          button.disabled = true; button.textContent = '正在发布到活动广场…';
+          const published = await writePublicEvent(created);
+          button.disabled = false; button.textContent = '生成活动报名链接';
+          if (!published) { error.textContent = '暂时没能发布到活动广场，请检查网络后重试；活动已保留在“我的活动”。'; error.hidden = false; return; }
+        }
+        root.location.assign(buildEventUrl(created));
       });
       return;
     }
@@ -212,12 +298,12 @@
       error.hidden = true;
       const mode = root.document.querySelector('input[name="mode"]:checked').value;
       const ageGroup = AGE_GROUPS[byId('joinAgeGroup').value] ? byId('joinAgeGroup').value : event.ageGroup;
-      saved = { alias, ageGroup, mode, joinId:createJoinId(), joinedAt:Date.now() }; storageSet(storageKey, JSON.stringify(saved));
+      saved = { alias, ageGroup, mode, joinId:createJoinId(), joinedAt:Date.now(), event }; storageSet(storageKey, JSON.stringify(saved));
       writeJoin(event, saved.joinId, mode).finally(renderJoined);
     });
   }
   if (root && root.document) {
     if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', init, {once:true}); else init();
   }
-  return { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS };
+  return { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, publicEventsFromPayload, myActivities, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS };
 });

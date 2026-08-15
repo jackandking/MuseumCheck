@@ -1,4 +1,4 @@
-const { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS } = require('../js/together.js');
+const { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, publicEventsFromPayload, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS } = require('../js/together.js');
 
 describe('同行探索活动入口', () => {
   test('only accepts controlled event configuration', () => {
@@ -57,6 +57,16 @@ describe('同行探索活动入口', () => {
     expect(publicEventState(event, new Date(2026, 7, 22, 16, 0).getTime())).toBe('past');
   });
 
+  test('only shows valid, deduplicated public activities from the shared activity feed', () => {
+    const payload = { value: JSON.stringify([
+      { value: JSON.stringify({ type:'together_public_event', event:{ eventId:'new-zealand-visit', museumId:'shanghai-museum', date:'2026-08-30', time:'10:30', limit:4, ageGroup:'3-6' } }) },
+      { value: JSON.stringify({ type:'together_public_event', event:{ eventId:'new-zealand-visit', museumId:'shanghai-museum', date:'2026-08-30', time:'10:30', limit:4, ageGroup:'3-6' } }) },
+      { value: JSON.stringify({ type:'together_public_event', event:{ eventId:'<script>', museumId:'shanghai-museum', date:'bad', time:'later' } }) },
+      { value: JSON.stringify({ type:'together_join', eventId:'new-zealand-visit', joinId:'not-an-event' }) }
+    ]) };
+    expect(publicEventsFromPayload(payload)).toEqual([{ eventId:'new-zealand-visit', museumId:'shanghai-museum', date:'2026-08-30', time:'10:30', limit:4, ageGroup:'3-6', status:'recruiting' }]);
+  });
+
   test('the curated public activity keeps its recruiting status after URL normalization', () => {
     const event = { ...PUBLIC_EVENTS[0], ...normalizeEvent(PUBLIC_EVENTS[0]) };
     expect(publicEventState(event, new Date(2026, 7, 15, 12, 0).getTime())).toBe('recruiting');
@@ -75,6 +85,8 @@ describe('同行探索活动入口', () => {
     expect(html).not.toContain('家庭昵称');
     expect(html).toContain('createAgeGroup');
     expect(html).toContain('joinAgeGroup');
+    expect(html).toContain('createPublicEvent');
+    expect(html).toContain('myActivityList');
   });
 
   test('keeps shared discoveries opt-in and gives the homepage a conditional activity entry', () => {

@@ -26,6 +26,11 @@
         <div><p class="eyebrow">活动广场</p><h2 id="lobbyTitle">正在招募的同行探索</h2></div>
         <p class="lobby-summary" id="lobbySummary">正在读取活动…</p>
       </div>
+      <section class="my-activities" id="myActivities" hidden aria-labelledby="myActivitiesTitle">
+        <div><p class="eyebrow">留在这里</p><h2 id="myActivitiesTitle">我的活动</h2></div>
+        <p>已报名或发起过的活动会保留在这台设备上。到馆那天，从这里继续就好。</p>
+        <div class="activity-list" id="myActivityList"></div>
+      </section>
       <div class="activity-list" id="recruitingList" aria-live="polite"></div>
       <div class="lobby-heading lobby-heading--ongoing">
         <div><p class="eyebrow">旁观一下</p><h2>正在进行</h2></div>
@@ -34,7 +39,7 @@
       <div class="activity-list" id="ongoingList" aria-live="polite"></div>
       <details class="host-details">
         <summary>想发起一场专属同行探索？</summary>
-        <p>链接只给你自己分发，不会自动出现在活动广场。</p>
+        <p>默认只给你自己分发；勾选公开招募后，才会显示在活动广场。</p>
         <div id="createHost"></div>
       </details>
     </section>
@@ -94,13 +99,14 @@
     <section class="empty-card" id="emptyCard" hidden>
       <p class="eyebrow">发起一场同行探索</p>
       <h2>先确定一座馆和一个时段。</h2>
-      <p>生成的链接只用于你自己分发；不会自动公开到陌生人列表，也不会收集联系方式。</p>
+      <p>默认只给你自己分发，也不会收集联系方式。想在活动广场招募时再主动选择公开即可。</p>
       <form id="createForm" novalidate>
         <label for="createMuseum">去哪个馆？</label>
         <select id="createMuseum" required><option value="">选择已收录的博物馆</option></select>
         <div class="form-grid"><label for="createDate">哪天？<input id="createDate" type="date" required></label><label for="createTime">几点集合？<input id="createTime" type="time" value="10:30" required></label></div>
         <label for="createAgeGroup">主要适龄段<select id="createAgeGroup" required><option value="" selected disabled>选择本场主要适龄段</option><option value="3-6">3–6 岁｜观察与发现</option><option value="7-12">7–12 岁｜探索与提问</option><option value="13-18">13–18 岁｜主题讨论</option></select></label>
         <label for="createLimit">最多几组家庭？<select id="createLimit"><option value="3">3 组</option><option value="4">4 组</option><option value="5" selected>5 组</option><option value="6">6 组</option></select></label>
+        <label class="public-event-choice" for="createPublicEvent"><input id="createPublicEvent" type="checkbox"> <span>在活动广场公开招募<small>只显示博物馆、时间、适龄段和剩余名额；不显示发起人、联系方式或孩子信息。</small></span></label>
         <p class="form-error" id="createError" role="alert" hidden></p>
         <button type="submit">生成活动报名链接</button>
       </form>
@@ -118,6 +124,6 @@
   <script src="config/api-endpoints.js?v=together-20260814"></script>
   <script src="js/museums-meta.js?v=together-20260814"></script>
   <script src="js/family-photo-sharing.js?v=together-photos-20260815"></script>
-  <script src="js/together.js?v=together-age-groups-20260815b"></script>
+  <script src="js/together.js?v=together-recovery-20260815"></script>
 </body>
 </html>
