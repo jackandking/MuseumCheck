@@ -185,8 +185,9 @@
     byId('eventTime').textContent = humanDate(event.date, event.time);
     byId('eventAge').textContent = AGE_GROUPS[event.ageGroup] || '发起者未限定';
     byId('eventLimit').textContent = `最多 ${event.limit} 组家庭`;
-    if (event.ageGroup) byId('eventSummary').textContent = `在${museum.name}，以 ${AGE_GROUPS[event.ageGroup].split('｜')[0]} 的孩子为主；每家仍按自己的节奏逛，最后可选地把一件“孩子发现”拼成共同地图。`;
-    byId('eventSummary').textContent = `在${museum.name}，各家按自己的节奏逛；最后可选地把一件“孩子发现”拼成共同地图。`;
+    byId('eventSummary').textContent = event.ageGroup
+      ? `在${museum.name}，以 ${AGE_GROUPS[event.ageGroup].split('｜')[0]} 的孩子为主；每家仍按自己的节奏逛，最后可选地把一件“孩子发现”拼成共同地图。`
+      : `在${museum.name}，各家按自己的节奏逛；最后可选地把一件“孩子发现”拼成共同地图。`;
     const storageKey = eventKey(event); let saved = null;
     try { saved = JSON.parse(storageGet(storageKey) || 'null'); } catch (_) {}
     function renderJoined() {
