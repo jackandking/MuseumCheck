@@ -47,10 +47,11 @@
   function createEventId() { return `visit-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`; }
   function storageGet(key) { try { return root.localStorage.getItem(key); } catch (_) { return ''; } }
   function storageSet(key, value) { try { root.localStorage.setItem(key, value); } catch (_) {} }
-  function buildVisitUrl(event, museum, selectedAgeGroup) {
+  function buildVisitUrl(event, museum, selectedAgeGroup, mode) {
     const params = new URLSearchParams({ museum: museum.id, format: 'friends', together: event.eventId });
     const ageGroup = AGE_GROUPS[selectedAgeGroup] ? selectedAgeGroup : event.ageGroup;
     if (ageGroup) params.set('age', ageGroup);
+    if (mode === 'share') params.set('togetherMode', 'share');
     return `museum-checkin.html?${params.toString()}`;
   }
   function buildEventUrl(event) {
@@ -194,7 +195,7 @@
       joinCard.hidden = true; joinedCard.hidden = false;
       const alias = cleanText(saved && saved.alias, 12) || '你们';
       byId('joinedTitle').textContent = `${alias}，先按自己的节奏出发。`;
-      byId('startVisit').href = buildVisitUrl(event, museum, saved && saved.ageGroup);
+      byId('startVisit').href = buildVisitUrl(event, museum, saved && saved.ageGroup, saved && saved.mode);
       loadCount(event).then(count => { byId('attendance').textContent = count ? `目前有 ${count} 组家庭加入这场同行探索。` : '你是第一组加入的家庭。'; });
       const discoveries = byId('eventDiscoveries'); const grid = byId('eventDiscoveriesGrid');
       if (discoveries && grid && root.MuseumCheckFamilyPhotos) {

@@ -24,12 +24,13 @@ describe('同行探索活动入口', () => {
   });
 
   test('builds an on-site visit link without aliases or contact information', () => {
-    const url = buildVisitUrl({ eventId:'shanghai-sunday-1', ageGroup:'7-12' }, { id:'shanghai-museum' });
+    const url = buildVisitUrl({ eventId:'shanghai-sunday-1', ageGroup:'7-12' }, { id:'shanghai-museum' }, '7-12', 'share');
     const parsed = new URL(url, 'https://museumcheck.cn');
     expect(parsed.pathname).toBe('/museum-checkin.html');
     expect(parsed.searchParams.get('museum')).toBe('shanghai-museum');
     expect(parsed.searchParams.get('together')).toBe('shanghai-sunday-1');
     expect(parsed.searchParams.get('age')).toBe('7-12');
+    expect(parsed.searchParams.get('togetherMode')).toBe('share');
     expect(parsed.search).not.toContain('alias');
   });
 
@@ -74,5 +75,14 @@ describe('同行探索活动入口', () => {
     expect(html).not.toContain('家庭昵称');
     expect(html).toContain('createAgeGroup');
     expect(html).toContain('joinAgeGroup');
+  });
+
+  test('keeps shared discoveries opt-in and gives the homepage a conditional activity entry', () => {
+    const checkin = require('fs').readFileSync(require('path').join(__dirname, '..', 'js', 'museum-checkin.js'), 'utf8');
+    const home = require('fs').readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8');
+    expect(checkin).toContain("togetherMode === 'share'");
+    expect(checkin).toContain('togetherSharedGoal');
+    expect(home).toContain('togetherHomeEntry');
+    expect(home).toContain('together-home-entry.js');
   });
 });

@@ -53,14 +53,16 @@
         // Get museum ID from URL parameter
         const urlParams = new URLSearchParams(window.location.search);
         const museumId = urlParams.get('id') || urlParams.get('museum') || 'forbidden-city';
-        // Use saved age group from localStorage first, then URL parameter as fallback
+        // A Together registration explicitly selects this visit's age band. It must
+        // take precedence over an older local preference.
         const savedAgeGroup = localStorage.getItem('ageGroup');
-        const ageGroup = savedAgeGroup || urlParams.get('age') || '7-12';
+        const ageGroup = urlParams.get('age') || savedAgeGroup || '7-12';
         const editMode = urlParams.get('edit') === 'true';
         const pilotContext = getPilotContextFromUrl(urlParams);
         const togetherEventId = /^[a-z0-9][a-z0-9-]{2,39}$/.test(urlParams.get('together') || '')
             ? urlParams.get('together')
             : '';
+        const togetherMode = togetherEventId && urlParams.get('togetherMode') === 'share' ? 'share' : 'easy';
 
         // =====================================================
         // EventWallService moved to event-wall-service.js (shared module)
@@ -3577,11 +3579,17 @@
             const eventCheckbox = document.getElementById('sharePhotoWithEvent');
             const reviewCheckbox = document.getElementById('submitPhotoForReview');
             if (!section || !eventCheckbox || !reviewCheckbox) return;
-            const available = Boolean(togetherEventId && window.MuseumCheckFamilyPhotos);
+            const available = Boolean(togetherEventId && togetherMode === 'share' && window.MuseumCheckFamilyPhotos);
             section.hidden = !available;
             eventCheckbox.disabled = !hasPhoto;
             reviewCheckbox.disabled = !hasPhoto;
             if (!hasPhoto) { eventCheckbox.checked = false; reviewCheckbox.checked = false; }
+        }
+
+        function updateTogetherSharedGoal() {
+            const goal = document.getElementById('togetherSharedGoal');
+            if (!goal) return;
+            goal.hidden = !(togetherEventId && togetherMode === 'share' && completedTasks.size > 0);
         }
 
         async function publishFamilyPhotoIfChosen(taskIndex, task, imageDataUrl) {
@@ -3689,6 +3697,7 @@
 
             completedTasks.add(completedTaskIndex);
             saveCompletedTasks();
+            updateTogetherSharedGoal();
             
             // ===== EVENT WALL TRACKING: Task Completion =====
             // Track individual task completion to event wall
@@ -5931,6 +5940,7 @@
             
             // Also load reported tasks
             loadReportedTasks();
+            updateTogetherSharedGoal();
         }
 
         // Setup event listeners

@@ -819,6 +819,13 @@ header h1 {
     margin-bottom: 25px;
 }
 
+.together-home-entry { display:flex; align-items:center; justify-content:space-between; gap:14px; max-width:500px; margin:0 auto 18px; padding:15px 16px; border:1px solid #b7e0d6; border-radius:16px 16px 16px 4px; background:#f0faf7; color:#175d52; text-decoration:none; box-sizing:border-box; }
+.together-home-entry:hover { border-color:#4aa895; box-shadow:0 5px 14px rgba(24,107,91,.10); }
+.together-home-entry__eyebrow { display:block; margin-bottom:4px; color:#277866; font-size:12px; font-weight:700; }
+.together-home-entry__title { display:block; color:#175d52; font-size:16px; font-weight:800; }
+.together-home-entry__detail { display:block; margin-top:4px; color:#46766e; font-size:13px; }
+.together-home-entry__cta { flex:0 0 auto; color:#176d5c; font-size:13px; font-weight:800; }
+
 .search-container {
     position: relative;
     max-width: 500px;

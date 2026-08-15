@@ -214,6 +214,25 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
+        .together-shared-goal {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 0 18px;
+            padding: 15px 16px;
+            box-sizing: border-box;
+            border: 1px solid #b8e6dc;
+            border-radius: 16px 16px 16px 4px;
+            background: #effaf6;
+            color: #175d52;
+        }
+        .together-shared-goal[hidden] { display: none; }
+        .together-shared-goal-mark { display: grid; flex: 0 0 auto; place-items: center; width: 31px; height: 31px; border-radius: 50%; background: #168270; color: #fff; font-weight: 800; }
+        .together-shared-goal p { margin: 0 0 3px; font-size: 12px; font-weight: 800; letter-spacing: .04em; }
+        .together-shared-goal h2 { margin: 0; font-size: 16px; }
+        .together-shared-goal span { display: block; margin-top: 5px; font-size: 13px; line-height: 1.55; }
+
         .visit-coach {
             width: 100%;
             max-width: 800px;
