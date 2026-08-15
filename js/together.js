@@ -10,6 +10,11 @@
   const EVENT_PATTERN = /^[a-z0-9][a-z0-9-]{2,39}$/;
   const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
   const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+  // Public activities are intentionally curated in code for this first, reversible experiment.
+  // A creator-generated link remains private unless a maintainer adds it here.
+  const PUBLIC_EVENTS = Object.freeze([
+    Object.freeze({ eventId:'shanghai-museum-aug22', museumId:'shanghai-museum', date:'2026-08-22', time:'10:30', limit:5, ageLabel:'4–10 岁亲子', status:'recruiting' })
+  ]);
 
   function cleanText(value, max) { return String(value || '').trim().replace(/[<>]/g, '').slice(0, max); }
   function normalizeEvent(input) {
@@ -39,6 +44,10 @@
   function buildVisitUrl(event, museum) {
     const params = new URLSearchParams({ museum: museum.id, format: 'friends', together: event.eventId });
     return `museum-checkin.html?${params.toString()}`;
+  }
+  function buildEventUrl(event) {
+    const params = new URLSearchParams({ event:event.eventId, museum:event.museumId, date:event.date, time:event.time, limit:String(event.limit) });
+    return `together.html?${params.toString()}`;
   }
   function humanDate(date, time) {
     if (!date) return '待发起者确认';
@@ -76,6 +85,60 @@
       .then(response => response.ok ? response.json() : null)
       .then(payload => countJoins(payload, event.eventId)).catch(() => 0);
   }
+  function loadCounts(events) {
+    if (!root || typeof root.fetch !== 'function' || !endpoint()) return Promise.resolve(new Map());
+    return root.fetch(`${endpoint()}?key=${encodeURIComponent(KEY)}&sortKey=*`, {cache:'no-store'})
+      .then(response => response.ok ? response.json() : null)
+      .then(payload => {
+        const counts = new Map();
+        events.forEach(event => counts.set(event.eventId, countJoins(payload, event.eventId)));
+        return counts;
+      }).catch(() => new Map());
+  }
+  function publicEventState(event, now) {
+    const parts = String(event.date || '').split('-').map(Number);
+    const clock = String(event.time || '').split(':').map(Number);
+    const start = parts.length === 3 && clock.length === 2
+      ? new Date(parts[0], parts[1] - 1, parts[2], clock[0], clock[1]).getTime()
+      : Number.NaN;
+    const elapsed = Number.isNaN(start) ? -1 : now - start;
+    if (elapsed >= 0 && elapsed < 5 * 60 * 60 * 1000) return 'ongoing';
+    return event.status === 'recruiting' && elapsed < 0 ? 'recruiting' : 'past';
+  }
+  function buildActivityRow(event, museum, count, state) {
+    const row = root.document.createElement(state === 'recruiting' ? 'a' : 'article');
+    row.className = `activity-row${state === 'ongoing' ? ' activity-row--ongoing' : ''}`;
+    if (state === 'recruiting') row.href = buildEventUrl(event);
+    const capacity = Math.max(0, event.limit - count);
+    const tag = state === 'ongoing' ? '正在进行 · 匿名旁观' : '正在招募';
+    const detail = state === 'ongoing'
+      ? `已有 ${count} 组家庭加入，正各自从第一张任务开始。`
+      : `${humanDate(event.date, event.time)} · ${event.ageLabel || '亲子同行'}`;
+    const callout = state === 'ongoing' ? '仅看进度' : (capacity ? `还可加入 ${capacity} 组` : '本场已满');
+    row.innerHTML = `<div><span class="activity-row__tag">${tag}</span><h3>${museum.name}</h3><p>${detail}</p></div><div class="activity-row__side"><span>${callout}</span><span>${state === 'recruiting' && capacity ? '查看活动 →' : '不展示成员'}</span></div>`;
+    return row;
+  }
+  function renderLobby(byId) {
+    const lobby = byId('activityLobby'); const emptyCard = byId('emptyCard');
+    if (!lobby || !emptyCard) return;
+    lobby.hidden = false;
+    const host = byId('createHost'); if (host) host.appendChild(emptyCard);
+    emptyCard.hidden = false;
+    const visible = PUBLIC_EVENTS.map(normalizeEvent).map(event => ({ event, museum:getMuseum(event) })).filter(item => item.museum);
+    loadCounts(visible.map(item => item.event)).then(counts => {
+      const now = Date.now(); const recruiting = []; const ongoing = [];
+      visible.forEach(item => {
+        const state = publicEventState(item.event, now); if (state === 'recruiting') recruiting.push({...item, state}); if (state === 'ongoing') ongoing.push({...item, state});
+      });
+      const recruitingList = byId('recruitingList'); const ongoingList = byId('ongoingList');
+      recruitingList.replaceChildren(...recruiting.map(item => buildActivityRow(item.event, item.museum, counts.get(item.event.eventId) || 0, item.state)));
+      ongoingList.replaceChildren(...ongoing.map(item => buildActivityRow(item.event, item.museum, counts.get(item.event.eventId) || 0, item.state)));
+      if (!recruiting.length) recruitingList.innerHTML = '<p class="empty-state">暂时没有公开招募的活动。可以发起一场专属同行探索。</p>';
+      if (!ongoing.length) ongoingList.innerHTML = '<p class="empty-state">暂时没有进行中的场次；活动开始后，这里只会显示匿名进度。</p>';
+      const householdTotal = recruiting.concat(ongoing).reduce((sum, item) => sum + (counts.get(item.event.eventId) || 0), 0);
+      byId('lobbySummary').textContent = `${recruiting.length} 场招募中 · ${householdTotal} 组家庭已加入`;
+    });
+  }
   function init() {
     if (!root || !root.document) return;
     if (!root.document.getElementById('app')) return;
@@ -86,7 +149,7 @@
     const byId = id => root.document.getElementById(id);
     const eventCard = byId('eventCard'); const joinCard = byId('joinCard'); const joinedCard = byId('joinedCard'); const emptyCard = byId('emptyCard');
     if (!ready) {
-      emptyCard.hidden = false;
+      renderLobby(byId);
       const createMuseum = byId('createMuseum');
       const museums = Array.isArray(root.MUSEUMS_META) ? root.MUSEUMS_META : [];
       museums.filter(museum => museum && museum.id && museum.name).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN')).forEach(museum => {
@@ -116,6 +179,10 @@
       byId('joinedTitle').textContent = `${alias}，先按自己的节奏出发。`;
       byId('startVisit').href = buildVisitUrl(event, museum);
       loadCount(event).then(count => { byId('attendance').textContent = count ? `目前有 ${count} 组家庭加入这场同行探索。` : '你是第一组加入的家庭。'; });
+      const discoveries = byId('eventDiscoveries'); const grid = byId('eventDiscoveriesGrid');
+      if (discoveries && grid && root.MuseumCheckFamilyPhotos) {
+        root.MuseumCheckFamilyPhotos.renderEventPhotos(grid, event.eventId).then(photos => { discoveries.hidden = photos.length === 0; });
+      }
     }
     if (saved && saved.joinId) { renderJoined(); return; }
     joinCard.hidden = false;
@@ -132,5 +199,5 @@
   if (root && root.document) {
     if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', init, {once:true}); else init();
   }
-  return { normalizeEvent, eventIsReady, countJoins, buildVisitUrl, humanDate, createEventId };
+  return { normalizeEvent, eventIsReady, countJoins, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS };
 });

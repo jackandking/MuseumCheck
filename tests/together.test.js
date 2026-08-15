@@ -1,4 +1,4 @@
-const { normalizeEvent, eventIsReady, countJoins, buildVisitUrl, humanDate, createEventId } = require('../js/together.js');
+const { normalizeEvent, eventIsReady, countJoins, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS } = require('../js/together.js');
 
 describe('同行探索活动入口', () => {
   test('only accepts controlled event configuration', () => {
@@ -38,5 +38,26 @@ describe('同行探索活动入口', () => {
 
   test('generates an opaque event id rather than using a parent or child name', () => {
     expect(createEventId()).toMatch(/^visit-[a-z0-9]+-[a-z0-9]{5}$/);
+  });
+
+  test('public activity links preserve only the configured activity data', () => {
+    const url = new URL(buildEventUrl(PUBLIC_EVENTS[0]), 'https://museumcheck.cn');
+    expect(url.pathname).toBe('/together.html');
+    expect(url.searchParams.get('event')).toBe('shanghai-museum-aug22');
+    expect(url.search).not.toContain('alias');
+  });
+
+  test('an activity can be recruiting or briefly observable while it is happening', () => {
+    const event = { eventId:'test', museumId:'shanghai-museum', date:'2026-08-22', time:'10:30', limit:5, status:'recruiting' };
+    expect(publicEventState(event, new Date(2026, 7, 22, 10, 29).getTime())).toBe('recruiting');
+    expect(publicEventState(event, new Date(2026, 7, 22, 11, 0).getTime())).toBe('ongoing');
+    expect(publicEventState(event, new Date(2026, 7, 22, 16, 0).getTime())).toBe('past');
+  });
+
+  test('activity page keeps photo sharing scoped to joined families and removes aliases', () => {
+    const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'together.html'), 'utf8');
+    expect(html).toContain('只给本场同行家庭看');
+    expect(html).toContain('eventDiscoveriesGrid');
+    expect(html).not.toContain('家庭昵称');
   });
 });

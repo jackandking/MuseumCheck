@@ -6,7 +6,7 @@
   <meta name="description" content="MuseumCheck 亲子博物馆同行探索活动">
   <meta name="robots" content="noindex, nofollow">
   <title>一起去博物馆｜MuseumCheck</title>
-  <link rel="stylesheet" href="css/together.css?v=1">
+  <link rel="stylesheet" href="css/together.css?v=2">
 </head>
 <body>
   <main class="together-shell" id="app">
@@ -16,9 +16,27 @@
     </header>
 
     <section class="hero" aria-labelledby="title">
-      <p class="eyebrow">小型亲子同行活动</p>
+      <p class="eyebrow" id="heroEyebrow">小型亲子同行活动</p>
       <h1 id="title">各自带着孩子，<br>一起把馆逛得更有意思。</h1>
-      <p id="eventSummary">报名后，每个家庭按自己的节奏完成任务；只在愿意时加入一项轻松的共同发现。</p>
+      <p id="eventSummary">挑一场合适的同行探索：每家自己逛，现场有一点点并肩的感觉就够了。</p>
+    </section>
+
+    <section class="activity-lobby" id="activityLobby" hidden aria-labelledby="lobbyTitle">
+      <div class="lobby-heading">
+        <div><p class="eyebrow">活动广场</p><h2 id="lobbyTitle">正在招募的同行探索</h2></div>
+        <p class="lobby-summary" id="lobbySummary">正在读取活动…</p>
+      </div>
+      <div class="activity-list" id="recruitingList" aria-live="polite"></div>
+      <div class="lobby-heading lobby-heading--ongoing">
+        <div><p class="eyebrow">旁观一下</p><h2>正在进行</h2></div>
+        <p class="lobby-summary" id="ongoingSummary">只显示匿名进度</p>
+      </div>
+      <div class="activity-list" id="ongoingList" aria-live="polite"></div>
+      <details class="host-details">
+        <summary>想发起一场专属同行探索？</summary>
+        <p>链接只给你自己分发，不会自动出现在活动广场。</p>
+        <div id="createHost"></div>
+      </details>
     </section>
 
     <section class="event-card" id="eventCard" hidden aria-labelledby="eventName">
@@ -62,6 +80,11 @@
         <div><strong>本场共同发现</strong><p id="groupGoal">每家找一件最想推荐给别的小朋友的展品。逛完后，愿意的话再分享一句。</p></div>
       </div>
       <p class="attendance" id="attendance">正在确认本场同行家庭数…</p>
+      <section class="event-discoveries" id="eventDiscoveries" hidden aria-labelledby="eventDiscoveriesTitle">
+        <div><p class="eyebrow">只给本场同行家庭看</p><h3 id="eventDiscoveriesTitle">本场发现</h3></div>
+        <p>参与者自愿分享的展品或建筑照片。没有昵称，也不会展示孩子照片。</p>
+        <div class="family-discovery-grid" id="eventDiscoveriesGrid"></div>
+      </section>
       <a class="start-button" id="startVisit" href="museum-checkin.html">到馆后，从第一张任务开始</a>
     </section>
 
@@ -90,6 +113,7 @@
   </main>
   <script src="config/api-endpoints.js?v=together-20260814"></script>
   <script src="js/museums-meta.js?v=together-20260814"></script>
-  <script src="js/together.js?v=together-20260814"></script>
+  <script src="js/family-photo-sharing.js?v=together-photos-20260815"></script>
+  <script src="js/together.js?v=together-20260815"></script>
 </body>
 </html>

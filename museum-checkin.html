@@ -550,6 +550,16 @@
                 <div class="photo-preview" id="photoPreview"></div>
                 <button class="retake-button" id="retakeButton" style="display: none;">重新上传</button>
             </div>
+            <section class="family-photo-share" id="familyPhotoShare" hidden aria-labelledby="familyPhotoShareTitle">
+                <p id="familyPhotoShareTitle">这张照片怎么保存？</p>
+                <label><input type="checkbox" id="sharePhotoWithEvent"> 分享给本场同行家庭 <small>活动期间可见；不显示昵称。</small></label>
+                <label><input type="checkbox" id="submitPhotoForReview"> 允许 MuseumCheck 审核后公开展示 <small>只展示展品、展签或建筑照片；不会自动公开。</small></label>
+                <p class="family-photo-share__hint">建议不要上传孩子正脸、联系方式或包含私人信息的画面。</p>
+            </section>
+            <section class="approved-task-discoveries" id="approvedTaskDiscoveries" hidden aria-labelledby="approvedTaskDiscoveriesTitle">
+                <p>家庭发现</p><h3 id="approvedTaskDiscoveriesTitle">大家这样发现这一题</h3>
+                <div class="family-discovery-grid" id="approvedTaskDiscoveriesGrid"></div>
+            </section>
             
             <div class="action-buttons">
                 <button class="button button-secondary" id="cancelButton">取消</button>
@@ -891,6 +901,7 @@
     <script src="js/baidu-image-search.js"></script>
     <script src="js/letmetry-cloud-api.js"></script>
     <script src="js/image-upload-util.js"></script>
+    <script src="js/family-photo-sharing.js?v=together-photos-20260815"></script>
     <!-- Event Wall Service (shared, must come after REMOTE_STORAGE_CONFIG is defined) -->
     <script src="js/event-wall-service.js"></script>
     <script src="js/event-tracking-init.js"></script>

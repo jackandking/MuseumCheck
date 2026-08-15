@@ -3290,6 +3290,13 @@
                 photoInput.style.display = 'block';
                 photoInput.value = '';
             }
+            setFamilyPhotoShareState(Boolean(taskPhotos[index]));
+            const approvedDiscoveries = document.getElementById('approvedTaskDiscoveries');
+            const approvedGrid = document.getElementById('approvedTaskDiscoveriesGrid');
+            if (approvedDiscoveries && approvedGrid && window.MuseumCheckFamilyPhotos) {
+                window.MuseumCheckFamilyPhotos.renderApprovedTaskPhotos(approvedGrid, museumId, index)
+                    .then(photos => { approvedDiscoveries.hidden = photos.length === 0; });
+            }
 
             // Show/hide complete button based on completion status
             const completeButton = document.getElementById('completeButton');
@@ -3565,6 +3572,40 @@
         window.loadGameRewardSetting = loadGameRewardSetting;
         window.saveGameRewardSetting = saveGameRewardSetting;
 
+        function setFamilyPhotoShareState(hasPhoto) {
+            const section = document.getElementById('familyPhotoShare');
+            const eventCheckbox = document.getElementById('sharePhotoWithEvent');
+            const reviewCheckbox = document.getElementById('submitPhotoForReview');
+            if (!section || !eventCheckbox || !reviewCheckbox) return;
+            const available = Boolean(togetherEventId && window.MuseumCheckFamilyPhotos);
+            section.hidden = !available;
+            eventCheckbox.disabled = !hasPhoto;
+            reviewCheckbox.disabled = !hasPhoto;
+            if (!hasPhoto) { eventCheckbox.checked = false; reviewCheckbox.checked = false; }
+        }
+
+        async function publishFamilyPhotoIfChosen(taskIndex, task, imageDataUrl) {
+            const eventCheckbox = document.getElementById('sharePhotoWithEvent');
+            const reviewCheckbox = document.getElementById('submitPhotoForReview');
+            if (!imageDataUrl || !window.MuseumCheckFamilyPhotos || (!eventCheckbox?.checked && !reviewCheckbox?.checked)) return;
+            const { title } = parseTaskString(task || '');
+            try {
+                await window.MuseumCheckFamilyPhotos.publish({
+                    eventId: togetherEventId,
+                    museumId,
+                    taskIndex,
+                    taskTitle: title || `第 ${taskIndex + 1} 个任务`,
+                    imageDataUrl,
+                    shareWithEvent: eventCheckbox.checked,
+                    submitForReview: reviewCheckbox.checked
+                });
+                sendVisitSignal('family_photo_shared', { taskIndex, eventShared:eventCheckbox.checked, reviewSubmitted:reviewCheckbox.checked });
+            } catch (error) {
+                console.warn('家庭照片分享失败:', error);
+                alert('任务已完成，但照片暂时没有分享成功。稍后重新打开这张任务可以再试。');
+            }
+        }
+
         async function completeTask() {
             if (currentTaskIndex === null) return;
 
@@ -3637,6 +3678,7 @@
             }
 
             const hasPhoto = !!taskPhotos[currentTaskIndex];
+            await publishFamilyPhotoIfChosen(currentTaskIndex, task, taskPhotos[currentTaskIndex]);
             if (isPersonalEntrance) {
                 savePersonalMuseumEntrance(taskPhotos[currentTaskIndex] || '');
             }
@@ -4105,6 +4147,7 @@
                     // Store photo for current task
                     taskPhotos[currentTaskIndex] = e.target.result;
                     savePhotos();
+                    setFamilyPhotoShareState(true);
                     
                     // Display preview
                     displayPhotoPreview(e.target.result);
