@@ -124,7 +124,8 @@
     lobby.hidden = false;
     const host = byId('createHost'); if (host) host.appendChild(emptyCard);
     emptyCard.hidden = false;
-    const visible = PUBLIC_EVENTS.map(normalizeEvent).map(event => ({ event, museum:getMuseum(event) })).filter(item => item.museum);
+    const visible = PUBLIC_EVENTS.map(event => ({ ...event, ...normalizeEvent(event) }))
+      .map(event => ({ event, museum:getMuseum(event) })).filter(item => item.museum);
     loadCounts(visible.map(item => item.event)).then(counts => {
       const now = Date.now(); const recruiting = []; const ongoing = [];
       visible.forEach(item => {

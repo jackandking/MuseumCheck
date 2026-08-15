@@ -54,6 +54,11 @@ describe('同行探索活动入口', () => {
     expect(publicEventState(event, new Date(2026, 7, 22, 16, 0).getTime())).toBe('past');
   });
 
+  test('the curated public activity keeps its recruiting status after URL normalization', () => {
+    const event = { ...PUBLIC_EVENTS[0], ...normalizeEvent(PUBLIC_EVENTS[0]) };
+    expect(publicEventState(event, new Date(2026, 7, 15, 12, 0).getTime())).toBe('recruiting');
+  });
+
   test('activity page keeps photo sharing scoped to joined families and removes aliases', () => {
     const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'together.html'), 'utf8');
     expect(html).toContain('只给本场同行家庭看');
