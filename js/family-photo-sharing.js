@@ -11,6 +11,7 @@
   const EVENT_TTL = 14 * 24 * 60 * 60;
   const REVIEW_TTL = 365 * 24 * 60 * 60;
   const EVENT_PATTERN = /^[a-z0-9][a-z0-9-]{2,39}$/;
+  function contributionStore() { return root && root.MuseumCheckContributions; }
 
   function text(value, max) { return String(value || '').trim().replace(/[<>]/g, '').slice(0, max); }
   function safeImageUrl(value) {
@@ -63,13 +64,30 @@
     }
     const base = normalizeContribution({ id:`family-photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, eventId, museumId:value.museumId,
       taskIndex:value.taskIndex, taskTitle:value.taskTitle, imageUrl, publishedAt:Date.now(), reviewStatus:'pending' });
+    // New contributions use the cross-page contract. Keep the legacy keys only as a
+    // read fallback, so existing event photos remain visible during this migration.
+    const records = contributionStore();
+    if (records) {
+      const record = records.create({ id:base.id, kind:'task_photo', museum:{ id:base.museumId }, target:{ taskIndex:base.taskIndex, taskTitle:base.taskTitle },
+        content:{ imageUrl:base.imageUrl }, provenance:{ source:'task_photo', capturedAt:base.publishedAt },
+        consent:{ eventScope:value.shareWithEvent ? 'event' : 'private', publicScope:value.submitForReview ? 'review' : 'none', eventId }, review:{ status:'pending' } });
+      return Promise.all([records.write(record)]);
+    }
     const writes = [];
     if (value.shareWithEvent) writes.push(writeRecord(EVENT_KEY, base, EVENT_TTL));
     if (value.submitForReview) writes.push(writeRecord(REVIEW_KEY, base, REVIEW_TTL));
     return Promise.all(writes);
   }
-  function eventPhotos(eventId) { return fetchRecords(EVENT_KEY).then(items => items.filter(item => item.eventId === eventId).sort((a,b) => b.publishedAt - a.publishedAt)); }
-  function approvedTaskPhotos(museumId, taskIndex) { return fetchRecords(REVIEW_KEY).then(items => items.filter(item => item.reviewStatus === 'approved' && item.museumId === museumId && item.taskIndex === taskIndex).sort((a,b) => b.publishedAt - a.publishedAt)); }
+  function eventPhotos(eventId) {
+    const records = contributionStore();
+    const canonical = records ? records.list({ eventId }).then(items => items.filter(item => item.consent.eventScope === 'event').map(item => normalizeContribution({ id:item.id, eventId:item.consent.eventId, museumId:item.museum.id, taskIndex:item.target.taskIndex, taskTitle:item.target.taskTitle, imageUrl:item.content.imageUrl, publishedAt:item.createdAt, reviewStatus:item.review.status }))) : Promise.resolve([]);
+    return Promise.all([canonical, fetchRecords(EVENT_KEY)]).then(([modern, legacy]) => modern.length ? modern : legacy.filter(item => item.eventId === eventId).sort((a,b) => b.publishedAt - a.publishedAt));
+  }
+  function approvedTaskPhotos(museumId, taskIndex) {
+    const records = contributionStore();
+    const canonical = records ? records.list({ museumId, taskIndex, reviewStatus:'approved' }).then(items => items.map(item => normalizeContribution({ id:item.id, museumId:item.museum.id, taskIndex:item.target.taskIndex, taskTitle:item.target.taskTitle, imageUrl:item.content.imageUrl, publishedAt:item.createdAt, reviewStatus:item.review.status }))) : Promise.resolve([]);
+    return Promise.all([canonical, fetchRecords(REVIEW_KEY)]).then(([modern, legacy]) => modern.length ? modern : legacy.filter(item => item.reviewStatus === 'approved' && item.museumId === museumId && item.taskIndex === taskIndex).sort((a,b) => b.publishedAt - a.publishedAt));
+  }
   function createImageCard(photo, label) {
     const figure = root.document.createElement('figure'); figure.className = 'family-discovery-card';
     const image = root.document.createElement('img'); image.src = photo.imageUrl; image.alt = label || '家庭参观记录'; image.loading = 'lazy';
