@@ -22,6 +22,11 @@
   const PUBLIC_EVENTS = Object.freeze([
     Object.freeze({ eventId:'shanghai-museum-aug22', museumId:'shanghai-museum', date:'2026-08-22', time:'10:30', limit:5, ageGroup:'7-12', status:'recruiting' })
   ]);
+  // Old join records only saved an event id. Keep known shipped activity links
+  // recoverable while new records save the complete, normalized descriptor.
+  const LEGACY_EVENTS = Object.freeze([
+    Object.freeze({ eventId:'shanghai-sunday-1', museumId:'shanghai-museum', date:'2026-08-16', time:'10:30', limit:5, ageGroup:'7-12' })
+  ]);
 
   function cleanText(value, max) { return String(value || '').trim().replace(/[<>]/g, '').slice(0, max); }
   function normalizeEvent(input) {
@@ -171,7 +176,7 @@
         const saved = JSON.parse(item.value);
         if (saved && saved.event) remember(saved.event, '已报名');
         else {
-          const legacy = PUBLIC_EVENTS.find(event => event.eventId === item.key.slice('museumcheckTogether:'.length));
+          const legacy = PUBLIC_EVENTS.concat(LEGACY_EVENTS).find(event => event.eventId === item.key.slice('museumcheckTogether:'.length));
           if (legacy) remember(legacy, '已报名');
         }
       } catch (_) {}
@@ -305,5 +310,5 @@
   if (root && root.document) {
     if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', init, {once:true}); else init();
   }
-  return { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, publicEventsFromPayload, myActivities, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS };
+  return { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, publicEventsFromPayload, myActivities, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS, LEGACY_EVENTS };
 });

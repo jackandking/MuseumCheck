@@ -1,4 +1,4 @@
-const { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, publicEventsFromPayload, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS } = require('../js/together.js');
+const { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, publicEventsFromPayload, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS, LEGACY_EVENTS } = require('../js/together.js');
 
 describe('同行探索活动入口', () => {
   test('only accepts controlled event configuration', () => {
@@ -70,6 +70,10 @@ describe('同行探索活动入口', () => {
   test('the curated public activity keeps its recruiting status after URL normalization', () => {
     const event = { ...PUBLIC_EVENTS[0], ...normalizeEvent(PUBLIC_EVENTS[0]) };
     expect(publicEventState(event, new Date(2026, 7, 15, 12, 0).getTime())).toBe('recruiting');
+  });
+
+  test('keeps old id-only Shanghai registrations recoverable', () => {
+    expect(LEGACY_EVENTS).toContainEqual(expect.objectContaining({ eventId:'shanghai-sunday-1', museumId:'shanghai-museum', date:'2026-08-16' }));
   });
 
   test('uses the shared three age groups and rejects invented brackets', () => {
