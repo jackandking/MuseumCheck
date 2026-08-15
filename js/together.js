@@ -8,7 +8,7 @@
   const KEY = 'museumcheck-together-events';
   const PUBLIC_EVENT_KEY = 'museumcheck-together-public-events';
   const CREATED_EVENT_PREFIX = 'museumcheckTogetherCreated:';
-  const PAGE_VERSION = 'together-20260815';
+  const PAGE_VERSION = 'together-20260815b';
   const TTL = 90 * 24 * 60 * 60;
   const EVENT_PATTERN = /^[a-z0-9][a-z0-9-]{2,39}$/;
   const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;

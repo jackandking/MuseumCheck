@@ -57,7 +57,7 @@ describe('同行探索活动入口', () => {
     expect(url.pathname).toBe('/together.html');
     expect(url.searchParams.get('event')).toBe('shanghai-museum-aug22');
     expect(url.searchParams.get('ageGroup')).toBe('7-12');
-    expect(url.searchParams.get('v')).toBe('together-20260815');
+    expect(url.searchParams.get('v')).toBe('together-20260815b');
     expect(url.search).not.toContain('alias');
   });
 
@@ -103,6 +103,8 @@ describe('同行探索活动入口', () => {
     expect(html).toContain('joinAgeGroup');
     expect(html).toContain('createPublicEvent');
     expect(html).toContain('myActivityList');
+    expect(html).toContain('查看全部活动');
+    expect(html).toContain('together.html?v=together-20260815b');
   });
 
   test('keeps shared discoveries opt-in and gives the homepage a conditional activity entry', () => {
