@@ -57,6 +57,7 @@ describe('同行探索活动入口', () => {
     expect(url.pathname).toBe('/together.html');
     expect(url.searchParams.get('event')).toBe('shanghai-museum-aug22');
     expect(url.searchParams.get('ageGroup')).toBe('7-12');
+    expect(url.searchParams.get('v')).toBe('together-20260815');
     expect(url.search).not.toContain('alias');
   });
 

@@ -8,6 +8,7 @@
   const KEY = 'museumcheck-together-events';
   const PUBLIC_EVENT_KEY = 'museumcheck-together-public-events';
   const CREATED_EVENT_PREFIX = 'museumcheckTogetherCreated:';
+  const PAGE_VERSION = 'together-20260815';
   const TTL = 90 * 24 * 60 * 60;
   const EVENT_PATTERN = /^[a-z0-9][a-z0-9-]{2,39}$/;
   const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -80,6 +81,7 @@
   function buildEventUrl(event) {
     const params = new URLSearchParams({ event:event.eventId, museum:event.museumId, date:event.date, time:event.time, limit:String(event.limit) });
     if (AGE_GROUPS[event.ageGroup]) params.set('ageGroup', event.ageGroup);
+    params.set('v', PAGE_VERSION);
     return `together.html?${params.toString()}`;
   }
   function humanDate(date, time) {
@@ -343,5 +345,5 @@
   if (root && root.document) {
     if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', init, {once:true}); else init();
   }
-  return { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, publicAliases, publicEventsFromPayload, myActivities, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS, LEGACY_EVENTS };
+  return { AGE_GROUPS, PAGE_VERSION, normalizeEvent, eventIsReady, countJoins, publicAliases, publicEventsFromPayload, myActivities, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS, LEGACY_EVENTS };
 });
