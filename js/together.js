@@ -10,10 +10,15 @@
   const EVENT_PATTERN = /^[a-z0-9][a-z0-9-]{2,39}$/;
   const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
   const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+  const AGE_GROUPS = Object.freeze({
+    '3-6': '3–6 岁｜观察与发现',
+    '7-12': '7–12 岁｜探索与提问',
+    '13-18': '13–18 岁｜主题讨论'
+  });
   // Public activities are intentionally curated in code for this first, reversible experiment.
   // A creator-generated link remains private unless a maintainer adds it here.
   const PUBLIC_EVENTS = Object.freeze([
-    Object.freeze({ eventId:'shanghai-museum-aug22', museumId:'shanghai-museum', date:'2026-08-22', time:'10:30', limit:5, ageLabel:'4–10 岁亲子', status:'recruiting' })
+    Object.freeze({ eventId:'shanghai-museum-aug22', museumId:'shanghai-museum', date:'2026-08-22', time:'10:30', limit:5, ageGroup:'7-12', status:'recruiting' })
   ]);
 
   function cleanText(value, max) { return String(value || '').trim().replace(/[<>]/g, '').slice(0, max); }
@@ -24,12 +29,13 @@
     const date = String(value.date || '').trim();
     const time = String(value.time || '').trim();
     const limit = Math.max(2, Math.min(8, Number.parseInt(value.limit, 10) || 5));
+    const ageGroup = AGE_GROUPS[value.ageGroup] ? value.ageGroup : '';
     return {
       eventId: EVENT_PATTERN.test(eventId) ? eventId : '',
       museumId,
       date: DATE_PATTERN.test(date) ? date : '',
       time: TIME_PATTERN.test(time) ? time : '',
-      limit
+      limit, ageGroup
     };
   }
   function eventKey(event) { return `museumcheckTogether:${event.eventId}`; }
@@ -41,12 +47,15 @@
   function createEventId() { return `visit-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`; }
   function storageGet(key) { try { return root.localStorage.getItem(key); } catch (_) { return ''; } }
   function storageSet(key, value) { try { root.localStorage.setItem(key, value); } catch (_) {} }
-  function buildVisitUrl(event, museum) {
+  function buildVisitUrl(event, museum, selectedAgeGroup) {
     const params = new URLSearchParams({ museum: museum.id, format: 'friends', together: event.eventId });
+    const ageGroup = AGE_GROUPS[selectedAgeGroup] ? selectedAgeGroup : event.ageGroup;
+    if (ageGroup) params.set('age', ageGroup);
     return `museum-checkin.html?${params.toString()}`;
   }
   function buildEventUrl(event) {
     const params = new URLSearchParams({ event:event.eventId, museum:event.museumId, date:event.date, time:event.time, limit:String(event.limit) });
+    if (AGE_GROUPS[event.ageGroup]) params.set('ageGroup', event.ageGroup);
     return `together.html?${params.toString()}`;
   }
   function humanDate(date, time) {
@@ -113,7 +122,7 @@
     const tag = state === 'ongoing' ? '正在进行 · 匿名旁观' : '正在招募';
     const detail = state === 'ongoing'
       ? `已有 ${count} 组家庭加入，正各自从第一张任务开始。`
-      : `${humanDate(event.date, event.time)} · ${event.ageLabel || '亲子同行'}`;
+      : `${humanDate(event.date, event.time)} · ${AGE_GROUPS[event.ageGroup] || '亲子同行'}`;
     const callout = state === 'ongoing' ? '仅看进度' : (capacity ? `还可加入 ${capacity} 组` : '本场已满');
     row.innerHTML = `<div><span class="activity-row__tag">${tag}</span><h3>${museum.name}</h3><p>${detail}</p></div><div class="activity-row__side"><span>${callout}</span><span>${state === 'recruiting' && capacity ? '查看活动 →' : '不展示成员'}</span></div>`;
     return row;
@@ -144,7 +153,11 @@
     if (!root || !root.document) return;
     if (!root.document.getElementById('app')) return;
     const params = new URLSearchParams(root.location.search);
-    const event = normalizeEvent({ eventId:params.get('event'), museumId:params.get('museum'), date:params.get('date'), time:params.get('time'), limit:params.get('limit') });
+    let event = normalizeEvent({ eventId:params.get('event'), museumId:params.get('museum'), date:params.get('date'), time:params.get('time'), limit:params.get('limit'), ageGroup:params.get('ageGroup') });
+    // Public links sent before age bands were introduced keep working and inherit
+    // the current curated activity's primary age band.
+    const configuredEvent = PUBLIC_EVENTS.find(item => item.eventId === event.eventId);
+    if (!event.ageGroup && configuredEvent && AGE_GROUPS[configuredEvent.ageGroup]) event = { ...event, ageGroup:configuredEvent.ageGroup };
     const museum = getMuseum(event);
     const ready = eventIsReady(event) && museum;
     const byId = id => root.document.getElementById(id);
@@ -160,9 +173,9 @@
       dateInput.min = new Date().toISOString().slice(0, 10);
       byId('createForm').addEventListener('submit', function(eventObject) {
         eventObject.preventDefault();
-        const error = byId('createError'); const museumId = createMuseum.value; const date = dateInput.value; const time = byId('createTime').value; const limit = byId('createLimit').value;
-        if (!museumId || !DATE_PATTERN.test(date) || !TIME_PATTERN.test(time)) { error.textContent = '选好博物馆、日期和集合时间后就能生成。'; error.hidden = false; return; }
-        const next = new URL(root.location.href); next.search = new URLSearchParams({ event:createEventId(), museum:museumId, date, time, limit }).toString(); root.location.assign(next.toString());
+        const error = byId('createError'); const museumId = createMuseum.value; const date = dateInput.value; const time = byId('createTime').value; const limit = byId('createLimit').value; const ageGroup = byId('createAgeGroup').value;
+        if (!museumId || !DATE_PATTERN.test(date) || !TIME_PATTERN.test(time) || !AGE_GROUPS[ageGroup]) { error.textContent = '选好博物馆、日期、时间和主要适龄段后就能生成。'; error.hidden = false; return; }
+        const next = new URL(root.location.href); next.search = new URLSearchParams({ event:createEventId(), museum:museumId, date, time, limit, ageGroup }).toString(); root.location.assign(next.toString());
       });
       return;
     }
@@ -170,7 +183,9 @@
     byId('eventName').textContent = `${museum.name} · 同行探索`;
     byId('museumName').textContent = museum.name;
     byId('eventTime').textContent = humanDate(event.date, event.time);
+    byId('eventAge').textContent = AGE_GROUPS[event.ageGroup] || '发起者未限定';
     byId('eventLimit').textContent = `最多 ${event.limit} 组家庭`;
+    if (event.ageGroup) byId('eventSummary').textContent = `在${museum.name}，以 ${AGE_GROUPS[event.ageGroup].split('｜')[0]} 的孩子为主；每家仍按自己的节奏逛，最后可选地把一件“孩子发现”拼成共同地图。`;
     byId('eventSummary').textContent = `在${museum.name}，各家按自己的节奏逛；最后可选地把一件“孩子发现”拼成共同地图。`;
     const storageKey = eventKey(event); let saved = null;
     try { saved = JSON.parse(storageGet(storageKey) || 'null'); } catch (_) {}
@@ -178,7 +193,7 @@
       joinCard.hidden = true; joinedCard.hidden = false;
       const alias = cleanText(saved && saved.alias, 12) || '你们';
       byId('joinedTitle').textContent = `${alias}，先按自己的节奏出发。`;
-      byId('startVisit').href = buildVisitUrl(event, museum);
+      byId('startVisit').href = buildVisitUrl(event, museum, saved && saved.ageGroup);
       loadCount(event).then(count => { byId('attendance').textContent = count ? `目前有 ${count} 组家庭加入这场同行探索。` : '你是第一组加入的家庭。'; });
       const discoveries = byId('eventDiscoveries'); const grid = byId('eventDiscoveriesGrid');
       if (discoveries && grid && root.MuseumCheckFamilyPhotos) {
@@ -187,18 +202,20 @@
     }
     if (saved && saved.joinId) { renderJoined(); return; }
     joinCard.hidden = false;
+    if (AGE_GROUPS[event.ageGroup]) byId('joinAgeGroup').value = event.ageGroup;
     byId('joinForm').addEventListener('submit', function(eventObject) {
       eventObject.preventDefault();
       const alias = cleanText(byId('familyAlias').value, 12); const error = byId('formError');
       if (!alias) { error.textContent = '留一个方便自己辨认的家庭代号就可以。'; error.hidden = false; return; }
       error.hidden = true;
       const mode = root.document.querySelector('input[name="mode"]:checked').value;
-      saved = { alias, mode, joinId:createJoinId(), joinedAt:Date.now() }; storageSet(storageKey, JSON.stringify(saved));
+      const ageGroup = AGE_GROUPS[byId('joinAgeGroup').value] ? byId('joinAgeGroup').value : event.ageGroup;
+      saved = { alias, ageGroup, mode, joinId:createJoinId(), joinedAt:Date.now() }; storageSet(storageKey, JSON.stringify(saved));
       writeJoin(event, saved.joinId, mode).finally(renderJoined);
     });
   }
   if (root && root.document) {
     if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', init, {once:true}); else init();
   }
-  return { normalizeEvent, eventIsReady, countJoins, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS };
+  return { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS };
 });

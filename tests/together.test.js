@@ -1,11 +1,11 @@
-const { normalizeEvent, eventIsReady, countJoins, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS } = require('../js/together.js');
+const { AGE_GROUPS, normalizeEvent, eventIsReady, countJoins, buildVisitUrl, buildEventUrl, humanDate, createEventId, publicEventState, PUBLIC_EVENTS } = require('../js/together.js');
 
 describe('同行探索活动入口', () => {
   test('only accepts controlled event configuration', () => {
-    expect(normalizeEvent({ eventId:'shanghai-sunday-1', museumId:'shanghai-museum', date:'2026-08-16', time:'10:30', limit:'5' }))
-      .toEqual({ eventId:'shanghai-sunday-1', museumId:'shanghai-museum', date:'2026-08-16', time:'10:30', limit:5 });
+    expect(normalizeEvent({ eventId:'shanghai-sunday-1', museumId:'shanghai-museum', date:'2026-08-16', time:'10:30', limit:'5', ageGroup:'7-12' }))
+      .toEqual({ eventId:'shanghai-sunday-1', museumId:'shanghai-museum', date:'2026-08-16', time:'10:30', limit:5, ageGroup:'7-12' });
     expect(normalizeEvent({ eventId:'<script>', museumId:'x', date:'tomorrow', time:'late', limit:'99' }))
-      .toEqual({ eventId:'', museumId:'x', date:'', time:'', limit:8 });
+      .toEqual({ eventId:'', museumId:'x', date:'', time:'', limit:8, ageGroup:'' });
   });
 
   test('requires a real configured event before a family can join', () => {
@@ -24,11 +24,12 @@ describe('同行探索活动入口', () => {
   });
 
   test('builds an on-site visit link without aliases or contact information', () => {
-    const url = buildVisitUrl({ eventId:'shanghai-sunday-1' }, { id:'shanghai-museum' });
+    const url = buildVisitUrl({ eventId:'shanghai-sunday-1', ageGroup:'7-12' }, { id:'shanghai-museum' });
     const parsed = new URL(url, 'https://museumcheck.cn');
     expect(parsed.pathname).toBe('/museum-checkin.html');
     expect(parsed.searchParams.get('museum')).toBe('shanghai-museum');
     expect(parsed.searchParams.get('together')).toBe('shanghai-sunday-1');
+    expect(parsed.searchParams.get('age')).toBe('7-12');
     expect(parsed.search).not.toContain('alias');
   });
 
@@ -44,6 +45,7 @@ describe('同行探索活动入口', () => {
     const url = new URL(buildEventUrl(PUBLIC_EVENTS[0]), 'https://museumcheck.cn');
     expect(url.pathname).toBe('/together.html');
     expect(url.searchParams.get('event')).toBe('shanghai-museum-aug22');
+    expect(url.searchParams.get('ageGroup')).toBe('7-12');
     expect(url.search).not.toContain('alias');
   });
 
@@ -59,10 +61,18 @@ describe('同行探索活动入口', () => {
     expect(publicEventState(event, new Date(2026, 7, 15, 12, 0).getTime())).toBe('recruiting');
   });
 
+  test('uses the shared three age groups and rejects invented brackets', () => {
+    expect(Object.keys(AGE_GROUPS)).toEqual(['3-6', '7-12', '13-18']);
+    expect(normalizeEvent({ ageGroup:'4-10' }).ageGroup).toBe('');
+    expect(PUBLIC_EVENTS[0].ageGroup).toBe('7-12');
+  });
+
   test('activity page keeps photo sharing scoped to joined families and removes aliases', () => {
     const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'together.html'), 'utf8');
     expect(html).toContain('只给本场同行家庭看');
     expect(html).toContain('eventDiscoveriesGrid');
     expect(html).not.toContain('家庭昵称');
+    expect(html).toContain('createAgeGroup');
+    expect(html).toContain('joinAgeGroup');
   });
 });
