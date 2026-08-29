@@ -53,10 +53,8 @@
         // Get museum ID from URL parameter
         const urlParams = new URLSearchParams(window.location.search);
         const museumId = urlParams.get('id') || urlParams.get('museum') || 'forbidden-city';
-        // A Together registration explicitly selects this visit's age band. It must
-        // take precedence over an older local preference.
         const savedAgeGroup = localStorage.getItem('ageGroup');
-        const ageGroup = urlParams.get('age') || savedAgeGroup || '7-12';
+        const ageGroup = savedAgeGroup || urlParams.get('age') || '7-12';
         const editMode = urlParams.get('edit') === 'true';
         const pilotContext = getPilotContextFromUrl(urlParams);
         const togetherEventId = /^[a-z0-9][a-z0-9-]{2,39}$/.test(urlParams.get('together') || '')
