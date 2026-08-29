@@ -3248,6 +3248,18 @@
             }
         }
 
+        // Load fireworks retention time from localStorage (milliseconds, default 1 minute)
+        function getFireworkRetentionMs() {
+            try {
+                const saved = localStorage.getItem('fireworksRetentionTime');
+                if (saved) {
+                    const parsed = parseInt(saved, 10);
+                    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+                }
+            } catch (_) {}
+            return 60000;
+        }
+
         // Upload firework event to remote storage
         function uploadFireworkEvent(taskIndex) {
             const task = childTasks[taskIndex];
@@ -3289,10 +3301,13 @@
                 date: new Date(timestamp).toISOString()
             };
 
-            // Save to local storage
-            const localFireworks = JSON.parse(localStorage.getItem('museumCheckFireworks') || '[]');
-            localFireworks.push(fireworkData);
-            localStorage.setItem('museumCheckFireworks', JSON.stringify(localFireworks));
+            // Save to local storage, pruning expired entries first
+            const retentionMs = getFireworkRetentionMs();
+            const now = Date.now();
+            const existing = JSON.parse(localStorage.getItem('museumCheckFireworks') || '[]');
+            const validExisting = existing.filter(fw => fw && fw.timestamp && (now - fw.timestamp) < retentionMs);
+            validExisting.push(fireworkData);
+            localStorage.setItem('museumCheckFireworks', JSON.stringify(validExisting));
 
             // Upload to remote storage
             uploadToRemoteStorage(fireworkData);
@@ -3303,19 +3318,8 @@
             const url = REMOTE_STORAGE_CONFIG.API_ENDPOINT;
             const key = REMOTE_STORAGE_CONFIG.FIREWORK_KEY;
             
-            // Load fireworks retention time from localStorage (in milliseconds)
-            let retentionTimeMs = 60000; // Default: 1 minute
-            try {
-                const saved = localStorage.getItem('fireworksRetentionTime');
-                if (saved) {
-                    retentionTimeMs = parseInt(saved, 10);
-                }
-            } catch (error) {
-                console.error('Error loading fireworks retention time:', error);
-            }
-            
             // Convert milliseconds to seconds for TTL
-            const ttlSeconds = Math.round(retentionTimeMs / 1000);
+            const ttlSeconds = Math.round(getFireworkRetentionMs() / 1000);
             
             fetch(url, {
                 method: 'POST',
