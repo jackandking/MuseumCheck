@@ -122,6 +122,86 @@
             text-decoration: underline;
         }
 
+        /* Expired activity styles */
+        .survey-card.expired {
+            opacity: 0.55;
+            cursor: not-allowed;
+            pointer-events: none;
+            background: #f8f9fa;
+            border-color: #dee2e6;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .expired-badge {
+            display: inline-block;
+            background: #6c757d;
+            color: white;
+            font-size: 0.7em;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .section-header {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 0 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .active-section {
+            margin-bottom: 30px;
+        }
+
+        .expired-section {
+            margin-bottom: 10px;
+        }
+
+        .expired-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            color: #7f8c8d;
+            padding: 8px 0;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 12px;
+            transition: color 0.2s;
+        }
+
+        .expired-toggle:hover {
+            color: #555;
+        }
+
+        .expired-toggle .toggle-icon {
+            font-size: 0.85em;
+            transition: transform 0.25s;
+        }
+
+        .expired-toggle.open .toggle-icon {
+            transform: rotate(90deg);
+        }
+
+        .expired-grid {
+            display: none;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .expired-grid.open {
+            display: grid;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -151,49 +231,20 @@
     <div class="survey-container">
         <h1>🎯 统一统</h1>
         <p class="subtitle">选择一个有趣的博物馆互动调查</p>
-        
-        <div class="survey-grid">
-            <a href="national-treasures/index.html" class="survey-card">
-                <div class="survey-icon">🎁</div>
-                <div class="survey-title">中国十大国宝</div>
-                <div class="survey-description">选择你亲眼见过的国宝文物，看看有多少人和你一样</div>
-            </a>
-            
-            <a href="treasure/index.html" class="survey-card">
-                <div class="survey-icon">🏺</div>
-                <div class="survey-title">猜猜镇馆之宝</div>
-                <div class="survey-description">猜猜哪个是博物馆的镇馆之宝</div>
-            </a>
-            
-            <a href="guess/index.html" class="survey-card">
-                <div class="survey-icon">🤔</div>
-                <div class="survey-title">看图猜文物</div>
-                <div class="survey-description">看图片猜猜这是什么文物</div>
-            </a>
-            
-            <a href="forbidden-city-treasure/index.html" class="survey-card">
-                <div class="survey-icon">🏯</div>
-                <div class="survey-title">故宫镇馆之宝</div>
-                <div class="survey-description">挑战故宫博物院的国宝知识</div>
-            </a>
-            
-            <a href="archaeology-museum-treasure/index.html" class="survey-card">
-                <div class="survey-icon">⛏️</div>
-                <div class="survey-title">考古博物馆宝藏</div>
-                <div class="survey-description">探索考古博物馆的珍贵文物</div>
-            </a>
-            
-            <a href="popularity/index.html" class="survey-card">
-                <div class="survey-icon">🔥</div>
-                <div class="survey-title">人气投票</div>
-                <div class="survey-description">给你最喜欢的文物投票</div>
-            </a>
 
-            <a href="vessel-quiz/index.html" class="survey-card">
-                <div class="survey-icon">🏺</div>
-                <div class="survey-title">容器猜猜看</div>
-                <div class="survey-description">看图识器闯关，你能连对几个？</div>
-            </a>
+        <!-- Active activities -->
+        <div class="active-section" id="activeSection">
+            <div class="section-header">🟢 进行中的活动</div>
+            <div class="survey-grid" id="activeGrid"></div>
+        </div>
+
+        <!-- Expired activities (collapsible) -->
+        <div class="expired-section" id="expiredSection" style="display:none;">
+            <button class="expired-toggle" id="expiredToggle" aria-expanded="false">
+                <span class="toggle-icon">▶</span>
+                <span id="expiredLabel">历史活动</span>
+            </button>
+            <div class="expired-grid" id="expiredGrid"></div>
         </div>
         
         <div class="more">
@@ -202,5 +253,106 @@
     </div>
     <script src="../js/event-wall-service.js"></script>
     <script src="../js/event-tracking-init.js"></script>
+    <script>
+        // Activity definitions. Set endDate to null for ongoing activities.
+        // Set endDate to a past date to mark an activity as expired.
+        const ACTIVITIES = [
+            {
+                href: 'national-treasures/index.html',
+                icon: '🎁',
+                title: '中国十大国宝',
+                description: '选择你亲眼见过的国宝文物，看看有多少人和你一样',
+                endDate: null
+            },
+            {
+                href: 'treasure/index.html',
+                icon: '🏺',
+                title: '猜猜镇馆之宝',
+                description: '猜猜哪个是博物馆的镇馆之宝',
+                endDate: null
+            },
+            {
+                href: 'guess/index.html',
+                icon: '🤔',
+                title: '看图猜文物',
+                description: '看图片猜猜这是什么文物',
+                endDate: '2025-12-31'
+            },
+            {
+                href: 'forbidden-city-treasure/index.html',
+                icon: '🏯',
+                title: '故宫镇馆之宝',
+                description: '挑战故宫博物院的国宝知识',
+                endDate: null
+            },
+            {
+                href: 'archaeology-museum-treasure/index.html',
+                icon: '⛏️',
+                title: '考古博物馆宝藏',
+                description: '探索考古博物馆的珍贵文物',
+                endDate: '2025-06-30'
+            },
+            {
+                href: 'popularity/index.html',
+                icon: '🔥',
+                title: '人气投票',
+                description: '给你最喜欢的文物投票',
+                endDate: null
+            },
+            {
+                href: 'vessel-quiz/index.html',
+                icon: '🏺',
+                title: '容器猜猜看',
+                description: '看图识器闯关，你能连对几个？',
+                endDate: null
+            }
+        ];
+
+        function isExpired(endDate) {
+            if (!endDate) return false;
+            return new Date(endDate) < new Date();
+        }
+
+        function buildCard(activity, expired) {
+            const card = document.createElement(expired ? 'div' : 'a');
+            if (!expired) card.href = activity.href;
+            card.className = 'survey-card' + (expired ? ' expired' : '');
+            card.innerHTML = `
+                <div class="survey-icon">${activity.icon}</div>
+                <div class="survey-title">${activity.title}</div>
+                <div class="survey-description">${activity.description}</div>
+                ${expired ? '<span class="expired-badge">已结束</span>' : ''}
+            `;
+            return card;
+        }
+
+        function renderActivities() {
+            const activeGrid = document.getElementById('activeGrid');
+            const expiredGrid = document.getElementById('expiredGrid');
+            const expiredSection = document.getElementById('expiredSection');
+            const expiredLabel = document.getElementById('expiredLabel');
+
+            const active = ACTIVITIES.filter(a => !isExpired(a.endDate));
+            const expired = ACTIVITIES.filter(a => isExpired(a.endDate));
+
+            active.forEach(a => activeGrid.appendChild(buildCard(a, false)));
+            expired.forEach(a => expiredGrid.appendChild(buildCard(a, true)));
+
+            if (expired.length > 0) {
+                expiredSection.style.display = '';
+                expiredLabel.textContent = `历史活动（${expired.length}）`;
+            }
+        }
+
+        // Toggle expired section
+        document.getElementById('expiredToggle').addEventListener('click', function() {
+            const grid = document.getElementById('expiredGrid');
+            const isOpen = grid.classList.toggle('open');
+            this.classList.toggle('open', isOpen);
+            this.setAttribute('aria-expanded', isOpen);
+        });
+
+        renderActivities();
+    </script>
 </body>
 </html>
