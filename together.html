@@ -6,7 +6,7 @@
   <meta name="description" content="MuseumCheck 亲子博物馆同行探索活动">
   <meta name="robots" content="noindex, nofollow">
   <title>一起去博物馆｜MuseumCheck</title>
-  <link rel="stylesheet" href="css/together.css?v=2">
+  <link rel="stylesheet" href="css/together.css?v=3">
 </head>
 <body>
   <main class="together-shell" id="app">
@@ -37,6 +37,11 @@
         <p class="lobby-summary" id="ongoingSummary">只显示匿名进度</p>
       </div>
       <div class="activity-list" id="ongoingList" aria-live="polite"></div>
+      <div class="lobby-heading lobby-heading--past" id="pastHeading" hidden>
+        <div><p class="eyebrow">往期回顾</p><h2>已结束的活动</h2></div>
+        <p class="lobby-summary" id="pastSummary">仅供参考</p>
+      </div>
+      <div class="activity-list" id="pastList" aria-live="polite"></div>
       <details class="host-details">
         <summary>想发起一场专属同行探索？</summary>
         <p>默认只给你自己分发；勾选公开招募后，才会显示在活动广场。</p>
@@ -123,7 +128,7 @@
       <h2 id="howTitle">这不是拼团，也不要求社交</h2>
       <ol>
         <li><span>01</span><div><strong>先各自出发</strong><p>每个家庭独立完成自己的观察任务。</p></div></li>
-        <li><span>02</span><div><strong>可选的共同目标</strong><p>同一场活动收集不同的“孩子发现”，不必互相加好友。</p></div></li>
+        <li><span>02</span><div><strong>可选的共同目标</strong><p>同一场活动收集不同的"孩子发现"，不必互相加好友。</p></div></li>
         <li><span>03</span><div><strong>把现场体验带回来</strong><p>完成一张任务就算成功，之后再决定要不要继续。</p></div></li>
       </ol>
     </section>
@@ -131,6 +136,6 @@
   <script src="config/api-endpoints.js?v=together-20260814"></script>
   <script src="js/museums-meta.js?v=together-20260814"></script>
   <script src="js/family-photo-sharing.js?v=together-photos-20260815"></script>
-  <script src="js/together.js?v=together-lobby-navigation-20260815"></script>
+  <script src="js/together.js?v=together-past-20260829"></script>
 </body>
 </html>

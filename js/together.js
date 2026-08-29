@@ -206,16 +206,22 @@
     return Array.from(activities.values()).sort((a, b) => `${a.event.date}${a.event.time}`.localeCompare(`${b.event.date}${b.event.time}`));
   }
   function buildActivityRow(event, museum, count, state, tagOverride) {
+    const isPast = state === 'past';
     const row = root.document.createElement(state === 'recruiting' ? 'a' : 'article');
-    row.className = `activity-row${state === 'ongoing' ? ' activity-row--ongoing' : ''}`;
+    row.className = `activity-row${state === 'ongoing' ? ' activity-row--ongoing' : ''}${isPast ? ' activity-row--past' : ''}`;
     if (state === 'recruiting') row.href = buildEventUrl(event);
     const capacity = Math.max(0, event.limit - count);
-    const tag = tagOverride || (state === 'ongoing' ? '正在进行 · 匿名旁观' : '正在招募');
-    const detail = state === 'ongoing'
-      ? `已有 ${count} 组家庭加入，正各自从第一张任务开始。`
-      : `${humanDate(event.date, event.time)} · ${AGE_GROUPS[event.ageGroup] || '亲子同行'}`;
-    const callout = state === 'ongoing' ? '仅看进度' : (capacity ? `还可加入 ${capacity} 组` : '本场已满');
-    row.innerHTML = `<div><span class="activity-row__tag">${tag}</span><h3>${museum.name}</h3><p>${detail}</p></div><div class="activity-row__side"><span>${callout}</span><span>${state === 'recruiting' && capacity ? '查看活动 →' : '不展示成员'}</span></div>`;
+    const tag = tagOverride || (isPast ? '已结束' : state === 'ongoing' ? '正在进行 · 匿名旁观' : '正在招募');
+    const detail = isPast
+      ? `${humanDate(event.date, event.time)} · ${AGE_GROUPS[event.ageGroup] || '亲子同行'}`
+      : state === 'ongoing'
+        ? `已有 ${count} 组家庭加入，正各自从第一张任务开始。`
+        : `${humanDate(event.date, event.time)} · ${AGE_GROUPS[event.ageGroup] || '亲子同行'}`;
+    const callout = isPast
+      ? (count ? `共 ${count} 组家庭参与` : '活动已结束')
+      : state === 'ongoing' ? '仅看进度' : (capacity ? `还可加入 ${capacity} 组` : '本场已满');
+    const sideBottom = isPast ? '活动已结束' : state === 'recruiting' && capacity ? '查看活动 →' : '不展示成员';
+    row.innerHTML = `<div><span class="activity-row__tag">${tag}</span><h3>${museum.name}</h3><p>${detail}</p></div><div class="activity-row__side"><span>${callout}</span><span>${sideBottom}</span></div>`;
     return row;
   }
   function renderLobby(byId) {
@@ -241,17 +247,36 @@
       const visible = Array.from(events.values()).map(event => ({ event, museum:getMuseum(event) })).filter(item => item.museum);
       return loadCounts(visible.map(item => item.event)).then(counts => ({ visible, counts }));
     }).then(({ visible, counts }) => {
-      const now = Date.now(); const recruiting = []; const ongoing = [];
+      const now = Date.now(); const recruiting = []; const ongoing = []; const past = [];
       visible.forEach(item => {
-        const state = publicEventState(item.event, now); if (state === 'recruiting') recruiting.push({...item, state}); if (state === 'ongoing') ongoing.push({...item, state});
+        const state = publicEventState(item.event, now);
+        if (state === 'recruiting') recruiting.push({...item, state});
+        else if (state === 'ongoing') ongoing.push({...item, state});
+        else past.push({...item, state:'past'});
       });
-      const recruitingList = byId('recruitingList'); const ongoingList = byId('ongoingList');
-      recruitingList.replaceChildren(...recruiting.map(item => buildActivityRow(item.event, item.museum, counts.get(item.event.eventId) || 0, item.state)));
-      ongoingList.replaceChildren(...ongoing.map(item => buildActivityRow(item.event, item.museum, counts.get(item.event.eventId) || 0, item.state)));
-      if (!recruiting.length) recruitingList.innerHTML = '<p class="empty-state">暂时没有公开招募的活动。可以发起一场专属同行探索。</p>';
-      if (!ongoing.length) ongoingList.innerHTML = '<p class="empty-state">暂时没有进行中的场次；活动开始后，这里只会显示匿名进度。</p>';
+      // Sort past events newest first
+      past.sort((a, b) => `${b.event.date}${b.event.time}`.localeCompare(`${a.event.date}${a.event.time}`));
+      const recruitingList = byId('recruitingList'); const ongoingList = byId('ongoingList'); const pastList = byId('pastList');
+      const pastHeading = byId('pastHeading');
+      if (recruitingList) {
+        recruitingList.replaceChildren(...recruiting.map(item => buildActivityRow(item.event, item.museum, counts.get(item.event.eventId) || 0, item.state)));
+        if (!recruiting.length) recruitingList.innerHTML = '<p class="empty-state">暂时没有公开招募的活动。可以发起一场专属同行探索。</p>';
+      }
+      if (ongoingList) {
+        ongoingList.replaceChildren(...ongoing.map(item => buildActivityRow(item.event, item.museum, counts.get(item.event.eventId) || 0, item.state)));
+        if (!ongoing.length) ongoingList.innerHTML = '<p class="empty-state">暂时没有进行中的场次；活动开始后，这里只会显示匿名进度。</p>';
+      }
+      if (pastList) {
+        pastList.replaceChildren(...past.map(item => buildActivityRow(item.event, item.museum, counts.get(item.event.eventId) || 0, item.state)));
+        if (pastHeading) pastHeading.hidden = past.length === 0;
+        if (past.length) {
+          const pastSummary = byId('pastSummary');
+          if (pastSummary) pastSummary.textContent = `${past.length} 场已结束`;
+        }
+      }
       const householdTotal = recruiting.concat(ongoing).reduce((sum, item) => sum + (counts.get(item.event.eventId) || 0), 0);
-      byId('lobbySummary').textContent = `${recruiting.length} 场招募中 · ${householdTotal} 组家庭已加入`;
+      const lobbySummary = byId('lobbySummary');
+      if (lobbySummary) lobbySummary.textContent = `${recruiting.length} 场招募中 · ${householdTotal} 组家庭已加入`;
     });
   }
   function init() {
@@ -287,7 +312,7 @@
           button.disabled = true; button.textContent = '正在发布到活动广场…';
           const published = await writePublicEvent(created);
           button.disabled = false; button.textContent = '生成活动报名链接';
-          if (!published) { error.textContent = '暂时没能发布到活动广场，请检查网络后重试；活动已保留在“我的活动”。'; error.hidden = false; return; }
+          if (!published) { error.textContent = '暂时没能发布到活动广场，请检查网络后重试；活动已保留在"我的活动"。'; error.hidden = false; return; }
         }
         root.location.assign(buildEventUrl(created));
       });
@@ -300,8 +325,8 @@
     byId('eventAge').textContent = AGE_GROUPS[event.ageGroup] || '发起者未限定';
     byId('eventLimit').textContent = `最多 ${event.limit} 组家庭`;
     byId('eventSummary').textContent = event.ageGroup
-      ? `在${museum.name}，以 ${AGE_GROUPS[event.ageGroup].split('｜')[0]} 的孩子为主；每家仍按自己的节奏逛，最后可选地把一件“孩子发现”拼成共同地图。`
-      : `在${museum.name}，各家按自己的节奏逛；最后可选地把一件“孩子发现”拼成共同地图。`;
+      ? `在${museum.name}，以 ${AGE_GROUPS[event.ageGroup].split('｜')[0]} 的孩子为主；每家仍按自己的节奏逛，最后可选地把一件"孩子发现"拼成共同地图。`
+      : `在${museum.name}，各家按自己的节奏逛；最后可选地把一件"孩子发现"拼成共同地图。`;
     const storageKey = eventKey(event); let saved = null;
     try { saved = JSON.parse(storageGet(storageKey) || 'null'); } catch (_) {}
     function renderAttendance() {
