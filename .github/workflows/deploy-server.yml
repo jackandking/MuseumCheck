@@ -13,6 +13,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Generate debug status metadata
+        run: node devops/scripts/write-debug-status.js
+        env:
+          DEBUG_STATUS_ENVIRONMENT: prod-cloud-server
+
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -23,15 +28,21 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Prepare deploy path
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "sudo mkdir -p ${{ secrets.DEPLOY_PATH }}"
+
       - name: Deploy to server
         run: |
           rsync -avz --delete \
+            --rsync-path="sudo rsync" \
             --exclude '.git/' \
             --exclude '.github/' \
             --exclude 'node_modules/' \
             --exclude 'tests/' \
             --exclude 'backup/' \
             --exclude '.agents/' \
+            --exclude '.user.ini' \
             --exclude 'devops/' \
             --exclude 'wiki/' \
             --exclude '*.md' \
@@ -42,4 +53,10 @@ jobs:
 
       - name: Set permissions
         run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "sudo chown -R www:www ${{ secrets.DEPLOY_PATH }} && sudo chmod -R 755 ${{ secrets.DEPLOY_PATH }}"
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
+            set -e
+            DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
+            sudo find "$DEPLOY_PATH" -mindepth 1 \( -name .user.ini -o -path "$DEPLOY_PATH/.agents" -o -path "$DEPLOY_PATH/.agents/*" \) -prune -o -exec chown -h www:www {} +
+            sudo find "$DEPLOY_PATH" \( -name .user.ini -o -path "$DEPLOY_PATH/.agents" -o -path "$DEPLOY_PATH/.agents/*" \) -prune -o -type d -exec chmod 755 {} +
+            sudo find "$DEPLOY_PATH" \( -name .user.ini -o -path "$DEPLOY_PATH/.agents" -o -path "$DEPLOY_PATH/.agents/*" \) -prune -o -type f -exec chmod 644 {} +
+          '

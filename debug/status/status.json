@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "app": "MuseumCheck",
+  "environment": "repository-fallback",
+  "branch": "unknown",
+  "commit": "unknown",
+  "commitShort": "unknown",
+  "workflow": "not-generated",
+  "runId": "not-generated",
+  "runAttempt": "not-generated",
+  "deployedAt": null,
+  "generatedBy": "tracked fallback; deployment workflows overwrite this file"
+}
