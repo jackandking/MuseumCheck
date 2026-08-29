@@ -317,12 +317,30 @@
             const card = document.createElement(expired ? 'div' : 'a');
             if (!expired) card.href = activity.href;
             card.className = 'survey-card' + (expired ? ' expired' : '');
-            card.innerHTML = `
-                <div class="survey-icon">${activity.icon}</div>
-                <div class="survey-title">${activity.title}</div>
-                <div class="survey-description">${activity.description}</div>
-                ${expired ? '<span class="expired-badge">已结束</span>' : ''}
-            `;
+
+            const iconEl = document.createElement('div');
+            iconEl.className = 'survey-icon';
+            iconEl.textContent = activity.icon;
+
+            const titleEl = document.createElement('div');
+            titleEl.className = 'survey-title';
+            titleEl.textContent = activity.title;
+
+            const descEl = document.createElement('div');
+            descEl.className = 'survey-description';
+            descEl.textContent = activity.description;
+
+            card.appendChild(iconEl);
+            card.appendChild(titleEl);
+            card.appendChild(descEl);
+
+            if (expired) {
+                const badge = document.createElement('span');
+                badge.className = 'expired-badge';
+                badge.textContent = '已结束';
+                card.appendChild(badge);
+            }
+
             return card;
         }
 
