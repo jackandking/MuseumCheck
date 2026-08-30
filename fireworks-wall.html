@@ -1411,12 +1411,35 @@
             }
         }
 
-        // Load fireworks from localStorage
+        // Load fireworks retention time from localStorage (milliseconds)
+        function loadRetentionTimeMs() {
+            try {
+                const saved = localStorage.getItem('fireworksRetentionTime');
+                if (saved) {
+                    const parsed = parseInt(saved, 10);
+                    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+                }
+            } catch (_) {}
+            return 60000; // Default: 1 minute
+        }
+
+        // Load fireworks from localStorage, filtering out expired entries
         function loadLocalFireworks() {
             try {
                 const stored = localStorage.getItem('museumCheckFireworks');
                 if (stored) {
-                    localFireworks = JSON.parse(stored);
+                    const all = JSON.parse(stored);
+                    const retentionTimeMs = loadRetentionTimeMs();
+                    const now = Date.now();
+                    const valid = all.filter(fw => fw && fw.timestamp && (now - fw.timestamp) < retentionTimeMs);
+                    if (valid.length !== all.length) {
+                        console.log(`Filtered ${all.length - valid.length} expired local fireworks (retention: ${retentionTimeMs}ms)`);
+                        // Persist cleaned-up list back to localStorage
+                        try {
+                            localStorage.setItem('museumCheckFireworks', JSON.stringify(valid));
+                        } catch (_) {}
+                    }
+                    localFireworks = valid;
                     console.log(`Loaded ${localFireworks.length} local fireworks`);
                     mergeFireworks();
                 }
@@ -1633,19 +1656,8 @@
             const API_ENDPOINT = 'https://rlyhccdr2g.execute-api.us-west-2.amazonaws.com/default/keyValueStore';
             const FIREWORK_KEY = 'museumcheck-firework';
             
-            // Load fireworks retention time from localStorage (in milliseconds)
-            let retentionTimeMs = 60000; // Default: 1 minute
-            try {
-                const saved = localStorage.getItem('fireworksRetentionTime');
-                if (saved) {
-                    retentionTimeMs = parseInt(saved, 10);
-                }
-            } catch (error) {
-                console.error('Error loading fireworks retention time:', error);
-            }
-            
             // Convert milliseconds to seconds for TTL
-            const ttlSeconds = Math.round(retentionTimeMs / 1000);
+            const ttlSeconds = Math.round(loadRetentionTimeMs() / 1000);
             
             fetch(API_ENDPOINT, {
                 method: 'POST',
