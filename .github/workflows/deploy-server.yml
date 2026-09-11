@@ -60,3 +60,32 @@ jobs:
             sudo find "$DEPLOY_PATH" \( -name .user.ini -o -path "$DEPLOY_PATH/.agents" -o -path "$DEPLOY_PATH/.agents/*" \) -prune -o -type d -exec chmod 755 {} +
             sudo find "$DEPLOY_PATH" \( -name .user.ini -o -path "$DEPLOY_PATH/.agents" -o -path "$DEPLOY_PATH/.agents/*" \) -prune -o -type f -exec chmod 644 {} +
           '
+
+      # Purge Tencent CDN for the static assets touched by this deploy.
+      # museumcheck.cn is fronted by Tencent CDN which caches js/css/html with
+      # `immutable, max-age=2592000`; a post-deploy purge removes the race where the
+      # CDN can pin a stale file under a new ?v= key during the rsync write-window.
+      # Requires TENCENT_SECRET_ID / TENCENT_SECRET_KEY repo secrets; if absent the
+      # script no-ops (and continue-on-error keeps the deploy green either way).
+      - name: Purge Tencent CDN cache for deployed assets
+        continue-on-error: true
+        env:
+          TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
+          TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
+        run: |
+          CHANGED=$(git show --name-only --pretty="" HEAD)
+          PATHS=""
+          for f in $CHANGED; do
+            case "$f" in
+              js/*)    PATHS="$PATHS /js/";;
+              css/*)   PATHS="$PATHS /css/";;
+              *.html)  PATHS="$PATHS /$f";;
+            esac
+          done
+          PATHS=$(echo $PATHS | tr ' ' '\n' | sort -u | tr '\n' ' ')
+          if [ -n "$PATHS" ]; then
+            echo "Purging CDN paths: $PATHS"
+            python3 devops/scripts/purge-cdn-cache.py --paths $PATHS
+          else
+            echo "No js/css/html changed in this commit -> nothing to purge."
+          fi
