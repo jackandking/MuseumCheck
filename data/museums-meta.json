@@ -124,9 +124,83 @@
       "音乐",
       "青铜器"
     ],
-    "image": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Hubei_Provincial_Museum.JPG",
+    "image": "https://museumcheck.cn/images/hubei-museum-photo-v1.jpg",
     "hasCollections": true,
-    "level": "一级"
+    "level": "一级",
+    "collections": [
+      {
+        "name": "曾侯乙编钟",
+        "dynasty": "战国早期",
+        "category": "青铜乐器",
+        "imageUrl": "https://museumcheck.cn/images/hubei-museum-t1-v1.jpg",
+        "description": "战国早期曾国国君墓葬出土，65件青铜编钟总重超2.5吨，一钟双音、音域宽广，改写了世界音乐史，首批禁止出境展览文物。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bianzhong_of_Marquis_Yi_of_Zeng_Wuhan.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "越王勾践剑",
+        "dynasty": "春秋晚期",
+        "category": "青铜兵器",
+        "imageUrl": "https://museumcheck.cn/images/hubei-museum-t2-v1.jpg",
+        "description": "春秋晚期越王勾践自用青铜剑，剑身满饰菱形暗格花纹，深埋两千余年仍寒光逼人、几无锈蚀，被誉为“天下第一剑”。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:20230208_Bronze_sword_used_by_King_Goujian_of_Yue_01.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "曾侯乙尊盘",
+        "dynasty": "战国早期",
+        "category": "青铜礼器",
+        "imageUrl": "https://museumcheck.cn/images/hubei-museum-t3-v1.jpg",
+        "description": "战国早期，由尊与盘组成，通体失蜡法铸造的镂空蟠螭纹极尽繁复，是先秦青铜铸造工艺的巅峰之作。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:曾侯乙尊盘，2015-04-06_01.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "云梦睡虎地秦简",
+        "dynasty": "秦",
+        "category": "竹简（法律文献）",
+        "imageUrl": "https://museumcheck.cn/images/hubei-museum-t4-v1.jpg",
+        "description": "秦代竹简，含《秦律十八种》等法律文献，出自基层官吏“喜”的墓葬，是了解秦代制度与日常的一手史料。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bamboo_Slips_of_Qin_Dynasty_Unearthed_from_Shuihudi_2013-01.JPG",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "元青花四爱图梅瓶",
+        "dynasty": "元",
+        "category": "瓷器（青花）",
+        "imageUrl": "https://museumcheck.cn/images/hubei-museum-t5-v1.jpg",
+        "description": "元代青花瓷代表作，腹部绘王羲之爱兰、陶渊明爱菊、周敦颐爱莲、林逋爱梅鹤“四爱图”，2006年出自明郢靖王墓。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:元青花四爱图梅瓶.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "鹿角立鹤",
+        "dynasty": "战国早期",
+        "category": "青铜（神兽造型）",
+        "imageUrl": "https://museumcheck.cn/images/hubei-museum-t6-v1.jpg",
+        "description": "战国早期曾侯乙墓出土，青铜铸鹤身、鹿角立于鹤首，造型奇特的祥瑞神兽，象征沟通天地。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:鹿角立鹤.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      }
+    ]
   },
   {
     "id": "shaanxi-history",
