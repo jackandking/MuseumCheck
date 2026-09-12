@@ -49,6 +49,8 @@ jobs:
             --exclude 'package*.json' \
             --exclude 'jest.config*' \
             --exclude '.husky/' \
+            --exclude 'images/' \
+            --exclude 'files/' \
             ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.DEPLOY_PATH }}/
 
       - name: Set permissions
