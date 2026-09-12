@@ -164,9 +164,47 @@
       "文物",
       "历史"
     ],
-    "image": "https://upload.wikimedia.org/wikipedia/commons/7/74/%E6%B2%B3%E5%8D%97%E5%8D%9A%E7%89%A9%E9%99%A2_-_Henan_Museum_-_2014.03_-_panoramio.jpg",
-    "hasCollections": false,
-    "level": "一级"
+    "image": "https://museumcheck.cn/images/henan-museum-photo-v1.jpg",
+    "hasCollections": true,
+    "level": "一级",
+    "collections": [
+      {
+        "name": "妇好鸮尊",
+        "dynasty": "商代晚期",
+        "category": "青铜器",
+        "imageUrl": "https://museumcheck.cn/images/henan-museum-t1-v1.jpg",
+        "description": "1976年安阳殷墟妇好墓出土，通高46.3厘米，鸮（猫头鹰）形青铜盛酒器，中国最早鸟形铜尊之一，河南博物院镇院之宝。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Fuhao_Owl_Zun_front.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Cangmin (Wikimedia Commons)",
+        "attribution": "Cangmin / CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "莲鹤方壶",
+        "dynasty": "春秋中期",
+        "category": "青铜器",
+        "imageUrl": "https://museumcheck.cn/images/henan-museum-t2-v1.jpg",
+        "description": "1923年新郑李家楼郑公大墓出土，高117厘米，壶顶莲瓣盛开、立一振翅仙鹤，郭沫若誉其为'时代精神之象征'；河南博物院与故宫各藏一件。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:河南博物院藏莲鹤方壶.jpg",
+        "rightsType": "CC",
+        "license": "CC BY 3.0",
+        "copyrightHolder": "Greg_kf (Wikimedia Commons)",
+        "attribution": "Greg_kf / CC BY 3.0, via Wikimedia Commons"
+      },
+      {
+        "name": "云纹铜禁",
+        "dynasty": "春秋中期",
+        "category": "青铜器",
+        "imageUrl": "https://museumcheck.cn/images/henan-museum-t3-v1.jpg",
+        "description": "1978年淅川下寺楚墓出土，通高28.8厘米，失蜡法铸造的云纹铜禁（承置酒器的案具），中国首批禁止出境展览文物。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bronze_jin_from_Henan.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 3.0",
+        "copyrightHolder": "Greg_kf (Wikimedia Commons)",
+        "attribution": "Greg_kf / CC BY-SA 3.0, via Wikimedia Commons"
+      }
+    ]
   },
   {
     "id": "liaoning-museum",
