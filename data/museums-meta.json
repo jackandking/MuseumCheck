@@ -73,9 +73,47 @@
       "艺术",
       "民俗"
     ],
-    "image": "https://upload.wikimedia.org/wikipedia/commons/3/31/Nanjing_Museum1.jpg",
+    "image": "https://museumcheck.cn/images/nanjing-museum-photo-v1.jpg",
     "hasCollections": true,
-    "level": "一级"
+    "level": "一级",
+    "collections": [
+      {
+        "name": "金兽",
+        "dynasty": "西汉",
+        "category": "金银器（金器）",
+        "imageUrl": "https://museumcheck.cn/images/nanjing-museum-t1-v1.jpg",
+        "description": "1982年江苏盱眙南窑庄窖藏出土，西汉，重达9100克，是迄今考古发现最重的一块金器；造型为伏卧状豹形神兽，南京博物院镇馆之宝。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gold_Beast,_Nanjing_Museum.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "竹林七贤与荣启期砖画",
+        "dynasty": "南朝",
+        "category": "砖画（墓葬壁画）",
+        "imageUrl": "https://museumcheck.cn/images/nanjing-museum-t2-v1.jpg",
+        "description": "1960年南京西善桥宫山墓出土，南朝，由200余块模印画像砖拼嵌而成，表现嵇康、阮籍等竹林七贤与荣启期，是我国最早的魏晋名士图卷，首批禁止出境展览文物。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Seven_Sages_of_the_Bamboo_Grove_1.Nanjing_Museum.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "青釉神兽尊",
+        "dynasty": "西晋",
+        "category": "瓷器（青釉）",
+        "imageUrl": "https://museumcheck.cn/images/nanjing-museum-t3-v1.jpg",
+        "description": "1976年江苏宜兴周处家族墓出土，西晋，高27.9厘米，以青釉瓷塑成神兽形，是西晋青瓷塑贴工艺的代表作，南京博物院藏。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Celadon-glazed_porcelain_Zun_with_design_of_a_monster_01.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      }
+    ]
   },
   {
     "id": "hubei-museum",
