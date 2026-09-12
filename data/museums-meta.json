@@ -8,9 +8,83 @@
       "建筑",
       "文物"
     ],
-    "image": "https://upload.wikimedia.org/wikipedia/commons/0/00/Sunset_of_the_Forbidden_City_2006.JPG",
+    "image": "https://museumcheck.cn/images/forbidden-city-photo-v1.jpg",
     "hasCollections": true,
-    "level": "一级"
+    "level": "一级",
+    "collections": [
+      {
+        "name": "清明上河图",
+        "dynasty": "北宋",
+        "category": "书画（风俗长卷）",
+        "imageUrl": "https://museumcheck.cn/images/forbidden-city-t1-v1.jpg",
+        "description": "北宋张择端所作风俗长卷，细致描绘汴京清明时节市井繁华与漕运景象，为中国十大传世名画之一，首批禁止出境展览文物。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Alongtheriver_QingMing.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "金瓯永固杯",
+        "dynasty": "清乾隆",
+        "category": "金银器（玉杯）",
+        "imageUrl": "https://museumcheck.cn/images/forbidden-city-t2-v1.jpg",
+        "description": "清乾隆御用饮酒金杯，金胎镶嵌珍珠、红蓝宝石，寓意江山永固，为清宫元旦开笔仪式之重器。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:金瓯永固杯_故宫珍宝馆.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "平复帖",
+        "dynasty": "西晋",
+        "category": "书法（章草）",
+        "imageUrl": "https://museumcheck.cn/images/forbidden-city-t3-v1.jpg",
+        "description": "西晋陆机章草墨迹，为现存最早的名人书法真迹，内容为一封问候友人的书札，首批禁止出境展览文物。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:平复帖.png",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "乾隆田黄三联印",
+        "dynasty": "清乾隆",
+        "category": "玺印（田黄石）",
+        "imageUrl": "https://museumcheck.cn/images/forbidden-city-t4-v1.jpg",
+        "description": "清乾隆帝田黄三联玺，三方印以整块田黄石雕出的石链相连，巧夺天工，首批禁止出境展览文物。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Qing_Jade_Seals,_Qianlong_Reign.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "九龙壁",
+        "dynasty": "清乾隆",
+        "category": "琉璃建筑",
+        "imageUrl": "https://museumcheck.cn/images/forbidden-city-t5-v1.jpg",
+        "description": "故宫珍宝馆内单面琉璃影壁，壁面九条蟠龙戏珠于云水山石之间，为清代琉璃烧造工艺代表作。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jiulongbi.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "大禹治水玉山",
+        "dynasty": "清乾隆",
+        "category": "玉器（玉山子）",
+        "imageUrl": "",
+        "description": "清乾隆青玉山子，重逾五吨，以宋人《大禹治水图》为稿本于扬州雕成，现存最大的单体玉雕，陈设于宁寿宫乐寿堂。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:大禹治水玉山.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      }
+    ]
   },
   {
     "id": "national-museum",
@@ -21,9 +95,83 @@
       "文化",
       "艺术"
     ],
-    "image": "https://upload.wikimedia.org/wikipedia/commons/8/8b/%E4%B8%AD%E5%9B%BD%E5%9B%BD%E5%AE%B6%E5%8D%9A%E7%89%A9%E9%A6%86.JPG",
+    "image": "https://museumcheck.cn/images/national-museum-photo-v1.jpg",
     "hasCollections": true,
-    "level": "一级"
+    "level": "一级",
+    "collections": [
+      {
+        "name": "后母戊鼎",
+        "dynasty": "商",
+        "category": "青铜礼器",
+        "imageUrl": "https://museumcheck.cn/images/national-museum-t1-v1.jpg",
+        "description": "商代晚期青铜重器，重逾八百公斤，为现存最大最重的青铜礼器，1939年出土于河南安阳，首批禁止出境展览文物。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:后母戊鼎.png",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "四羊方尊",
+        "dynasty": "商",
+        "category": "青铜礼器",
+        "imageUrl": "https://museumcheck.cn/images/national-museum-t2-v1.jpg",
+        "description": "商代晚期青铜礼器，四角各铸卷角羊首，造型雄奇，为商代青铜铸造工艺的巅峰之作。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Square_zun_with_four_sheep_01.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "击鼓说唱俑",
+        "dynasty": "东汉",
+        "category": "陶俑",
+        "imageUrl": "https://museumcheck.cn/images/national-museum-t3-v1.jpg",
+        "description": "东汉灰陶俳优俑，左抱扁鼓、右执鼓槌，神情诙谐，为汉代雕塑生动写实的杰出代表。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Eastern_Han_Pottery_Storyteller_Figure.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "人面鱼纹彩陶盆",
+        "dynasty": "新石器（仰韶文化）",
+        "category": "彩陶",
+        "imageUrl": "https://museumcheck.cn/images/national-museum-t4-v1.jpg",
+        "description": "仰韶文化半坡类型典型器物，内壁绘人面鱼纹，1955年西安半坡遗址出土，体现先民的图腾与生命观念。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:人面鱼纹彩陶盆",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "大盂鼎",
+        "dynasty": "西周",
+        "category": "青铜礼器",
+        "imageUrl": "https://museumcheck.cn/images/national-museum-t5-v1.jpg",
+        "description": "西周康王时期青铜礼器，内壁291字铭文记康王对盂的诰命赏赐，书法浑厚，与上海博物馆大克鼎并称“海内双鼎”。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Da_Yu_ding.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "金缕玉衣",
+        "dynasty": "西汉",
+        "category": "葬玉",
+        "imageUrl": "https://museumcheck.cn/images/national-museum-t6-v1.jpg",
+        "description": "汉代诸侯王葬服，以金丝缀连玉片而成，徐州狮子山楚王墓出土，体现汉代玉敛葬的等级与礼制。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:金缕玉衣_狮子山汉墓.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      }
+    ]
   },
   {
     "id": "shanghai-museum",
@@ -34,9 +182,83 @@
       "文物",
       "收藏"
     ],
-    "image": "https://upload.wikimedia.org/wikipedia/commons/3/3a/%E4%B8%8A%E6%B5%B7%E5%8D%9A%E7%89%A9%E9%A6%86%E4%B8%9C%E9%A6%86_161003.jpg",
-    "hasCollections": false,
-    "level": "一级"
+    "image": "https://museumcheck.cn/images/shanghai-museum-photo-v1.jpg",
+    "hasCollections": true,
+    "level": "一级",
+    "collections": [
+      {
+        "name": "大克鼎",
+        "dynasty": "西周",
+        "category": "青铜礼器",
+        "imageUrl": "https://museumcheck.cn/images/shanghai-museum-t1-v1.jpg",
+        "description": "西周中期青铜礼器，内壁290字铭文记贵族克受周王赏赐而作器，为上博镇馆之宝，与国博大盂鼎并称“海内双鼎”。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Da_Ke_ding.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "晋侯稣钟",
+        "dynasty": "西周",
+        "category": "青铜乐器",
+        "imageUrl": "https://museumcheck.cn/images/shanghai-museum-t2-v1.jpg",
+        "description": "西周晋侯稣编钟，钟上铭文记晋侯稣随周厉王出征获胜受赏，为上博镇馆之宝，是研究西周史与乐律的稀有实物。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bells_of_Marquis_Su_of_Jin.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "商鞅方升",
+        "dynasty": "战国",
+        "category": "量器",
+        "imageUrl": "https://museumcheck.cn/images/shanghai-museum-t3-v1.jpg",
+        "description": "战国商鞅变法时制造的标准量器，刻有铭文，为秦国统一度量衡的实物见证，是中国度量衡史的重要物证。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:商鞅方升",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "王献之鸭头丸帖",
+        "dynasty": "东晋",
+        "category": "书法（行草）",
+        "imageUrl": "https://museumcheck.cn/images/shanghai-museum-t4-v1.jpg",
+        "description": "东晋王献之传世行草墨迹，帖文仅“鸭头丸故不佳”等十五字，笔势连绵，为禁止出境展览文物。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:王献之_行书鸭头丸帖卷",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "淳化阁帖",
+        "dynasty": "北宋",
+        "category": "法帖（刻帖）",
+        "imageUrl": "https://museumcheck.cn/images/shanghai-museum-t5-v1.jpg",
+        "description": "北宋《淳化秘阁法帖》传世最善本（修内司本），汇刻历代名家书迹，素有“法帖之祖”之称。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:淳化阁帖",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "越窑青釉海棠式碗",
+        "dynasty": "唐",
+        "category": "瓷器（越窑青瓷）",
+        "imageUrl": "https://museumcheck.cn/images/shanghai-museum-t6-v1.jpg",
+        "description": "唐代越窑青釉碗，海棠式曲线口腹，釉色青润，为越窑秘色瓷代表作，体现唐代越窑素雅之美。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:越窑青釉海棠式碗",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      }
+    ]
   },
   {
     "id": "shanghai-natural-history-museum",
