@@ -111,9 +111,47 @@ window.MUSEUMS_META = [
       "文物",
       "古代文明"
     ],
-    "image": "https://upload.wikimedia.org/wikipedia/commons/3/35/%E9%99%95%E8%A5%BF%E5%8E%86%E5%8F%B2%E5%8D%9A%E7%89%A9%E9%A6%86.jpg",
+    "image": "https://museumcheck.cn/images/shaanxi-history-photo-v1.jpg",
     "hasCollections": true,
-    "level": "一级"
+    "level": "一级",
+    "collections": [
+      {
+        "name": "镶金兽首玛瑙杯",
+        "dynasty": "唐代",
+        "category": "玉器（玛瑙）",
+        "imageUrl": "https://museumcheck.cn/images/shaanxi-history-t1-v1.jpg",
+        "description": "1970年西安南郊何家村窖藏出土，长15.5厘米，兽首牛角形玛瑙杯，迄今所见唐代唯一俏色雕琢的玛瑙艺术珍品，陕西历史博物馆镇馆之宝、首批禁止出境展览文物。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:唐-玛瑙兽首杯.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 4.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 4.0, via Wikimedia Commons"
+      },
+      {
+        "name": "唐三彩载乐骆驼俑",
+        "dynasty": "唐代",
+        "category": "三彩陶器",
+        "imageUrl": "https://museumcheck.cn/images/shaanxi-history-t2-v1.jpg",
+        "description": "唐代，高58厘米，骆驼背驮平台上有7名乐俑奏乐歌唱，是唐三彩中罕见的盛唐乐舞题材代表作。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:Tang_Sancai_Porcelain-_Musicians_on_a_Camel.jpg",
+        "rightsType": "CC0",
+        "license": "CC0",
+        "copyrightHolder": "Gary Todd (Wikimedia Commons)",
+        "attribution": "Gary Todd / CC0, via Wikimedia Commons"
+      },
+      {
+        "name": "鸳鸯莲瓣纹金碗",
+        "dynasty": "唐代",
+        "category": "金银器",
+        "imageUrl": "https://museumcheck.cn/images/shaanxi-history-t3-v1.jpg",
+        "description": "1970年何家村窖藏出土，高5.5厘米，捶揲成型的金碗外壁錾刻鸳鸯、莲瓣等纹样，唐代金银器工艺巅峰之作。",
+        "sourceUrl": "https://commons.wikimedia.org/wiki/File:鸳鸯莲瓣纹金碗_20091112.jpg",
+        "rightsType": "CC",
+        "license": "CC BY-SA 3.0",
+        "copyrightHolder": "Wikimedia Commons",
+        "attribution": "CC BY-SA 3.0, via Wikimedia Commons"
+      }
+    ]
   },
   {
     "id": "suzhou-museum",
