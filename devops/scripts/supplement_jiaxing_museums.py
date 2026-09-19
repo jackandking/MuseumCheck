@@ -249,9 +249,20 @@ def kv_post(key, sort_key, value):
 def patch_or_add_meta(m):
     meta = json.load(open("data/museums-meta.json", encoding="utf-8"))
     img = m.get("_img")
-    collections = [{k: t.get(k, "CC") for k in ("name", "dynasty", "category", "imageUrl",
-                   "description", "sourceUrl", "rightsType", "license", "copyrightHolder", "attribution")}
-                   for t in m["treasures"]]
+    collections = []
+    for t in m["treasures"]:
+        collections.append({
+            "name": t.get("name"),
+            "dynasty": t.get("dynasty"),
+            "category": t.get("category"),
+            "imageUrl": t.get("imageUrl"),
+            "description": t.get("description"),
+            "sourceUrl": t.get("sourceUrl"),
+            "rightsType": t.get("rightsType", "CC"),
+            "license": t.get("license"),
+            "copyrightHolder": t.get("holder"),
+            "attribution": t.get("attr"),
+        })
     entry = next((x for x in meta if x.get("id") == m["mid"]), None)
     if entry:
         entry["image"] = img
