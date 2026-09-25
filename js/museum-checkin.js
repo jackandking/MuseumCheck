@@ -551,7 +551,20 @@
                 ...taskPayload,
                 ...extraParameters
             });
-            broadcastRoom('progress', { done: completedTasks.size, total: childTasks.length });
+            const progressPayload = { done: completedTasks.size, total: childTasks.length };
+            const taskForProgress = childTasks[taskIndex];
+            if (taskForProgress && currentMuseum && Array.isArray(currentMuseum.collections)) {
+                const { title: progressTitle, subtitle: progressSubtitle } = parseTaskString(taskForProgress);
+                if (progressTitle && progressTitle.includes(TREASURE_TASK_IDENTIFIER) && progressSubtitle) {
+                    const nameMatch = progressSubtitle.match(/「([^」]+)」/);
+                    const progressName = nameMatch && nameMatch[1];
+                    if (progressName) {
+                        const idx = currentMuseum.collections.findIndex(c => c && c.name === progressName);
+                        if (idx >= 0) progressPayload.itemIndex = idx;
+                    }
+                }
+            }
+            broadcastRoom('progress', progressPayload);
 
             if (taskIndex === 0 && !firstTaskCompletionSignalSent) {
                 firstTaskCompletionSignalSent = true;

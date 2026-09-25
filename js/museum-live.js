@@ -381,7 +381,7 @@
       { kind: 'broadcast', event: 'all_done', total: 7, visitorId: 'demo-0', alias: '小满家', timestamp: now - 4.5 * 60 * MINUTE },
       { kind: 'broadcast', event: 'arrive', visitorId: 'demo-1', alias: '团团家', timestamp: now - 52 * MINUTE },
       { kind: 'message', phraseId: 'greet-arrive', visitorId: 'demo-1', alias: '团团家', timestamp: now - 50 * MINUTE },
-      { kind: 'broadcast', event: 'progress', done: 2, total: 7, visitorId: 'demo-1', alias: '团团家', timestamp: now - 38 * MINUTE },
+      { kind: 'broadcast', event: 'progress', done: 2, total: 7, itemIndex: 0, visitorId: 'demo-1', alias: '团团家', timestamp: now - 38 * MINUTE },
       { kind: 'message', phraseId: 'route-queue', visitorId: 'demo-1', alias: '团团家', timestamp: now - 36 * MINUTE },
       { kind: 'broadcast', event: 'arrive', visitorId: 'demo-2', alias: '小小探险队', timestamp: now - 26 * MINUTE },
       { kind: 'message', phraseId: 'exhibit-worth', visitorId: 'demo-2', alias: '小小探险队', timestamp: now - 21 * MINUTE },

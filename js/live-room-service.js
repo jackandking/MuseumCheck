@@ -47,7 +47,10 @@
     Object.freeze({ id: 'greet', label: '招呼', phrases: Object.freeze([
       Object.freeze({ id: 'greet-arrive', text: '我们到了' }),
       Object.freeze({ id: 'greet-crowd', text: '今天馆里人多吗？' }),
-      Object.freeze({ id: 'greet-anyone', text: '有人也在馆里吗？' })
+      Object.freeze({ id: 'greet-anyone', text: '有人也在馆里吗？' }),
+      Object.freeze({ id: 'greet-crowd-no', text: '今天馆里人不多' }),
+      Object.freeze({ id: 'greet-crowd-yes', text: '今天馆里人挺多的' }),
+      Object.freeze({ id: 'greet-crowd-ok', text: '今天馆里人还可以' })
     ]) }),
     Object.freeze({ id: 'exhibit', label: '展品', phrases: Object.freeze([
       Object.freeze({ id: 'exhibit-worth', text: '这件太值得看了' }),
@@ -69,8 +72,8 @@
   const BROADCAST_EVENTS = Object.freeze(['arrive', 'progress', 'all_done']);
   const BROADCAST_TEMPLATES = Object.freeze({
     arrive: '{who} 到馆了',
-    progress: '{who} 完成了 {done}/{total} 项任务',
-    all_done: '{who} 集齐了全部 {total} 项任务'
+    progress: '{who} 找到了「{item}」',
+    all_done: '{who} 集齐了全部 {total} 件镇馆之宝'
   });
 
   const PHRASE_BY_ID = (function buildIndex() {
@@ -231,9 +234,11 @@
     if (event === 'progress') {
       const done = clampInt(input.done, 1, 50);
       const total = clampInt(input.total, 1, 50);
+      const itemIndex = clampInt(input.itemIndex, 0, 99);
       if (done === null || total === null || done > total) return Promise.resolve(false);
       record.done = done;
       record.total = total;
+      if (itemIndex !== null) record.itemIndex = itemIndex;
     }
     if (event === 'all_done') {
       const total = clampInt(input.total, 1, 50);
@@ -299,7 +304,9 @@
     const total = clampInt(record.total, 1, 50);
     if (record.event === 'progress' && (done === null || total === null || done > total)) return null;
     if (record.event === 'all_done' && total === null) return null;
+    const item = itemLabel(record.itemIndex, context);
     return template
+      .replace('{item}', () => item || '一件展品')
       .replace('{done}', () => String(done === null ? 0 : done))
       .replace('{total}', () => String(total === null ? 0 : total));
   }

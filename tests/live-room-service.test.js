@@ -39,8 +39,9 @@ describe('同游现场 · 房间数据层', () => {
 
   test('广播只认三种事件，且必须带合法数字', () => {
     expect(live.renderBroadcast(record({ event: 'arrive' }), {})).toBe('{who} 到馆了');
-    expect(live.renderBroadcast(record({ event: 'progress', done: 3, total: 7 }), {})).toBe('{who} 完成了 3/7 项任务');
-    expect(live.renderBroadcast(record({ event: 'all_done', total: 7 }), {})).toBe('{who} 集齐了全部 7 项任务');
+    expect(live.renderBroadcast(record({ event: 'progress', done: 3, total: 7 }), {})).toBe('{who} 找到了「一件展品」');
+    expect(live.renderBroadcast(record({ event: 'progress', done: 3, total: 7, itemIndex: 1 }), { itemNames: ITEMS })).toBe('{who} 找到了「大克鼎」');
+    expect(live.renderBroadcast(record({ event: 'all_done', total: 7 }), {})).toBe('{who} 集齐了全部 7 件镇馆之宝');
     expect(live.renderBroadcast(record({ event: 'progress', done: 9, total: 2 }), {})).toBeNull();
     expect(live.renderBroadcast(record({ event: 'progress', total: 2 }), {})).toBeNull();
     expect(live.renderBroadcast(record({ event: 'all_done' }), {})).toBeNull();
@@ -77,7 +78,7 @@ describe('同游现场 · 房间数据层', () => {
     }
     records.push(record({ kind: 'broadcast', event: 'progress', done: 1, total: 7, visitorId: 'visitor-b', alias: '豆豆家', timestamp: now - 1000 }));
     const feed = live.buildFeed(records, { now });
-    expect(feed.map(item => item.text)).toEqual(['团团家 完成了 3/7 项任务', '豆豆家 完成了 1/7 项任务']);
+    expect(feed.map(item => item.text)).toEqual(['团团家 找到了「一件展品」', '豆豆家 找到了「一件展品」']);
   });
 
   test('在场统计只数可信记录，且使用时间窗', () => {
