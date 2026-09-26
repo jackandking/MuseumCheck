@@ -57,9 +57,10 @@
 
   async function postJSON(path, payload) {
     try {
+      // 带鉴权头：登录/注册时无 token 仅 Content-Type；/api/checkin、/api/userdata 等需 Bearer
       var res = await fetch(baseUrl() + path, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(payload),
         credentials: 'same-origin'
       });

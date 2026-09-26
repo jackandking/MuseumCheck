@@ -160,6 +160,7 @@
       }
       var server = (res.data.data) || {};
 
+      var keyOps = []; // {key, merged, oldMirrorRaw, toPush}
       Object.keys(SYNC_KEYS).forEach(function (key) {
         var type = SYNC_KEYS[key];
         var localRaw = lsGet(key);
@@ -184,21 +185,38 @@
           return; // 完全一致
         }
 
-        // 收敛：合并结果与服务端不同 → 回推；与本地不同 → 应用（触发刷新）
-        if (!deepEqual(merged, serverVal)) pushItems[key] = merged;
-        if (!deepEqual(merged, localVal) || (localRaw == null && merged !== undefined && merged !== null)) {
-          writeLocal(key, merged);
-          appliedKeys.push(key);
-        }
-        writeMirror(key, merged);
+        keyOps.push({
+          key: key,
+          merged: merged,
+          oldMirrorRaw: mirrorRaw,
+          toPush: !deepEqual(merged, serverVal)
+        });
       });
 
-      var pushed = 0;
+      // 先上推，再按结果提交本地/镜像（失败则回滚镜像，下一轮重试，绝不丢本地变更）
+      var pushed = 0, pushOk = true;
+      var pushItems = {};
+      keyOps.forEach(function (op) { if (op.toPush) pushItems[op.key] = op.merged; });
       if (Object.keys(pushItems).length) {
         var p = await global.AuthClient._postJSON('/api/userdata', { items: pushItems });
         if (p.ok && p.data && p.data.success) pushed = p.data.saved || 0;
-        else console.warn('[user-sync] 上推失败', p.status, p.data && p.data.error);
+        else { pushOk = false; console.warn('[user-sync] 上推失败', p.status, p.data && p.data.error); }
       }
+
+      var appliedKeys = [];
+      keyOps.forEach(function (op) {
+        if (!pushOk && op.toPush) {
+          // 上推失败：镜像回滚到旧值，本地变更保留，下一轮重试
+          if (op.oldMirrorRaw == null) lsDel(MIRROR_PREFIX + op.key);
+          else lsSet(MIRROR_PREFIX + op.key, op.oldMirrorRaw);
+        } else {
+          writeMirror(op.key, op.merged);
+        }
+        if (!deepEqual(op.merged, parseAny(lsGet(op.key))) && !(op.merged == null && lsGet(op.key) == null)) {
+          writeLocal(op.key, op.merged);
+          appliedKeys.push(op.key);
+        }
+      });
 
       if (appliedKeys.length) {
         console.info('[user-sync] 已从服务端应用:', appliedKeys.join(','));

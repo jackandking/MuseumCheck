@@ -71,8 +71,8 @@ describe('v2 Poster QR Code Enhancement', () => {
       expect(fs.existsSync(qrPath)).toBe(true);
     });
 
-    test('Generic WeChat QR code file should exist as fallback', () => {
-      const qrPath = path.join(__dirname, '..', 'assets', 'qrcodes', 'MuseumCheck_QRCode_WX.jpg');
+    test('Website QR code should exist as poster fallback (replaces WeChat mini-program)', () => {
+      const qrPath = path.join(__dirname, '..', 'assets', 'qrcodes', 'MuseumCheck_QRCode_Website.png');
       expect(fs.existsSync(qrPath)).toBe(true);
     });
 
