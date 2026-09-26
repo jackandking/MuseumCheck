@@ -5207,6 +5207,47 @@
                 };
                 qrImg.src = museumQRFile;
             });
+
+            // QR image unavailable: draw website address text instead, still drives traffic to museumcheck.cn
+            const drawWebsiteFallback = (footerY) => {
+                const boxW = 260, boxH = 100;
+                const boxX = W - boxW - 40;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(boxX, footerY, boxW, boxH);
+                ctx.fillStyle = '#2c5aa0';
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 28px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+                ctx.fillText('museumcheck.cn', boxX + boxW / 2, footerY + 45);
+                ctx.fillStyle = '#7a8ba8';
+                ctx.font = '18px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+                ctx.fillText('更多博物馆亲子任务', boxX + boxW / 2, footerY + 75);
+                ctx.textAlign = 'left';
+            };
+
+            // Unified footer QR drawing: museum QR → website QR → website text, always drives traffic to museumcheck.cn
+            const drawQROrFallback = (footerY, qrImg) => {
+                if (qrImg) {
+                    const qrSize = 120;
+                    const qrX = W - qrSize - 40;
+                    const qrY = footerY;
+
+                    // Draw white background for QR code
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 50);
+
+                    // Draw QR code
+                    ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+
+                    // Add text below QR code
+                    ctx.fillStyle = '#2c5aa0';
+                    ctx.font = '18px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('扫码体验更多', qrX + qrSize / 2, qrY + qrSize + 25);
+                    ctx.textAlign = 'left';
+                } else {
+                    drawWebsiteFallback(footerY);
+                }
+            };
             
             // Load all photos as images
             const loadImage = (dataUrl) => new Promise((resolve) => {
@@ -5286,7 +5327,7 @@
                 
                 // Calculate total required height
                 const contentEndY = currentY + photoSectionHeight + 40;
-                const qrHeight = qrImage ? 180 : 0;
+                const qrHeight = 180; // Footer always occupied: QR code or website text fallback
                 const requiredHeight = Math.max(contentEndY + 100, Math.max(contentEndY, canvas.height - 180) + qrHeight);
                 
                 // Set canvas height BEFORE drawing to avoid clearing
@@ -5562,25 +5603,8 @@
                         
                         // Re-draw footer at correct position
                         const footerY = Math.max(currentY, H - 180);
-                        
-                        if (qrImage) {
-                            const qrSize = 120;
-                            const qrX = W - qrSize - 40;
-                            const qrY = footerY;
-                            
-                            // Draw white background for QR code
-                            ctx.fillStyle = '#ffffff';
-                            ctx.fillRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 50);
-                            
-                            // Draw QR code
-                            ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
-                            
-                            // Add text below QR code
-                            ctx.fillStyle = '#2c5aa0';
-                            ctx.font = '18px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
-                            ctx.textAlign = 'center';
-                            ctx.fillText('扫码体验更多', qrX + qrSize / 2, qrY + qrSize + 25);
-                        }
+
+                        drawQROrFallback(footerY, qrImage);
                         
                         // Draw date and branding
                         ctx.fillStyle = '#ffffff';
@@ -5604,11 +5628,23 @@
                         ctx.textAlign = 'left';
                         ctx.fillText('期待您拍摄更多精彩瞬间！', 40, currentY);
                         currentY += 40;
-                        
+
+                        // Draw footer (QR / website fallback + branding) — poster used to lose its
+                        // QR code entirely whenever the museum image failed to load
+                        const footerY = Math.max(currentY, H - 180);
+                        drawQROrFallback(footerY, qrImage);
+
+                        // Draw date and branding
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = '24px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
+                        ctx.textAlign = 'left';
+                        const date = new Date().toLocaleDateString('zh-CN');
+                        ctx.fillText(`MuseumCheck · ${date}`, 40, currentY + 50);
+
                         // Update preview and SAVE TO GALLERY
                         const posterDataURL = canvas.toDataURL('image/jpeg', 0.7);
                         preview.innerHTML = `<img src="${posterDataURL}" style="max-width:100%;border-radius:12px;">`;
-                        
+
                         // CRITICAL FIX: Save poster to localStorage for gallery view (was missing in error callback)
                         savePosterToGallery(posterDataURL);
                     };
@@ -5620,24 +5656,7 @@
                 // Footer area - QR code
                 const footerY = Math.max(currentY, H - 180);
                 
-                if (qrImage) {
-                    const qrSize = 120;
-                    const qrX = W - qrSize - 40;
-                    const qrY = footerY;
-                    
-                    // Draw white background for QR code
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 50);
-                    
-                    // Draw QR code
-                    ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
-                    
-                    // Add text below QR code
-                    ctx.fillStyle = '#2c5aa0';
-                    ctx.font = '18px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('扫码体验更多', qrX + qrSize / 2, qrY + qrSize + 25);
-                }
+                drawQROrFallback(footerY, qrImage);
                 
                 // Draw date and branding on the left side
                 ctx.fillStyle = '#ffffff';
