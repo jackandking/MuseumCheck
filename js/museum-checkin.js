@@ -3927,6 +3927,7 @@
 
             completedTasks.add(completedTaskIndex);
             saveCompletedTasks();
+            syncCheckinToServer(completedTaskIndex, task);
             updateTogetherSharedGoal();
             onTaskCompletedCoPlay(task);
 
@@ -5197,12 +5198,12 @@
                 const museumQRFile = getQRCodeFilename(museumId);
                 qrImg.onload = () => resolve(qrImg);
                 qrImg.onerror = () => {
-                    // Fallback to generic WeChat mini-program QR code
+                    // Fallback to museumcheck.cn website QR code (WeChat mini-program discontinued)
                     const fallbackQR = new Image();
                     fallbackQR.crossOrigin = 'anonymous';
                     fallbackQR.onload = () => resolve(fallbackQR);
                     fallbackQR.onerror = () => resolve(null);
-                    fallbackQR.src = 'assets/qrcodes/MuseumCheck_QRCode_WX.jpg';
+                    fallbackQR.src = 'assets/qrcodes/MuseumCheck_QRCode_Website.png';
                 };
                 qrImg.src = museumQRFile;
             });
@@ -6254,7 +6255,73 @@
             // Also load reported tasks
             loadReportedTasks();
             updateTogetherSharedGoal();
+            // 过渡方案：登录后从服务端拉回跨设备的打卡进度（union，不覆盖本地）
+            mergeServerCheckins();
         }
+
+        // =====================================================
+        // 过渡方案：服务端打卡同步（手机号+密码登录后）
+        // 未登录时完全走原 localStorage 逻辑（非破坏性）。
+        // =====================================================
+        const SYNCED_CHECKIN_KEY = 'mc_synced_checkins';
+        function getSyncedCheckinSet() {
+            try { return new Set(JSON.parse(localStorage.getItem(SYNCED_CHECKIN_KEY) || '[]')); }
+            catch (e) { return new Set(); }
+        }
+        function markCheckinSynced(key) {
+            const s = getSyncedCheckinSet(); s.add(key);
+            try { localStorage.setItem(SYNCED_CHECKIN_KEY, JSON.stringify([...s])); } catch (e) {}
+        }
+        function authApiBase() {
+            return ((window.API_ENDPOINTS && window.API_ENDPOINTS.BASE_URL) || '').replace(/\/+$/, '');
+        }
+        function syncCheckinToServer(taskIndex, task) {
+            if (!window.AuthClient || !AuthClient.isLoggedIn()) return;
+            try {
+                const title = (typeof task === 'string') ? (parseTaskString(task).title || '') : '';
+                const taskId = ageGroup + ':' + taskIndex;
+                const syncKey = museumId + ':' + taskId;
+                if (getSyncedCheckinSet().has(syncKey)) return; // 已上报，跳过避免重复插入
+                fetch(authApiBase() + '/api/checkin', {
+                    method: 'POST',
+                    headers: AuthClient.authHeaders(),
+                    body: JSON.stringify({ museum_id: museumId, task_id: taskId, note: title }),
+                    keepalive: true
+                })
+                .then(function (r) { return r.json().catch(function () { return {}; }); })
+                .then(function (data) { if (data && data.success) markCheckinSynced(syncKey); })
+                .catch(function (e) { console.warn('[syncCheckin] 上报失败(本地已保存):', e && e.message); });
+            } catch (e) {
+                console.warn('[syncCheckin] 异常(本地已保存):', e && e.message);
+            }
+        }
+        async function mergeServerCheckins() {
+            if (!window.AuthClient || !AuthClient.isLoggedIn()) return;
+            try {
+                const url = authApiBase() + '/api/checkins?museum_id=' + encodeURIComponent(museumId);
+                const res = await fetch(url, { method: 'GET', headers: AuthClient.authHeaders() });
+                if (!res.ok) return;
+                const data = await res.json().catch(function () { return {}; });
+                if (!data || !data.success || !Array.isArray(data.checkins)) return;
+                let added = false;
+                data.checkins.forEach(function (c) {
+                    if (!c || !c.task_id) return;
+                    const parts = String(c.task_id).split(':');
+                    if (parts.length === 2 && parts[0] === ageGroup) {
+                        const idx = parseInt(parts[1], 10);
+                        if (!isNaN(idx) && !completedTasks.has(idx)) { completedTasks.add(idx); added = true; }
+                    }
+                });
+                if (added) {
+                    saveCompletedTasks();
+                    updateProgress();
+                    if (typeof renderTasks === 'function') renderTasks();
+                }
+            } catch (e) {
+                console.warn('[mergeServerCheckins] 拉取失败(保持本地):', e && e.message);
+            }
+        }
+        window.addEventListener('auth:changed', function () { mergeServerCheckins(); });
 
         // Setup event listeners
         function setupEventListeners() {
@@ -6500,19 +6567,6 @@
                     if (nickname) {
                         saveChildNickname(nickname);
                     }
-                });
-            }
-
-            // Handle age group change
-            const ageGroupSelector = document.getElementById('ageGroupSelector');
-            if (ageGroupSelector) {
-                ageGroupSelector.addEventListener('change', (e) => {
-                    const newAgeGroup = e.target.value;
-                    saveAgeGroup(newAgeGroup);
-                    // Reload page without age parameter (will use localStorage)
-                    const url = new URL(window.location);
-                    url.searchParams.delete('age');
-                    window.location.href = url.toString();
                 });
             }
 
@@ -7299,16 +7353,6 @@
             input.addEventListener('blur', () => {
                 setTimeout(handleSave, 100); // Small delay to allow Enter key to process first
             });
-        }
-
-        function saveAgeGroup(ageGroup) {
-            try {
-                localStorage.setItem('ageGroup', ageGroup);
-                return { success: true };
-            } catch (error) {
-                console.error('Failed to save age group:', error);
-                return { success: false };
-            }
         }
 
         function clearCheckinData() {
@@ -8475,20 +8519,6 @@
                         console.error('Settings avatar upload failed:', err);
                     }
                 };
-            }
-
-            // Display current age group
-            const ageGroupMap = {
-                '3-6': '3-6岁 (学龄前)',
-                '7-12': '7-12岁 (小学)',
-                '13-18': '13-18岁 (中学)'
-            };
-            document.getElementById('currentAgeGroupDisplay').textContent = ageGroupMap[ageGroup] || ageGroup;
-
-            // Set age group selector
-            const ageGroupSelector = document.getElementById('ageGroupSelector');
-            if (ageGroupSelector) {
-                ageGroupSelector.value = ageGroup;
             }
 
             // Load game reward toggle state

@@ -939,6 +939,10 @@
         });
     </script>
     
+    <!-- 过渡方案：手机号+密码登录（JWT 存 localStorage），先于 museum-checkin.js 加载 -->
+    <script src="js/auth-client.js?v=auth-20260925"></script>
+    <script src="js/auth-ui.js?v=auth-20260925"></script>
+
     <script src="js/museum-checkin.js?v=live-room-20260926"></script>
 
     <!-- 馆图纠错 · 提交侧 (M1)：用户举报 + 上传替代照 → 待审 KV 队列 -->
