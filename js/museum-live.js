@@ -24,6 +24,7 @@
     itemNames: [],
     done: 0,
     records: [],
+    posterById: {},
     selection: null,
     bound: false,
     rendered: false,
@@ -89,6 +90,50 @@
   function setStatus(text) {
     const node = byId('feedStatus');
     if (node) node.textContent = text;
+  }
+
+  /**
+   * 海报元数据按 posterId 从 achievement_posters 解析（与「大家的成就」墙同源，
+   * 只取 visibility='public'）。房间记录里只有数字 ID，图片与署名都在这一步才进来。
+   * 拉取失败不影响文字流：卡片降级成只有一句话。
+   */
+  function missingPosterIds(records) {
+    const ids = [];
+    (Array.isArray(records) ? records : []).forEach(record => {
+      if (!record || record.kind !== 'broadcast' || record.event !== 'poster') return;
+      const id = Number(record.posterId);
+      if (!Number.isInteger(id) || id <= 0) return;
+      if (state.posterById[id] || ids.indexOf(id) >= 0) return;
+      ids.push(id);
+    });
+    return ids;
+  }
+
+  function fetchPosterMeta(ids) {
+    const endpoint = window.API_ENDPOINTS && window.API_ENDPOINTS.MYSQL && window.API_ENDPOINTS.MYSQL.QUERY;
+    if (!endpoint || typeof window.fetch !== 'function' || !ids.length) return Promise.resolve();
+    const safeIds = ids.filter(id => Number.isInteger(id) && id > 0 && id <= 1000000000).slice(0, 30);
+    if (!safeIds.length) return Promise.resolve();
+    const sql = `SELECT id, image_url AS imageUrl, user_name AS userName, title FROM achievement_posters WHERE visibility='public' AND id IN (${safeIds.join(',')})`;
+    return window.fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sql, params: [] })
+    }).then(response => (response.ok ? response.json() : null)).then(rows => {
+      if (!Array.isArray(rows)) return;
+      rows.forEach(row => {
+        const id = Number(row && row.id);
+        if (!Number.isInteger(id) || id <= 0) return;
+        const rawUrl = row.imageUrl || row.image_url || '';
+        const imageUrl = typeof window.API_ENDPOINTS.normalizeImageUrl === 'function'
+          ? window.API_ENDPOINTS.normalizeImageUrl(rawUrl)
+          : rawUrl;
+        state.posterById[id] = {
+          imageUrl: typeof imageUrl === 'string' ? imageUrl.slice(0, 500) : '',
+          userName: String(row.userName || row.user_name || '').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, 20)
+        };
+      });
+    }).catch(() => {});
   }
 
   function setHint(text) {
@@ -191,6 +236,12 @@
       byId('statActive').textContent = String(summary.active);
       byId('statToday').textContent = String(summary.today);
       renderFeed();
+      const pendingPosters = missingPosterIds(records);
+      if (pendingPosters.length) {
+        fetchPosterMeta(pendingPosters).then(() => {
+          if (Object.keys(state.posterById).length) renderFeed();
+        });
+      }
       if (isDemo()) setStatus('正在显示本机示例数据（不会上传到服务器）。');
       else if (trustable.length) setStatus(`共 ${trustable.length} 条现场记录 · 不断更新`);
       else setStatus('');
@@ -224,6 +275,7 @@
     const row = document.createElement('div');
     if (item.kind === 'broadcast') {
       row.className = 'feed-item feed-item--broadcast';
+      if (item.event === 'poster') row.className += ' feed-item--poster';
       const dot = document.createElement('span');
       dot.className = 'feed-dot';
       const body = document.createElement('div');
@@ -231,10 +283,31 @@
       const text = document.createElement('p');
       text.className = 'feed-text';
       text.textContent = item.text;
+      body.appendChild(text);
+      if (item.event === 'poster' && item.posterId) {
+        const poster = state.posterById[item.posterId];
+        if (poster && poster.imageUrl) {
+          const link = document.createElement('a');
+          link.className = 'poster-card';
+          link.href = poster.imageUrl;
+          link.target = '_blank';
+          link.rel = 'noopener';
+          const image = document.createElement('img');
+          image.className = 'poster-card__thumb';
+          image.loading = 'lazy';
+          image.alt = '成就海报缩略图';
+          image.src = poster.imageUrl;
+          link.appendChild(image);
+          const caption = document.createElement('span');
+          caption.className = 'poster-card__caption';
+          caption.textContent = '点开看大图 ↗';
+          link.appendChild(caption);
+          body.appendChild(link);
+        }
+      }
       const time = document.createElement('span');
       time.className = 'feed-time';
       time.textContent = item.time;
-      body.appendChild(text);
       body.appendChild(time);
       row.appendChild(dot);
       row.appendChild(body);
@@ -379,6 +452,7 @@
     const records = [
       { kind: 'broadcast', event: 'arrive', visitorId: 'demo-0', alias: '小满家', timestamp: now - 5 * 60 * MINUTE },
       { kind: 'broadcast', event: 'all_done', total: 7, visitorId: 'demo-0', alias: '小满家', timestamp: now - 4.5 * 60 * MINUTE },
+      { kind: 'broadcast', event: 'poster', posterId: 1, visitorId: 'demo-0', alias: '小满家', timestamp: now - 4.4 * 60 * MINUTE },
       { kind: 'broadcast', event: 'arrive', visitorId: 'demo-1', alias: '团团家', timestamp: now - 52 * MINUTE },
       { kind: 'message', phraseId: 'greet-arrive', visitorId: 'demo-1', alias: '团团家', timestamp: now - 50 * MINUTE },
       { kind: 'broadcast', event: 'progress', done: 2, total: 7, itemIndex: 0, visitorId: 'demo-1', alias: '团团家', timestamp: now - 38 * MINUTE },
@@ -400,6 +474,9 @@
 
   function init() {
     if (!window.MuseumCheckLive || !byId('app')) return;
+    if (isDemo()) {
+      state.posterById[1] = { imageUrl: 'logo-og.png', userName: '小满家' };
+    }
     const requested = new URLSearchParams(location.search).get('museum');
     const museumId = sanitizeMuseumId(requested);
     if (museumId) enterRoom(museumId);

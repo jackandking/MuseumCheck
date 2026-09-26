@@ -69,12 +69,16 @@
     ]) })
   ]);
 
-  const BROADCAST_EVENTS = Object.freeze(['arrive', 'progress', 'all_done']);
+  // 'poster' 的记录里只有一个数字 posterId（achievement_posters 表的记录 ID），
+  // 海报图片与署名由读取方按 ID 从数据库解析——房间里依旧不存 URL、不存文本。
+  const BROADCAST_EVENTS = Object.freeze(['arrive', 'progress', 'all_done', 'poster']);
   const BROADCAST_TEMPLATES = Object.freeze({
     arrive: '{who} 到馆了',
     progress: '{who} 找到了「{item}」',
-    all_done: '{who} 集齐了全部 {total} 件镇馆之宝'
+    all_done: '{who} 集齐了全部 {total} 件镇馆之宝',
+    poster: '{who} 发布了成就海报'
   });
+  const POSTER_ID_MAX = 1000000000;
 
   const PHRASE_BY_ID = (function buildIndex() {
     const index = Object.create(null);
@@ -245,6 +249,11 @@
       if (total === null) return Promise.resolve(false);
       record.total = total;
     }
+    if (event === 'poster') {
+      const posterId = clampInt(input.posterId, 1, POSTER_ID_MAX);
+      if (posterId === null) return Promise.resolve(false);
+      record.posterId = posterId;
+    }
     return writeRecord(museumId, record);
   }
 
@@ -304,6 +313,7 @@
     const total = clampInt(record.total, 1, 50);
     if (record.event === 'progress' && (done === null || total === null || done > total)) return null;
     if (record.event === 'all_done' && total === null) return null;
+    if (record.event === 'poster' && clampInt(record.posterId, 1, POSTER_ID_MAX) === null) return null;
     const item = itemLabel(record.itemIndex, context);
     return template
       .replace('{item}', () => item || '一件展品')
@@ -373,7 +383,11 @@
           return { id: `${timestamp}-${record.phraseId}-${cleanText(record.visitorId, 8)}`, kind: 'message', mine, who, text, timestamp, time: timeLabel(timestamp, now) };
         }
         const text = renderBroadcast(record, context);
-        return { id: `${timestamp}-${record.event}-${cleanText(record.visitorId, 8)}`, kind: 'broadcast', event: record.event, mine, who, text: text.replace('{who}', who), timestamp, time: timeLabel(timestamp, now) };
+        const feedItem = { id: `${timestamp}-${record.event}-${cleanText(record.visitorId, 8)}`, kind: 'broadcast', event: record.event, mine, who, text: text.replace('{who}', who), timestamp, time: timeLabel(timestamp, now) };
+        if (record.event === 'poster') {
+          feedItem.posterId = clampInt(record.posterId, 1, POSTER_ID_MAX);
+        }
+        return feedItem;
       })
       .filter(Boolean)
       .sort((a, b) => a.timestamp - b.timestamp)
@@ -417,6 +431,7 @@
     ANONYMOUS_LABEL,
     PRESET_GROUPS,
     BROADCAST_EVENTS,
+    POSTER_ID_MAX,
     cleanText,
     getUserId,
     getVisitorId,

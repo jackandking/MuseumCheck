@@ -6021,7 +6021,12 @@
                         timestamp: Date.now()
                     });
                 }
-                
+
+                // 发布海报本身就是明确的公开动作——把它镜像进同游现场，
+                // 让在场家庭看到"有人集齐并晒了海报"。房间里只写 posterId 数字，
+                // 图片由现场页按 ID 从 achievement_posters 解析（与大家的成就墙同源）。
+                broadcastRoom('poster', { posterId: recordId });
+
                 if (confirm('是否打开「大家的成就」查看？')) {
                     window.open('everyone-achievements.html', '_blank');
                 }

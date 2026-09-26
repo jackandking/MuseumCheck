@@ -37,7 +37,7 @@ describe('同游现场 · 房间数据层', () => {
       .toBe('我们刚看了「一件展品」');
   });
 
-  test('广播只认三种事件，且必须带合法数字', () => {
+  test('广播只认目录里的四种事件，且必须带合法数字', () => {
     expect(live.renderBroadcast(record({ event: 'arrive' }), {})).toBe('{who} 到馆了');
     expect(live.renderBroadcast(record({ event: 'progress', done: 3, total: 7 }), {})).toBe('{who} 找到了「一件展品」');
     expect(live.renderBroadcast(record({ event: 'progress', done: 3, total: 7, itemIndex: 1 }), { itemNames: ITEMS })).toBe('{who} 找到了「大克鼎」');
@@ -46,6 +46,30 @@ describe('同游现场 · 房间数据层', () => {
     expect(live.renderBroadcast(record({ event: 'progress', total: 2 }), {})).toBeNull();
     expect(live.renderBroadcast(record({ event: 'all_done' }), {})).toBeNull();
     expect(live.renderBroadcast(record({ event: 'unknown' }), {})).toBeNull();
+  });
+
+  test('海报广播只存数字 posterId，缺失或非法就被丢弃', () => {
+    expect(live.renderBroadcast(record({ event: 'poster', posterId: 42 }), {})).toBe('{who} 发布了成就海报');
+    expect(live.renderBroadcast(record({ event: 'poster' }), {})).toBeNull();
+    expect(live.renderBroadcast(record({ event: 'poster', posterId: 0 }), {})).toBeNull();
+    expect(live.renderBroadcast(record({ event: 'poster', posterId: -5 }), {})).toBeNull();
+    expect(live.renderBroadcast(record({ event: 'poster', posterId: 'x' }), {})).toBeNull();
+    // 非数字字段（URL/文本）不参与渲染，也不会进 feed
+    expect(live.renderBroadcast(record({ event: 'poster', posterId: 42, imageUrl: 'https://evil.example/x.png' }), {}))
+      .toBe('{who} 发布了成就海报');
+  });
+
+  test('feed 里的海报条目只带数字 posterId', () => {
+    const now = Date.now();
+    const feed = live.buildFeed(
+      [record({ kind: 'broadcast', event: 'poster', posterId: 42, timestamp: now - 1000 })],
+      { myVisitorId: 'visitor-b', now }
+    );
+    expect(feed).toHaveLength(1);
+    expect(feed[0].event).toBe('poster');
+    expect(feed[0].posterId).toBe(42);
+    expect(feed[0].text).toBe('团团家 发布了成就海报');
+    expect(feed[0]).not.toHaveProperty('imageUrl');
   });
 
   test('渲染出的条目里不出现任何外部文本', () => {
