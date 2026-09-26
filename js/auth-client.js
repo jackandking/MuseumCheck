@@ -6,6 +6,11 @@
  *  - JWT 存 localStorage（key: mc_auth_token）。服务端用 Bearer 头鉴权。
  *  - 非破坏性：本文件只负责"拿到并保存 token"，是否同步业务数据由调用方决定。
  *
+ * 【退场线 / 退役计划】本文件是过渡 hack，短信验证码上线后退出：
+ *  触发条件：腾讯云短信 签名+模板审核通过、SmsSdkAppId 就绪。
+ *  退出动作：register/login 改传 { phone, code }（去掉 password 字段）；后端 loginHandler 已内置 code 分支可直接切。
+ *  详细步骤见 auth-ui.js 顶部注释。
+ *
  * 依赖：config/api-endpoints.js 须先于本文件加载（提供 window.API_ENDPOINTS.BASE_URL）。
  */
 (function (global) {
