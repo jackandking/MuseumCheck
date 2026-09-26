@@ -51,11 +51,15 @@ describe('Age Parameter Priority in museum-checkin.html', () => {
         });
     });
 
-    describe('Age Group Saving', () => {
-        test('should save age group to correct localStorage key', () => {
-            // Should use 'ageGroup' key, not 'selectedAgeGroup'
-            const savePattern = /function\s+saveAgeGroup[\s\S]{0,200}localStorage\.setItem\(['"]ageGroup['"]/;
-            expect(jsContent).toMatch(savePattern);
+    describe('Age Group UI Removal (2026-09-21)', () => {
+        test('should not define a saveAgeGroup helper anymore', () => {
+            // 年龄组已不再对用户暴露：博物馆内容并不区分年龄，设置面板里的年龄组入口已整体移除
+            expect(jsContent).not.toMatch(/function\s+saveAgeGroup/);
+        });
+
+        test('should not bind any age group selector', () => {
+            expect(jsContent).not.toContain('ageGroupSelector');
+            expect(jsContent).not.toContain('currentAgeGroupDisplay');
         });
 
         test('should not use deprecated selectedAgeGroup key', () => {
@@ -65,33 +69,18 @@ describe('Age Parameter Priority in museum-checkin.html', () => {
     });
 
     describe('Age Group Change Behavior', () => {
-        test('should remove age parameter from URL on age change', () => {
-            // When changing age, should delete the URL parameter
-            const deletePattern = /url\.searchParams\.delete\(['"]age['"]\)/;
-            expect(jsContent).toMatch(deletePattern);
-        });
-
-        test('should reload page without age parameter', () => {
-            // Check that age group change handler deletes the parameter
-            const changeHandlerPattern = /ageGroupSelector\.addEventListener\(['"]change['"][\s\S]{0,300}url\.searchParams\.delete\(['"]age['"]\)/;
-            expect(jsContent).toMatch(changeHandlerPattern);
-        });
-
-        test('should not set age parameter in URL on change', () => {
-            // The old behavior was: url.searchParams.set('age', newAgeGroup)
-            // This should no longer exist in the age change handler
-            const ageChangeSection = jsContent.match(/ageGroupSelector\.addEventListener\(['"]change['"][\s\S]{0,500}window\.location\.href/);
-            if (ageChangeSection) {
-                expect(ageChangeSection[0]).not.toContain("url.searchParams.set('age'");
-            }
+        test('should not mutate the age URL parameter anywhere', () => {
+            // 旧的「更改年龄组」交互（改完删掉 ?age= 并整页 reload）已随 UI 一起移除
+            expect(jsContent).not.toMatch(/url\.searchParams\.(set|delete)\(['"]age['"]\)/);
         });
     });
 
     describe('Consistency with Main App', () => {
-        test('should use same localStorage key as script.js', () => {
-            // Both should use 'ageGroup' key
+        test('should only read the ageGroup key now that the UI is gone', () => {
+            // 仍要读取：老用户 localStorage 里的 ageGroup 决定历史存储键，继续读才不会丢进度/照片
             expect(jsContent).toContain("localStorage.getItem('ageGroup')");
-            expect(jsContent).toContain("localStorage.setItem('ageGroup'");
+            // 不再写入：设置面板已移除，已无任何用户入口可修改年龄组
+            expect(jsContent).not.toContain("localStorage.setItem('ageGroup'");
         });
 
         test('should support all three age groups', () => {
@@ -104,16 +93,10 @@ describe('Age Parameter Priority in museum-checkin.html', () => {
     });
 
     describe('Settings Modal Integration', () => {
-        test('should display current age group in settings', () => {
-            // HTML structure
-            expect(htmlContent).toContain('currentAgeGroupDisplay');
-            expect(htmlContent).toContain('ageGroupSelector');
-        });
-
-        test('should save age group when changed in settings', () => {
-            // Settings change should call saveAgeGroup (in JS)
-            const settingsPattern = /ageGroupSelector.*addEventListener[\s\S]{0,300}saveAgeGroup/;
-            expect(jsContent).toMatch(settingsPattern);
+        test('should no longer show an age group entry in settings', () => {
+            // 设置面板里不应再出现年龄组（既无展示值也无下拉框）
+            expect(htmlContent).not.toContain('currentAgeGroupDisplay');
+            expect(htmlContent).not.toContain('ageGroupSelector');
         });
     });
 

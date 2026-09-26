@@ -5134,51 +5134,6 @@ class MuseumCheckApp {
 
         // Auto-save DeepSeek API Key on blur - REMOVED (setting deleted)
 
-        // Auto-save age group on change
-        const ageGroupSelector = document.getElementById('ageGroupSelector');
-        if (ageGroupSelector) {
-            ageGroupSelector.addEventListener('change', () => {
-                const newAgeGroup = ageGroupSelector.value;
-                
-                if (newAgeGroup !== this.currentAge) {
-                    this.currentAge = newAgeGroup;
-                    localStorage.setItem('ageGroup', newAgeGroup);
-                    
-                    // Update display
-                    const ageGroupNames = {
-                        '3-6': '3-6岁 (学龄前)',
-                        '7-12': '7-12岁 (小学)',
-                        '13-18': '13-18岁 (中学)'
-                    };
-                    const ageGroupDisplay = document.getElementById('currentAgeGroupDisplay');
-                    if (ageGroupDisplay) {
-                        ageGroupDisplay.textContent = ageGroupNames[newAgeGroup] || newAgeGroup;
-                    }
-                    
-                    // Update age selector on main page
-                    const savedAgeRadio = document.querySelector(`input[name="ageGroup"][value="${newAgeGroup}"]`);
-                    if (savedAgeRadio) {
-                        savedAgeRadio.checked = true;
-                        // Update selected state
-                        document.querySelectorAll('.age-option').forEach(option => {
-                            option.classList.remove('selected');
-                        });
-                        savedAgeRadio.closest('.age-option')?.classList.add('selected');
-                    }
-                    
-                    // Re-render museums with new age group
-                    this.renderMuseums();
-                    
-                    // Track age group changed event
-                    this.trackEvent('age_group_changed', {
-                        'new_age_group': newAgeGroup,
-                        'changed_from_settings': true,
-                        'auto_saved': true
-                    });
-                }
-            });
-        }
-
         // ===== GAMIFICATION SETTINGS TOGGLES =====
         const soundToggle = document.getElementById('gamificationSoundToggle');
         if (soundToggle && this.achievementGamification) {
@@ -14843,21 +14798,8 @@ class MuseumCheckApp {
 
     // Clear Data Functionality
     updateAgeGroupSelector() {
-        const ageGroupSelector = document.getElementById('ageGroupSelector');
-        if (ageGroupSelector) {
-            ageGroupSelector.value = this.currentAgeGroup || '7-12';
-        }
-        
-        // Update display
-        const ageGroupNames = {
-            '3-6': '3-6岁 (学龄前)',
-            '7-12': '7-12岁 (小学)',
-            '13-18': '13-18岁 (中学)'
-        };
-        const ageGroupDisplay = document.getElementById('currentAgeGroupDisplay');
-        if (ageGroupDisplay) {
-            ageGroupDisplay.textContent = ageGroupNames[this.currentAgeGroup || '7-12'] || '7-12岁 (小学)';
-        }
+        // 年龄组已不再对用户暴露（内容不分年龄，见 2026-09-21 移除设置项）。
+        // 内部 ageGroup 仍作为存储键/埋点维度保留，这里不再操作任何 DOM。
     }
 
     clearAllData() {

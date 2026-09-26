@@ -320,7 +320,7 @@
                     <div class="welcome-steps">
                         <div class="welcome-step">
                             <span class="step-num">①</span>
-                            <span>选一个博物馆和孩子的年龄</span>
+                            <span>选一个博物馆，开始打卡</span>
                         </div>
                         <div class="welcome-step">
                             <span class="step-num">②</span>
@@ -426,21 +426,6 @@
                     </div>
                     <div id="childNicknameStatus" class="settings-inline-status" aria-live="polite"></div>
                     <div class="settings-hint">最多5个中文字或10个英文字母，输入后自动保存；留空则会自动使用带编号的默认昵称</div>
-                </div>
-                <div class="settings-item">
-                    <label class="settings-label">当前年龄组：</label>
-                    <span class="settings-value" id="currentAgeGroupDisplay">-</span>
-                </div>
-                <div class="settings-item">
-                    <label class="settings-label" for="ageGroupSelector">更改年龄组：</label>
-                    <div class="settings-input-group">
-                        <select id="ageGroupSelector" class="settings-input">
-                            <option value="3-6">3-6岁 (学龄前)</option>
-                            <option value="7-12">7-12岁 (小学)</option>
-                            <option value="13-18">13-18岁 (中学)</option>
-                        </select>
-                    </div>
-                    <div class="settings-hint">更改后将立即重新加载博物馆内容</div>
                 </div>
                 <div class="settings-item">
                     <label class="settings-label" for="childModeToggle">孩子模式：</label>
@@ -607,7 +592,7 @@
     <!-- Leaderboard Template Component -->
     <script src="js/leaderboard-template.js"></script>
     <!-- Main application script - must run to render museum list -->
-    <script src="js/script.js?v=poster-publish-20260911"></script>
+    <script src="js/script.js?v=remove-age-group-20260921"></script>
     <script src="js/together.js?v=together-age-groups-20260815b"></script>
     <script src="js/together-home-entry.js?v=together-home-20260815"></script>
     <script>
