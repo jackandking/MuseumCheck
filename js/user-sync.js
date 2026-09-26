@@ -46,6 +46,10 @@
   var MIRROR_PREFIX = 'mc_sync_mirror_';
   var syncing = false;
 
+  // 应用初始化时自动生成的默认昵称（如 用户a1b225，见 js/identity.js getDefaultNickname）。
+  // 它不代表用户真实选择，不允许覆盖服务端真实昵称。
+  var DEFAULT_NICK_RE = /^用户[0-9a-fA-F]{2,8}$/;
+
   // ===== 基础工具 =====
   function lsGet(k) { try { return global.localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { global.localStorage.setItem(k, v); } catch (e) {} }
@@ -54,6 +58,9 @@
   function parseAny(raw) {
     if (raw == null) return undefined;
     try { return JSON.parse(raw); } catch (e) { return raw; }
+  }
+  function isDefaultNickname(v) {
+    return typeof v === 'string' && DEFAULT_NICK_RE.test(v);
   }
   function sortedStr(v) {
     if (v === null || typeof v !== 'object') return JSON.stringify(v === undefined ? null : v);
@@ -178,6 +185,9 @@
           return; // 服务端空 + 本机空
         } else if (localRaw !== mirrorRaw) {
           merged = MERGE[type](localVal, serverVal); // 本机有新变化：合并（lww 则本机赢）
+          if (key === 'childNickname' && serverVal != null && serverVal !== '' && isDefaultNickname(localVal)) {
+            merged = serverVal; // 机器默认昵称不覆盖服务端真实昵称
+          }
         } else if (!deepEqual(serverVal, mirrorVal)) {
           // 本机没变、其他设备改了：除 lww（对方新值赢）外也走合并，避免覆盖丢失本机数据
           merged = (type === 'lww') ? serverVal : MERGE[type](localVal, serverVal);
