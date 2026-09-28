@@ -6159,14 +6159,9 @@
                 setTimeout(() => {
                     generatePoster();
                 }, 500);
-                
-                // Show pet adoption prompt only after ALL tasks are completed
-                // This avoids interrupting the task flow
-                setTimeout(() => {
-                    if (typeof VirtualPet !== 'undefined') {
-                        VirtualPet.showAdoptionPromptIfNeeded('checkin');
-                    }
-                }, 1500); // Delay to let poster generate first
+                // NOTE: 不再在打卡完成后自动弹出「领养宠物」提示。
+                // 业务优先级：让用户顺势生成/发布成就海报（更高业务价值），
+                // 宠物领养作为支撑层不应打断这一主线体验。用户仍可在宠物入口自行领养。
             }
         }
         
