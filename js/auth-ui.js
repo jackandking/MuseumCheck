@@ -98,7 +98,7 @@
     var phone = phoneInput.value.trim();
     var pw = pwInput.value;
     showError('');
-    if (!/^\d{6,20}$/.test(phone)) { showError('手机号需为 6-20 位数字'); return; }
+    if (!/^1[3-9]\d{9}$/.test(phone)) { showError('手机号需为 11 位中国大陆号码'); return; }
     if (pw.length < 4 || pw.length > 64) { showError('密码长度需为 4-64 位'); return; }
     submitBtn.disabled = true;
     submitBtn.textContent = '处理中…';
@@ -170,7 +170,7 @@
       '    <button id="authToggleReg" type="button">注册</button>',
       '  </div>',
       '  <label for="authPhone">手机号</label>',
-      '  <input id="authPhone" type="tel" inputmode="numeric" placeholder="6-20 位数字" autocomplete="username">',
+      '  <input id="authPhone" type="tel" inputmode="numeric" placeholder="11 位手机号" autocomplete="username">',
       '  <label for="authPw">密码</label>',
       '  <input id="authPw" type="password" placeholder="4-64 位，随意设置" autocomplete="current-password">',
       '  <button id="authSubmit" type="button">登录</button>',
