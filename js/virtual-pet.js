@@ -616,6 +616,7 @@ class VirtualPet {
         this.savePetData();
         this.updateUI();
         this.showPetAnimation('adopted');
+        this.notifyLeaderboardStatsChanged();
 
         const inheritMsg = hadInheritedData ? `（继承了之前宠物的所有成长数据，当前等级 ${this.getPetLevel()}）` : '';
         return { success: true, message: `恭喜你领养了${petTypeInfo.name}！${inheritMsg}` };
@@ -708,6 +709,7 @@ class VirtualPet {
         this.savePetData();
         this.updateUI();
         this.showPetAnimation('trained');
+        this.notifyLeaderboardStatsChanged();
         
         // Check for level up
         const newLevel = this.getPetLevel();
@@ -756,6 +758,7 @@ class VirtualPet {
         this.savePetData();
         this.updateUI();
         this.showPetAnimation('trained');
+        this.notifyLeaderboardStatsChanged();
         
         // Check for level up
         const newLevel = this.getPetLevel();
@@ -1004,6 +1007,10 @@ class VirtualPet {
             // 不需要模态框相关的刷新逻辑
             console.log('[VirtualPet] Pet leveled up from', oldLevel, 'to', newLevel);
             console.log('[VirtualPet] Leaderboard will be updated on next page visit');
+
+            // Pet level/attributes changed: push the fresh stats to the leaderboard now
+            // (the check-in page listens and re-submits the entry immediately).
+            this.notifyLeaderboardStatsChanged();
             
             // 触发排行榜数据更新事件
             const leaderboardUpdateEvent = new CustomEvent('leaderboard:update', {
@@ -1022,6 +1029,18 @@ class VirtualPet {
         }
     }
     
+    // Notify leaderboard listeners that pet stats changed (adopt / upgrade / level up).
+    // The check-in page listens on 'virtualpet:stats-changed' and re-submits the entry.
+    notifyLeaderboardStatsChanged() {
+        try {
+            document.dispatchEvent(new CustomEvent('virtualpet:stats-changed', {
+                detail: { timestamp: Date.now() }
+            }));
+        } catch (e) {
+            // Best-effort notification; never break the pet action itself
+        }
+    }
+
     // ===== LEVEL-BASED ANIMATIONS =====
     playCelebrationAnimation(type = 'task') {
         const level = this.getPetLevel();

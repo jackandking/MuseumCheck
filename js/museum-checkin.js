@@ -65,6 +65,69 @@
             TIMESTAMP_2124: 4866674732
         };
 
+        // Build the leaderboard petStats payload (mirrors script.js manualSubmitScore shape).
+        // Returns null when there is no live adopted pet, so the user stays off the pet board.
+        function buildLeaderboardPetStats() {
+            try {
+                if (typeof VirtualPet === 'undefined') return null;
+                const petData = safeJsonParse(localStorage.getItem('virtualPetData') || '{}', {});
+                if (!petData.adopted || !petData.pet || petData.pet.isDead) return null;
+                const pet = petData.pet;
+                const petType = VirtualPet.PET_TYPES && VirtualPet.PET_TYPES[pet.type];
+                return {
+                    attack: pet.attack || 10,
+                    defense: pet.defense || 10,
+                    totalPower: (pet.attack || 10) + (pet.defense || 10),
+                    petType: pet.type,
+                    petEmoji: (petType && petType.emoji) || '🐾',
+                    petName: pet.name || (petType && petType.name) || '宠物'
+                };
+            } catch (e) {
+                console.warn('[MuseumCheckin] Failed to build petStats:', e);
+                return null;
+            }
+        }
+
+        // Write this user's leaderboard entry (key/sortKey/payload mirror the previous
+        // inline check-in writer). Called on check-in AND on pet stat changes so that
+        // adopt/attack/defense/level-up reach the pet leaderboard immediately.
+        function postLeaderboardEntry() {
+            try {
+                const endpoint = REMOTE_STORAGE_CONFIG.API_ENDPOINT;
+                let userId = localStorage.getItem('user_id');
+                if (!userId) {
+                    userId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                        ? crypto.randomUUID()
+                        : 'user-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
+                    localStorage.setItem('user_id', userId);
+                }
+                const visitedMuseums = safeJsonParse(localStorage.getItem('visitedMuseums') || '[]', []);
+                const payload = {
+                    nickname: resolveChildNickname(),
+                    visitedCount: Array.isArray(visitedMuseums) ? visitedMuseums.length : 0,
+                    userId: userId,
+                    lastUpdate: Date.now(),
+                    xp: 0,
+                    petStats: buildLeaderboardPetStats()
+                };
+                const body = JSON.stringify({
+                    key: 'museumcheck-leaderboard',
+                    sortKey: 'user-' + userId,
+                    value: JSON.stringify(payload),
+                    expireAt: REMOTE_STORAGE_CONFIG.TIMESTAMP_2124
+                });
+                fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true })
+                    .then(r => { if (!r.ok) console.warn('[MuseumCheckin] leaderboard write non-ok', r.status); })
+                    .catch(e => console.warn('[MuseumCheckin] leaderboard write failed', e));
+            } catch (error) {
+                console.error('[MuseumCheckin] Error posting leaderboard entry:', error);
+            }
+        }
+
+        // Pet actions (adopt / upgrade attack / upgrade defense / level up) dispatch this event;
+        // re-submit here so the pet board updates without waiting for the next check-in.
+        document.addEventListener('virtualpet:stats-changed', postLeaderboardEntry);
+
         // Get museum ID from URL parameter
         const urlParams = new URLSearchParams(window.location.search);
         const museumId = urlParams.get('id') || urlParams.get('museum') || 'forbidden-city';
@@ -6197,34 +6260,9 @@
                 document.dispatchEvent(leaderboardUpdateEvent);
 
                 // Write the leaderboard entry directly (mirrors script.js submitScore payload).
-                const endpoint = REMOTE_STORAGE_CONFIG.API_ENDPOINT;
-                let userId = localStorage.getItem('user_id');
-                if (!userId) {
-                    userId = (typeof crypto !== 'undefined' && crypto.randomUUID)
-                        ? crypto.randomUUID()
-                        : 'user-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
-                    localStorage.setItem('user_id', userId);
-                }
-                const childNickname = resolveChildNickname();
-                const visitedMuseums = JSON.parse(localStorage.getItem('visitedMuseums') || '[]');
-                const visitedCount = Array.isArray(visitedMuseums) ? visitedMuseums.length : 0;
-                const payload = {
-                    nickname: childNickname,
-                    visitedCount: visitedCount,
-                    userId: userId,
-                    lastUpdate: Date.now(),
-                    xp: 0,
-                    petStats: null
-                };
-                const body = JSON.stringify({
-                    key: 'museumcheck-leaderboard',
-                    sortKey: 'user-' + userId,
-                    value: JSON.stringify(payload),
-                    expireAt: REMOTE_STORAGE_CONFIG.TIMESTAMP_2124
-                });
-                fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true })
-                    .then(r => { if (!r.ok) console.warn('[MuseumCheckin] leaderboard write non-ok', r.status); })
-                    .catch(e => console.warn('[MuseumCheckin] leaderboard write failed', e));
+                // petStats is included (built from virtualPetData); pet changes between check-ins
+                // are covered by the virtualpet:stats-changed listener registered at module scope.
+                postLeaderboardEntry();
             } catch (error) {
                 console.error('Error updating leaderboard after check-in:', error);
             }
