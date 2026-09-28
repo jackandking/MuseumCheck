@@ -17,9 +17,9 @@
     const TAB_CONFIG = {
         pet: {
             icon: '🐾',
-            introTitle: '宠物年龄排行榜',
-            introDesc: '打卡的博物馆越多，宠物越大！看看谁的宠物最年长！',
-            scoreLabel: '宠物年龄'
+            introTitle: '宠物战力排行榜',
+            introDesc: '按宠物攻击与防御属性之和（战力）排名，喂养和训练宠物提升战力，冲上榜首！',
+            scoreLabel: '宠物战力'
         },
         museum: {
             icon: '🏛️',
@@ -41,6 +41,7 @@
         init: function() {
             console.log('[LeaderboardPage] Initializing...');
             this.bindEvents();
+            this.updateIntroText(this.currentTab);
             this.loadInitialData();
             this.initializePullToRefresh();
             console.log('[LeaderboardPage] Initialized');
@@ -98,8 +99,9 @@
             // Update intro text and re-render from already-loaded data (no refetch needed)
             this.updateIntroText(rankingType);
             if (this.allData.length > 0) {
-                this.renderLeaderboard(this.allData);
-                this.updateUserStats(this.getCurrentUserStats(this.allData));
+                const ranked = this.rankRecords(this.allData, rankingType);
+                this.renderLeaderboard(ranked);
+                this.updateUserStats(this.getCurrentUserStats(ranked));
             }
         },
 
@@ -172,7 +174,7 @@
             }
 
             // Parse user records from KV items (include all records, not just user- prefix)
-            const userRecords = items.map(item => {
+            const allRecords = items.map(item => {
                 try {
                     const value = JSON.parse(item.value);
                     const sortKey = item.sortKey || item.sk || '';
@@ -184,18 +186,20 @@
                         userId = sortKey.replace('user-', '');
                     }
 
-                    // petAge = number of museums visited (打卡博物馆数即宠物年龄)
-                    const petAge = value.visitedCount || 0;
                     const petStats = value.petStats || null;
+                    // 宠物战力 = 攻击 + 防御 属性之和（优先用已存的 totalPower）
+                    const petPower = petStats
+                        ? (petStats.totalPower || ((petStats.attack || 0) + (petStats.defense || 0)))
+                        : 0;
 
                     return {
                         userId: userId,
                         nickname: value.nickname || value.userName || 'Anonymous',
                         visitedCount: value.visitedCount || 0,
-                        petAge: petAge,
+                        petPower: petPower,
                         petEmoji: (petStats && petStats.petEmoji) || '🐾',
                         petName: (petStats && petStats.petName) || '小宠物',
-                        rank: 0 // Will be calculated after sorting
+                        rank: 0 // Will be calculated per tab
                     };
                 } catch (e) {
                     console.warn('[LeaderboardPage] Failed to parse item value:', e);
@@ -203,34 +207,29 @@
                 }
             }).filter(item => item !== null);
 
-            // Sort descending by the ranking metric
-            userRecords.sort((a, b) => b.petAge - a.petAge);
-
-            userRecords.forEach((record, index) => {
-                record.rank = index + 1;
-            });
-
-            if (userRecords.length === 0) {
+            if (allRecords.length === 0) {
                 // Genuinely no records at all
                 this.showEmptyState();
                 return;
             }
 
-            userRecords.forEach((record, index) => {
-                record.rank = index + 1;
-            });
+            // 合并到全量数据（保留所有记录，切换标签时再按对应指标排序）
+            this.allData = isInitial ? allRecords : [...this.allData, ...allRecords];
 
-            if (isInitial) {
-                this.allData = userRecords;
-                this.renderLeaderboard(userRecords);
-                this.updateUserStats(this.getCurrentUserStats(userRecords));
-                this.updateLastRefreshTime();
-            } else {
-                this.allData = [...this.allData, ...userRecords];
-                this.appendLeaderboardItems(userRecords);
+            // 按当前标签页指标排名：宠物=战力(攻击+防御)，博物馆=打卡数
+            const ranked = this.rankRecords(this.allData, this.currentTab);
+
+            if (ranked.length === 0) {
+                // 当前标签页无符合条件的记录（如宠物榜但无人领养/培养宠物）
+                this.showEmptyState();
+                return;
             }
 
-            this.hasMoreData = userRecords.length >= 10;
+            this.renderLeaderboard(ranked);
+            this.updateUserStats(this.getCurrentUserStats(ranked));
+            this.updateLastRefreshTime();
+
+            this.hasMoreData = this.allData.length >= 10;
             this.updateLoadMoreButton();
             this.hideLoadingState();
         },
@@ -247,7 +246,7 @@
                 return {
                     rank: userRecord.rank,
                     visitedCount: userRecord.visitedCount,
-                    petAge: userRecord.petAge
+                    petPower: userRecord.petPower || 0
                 };
             }
 
@@ -256,24 +255,38 @@
 
         // Load sample data for demo/fallback
         loadSampleData: function(isInitial) {
-            const makeSampleItem = (idx, nickname, visitedCount, petEmoji, petName) => ({
+            const makeSampleItem = (idx, nickname, visitedCount, petEmoji, petName, attack, defense) => ({
                 sortKey: `user-sample-${idx}`,
-                value: JSON.stringify({ nickname, visitedCount, petStats: { petEmoji, petName } })
+                value: JSON.stringify({
+                    nickname,
+                    visitedCount,
+                    petStats: { petEmoji, petName, attack, defense, totalPower: attack + defense }
+                })
             });
             const sampleData = {
                 items: [
-                    makeSampleItem(1, '小淘气', 5, '🐱', '小花猫'),
-                    makeSampleItem(2, '咚咚', 4, '🐶', '旺旺'),
-                    makeSampleItem(3, '用户123', 3, '🐰', '跳跳'),
-                    makeSampleItem(4, '小明', 2, '🐹', '团子'),
-                    makeSampleItem(5, '小红', 1, '🐾', '小宠物'),
-                    makeSampleItem(6, '博物馆达人', 1, '🐾', '小宠物'),
-                    makeSampleItem(7, '探险家', 1, '🐾', '小宠物'),
-                    makeSampleItem(8, '小考古学家', 1, '🐾', '小宠物')
+                    makeSampleItem(1, '小淘气', 5, '🐱', '小花猫', 25, 20),
+                    makeSampleItem(2, '咚咚', 4, '🐶', '旺旺', 18, 22),
+                    makeSampleItem(3, '用户123', 3, '🐰', '跳跳', 15, 10),
+                    makeSampleItem(4, '小明', 2, '🐹', '团子', 12, 8),
+                    makeSampleItem(5, '小红', 1, '🐾', '小宠物', 10, 10),
+                    makeSampleItem(6, '博物馆达人', 1, '🐾', '小宠物', 20, 5),
+                    makeSampleItem(7, '探险家', 1, '🐾', '小宠物', 8, 14),
+                    makeSampleItem(8, '小考古学家', 1, '🐾', '小宠物', 5, 15)
                 ]
             };
 
             this.handleDataResponse(sampleData, isInitial);
+        },
+
+        // Rank records by the metric for the given tab.
+        // pet tab -> petPower (攻击+防御属性之和); museum tab -> visitedCount
+        rankRecords: function(records, tab) {
+            const metric = tab === 'museum' ? 'visitedCount' : 'petPower';
+            const ranked = records.filter(r => (r[metric] || 0) > 0)
+                .sort((a, b) => (b[metric] || 0) - (a[metric] || 0));
+            ranked.forEach((r, i) => { r.rank = i + 1; });
+            return ranked;
         },
 
         // Render leaderboard list
@@ -316,7 +329,7 @@
             } else {
                 const petEmoji = item.petEmoji || '🐾';
                 const petName = item.petName || '小宠物';
-                scoreText = `${petEmoji} ${petName} · ${item.petAge || 0}岁`;
+                scoreText = `${petEmoji} ${petName} · 战力 ${item.petPower || 0}`;
             }
 
             const isCurrentUser = item.nickname === '我' || item.isCurrentUser;
@@ -345,7 +358,7 @@
                     if (this.currentTab === 'museum') {
                         myScore.textContent = `${userStats.visitedCount || 0} 家`;
                     } else {
-                        myScore.textContent = `${userStats.petAge || 0}岁`;
+                        myScore.textContent = `${userStats.petPower || 0} 战力`;
                     }
                 }
             } else {
