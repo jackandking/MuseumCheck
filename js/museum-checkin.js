@@ -321,6 +321,7 @@
         let exitIncompleteSignalSent = false;
         let visitFeedbackListenersReady = false;
         let visitFeedbackContext = null;
+        let visitFeedbackHideTimer = null;
 
         const PERSONAL_MUSEUMS_KEY = 'museumcheck-personal-museums-v1';
 
@@ -721,12 +722,24 @@
         }
 
         function showVisitFeedbackThanks() {
+            const feedback = document.getElementById('visitFeedback');
             const actions = document.getElementById('visitFeedbackActions');
             const form = document.getElementById('visitFeedbackForm');
             const thanks = document.getElementById('visitFeedbackThanks');
             if (actions) actions.hidden = true;
             if (form) form.hidden = true;
             if (thanks) thanks.hidden = false;
+            // 已响应后整张卡片应在短暂致谢后彻底消失，避免一直占位影响体验
+            if (feedback) {
+                window.clearTimeout(visitFeedbackHideTimer);
+                visitFeedbackHideTimer = window.setTimeout(() => {
+                    feedback.classList.add('visit-feedback--leaving');
+                    window.setTimeout(() => {
+                        feedback.hidden = true;
+                        feedback.classList.remove('visit-feedback--leaving');
+                    }, 420);
+                }, 2200);
+            }
         }
 
         function submitVisitFeedback(rating, comment = '') {
