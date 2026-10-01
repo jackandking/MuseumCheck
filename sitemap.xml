@@ -85,4 +85,52 @@
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
+    <url>
+      <loc>https://museumcheck.cn/museums/forbidden-city.html</loc>
+      <lastmod>2026-09-30</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>https://museumcheck.cn/museums/national-museum.html</loc>
+      <lastmod>2026-09-30</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>https://museumcheck.cn/museums/shanghai-museum.html</loc>
+      <lastmod>2026-09-30</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>https://museumcheck.cn/museums/terracotta-warriors.html</loc>
+      <lastmod>2026-09-30</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>https://museumcheck.cn/museums/nanjing-museum.html</loc>
+      <lastmod>2026-09-30</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>https://museumcheck.cn/museums/hubei-museum.html</loc>
+      <lastmod>2026-09-30</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>https://museumcheck.cn/museums/shaanxi-history.html</loc>
+      <lastmod>2026-09-30</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>https://museumcheck.cn/museums/henan-museum.html</loc>
+      <lastmod>2026-09-30</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
 </urlset>
