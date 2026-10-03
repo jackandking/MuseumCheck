@@ -313,7 +313,7 @@
     
     
     <!-- Main CSS - Extracted to external file for better caching -->
-    <link rel="stylesheet" href="css/museum-checkin.css?v=feedback-autohide-20260930">
+    <link rel="stylesheet" href="css/museum-checkin.css?v=ios-photo-upload-20261003">
     <!-- Leaderboard Styles - Unified across all pages -->
     <link rel="stylesheet" href="css/leaderboard.css">
     <!-- Virtual Pet and Achievement Gamification Styles - Load asynchronously -->
@@ -551,13 +551,14 @@
 
             <!-- Photo capture section -->
             <div class="photo-section" id="photoSection">
-                <div class="photo-input-wrapper">
+                <div class="photo-input-wrapper" id="photoInputWrapper">
                     <label class="photo-upload-label" for="taskPhotoInput">
-                        📷 点击上传照片（可选）
+                        📷 拍照 / 上传照片（可选）
                     </label>
                     <input type="file" id="taskPhotoInput" class="photo-input" accept="image/*" aria-label="选择照片">
                 </div>
                 <div class="photo-preview" id="photoPreview"></div>
+                <p class="photo-status" id="photoStatus" role="status" aria-live="polite" hidden></p>
                 <button class="retake-button" id="retakeButton" style="display: none;">重新上传</button>
             </div>
             <section class="family-photo-share" id="familyPhotoShare" hidden aria-labelledby="familyPhotoShareTitle">
@@ -912,7 +913,7 @@
     <script src="config/api-endpoints.js?v=mysql-treasures-20260920"></script>
     <script src="js/baidu-image-search.js"></script>
     <script src="js/letmetry-cloud-api.js"></script>
-    <script src="js/image-upload-util.js?v=poster-publish-20260911"></script>
+    <script src="js/image-upload-util.js?v=ios-photo-upload-20261003"></script>
     <script src="js/contribution-records.js?v=contributions-20260815"></script>
     <script src="js/family-photo-sharing.js?v=together-photos-20260815"></script>
     <!-- Event Wall Service (shared, must come after REMOTE_STORAGE_CONFIG is defined) -->
@@ -944,7 +945,7 @@
     <script src="js/auth-ui.js?v=auth-20260926b"></script>
     <!-- 跨设备数据同步（登录用户：孩子画像/参观足迹/成就宠物），先于 museum-checkin.js 加载 -->
     <script src="js/user-sync.js?v=usersync-20260926c"></script>
-    <script src="js/museum-checkin.js?v=feedback-autohide-20260930"></script>
+    <script src="js/museum-checkin.js?v=ios-photo-upload-20261003"></script>
 
     <!-- 馆图纠错 · 提交侧 (M1)：用户举报 + 上传替代照 → 待审 KV 队列 -->
     <script src="js/photo-correction.js?v=photo-correction-20260919-2"></script>

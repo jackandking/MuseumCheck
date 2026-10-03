@@ -3591,12 +3591,20 @@
             if (taskPhotos[index]) {
                 // Show existing photo
                 displayPhotoPreview(taskPhotos[index]);
+                setPhotoStatus('');
+            } else if (pendingPhotoProcessing) {
+                // A photo for this task was just picked and is still converting - keep it
+                // instead of wiping the preview the user is already looking at.
+                setPhotoStatus('照片处理中…', 'busy');
             } else {
                 // Clear preview
                 photoPreview.innerHTML = '';
                 retakeBtn.style.display = 'none';
                 photoInput.style.display = 'block';
                 photoInput.value = '';
+                const photoWrapper = document.getElementById('photoInputWrapper');
+                if (photoWrapper) photoWrapper.style.display = 'block';
+                setPhotoStatus('');
             }
             setFamilyPhotoShareState(Boolean(taskPhotos[index]));
             const approvedDiscoveries = document.getElementById('approvedTaskDiscoveries');
@@ -3968,18 +3976,25 @@
             // Check if game should be shown (has photo and setting enabled)
             // Ensure we process any pending file selected in the input but not yet stored
             try {
+                // A photo the user just picked may still be converting (iPhone HEIC shots
+                // take a moment). Wait for that pipeline - it is timeout-bounded - so a fast
+                // tap on 完成任务 can never drop the photo they just chose.
+                if (!taskPhotos[currentTaskIndex] && pendingPhotoProcessing) {
+                    try {
+                        await pendingPhotoProcessing;
+                    } catch (e) {
+                        console.warn('等待照片处理完成时出错：', e);
+                    }
+                }
+
+                // Secondary safety net: a file still sitting in the input.
                 const photoInputEl = document.getElementById('taskPhotoInput');
                 if (!taskPhotos[currentTaskIndex] && photoInputEl && photoInputEl.files && photoInputEl.files[0]) {
                     // If user selected a file but FileReader/compression hasn't finished yet,
                     // synchronously compress and read it here so the completion flow sees the photo.
                     try {
                         const compressedFile = await compressPhoto(photoInputEl.files[0]);
-                        const reader = new FileReader();
-                        const dataUrl = await new Promise((resolve, reject) => {
-                            reader.onload = (e) => resolve(e.target.result);
-                            reader.onerror = () => reject(new Error('读取图片失败'));
-                            reader.readAsDataURL(compressedFile);
-                        });
+                        const dataUrl = await readFileAsDataUrl(compressedFile);
                         taskPhotos[currentTaskIndex] = dataUrl;
                         savePhotos();
                         displayPhotoPreview(dataUrl);
@@ -4425,58 +4440,133 @@
             }
         }
 
-        // Compress photo to reduce size
-        async function compressPhoto(file) {
-            return new Promise((resolve) => {
+        /**
+         * Upper bound for the photo pipeline. A check-in must never be blocked by an
+         * image that the browser fails to decode (iPhone HEIC photos are the classic
+         * case) - after this the original file is used instead.
+         */
+        const PHOTO_PROCESS_TIMEOUT_MS = 8000;
+
+        /** In-flight photo pipeline for the task currently open (see completeTask). */
+        let pendingPhotoProcessing = null;
+
+        /**
+         * Reject if `promise` does not settle in time, so a wedged decoder can never
+         * leave the check-in silently stuck.
+         */
+        function withTimeout(promise, ms, message) {
+            return new Promise((resolve, reject) => {
+                const timer = setTimeout(() => reject(new Error(message)), ms);
+                promise.then(
+                    (value) => { clearTimeout(timer); resolve(value); },
+                    (error) => { clearTimeout(timer); reject(error); }
+                );
+            });
+        }
+
+        /** Read a File/Blob into a data URL (used for localStorage + previews). */
+        function readFileAsDataUrl(file) {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const maxWidth = PHOTO_CONFIG.MAX_WIDTH;
-                        const scale = Math.min(1, maxWidth / img.width);
-                        canvas.width = img.width * scale;
-                        canvas.height = img.height * scale;
-                        
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        
-                        canvas.toBlob((blob) => {
-                            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-                        }, 'image/jpeg', PHOTO_CONFIG.QUALITY);
-                    };
-                    img.src = e.target.result;
-                };
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => reject(new Error('读取图片失败'));
                 reader.readAsDataURL(file);
             });
+        }
+
+        /** Inline status line for the photo step (replaces the old alert()). */
+        function setPhotoStatus(message, kind) {
+            const el = document.getElementById('photoStatus');
+            if (!el) return;
+            if (!message) {
+                el.textContent = '';
+                el.hidden = true;
+                el.className = 'photo-status';
+                return;
+            }
+            el.textContent = message;
+            el.hidden = false;
+            el.className = 'photo-status' + (kind ? ` is-${kind}` : '');
+        }
+
+        // Compress photo to reduce size
+        async function compressPhoto(file) {
+            // Use the iOS/HEIC-robust converter shared from image-upload-util.js.
+            // Previously this function drew the photo onto a <canvas> directly, which
+            // silently hangs on iPhone HEIC photos (canvas.toBlob never calls back),
+            // so users could pick a photo but it never uploaded.
+            try {
+                if (typeof window.compressToJpeg === 'function') {
+                    const blob = await withTimeout(
+                        window.compressToJpeg(file, {
+                            maxWidth: PHOTO_CONFIG.MAX_WIDTH,
+                            maxHeight: PHOTO_CONFIG.MAX_WIDTH,
+                            quality: PHOTO_CONFIG.QUALITY
+                        }),
+                        PHOTO_PROCESS_TIMEOUT_MS,
+                        '照片压缩超时'
+                    );
+                    const baseName = (file.name && file.name.replace(/\.[^.]+$/, '')) || 'photo';
+                    return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' });
+                }
+            } catch (err) {
+                console.warn('compressPhoto: JPEG 转换失败，回退到原图:', err);
+            }
+            // Fallback: never block the user. Return the original file so the photo is
+            // still captured (stored as a data URL) even if conversion is unavailable.
+            return file;
         }
 
         // Handle photo capture
         async function handlePhotoCapture() {
             const input = document.getElementById('taskPhotoInput');
-            const file = input.files[0];
-            
+            const file = input && input.files && input.files[0];
+
             if (!file) return;
-            
-            try {
-                // Compress photo
-                const compressedFile = await compressPhoto(file);
-                
-                // Convert to data URL for storage
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    // Store photo for current task
-                    taskPhotos[currentTaskIndex] = e.target.result;
+
+            // Clear the input right away so picking the same photo again still fires
+            // `change` (iOS keeps the previous value otherwise). The File object lives on
+            // in pendingPhotoProcessing, so completeTask can still await it.
+            input.value = '';
+
+            // 1) Instant feedback: show the picked photo before the (sometimes slow, on
+            //    iPhone, multi-second) HEIC -> JPEG conversion finishes.
+            const tempUrl = URL.createObjectURL(file);
+            displayPhotoPreview(tempUrl);
+            setPhotoStatus('照片处理中…', 'busy');
+
+            pendingPhotoProcessing = (async () => {
+                try {
+                    const compressedFile = await compressPhoto(file);
+                    const dataUrl = await readFileAsDataUrl(compressedFile);
+                    taskPhotos[currentTaskIndex] = dataUrl;
                     savePhotos();
                     setFamilyPhotoShareState(true);
-                    
-                    // Display preview
-                    displayPhotoPreview(e.target.result);
-                };
-                reader.readAsDataURL(compressedFile);
+                    displayPhotoPreview(dataUrl);
+                    setPhotoStatus('✅ 照片已添加');
+                } catch (error) {
+                    console.warn('照片压缩/读取失败，回退使用原图:', error);
+                    // Last resort: keep the original file so the photo is still attached.
+                    const dataUrl = await readFileAsDataUrl(file);
+                    taskPhotos[currentTaskIndex] = dataUrl;
+                    savePhotos();
+                    setFamilyPhotoShareState(true);
+                    displayPhotoPreview(dataUrl);
+                    setPhotoStatus('✅ 照片已添加（原图）');
+                }
+            })();
+
+            try {
+                await pendingPhotoProcessing;
             } catch (error) {
+                // Both the JPEG conversion and reading the original file failed. Do not
+                // strand the user: restore the upload control and say so inline.
                 console.error('Error processing photo:', error);
-                alert('照片处理失败，请重试');
+                clearPhotoPreview();
+                setPhotoStatus('照片处理失败，可重新选择，或直接完成任务', 'error');
+            } finally {
+                pendingPhotoProcessing = null;
+                URL.revokeObjectURL(tempUrl);
             }
         }
 
@@ -4484,11 +4574,16 @@
         function displayPhotoPreview(dataUrl) {
             const preview = document.getElementById('photoPreview');
             const retakeBtn = document.getElementById('retakeButton');
+            const wrapper = document.getElementById('photoInputWrapper');
             const photoInput = document.getElementById('taskPhotoInput');
             
             preview.innerHTML = `<img src="${dataUrl}" alt="Task photo">`;
-            retakeBtn.style.display = 'block';
-            photoInput.style.display = 'none';
+            if (retakeBtn) retakeBtn.style.display = 'block';
+            // Hide the whole upload control once a photo is attached - leaving a second
+            // "上传照片" entry visible after a successful pick confused iPhone users into
+            // tapping it again instead of finishing the task.
+            if (wrapper) wrapper.style.display = 'none';
+            if (photoInput) photoInput.style.display = 'none';
         }
 
         // Clear photo preview
@@ -4496,16 +4591,22 @@
             const preview = document.getElementById('photoPreview');
             const retakeBtn = document.getElementById('retakeButton');
             const input = document.getElementById('taskPhotoInput');
+            const wrapper = document.getElementById('photoInputWrapper');
             
             preview.innerHTML = '';
-            retakeBtn.style.display = 'none';
-            input.style.display = 'block';
-            input.value = '';
+            if (retakeBtn) retakeBtn.style.display = 'none';
+            if (wrapper) wrapper.style.display = 'block';
+            if (input) {
+                input.style.display = 'block';
+                input.value = '';
+            }
+            setPhotoStatus('');
             
             // Remove photo from storage
             if (currentTaskIndex !== null && taskPhotos[currentTaskIndex]) {
                 delete taskPhotos[currentTaskIndex];
                 savePhotos();
+                setFamilyPhotoShareState(false);
             }
         }
 

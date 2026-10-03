@@ -5,6 +5,123 @@
  * Uploads images to the MuseumCheck storage service.
  */
 
+/**
+ * Upper bound for decoding one image. iPhone photos (HEIC, 12 MP+) can take a while on
+ * older devices, but the check-in flow must never be left waiting on a wedged decoder.
+ */
+const IMG_DECODE_TIMEOUT_MS = 10000;
+
+/**
+ * Decode an image File/Blob into a drawable source.
+ *
+ * iOS Safari (especially older versions) frequently FAILS to rasterize HEIC photos
+ * coming from the iPhone camera roll onto a <canvas>: `canvas.toBlob` either never
+ * calls back or yields a blank image, which previously caused the check-in photo
+ * upload to hang silently (the Promise never resolved).
+ *
+ * To fix this we prefer `createImageBitmap`, which on iOS 15+ reliably decodes HEIC
+ * AND applies EXIF orientation via `imageOrientation: 'from-image'` (so portrait iPhone
+ * photos are not rotated). We only fall back to an <img> element when createImageBitmap
+ * is unavailable, and that fallback always REJECTS on decode error or timeout instead
+ * of hanging.
+ *
+ * @param {File|Blob} file
+ * @param {{decodeTimeoutMs?:number}} [opts]
+ * @returns {Promise<ImageBitmap|HTMLImageElement>} with `.width`/`.height`
+ */
+async function decodeImageSource(file, { decodeTimeoutMs = IMG_DECODE_TIMEOUT_MS } = {}) {
+    if (typeof createImageBitmap === 'function') {
+        try {
+            return await createImageBitmap(file, { imageOrientation: 'from-image' });
+        } catch (err) {
+            console.warn('createImageBitmap failed, falling back to <img>:', err);
+        }
+    }
+
+    // Fallback path: load via object URL + <img>, rejecting on error (no silent hang).
+    // The race guards against environments where neither onload nor onerror ever fires
+    // (old WebViews, jsdom, resource-loading disabled) - the caller must never be left
+    // waiting forever, otherwise the check-in flow silently stalls.
+    const url = URL.createObjectURL(file);
+    try {
+        const img = new Image();
+        img.src = url;
+        await new Promise((resolve, reject) => {
+            const timer = setTimeout(
+                () => reject(new Error('图片解码超时（图片可能过大或格式不受支持）')),
+                decodeTimeoutMs
+            );
+            img.onload = () => { clearTimeout(timer); resolve(); };
+            img.onerror = () => {
+                clearTimeout(timer);
+                reject(new Error('无法解码该图片（可能是 iPhone HEIC 格式不被当前浏览器支持）'));
+            };
+        });
+        return img;
+    } finally {
+        // The bitmap is already decoded into memory, so revoking now is safe.
+        URL.revokeObjectURL(url);
+    }
+}
+
+/**
+ * Convert any image File/Blob to a compressed JPEG Blob, robust on iOS/HEIC.
+ *
+ * @param {File|Blob} file
+ * @param {{maxWidth?:number, maxHeight?:number, quality?:number, decodeTimeoutMs?:number}} [opts]
+ * @returns {Promise<Blob>} a JPEG blob
+ * @throws if the image cannot be decoded or rasterized (never hangs)
+ */
+async function compressToJpeg(file, { maxWidth = 1200, maxHeight = 1200, quality = 0.85, decodeTimeoutMs } = {}) {
+    const src = await decodeImageSource(file, decodeTimeoutMs ? { decodeTimeoutMs } : {});
+
+    const w = src.width || src.naturalWidth || 0;
+    const h = src.height || src.naturalHeight || 0;
+    if (!w || !h) {
+        throw new Error('图片尺寸无效，无法压缩');
+    }
+
+    let width = w;
+    let height = h;
+    if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.max(1, Math.round(width * ratio));
+        height = Math.max(1, Math.round(height * ratio));
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src, 0, 0, width, height);
+
+    // Free the ImageBitmap's memory (HTMLImageElement has no close()).
+    if (typeof src.close === 'function') {
+        try { src.close(); } catch (_) { /* noop */ }
+    }
+
+    // `canvas.toBlob` is another known iOS hang point (never calls back on some HEIC /
+    // large-photo decodes), so it is raced against the same timeout.
+    const blob = await new Promise((resolve, reject) => {
+        const timer = setTimeout(
+            () => reject(new Error('压缩超时：浏览器未能生成图片数据')),
+            decodeTimeoutMs || IMG_DECODE_TIMEOUT_MS
+        );
+        canvas.toBlob(
+            (b) => {
+                clearTimeout(timer);
+                if (b) resolve(b);
+                else reject(new Error('压缩失败：浏览器未能生成图片数据'));
+            },
+            'image/jpeg',
+            quality
+        );
+    });
+    return blob;
+}
+
 class ImageUploader {
     constructor(config = {}) {
         this.config = {
@@ -34,71 +151,20 @@ class ImageUploader {
      * @returns {Promise<Blob>} - Compressed image blob
      */
     async compressImage(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            
-            reader.onload = (e) => {
-                const img = new Image();
-                
-                img.onload = () => {
-                    try {
-                        // Calculate new dimensions
-                        let { width, height } = img;
-                        const maxWidth = this.config.targetWidth;
-                        const maxHeight = this.config.targetHeight;
-                        
-                        // Only resize if image is larger than target
-                        if (width > maxWidth || height > maxHeight) {
-                            const ratio = Math.min(maxWidth / width, maxHeight / height);
-                            width = Math.round(width * ratio);
-                            height = Math.round(height * ratio);
-                        }
-                        
-                        // Create canvas for compression
-                        const canvas = document.createElement('canvas');
-                        canvas.width = width;
-                        canvas.height = height;
-                        
-                        const ctx = canvas.getContext('2d');
-                        
-                        // Use smooth rendering for better quality
-                        ctx.imageSmoothingEnabled = true;
-                        ctx.imageSmoothingQuality = 'high';
-                        
-                        // Draw resized image
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        // Convert to blob with compression
-                        canvas.toBlob(
-                            (blob) => {
-                                if (blob) {
-                                    console.log(`✓ Image compressed: ${(file.size / 1024).toFixed(1)}KB → ${(blob.size / 1024).toFixed(1)}KB`);
-                                    resolve(blob);
-                                } else {
-                                    reject(new Error('Failed to create compressed image blob'));
-                                }
-                            },
-                            this.config.format,
-                            this.config.quality
-                        );
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                
-                img.onerror = () => {
-                    reject(new Error('Failed to load image for compression'));
-                };
-                
-                img.src = e.target.result;
-            };
-            
-            reader.onerror = () => {
-                reject(new Error('Failed to read image file'));
-            };
-            
-            reader.readAsDataURL(file);
-        });
+        try {
+            const blob = await compressToJpeg(file, {
+                maxWidth: this.config.targetWidth,
+                maxHeight: this.config.targetHeight,
+                quality: this.config.quality
+            });
+            console.log(`✓ Image compressed: ${(file.size / 1024).toFixed(1)}KB → ${(blob.size / 1024).toFixed(1)}KB`);
+            return blob;
+        } catch (error) {
+            // Surface the failure instead of silently hanging; the caller (uploadImage)
+            // falls back to uploading the original file when compression is unavailable.
+            console.warn('Compression failed:', error);
+            throw error;
+        }
     }
 
     /**
@@ -326,9 +392,12 @@ const imageUploader = new ImageUploader();
 if (typeof window !== 'undefined') {
   window.ImageUploader = ImageUploader;
   window.imageUploader = imageUploader;
+  // Exposed so museum-checkin.js's local `compressPhoto` can reuse the same
+  // iOS/HEIC-robust pipeline instead of its own canvas code.
+  window.compressToJpeg = compressToJpeg;
 }
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { ImageUploader, imageUploader };
+    module.exports = { ImageUploader, imageUploader, compressToJpeg, decodeImageSource };
 }
