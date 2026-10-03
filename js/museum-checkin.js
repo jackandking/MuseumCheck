@@ -4543,7 +4543,8 @@
                     savePhotos();
                     setFamilyPhotoShareState(true);
                     displayPhotoPreview(dataUrl);
-                    setPhotoStatus('✅ 照片已添加');
+                    // 明确说「本机」，回应家长对照片外泄的顾虑
+                    setPhotoStatus('✅ 照片已保存到本机');
                 } catch (error) {
                     console.warn('照片压缩/读取失败，回退使用原图:', error);
                     // Last resort: keep the original file so the photo is still attached.
@@ -4552,7 +4553,7 @@
                     savePhotos();
                     setFamilyPhotoShareState(true);
                     displayPhotoPreview(dataUrl);
-                    setPhotoStatus('✅ 照片已添加（原图）');
+                    setPhotoStatus('✅ 照片已保存到本机（原图）');
                 }
             })();
 

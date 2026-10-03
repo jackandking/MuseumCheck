@@ -1027,6 +1027,24 @@
         }
 
         /*
+         * 家长最担心「孩子的照片被传到网上」，所以把「只存本机」这行字放在选照片控件的
+         * 正下方（而不是折叠进帮助页），选照片之前就能看到。
+         */
+        .photo-privacy-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            margin: 8px 0 0;
+            padding: 8px 10px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #0f766e;
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 8px;
+        }
+
+        /*
          * The real <input type="file"> is stretched over the visible label instead of
          * being collapsed to a 1x1 transparent box. iOS Safari (and the WebViews inside
          * WeChat / 小红书 / QQ) require a file input to keep a real, tappable hit area:
@@ -4843,6 +4861,18 @@
         .family-photo-share input { margin-top: 3px; accent-color: #0f766e; }
         .family-photo-share small { display: block; color: #5c7078; font-size: 11px; }
         .family-photo-share__hint { color: #5c7078 !important; font-size: 11px !important; font-weight: 400 !important; line-height: 1.55; }
+        /* 「勾选才会上传」这层意思必须比默认文案更醒目，避免家长以为点一下就外发 */
+        .family-photo-share__privacy {
+            margin: -3px 0 10px !important;
+            padding: 8px 10px;
+            color: #92400e !important;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            font-size: 12px !important;
+            font-weight: 400 !important;
+            line-height: 1.55;
+        }
         .approved-task-discoveries h3 { margin: 0; color: #17313b; font-size: 16px; }
         .family-discovery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 11px; }
         .family-discovery-card { min-width: 0; margin: 0; overflow: hidden; border-radius: 10px 10px 10px 3px; background: #eaf4f1; }

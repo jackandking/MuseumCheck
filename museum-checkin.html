@@ -313,7 +313,7 @@
     
     
     <!-- Main CSS - Extracted to external file for better caching -->
-    <link rel="stylesheet" href="css/museum-checkin.css?v=ios-photo-upload-20261003">
+    <link rel="stylesheet" href="css/museum-checkin.css?v=photo-privacy-20261003">
     <!-- Leaderboard Styles - Unified across all pages -->
     <link rel="stylesheet" href="css/leaderboard.css">
     <!-- Virtual Pet and Achievement Gamification Styles - Load asynchronously -->
@@ -553,18 +553,23 @@
             <div class="photo-section" id="photoSection">
                 <div class="photo-input-wrapper" id="photoInputWrapper">
                     <label class="photo-upload-label" for="taskPhotoInput">
-                        📷 拍照 / 上传照片（可选）
+                        📷 拍照 / 从相册选择（可选）
                     </label>
                     <input type="file" id="taskPhotoInput" class="photo-input" accept="image/*" aria-label="选择照片">
                 </div>
+                <!-- 隐私说明：家长反馈「怕上传孩子照片」，这里在选照片的正下方就地讲清楚 -->
+                <p class="photo-privacy-note" id="photoPrivacyNote">
+                    🔒 照片默认只保存在你的手机本地，不会上传到服务器
+                </p>
                 <div class="photo-preview" id="photoPreview"></div>
                 <p class="photo-status" id="photoStatus" role="status" aria-live="polite" hidden></p>
                 <button class="retake-button" id="retakeButton" style="display: none;">重新上传</button>
             </div>
             <section class="family-photo-share" id="familyPhotoShare" hidden aria-labelledby="familyPhotoShareTitle">
                 <p id="familyPhotoShareTitle">这张照片怎么保存？</p>
-                <label><input type="checkbox" id="sharePhotoWithEvent"> 分享给本场同行家庭 <small>活动期间可见；不显示昵称。</small></label>
-                <label><input type="checkbox" id="submitPhotoForReview"> 允许 MuseumCheck 审核后公开展示 <small>只展示展品、展签或建筑照片；不会自动公开。</small></label>
+                <p class="family-photo-share__privacy">默认仍只保存在你的手机本地。只有你主动勾选下面任意一项，这张照片才会被上传到服务器。</p>
+                <label><input type="checkbox" id="sharePhotoWithEvent"> 分享给本场同行家庭 <small>活动期间可见；不显示昵称。勾选后照片会上传到服务器。</small></label>
+                <label><input type="checkbox" id="submitPhotoForReview"> 允许 MuseumCheck 审核后公开展示 <small>只展示展品、展签或建筑照片；不会自动公开。勾选后照片会上传到服务器。</small></label>
                 <p class="family-photo-share__hint">建议不要上传孩子正脸、联系方式或包含私人信息的画面。</p>
             </section>
             <section class="approved-task-discoveries" id="approvedTaskDiscoveries" hidden aria-labelledby="approvedTaskDiscoveriesTitle">
@@ -945,7 +950,7 @@
     <script src="js/auth-ui.js?v=auth-20260926b"></script>
     <!-- 跨设备数据同步（登录用户：孩子画像/参观足迹/成就宠物），先于 museum-checkin.js 加载 -->
     <script src="js/user-sync.js?v=usersync-20260926c"></script>
-    <script src="js/museum-checkin.js?v=ios-photo-upload-20261003"></script>
+    <script src="js/museum-checkin.js?v=photo-privacy-20261003"></script>
 
     <!-- 馆图纠错 · 提交侧 (M1)：用户举报 + 上传替代照 → 待审 KV 队列 -->
     <script src="js/photo-correction.js?v=photo-correction-20260919-2"></script>
