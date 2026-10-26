@@ -780,8 +780,44 @@
 
             // 继续游览按钮 (使用 getAppBasePath 支持子目录部署，携带博物馆ID)
             document.getElementById('btnContinue').addEventListener('click', () => {
-                const context = window.GameContextManager ? window.GameContextManager.getContext() : null;
-                const museumId = context?.museumId || 'forbidden-city';
+                // 多重fallback机制获取博物馆ID，提升移动端可靠性
+                let museumId = 'forbidden-city'; // 默认值
+
+                // 1. 优先从GameContextManager获取
+                if (window.GameContextManager) {
+                    const context = window.GameContextManager.getContext();
+                    if (context && context.museumId) {
+                        museumId = context.museumId;
+                    }
+                }
+
+                // 2. 如果context没有，尝试从referrer URL中提取
+                if (museumId === 'forbidden-city' && document.referrer) {
+                    try {
+                        const referrerUrl = new URL(document.referrer);
+                        const params = new URLSearchParams(referrerUrl.search);
+                        const refId = params.get('id') || params.get('museum');
+                        if (refId && refId !== 'forbidden-city') {
+                            museumId = refId;
+                        }
+                    } catch (e) {
+                        console.log('[Game] Could not parse referrer:', e);
+                    }
+                }
+
+                // 3. 最后尝试从localStorage获取最近访问的博物馆
+                if (museumId === 'forbidden-city') {
+                    try {
+                        const lastVisited = localStorage.getItem('lastVisitedMuseum');
+                        if (lastVisited && lastVisited !== 'forbidden-city') {
+                            museumId = lastVisited;
+                        }
+                    } catch (e) {
+                        console.log('[Game] Could not access localStorage:', e);
+                    }
+                }
+
+                console.log('[Game] Returning to museum:', museumId);
                 window.location.href = getAppBasePath() + '/museum-checkin.html?id=' + encodeURIComponent(museumId);
             });
         }
