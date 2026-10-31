@@ -2501,6 +2501,22 @@ class AnalyticsManager {
         return count;
     }
     
+    resolveChannel() {
+        try {
+            const p = new URLSearchParams(window.location.search);
+            const ch = p.get('ch') || p.get('channel') || p.get('utm_source');
+            if (ch) return ch;
+            if (typeof document !== 'undefined' && document.referrer) {
+                try { return new URL(document.referrer).host; } catch (e) { return 'direct'; }
+            }
+            return 'direct';
+        } catch (e) { return 'direct'; }
+    }
+
+    resolveUtm(key) {
+        try { return new URLSearchParams(window.location.search).get(key) || null; } catch (e) { return null; }
+    }
+
     trackEvent(eventName, parameters = {}) {
         // Update last activity time
         this.userMetrics.lastActivityTime = Date.now();
@@ -2514,7 +2530,12 @@ class AnalyticsManager {
             page_url: window.location.href,
             user_agent: navigator.userAgent,
             screen_resolution: `${screen.width}x${screen.height}`,
-            viewport_size: `${window.innerWidth}x${window.innerHeight}`
+            viewport_size: `${window.innerWidth}x${window.innerHeight}`,
+            channel: this.resolveChannel(),
+            utm_source: this.resolveUtm('utm_source'),
+            utm_medium: this.resolveUtm('utm_medium'),
+            utm_campaign: this.resolveUtm('utm_campaign'),
+            referrer: (typeof document !== 'undefined' ? (document.referrer || null) : null)
         };
         
         // Send to Google Analytics if available
@@ -2526,6 +2547,21 @@ class AnalyticsManager {
             }
         }
         
+        // Send to backend analytics (letmetry /api/track, same-origin from museumcheck.cn)
+        try {
+            const body = JSON.stringify({
+                ...enrichedParams,
+                event: eventName,
+                appId: 'museumcheck-web',
+                date: new Date().toISOString().split('T')[0]
+            });
+            if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+                navigator.sendBeacon('/api/track', body);
+            } else if (typeof fetch !== 'undefined') {
+                fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
+            }
+        } catch (e) { /* non-critical analytics */ }
+
         // Queue event for local analytics
         this.eventQueue.push({
             event: eventName,
